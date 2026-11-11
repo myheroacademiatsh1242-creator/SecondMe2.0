@@ -32,16 +32,20 @@ export function MenuWizard() {
     };
     const still = document.body.classList.contains('reduced-motion') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (played || still) { apply(wizardPose(T.walkEnd)); return; }
-    played = true;
-    let frame = 0, start = 0;
+    let frame = 0, start = 0, portalRate = 1;
+    apply(wizardPose(0));
     const tick = (now: number) => {
       // The menu mounts under the studio card and the intro film (AdventureApp); start the clock once both are gone.
-      if (!start && document.querySelector('.cinematic-intro, .studio-splash')) { apply(wizardPose(0)); frame = requestAnimationFrame(tick); return; }
+      if (!start && document.querySelector('.cinematic-intro, .studio-splash')) { frame = requestAnimationFrame(tick); return; }
       start ||= now;
       const p = wizardPose((now - start) / 1000);
       apply(p);
-      setRate(p.portalRate);
-      if (!p.done) frame = requestAnimationFrame(tick);
+      if (p.portalRate !== portalRate) {
+        portalRate = p.portalRate;
+        setRate(portalRate);
+      }
+      if (p.done) played = true;
+      else frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(frame); setRate(1); };

@@ -44,9 +44,6 @@ const plasmaContour = Array.from({ length: 96 }, (_, index) => {
 
 export function IntroEffects() {
   return <div className="intro-scene-effects" aria-hidden="true">
-    <div className="intro-foliage-patch foliage-left"/>
-    <div className="intro-foliage-patch foliage-center"/>
-    <div className="intro-foliage-patch foliage-right"/>
     <svg className="intro-magic" viewBox="0 0 1376 768" preserveAspectRatio="none">
       <defs>
         <clipPath id="intro-portal-clip"><ellipse cx="309" cy="445" rx="105" ry="158"/></clipPath>
@@ -93,7 +90,6 @@ export function IntroEffects() {
       <image className="rune-lit" href="/assets/menu/rune-othala-lit.png" x="1274" y="476" width="50" height="58" preserveAspectRatio="none"/>
       <g className="intro-fireflies">
         {fireflies.map(([x, y, kind], index) => <circle key={index} cx={x} cy={y} r={kind === 'gold' ? 2.2 + index % 3 * .5 : 1.7 + index % 3 * .45} fill={kind === 'gold' ? '#ffe887' : '#83ffe1'} style={{
-          '--fly-color': kind === 'gold' ? '#ffe078' : '#53f6d5',
           '--fly-delay': `${-index * .71}s`,
           '--fly-duration': `${6.4 + index % 7 * .61}s`,
           '--twinkle-duration': `${3.1 + index % 5 * .73}s`,

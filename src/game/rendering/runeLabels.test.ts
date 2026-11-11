@@ -1,7 +1,8 @@
+import type { Rect } from '../logic/types.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {LEVELS} from '../logic/levels.ts';
-import {gateLabelLayout,overlaps,romanRune} from './runeLabels.ts';
+import {drawRuneHints,gateLabelLayout,overlaps,romanRune,runeLabelLayout} from './runeLabels.ts';
 test('Roman rune strips clear every campaign rune, other strip, and HUD',()=>{
  for(const level of LEVELS){const boxes=gateLabelLayout(level);for(const [i,box] of boxes.entries()){
   assert.ok(box.x>=44&&box.x+box.width<=1236&&box.y>=44&&box.y+box.height<=676,`bounds ${level.id}/${i}`);
@@ -25,4 +26,78 @@ test('labels leave the spawn altar and exit portal visible',()=>{
   assert.ok(!overlaps(box,{x:level.playerSpawn.x-52,y:level.playerSpawn.y-62,width:104,height:114}),`spawn ${level.id}`);
   assert.ok(!overlaps(box,{x:level.exit.x-35,y:level.exit.y-35,width:level.exit.width+70,height:level.exit.height+70}),`exit ${level.id}`);
  }
+});
+
+test('every discovered numeral is centered over its rune and in the matching gate slots', () => {
+  for (const level of LEVELS) {
+    const pixels: Rect[] = [];
+    const ctx = {
+      save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, strokeRect() {},
+      fillRect(x: number, y: number, width: number, height: number) {
+        if (width === 2 && height === 2) pixels.push({ x, y, width, height });
+      },
+    } as unknown as CanvasRenderingContext2D;
+    const runeBoxes = runeLabelLayout(level);
+    const gateBoxes = gateLabelLayout(level);
+    for (const [runeIndex, plate] of level.plates.entries()) {
+      const runeBox = runeBoxes[runeIndex];
+      assert.ok(
+        runeBox.x + runeBox.width / 2 === plate.x + plate.width / 2 ||
+        runeBox.y + runeBox.height / 2 === plate.y + plate.height / 2
+      );
+      assert.ok(runeBox.y >= 105 && runeBox.y + runeBox.height <= 676);
+      for (const obstacle of [...level.walls, ...(level.traps ?? []), ...level.doors, ...level.plates]) {
+        assert.ok(!overlaps(runeBox, obstacle), `rune box ${level.id}/${plate.id}`);
+      }
+
+      pixels.length = 0;
+      drawRuneHints(ctx, level, new Set([plate.id]));
+      const signature = (box: Rect) => {
+        const matches = pixels.filter(pixel => overlaps(pixel, box));
+        assert.ok(matches.length > 0);
+        const left = Math.min(...matches.map(pixel => pixel.x));
+        const right = Math.max(...matches.map(pixel => pixel.x + pixel.width));
+        assert.equal((left + right) / 2, box.x + box.width / 2);
+        return matches.map(pixel => [pixel.x - left, pixel.y - box.y]);
+      };
+      const runeGlyph = signature(runeBox);
+      let copies = 1;
+      for (const [doorIndex, door] of level.doors.entries()) {
+        const slot = door.requiredPlates.indexOf(plate.id);
+        if (slot === -1) continue;
+        const gateBox = gateBoxes[doorIndex];
+        const width = (gateBox.width - 8) / door.requiredPlates.length;
+        assert.deepEqual(signature({ ...gateBox, x: gateBox.x + 4 + slot * width, width }), runeGlyph);
+        copies++;
+      }
+      assert.equal(pixels.length, copies * runeGlyph.length);
+    }
+  }
+});
+
+test('tabs stay clear of the objective outline for every rune and gate', () => {
+  for (const level of LEVELS) {
+    const tabs: Rect[] = [];
+    let from = { x: 0, y: 0 };
+    const ctx = {
+      save() {}, restore() {}, beginPath() {}, stroke() {}, strokeRect() {}, fillRect() {},
+      moveTo(x: number, y: number) { from = { x, y }; },
+      lineTo(x: number, y: number) {
+        tabs.push({ x: Math.min(from.x, x) - 1, y: Math.min(from.y, y) - 1,
+          width: Math.abs(from.x - x) + 2, height: Math.abs(from.y - y) + 2 });
+      },
+    } as unknown as CanvasRenderingContext2D;
+    drawRuneHints(ctx, level, new Set(level.plates.map(plate => plate.id)));
+    const targets = [...level.plates, ...level.doors];
+    assert.equal(tabs.length, targets.length);
+    for (const tab of tabs) {
+      for (const target of targets) {
+        const clearance = 10;
+        assert.ok(!overlaps(tab, {
+          x: target.x - clearance, y: target.y - clearance,
+          width: target.width + clearance * 2, height: target.height + clearance * 2,
+        }), `level ${level.id}: tab overlaps outline on ${target.id}`);
+      }
+    }
+  }
 });

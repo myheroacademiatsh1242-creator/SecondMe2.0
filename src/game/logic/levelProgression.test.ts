@@ -5,6 +5,7 @@ import { LEVELS } from './levels.ts';
 import { getActiveObstacles, rectIntersects, getCharacterBoundingBox } from './collision.ts';
 import { trapPhase, trapEffects } from './traps.ts';
 import { isPuzzleExitOpen } from './puzzle.ts';
+import { trailObjective } from './trailObjective.ts';
 import { MapValidator } from './mapValidator.ts';
 import { sounds } from './sound.ts';
 import { createBoss, updateBoss } from './campaign.ts';
@@ -46,7 +47,7 @@ for(let index=0;index<5;index++)test(`trail ${index+1}: real movement, timed tra
  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
  Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});
  t.after(()=>previous?Object.defineProperty(globalThis,'document',previous):Reflect.deleteProperty(globalThis,'document'));
- const game=new GameEngine();game.currentLevelIdx=index;game.restartLevel();
+ const game=new GameEngine();game.currentLevelIdx=index;game.tutorialEnabled=true;game.restartLevel();
  const control=game as unknown as {update(dt:number):void;heldKeys:Set<string>;elapsedLevelTime:number};
  const tick=(dt:number)=>{control.update(dt);assert.ok(game.screen==='playing'||game.screen==='victory',`level ${index+1}: ${game.defeatReason} at ${game.player.x},${game.player.y}`);};
  const move=(x:number,y:number)=>{
@@ -68,7 +69,10 @@ for(let index=0;index<5;index++)test(`trail ${index+1}: real movement, timed tra
    const obsolete=game.echoes.findIndex(e=>game.currentLevel.plates.some(p=>!game.currentLevel.exitRequiredPlates!.includes(p.id)&&Math.hypot(p.x+25-e.x,p.y+25-e.y)<35));
    assert.equal(obsolete,0,'the oldest Echo is the reusable one in the final relay');game.dismissEcho();
   }
-  game.toggleRecording();move(plate.x+25,plate.y+25);game.toggleRecording();
+  game.toggleRecording();move(plate.x+25,plate.y+25);
+  assert.deepEqual(trailObjective(game), { action: 'save', target: plate });
+  game.toggleRecording();
+  assert.deepEqual(trailObjective(game), { action: 'summon', target: plate });
   const recording=game.recorder.getDuration();game.spawnEcho();const summoned=game.echo!;
   for(let time=0;time<recording/1000+.35;time+=.02)tick(.02);
   // Echo may pause its recording to fight; wait until it actually reaches the rune

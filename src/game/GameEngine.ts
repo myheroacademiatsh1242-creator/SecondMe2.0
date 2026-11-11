@@ -1,3 +1,4 @@
+import { trailObjective, type TrailAction } from './logic/trailObjective.ts';
 import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
 import { SKILL_PICKUPS } from './logic/skillPickups.ts';
 import { ManaPool, MAX_MP, comboManaCost, skillManaCost } from './logic/mana.ts';
@@ -77,6 +78,7 @@ export type CombatSkill = 'fire' | 'lightning' | 'stone' | 'haste' | 'armor' | '
 const CLASS_SKILLS: Record<CharacterClass, CombatSkill[]> = { mage: ['fire','lightning','stone'], swordsman: ['haste','armor','wave'], mechanical: ['fire','armor','haste'] };
 
 export interface HUDState {
+  trailAction?: TrailAction;
   outfits?:Record<OutfitHero,OutfitId>;
   ownedOutfits?:ShopOutfitId[];
   guideTopic?: GuideTopic|null;
@@ -167,8 +169,8 @@ const SETTINGS_KEY = 'second-me-settings-v1';
 export function readSavedSettings(): { language: Language; reducedMotion: boolean } {
   try {
     const value = typeof localStorage === 'undefined' ? {} : JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}');
-    return { language: value.language === 'vi' ? 'vi' : 'en', reducedMotion: value.reducedMotion === true };
-  } catch { return { language: 'en', reducedMotion: false }; }
+    return { language: value.language === 'en' ? 'en' : 'vi', reducedMotion: value.reducedMotion === true };
+  } catch { return { language: 'vi', reducedMotion: false }; }
 }
 
 export class GameEngine {
@@ -238,6 +240,7 @@ export class GameEngine {
   public limitRingActive = false;
   public get echoLimit() { return this.limitRingActive ? 6 : 4; }
   private echoFreeSummon = true;
+  public get availableEchoCharges() { return this.echoCharges + (this.echoFreeSummon ? 1 : 0); }
   public dissonanceSeconds = 0;
   private swapCooldown = 0;
   private echoGrace = 0;
@@ -295,12 +298,13 @@ export class GameEngine {
   private timeItemsUsedThisLevel = 0;
   public trappedTime = 0;
   public checkpointIndex = 0;
+  public readonly discoveredRunes = new Set<string>();
   public slowed = false;
   public defeatReason: 'timeout' | 'damage' = 'damage';
   public reducedMotion = false;
   public showHints = true;
   public devUnlocked = false;
-  public language: Language = 'en';
+  public language: Language = 'vi';
   public characterClass: CharacterClass = 'mage';
   public lastRating: { stars: number; coins: number; keys?:number } | null = null;
   public mana=new ManaPool();
@@ -393,7 +397,7 @@ export class GameEngine {
       sounds.setMusicVolume(typeof value.musicVolume === 'number' ? value.musicVolume : 1);
       this.reducedMotion = value.reducedMotion === true;
       this.showHints = value.showHints !== false;
-      this.language = value.language === 'vi' ? 'vi' : 'en';
+      this.language = value.language === 'en' ? 'en' : 'vi';
       this.characterClass = MECHANICAL_ENABLED && value.characterClass === 'mechanical' && this.campaign.mechanicalOwned ? 'mechanical' : value.characterClass === 'swordsman' ? 'swordsman' : 'mage';
       setCurrentLanguage(this.language);
       voice.lang = this.language;
@@ -615,6 +619,8 @@ export class GameEngine {
     this.shardClaimedThisLeg = false; this.timeItemsUsedThisLevel = 0;
     this.trappedTime = 0;
     this.checkpointIndex = 0;
+    this.discoveredRunes.clear();
+    this.guides.reset();
     this.slowed = false;
     this.defeatReason = 'damage';
     this.maxHealth=PLAYER_MAX_HP;this.usedSupplies.clear();this.supportAlly=null;
@@ -645,7 +651,6 @@ export class GameEngine {
     document.body.dataset.state = 'playing';
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
     if(this.isTraining){this.showBanner(this.language==='vi'?'Bãi tập (dev) · Hình nộm không chết, không đánh trả · Cổng ra để về trại':'Training ground (dev) · Dummies never die or fight back · Exit portal returns to camp',6);this.voiceLevelStart();this.notifyHUD();return;}
-    if(this.tutorialEnabled)this.guides.offer(this.currentLevel.id===6?'shield':'echo');
     if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
     this.voiceLevelStart();
     this.notifyHUD();
@@ -1412,7 +1417,7 @@ export class GameEngine {
         this.player.isMoving
       );
       sounds.playRecordStop();
-      this.showBanner('Đã lưu đường đi! Nhấn E để gọi Echo.');
+      this.showBanner('Đã lưu đường đi! Nhấn Q để gọi Echo.');
     } else {
       // Start recording
       this.recorder.startRecording(
@@ -1455,7 +1460,7 @@ export class GameEngine {
       this.showBanner(this.language==='vi'?'Chưa có bản ghi. Nhấn E để ghi đường đi trước.':'No recording yet. Press E to record a path.');
       return;
     }
-    if (!this.echoFreeSummon && this.echoCharges <= 0) {
+    if (this.availableEchoCharges <= 0) {
       this.showBanner(this.language==='vi'?'Hết lượt triệu hồi. Chạm ấn thạch để hồi.':'No Echo charges. Reach a rune to restore one.');
       return;
     }
@@ -1849,7 +1854,11 @@ export class GameEngine {
     // While a full-screen cinematic covers the stage, skip the hidden canvas and HUD churn.
     // The loading screen covers the stage: skip the hidden canvas until a level is set up behind
     // it. Blank it once, so the fade-out never uncovers the previous level's last frame.
-    if (this.screen === 'loading' && !this.pendingLevel?.built) {
+    if (this.screen === 'intro') {
+      // The main menu has its own opaque artwork and publishes state when an action changes it.
+      this.stageBlank = false;
+      this.backdropFor = null;
+    } else if (this.screen === 'loading' && !this.pendingLevel?.built) {
       if (!this.stageBlank && this.ctx && this.canvas) {
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.fillStyle = '#071510';
@@ -1878,7 +1887,7 @@ export class GameEngine {
     music.set(this.musicScene(), this.screen === 'paused');
 
     // Check throttled HUD update
-    if (!this.suspendVisuals && timestamp - this.lastHUDNotify >= 80) {
+    if (this.screen !== 'intro' && !this.suspendVisuals && timestamp - this.lastHUDNotify >= 80) {
       this.lastHUDNotify = timestamp;
       this.notifyHUD();
     }
@@ -1892,16 +1901,12 @@ export class GameEngine {
     const offer=(id:GuideTopic)=>this.guides.offer(id);
     if(this.boss){
       if(this.skillDrop)offer('skillPickups');
-      offer('shield');
-      offer('bossPatterns');
+      if (this.boss.mode === 'warning') offer('bossPatterns');
       if(this.echoes.length)offer('decoy');
       if(this.boss.armor===0)offer('vulnerable');
       if(bossSegment(this.boss)>1)offer('shieldRestored');
       return;
     }
-    if(this.currentLevel.id===5&&this.checkpointIndex>=3)offer('recycle');
-    if(this.echoes.length>=2)offer('multi');
-    if(this.currentLevel.plates.some(p=>Math.hypot(this.player.x-p.x-p.width/2,this.player.y-p.y-p.height/2)<140))offer('links');
     if(this.timePickup)offer('time');
     for(const trap of this.currentLevel.traps??[])if(Math.hypot(this.player.x-trap.x-trap.width/2,this.player.y-trap.y-trap.height/2)<150)offer(trap.kind);
   }
@@ -1910,8 +1915,12 @@ export class GameEngine {
     if (this.screen !== 'playing' || this.bossIntroduction || this.orientationBlocked || this.runeEditing || this.inventoryOpen) return;
     if(this.tutorialEnabled){
       const previousTopic=this.guides.active;
-      if(!this.guides.blocking)this.discoverMechanics();
-      if(this.guides.blocking){this.heldKeys.clear();if(previousTopic!==this.guides.active)this.notifyHUD();return;}
+      if (this.guides.blocking) return;
+      if (this.showHints) {
+        this.guides.advance(dt);
+        this.discoverMechanics();
+        if (previousTopic !== this.guides.active) this.notifyHUD();
+      }
     }
     if (this.exitTravelRemaining > 0) {
       this.exitTravelRemaining = Math.max(0,this.exitTravelRemaining-dt);
@@ -2204,6 +2213,7 @@ export class GameEngine {
     if (plateUpdates.activatedIds.length > 0) {
       sounds.playPlateActivate();
       for (const id of plateUpdates.activatedIds) {
+        this.discoveredRunes.add(id);
         const pl = this.currentLevel.plates.find((p) => p.id === id);
         if (pl) {
           this.renderer.particles.emit(
@@ -2342,7 +2352,8 @@ export class GameEngine {
       const echoState: EchoStatus = this.echo?.status??'none';
 
       this.onHUDChange({
-        guideTopic:this.tutorialEnabled?this.guides.active:null,
+        trailAction: trailObjective(this)?.action,
+        guideTopic:this.tutorialEnabled && (this.showHints || this.guides.libraryOpen) ? this.guides.active : null,
         guideLibrary:this.tutorialEnabled&&this.guides.libraryOpen,
         screen: this.screen,
         levelName: this.currentLevel.name,
@@ -2351,7 +2362,7 @@ export class GameEngine {
         recordingTimeRemaining: this.recorder.getRemainingTimeMs(),
         echoStatus: echoState,
         echoCount: this.echoes.length,
-        echoCharges: this.echoCharges + (this.echoFreeSummon?1:0),
+        echoCharges: this.availableEchoCharges,
         echoStability: this.echo?.stability??0,
         echoElapsedMs: this.echo?.elapsedMs??0,
         echoDurationMs: this.echo?.samples.at(-1)?.time??this.recorder.getDuration(),

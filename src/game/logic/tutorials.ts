@@ -4,7 +4,7 @@ export const GUIDE_TOPICS = {
   enemies:{vi:['Quái canh đường','Màn 2–5 có quái giữ từng khu vực. Vòng đỏ báo vị trí chúng sắp đánh: né ra trước khi đòn đáp xuống. Bạn có 100 HP; mỗi loại quái gây sát thương khác nhau. Khiên hấp thụ điểm sát thương, không đếm lượt đánh. Chuột trái đánh, Space dùng kỹ năng. Echo thu hút quái, tự chiến đấu trong phạm vi 3 mét và mất ổn định theo sát thương và bị thu hồi khi về 0. Hạ quái hồi 3 giây và 1 lượt Echo.','Né vòng đỏ · E ghi cả đòn đánh · Q gọi Echo'],en:['Enemies guard the trails','Enemies patrol areas in trails 2–5. A red ring marks their locked attack point: move away before impact. You have 100 HP; enemy damage varies by type. Shields absorb damage points, not hit counts. Left click attacks, Space uses your skill. Echoes draw enemies, fight within three metres and lose stability from damage and are recalled at zero. Each defeat restores 3 seconds and an Echo charge.','Dodge the red ring · E records attacks too · Q summons Echo']},
   upgradeRunes:{vi:['Ấn nâng Echo','Mỗi lần thắng màn, chọn 1 trong 3 ấn ngẫu nhiên từ bộ 12 loại. Mở túi hoặc bấm ấn ở thanh dưới để dùng trong màn 2–6. Mỗi lần dùng tốn 1 ấn; hiệu ứng hết khi đổi/chơi lại màn. Triệu hồi hồi lượt, Bền bỉ giảm mất ổn định, Khuếch đại tăng đòn Echo, Truy kích tăng tốc Echo; các ấn khác hỗ trợ hồi phục, lan sát thương, giữ rune và hoán đổi. Đọc mô tả từng ấn trước khi dùng.','Ấn nâng Echo khác rune giữ cổng · Không cần đủ bộ'],en:['Echo upgrade runes','After each trail, choose one of three random runes from twelve types. Use the bottom bar or inventory in levels 2–6. Each activation consumes one rune; effects expire on leaving or restarting. Calling restores a charge, Endurance protects stability, Amplification boosts Echo attacks, Pursuit speeds up Echoes; other runes add sustain, splash damage, rune defense and swapping. Read each rune description before use.','Upgrade runes are separate from gate switches · No full set required']},
   echo: {vi:['Ghi lại một tiếng vọng','Nhấn E để ghi đường đi, E lần nữa để lưu, rồi Q để gọi Echo phát lại. Khi gặp quái trong 3 mét, Echo tạm dừng bản ghi để chiến đấu rồi quay lại tiếp tục. Echo có 100 ổn định, trừ theo sát thương và bị thu hồi khi về 0; đợi Echo về rune trước khi đi qua cổng.','WASD di chuyển · E ghi/lưu · Q triệu hồi'],en:['Record an Echo','Press E to record your path, E again to save, then Q to summon its replay. When an enemy is within three metres, the Echo pauses its recording to fight, then returns and resumes. It has 100 stability, takes damage and is recalled at zero; wait for it to reach the rune before passing the gate.','WASD move · E record/save · Q summon']},
-  links: {vi:['Đường nối rune và cổng','Đường chấm chỉ rune nào điều khiển cổng nào. Khi bạn hoặc Echo giữ rune, đường sáng lên. Cổng có nhiều số cần tất cả rune đó cùng được giữ. Đường này không gây sát thương.','Đọc số cạnh cổng · Để Echo giữ rune'],en:['Rune-to-gate links','The dotted line connects a rune to the gate it controls. It lights up while you or an Echo hold the rune. Gates with several numbers need all those runes held at once. The line is harmless.','Read the gate numbers · Leave Echoes on runes']},
+  links: {vi:['Đường nối rune và cổng','Đạp lên ấn để mở gợi ý số La Mã. Cổng có nhiều số chỉ mở khi tất cả các ấn trùng số được giữ cùng lúc.','Đọc số cạnh cổng · Để Echo giữ rune'],en:['Rune-to-gate links','Step on a rune to reveal its Roman numeral. A gate with several numbers opens when all matching runes are held together.','Read the gate numbers · Leave Echoes on runes']},
   vines: {vi:['Rễ gai làm chậm','Rễ gai làm bạn chậm 45%, không gây sát thương. Đi vòng sẽ nhanh hơn nếu có lối khác; tránh ghi đường Echo dài hơn 8 giây.','Rời vùng rễ để trở lại tốc độ bình thường'],en:['Slowing roots','Roots slow you by 45% without damaging you. A detour can be faster. Keep recorded routes within eight seconds.','Leave the roots to regain normal speed']},
   crusher: {vi:['Hàm đá báo trước khi dập','Rune vàng và vòng sáng báo hàm đá sắp đóng. Đợi ở khoảng trống, rồi vượt qua trong lúc hàm mở. Trúng bẫy mất 20 HP và bị giữ chân 0,25 giây.','Đừng đứng chờ bên trong bẫy'],en:['Stone jaws give a warning','Golden runes and a bright ring warn before the jaws close. Wait in clear ground, then cross while they are open. A hit deals 20 damage and briefly roots you.','Wait outside the trap']},
   spikes: {vi:['Bàn gai có chu kỳ','Đầu gai nhú lên là dấu hiệu cảnh báo. Chờ gai rút hẳn rồi đi qua; bàn gai không nguy hiểm trong toàn bộ chu kỳ.','Quan sát đầu gai và vòng cảnh báo'],en:['Spikes follow a cycle','Emerging spike tips are a warning. Cross once the spikes retract; the plate is not dangerous throughout its entire cycle.','Watch the tips and warning ring']},
@@ -18,19 +18,91 @@ export const GUIDE_TOPICS = {
   vulnerable: {vi:['Khiên đã vỡ — phản công!','Bốn trụ đã bị phá. Giờ bạn có thể gây sát thương trực tiếp lên boss. Tận dụng lúc hồi phục, rồi tránh các đợt đạn và vùng băng tăng dần theo pha.','Giữ Echo hỗ trợ và chú ý máu của bạn'],en:['Shield broken — strike back','All four pillars are gone. You can now damage the Guardian directly. Exploit its recovery, then dodge the increasingly intense projectile and ice patterns.','Keep your Echo support and watch your health']},
 } as const;
 export type GuideTopic = keyof typeof GUIDE_TOPICS;
-const KEY='second-me-mechanics-guide-v1';
+export const QUICK_HINTS: Record<GuideTopic, readonly [string, string]> = {
+  echo: ['E ghi · E lưu · Q gọi Echo', 'E record · E save · Q summon'],
+  links: ['Đạp lên ấn để xem số. Nhờ Echo giữ các ấn trùng số ở cổng.', 'Step on a rune to reveal its number. Use Echoes to hold the matching runes.'],
+  enemies: ['Thấy vòng đỏ, lướt ra ngoài bằng Shift.', 'See a red ring? Dash out with Shift.'],
+  vines: ['Đi vòng qua rễ gai để khỏi bị chậm.', 'Go around roots to stay fast.'],
+  crusher: ['Chờ hàm đá mở rồi chạy qua.', 'Wait for the stone jaws to open.'],
+  spikes: ['Chờ gai rút hẳn rồi bước qua.', 'Cross once the spikes retract.'],
+  rocks: ['Rời vòng vàng trước khi đá rơi.', 'Leave the gold ring before the rock lands.'],
+  time: ['Nhặt đồng hồ cát để cộng 3 giây. R dùng vật phẩm +2 giây.', 'Pick up the hourglass for +3s. R spends a +2s item.'],
+  multi: ['Giữ cùng lúc mọi ấn có số trên cổng.', 'Hold all the numbered runes at the same time.'],
+  recycle: ['Khi qua cổng III, nhấn X thu Echo cũ nhất để gọi Echo mới.', 'Past gate III, press X to recall the oldest Echo and free a slot.'],
+  upgradeRunes: ['Mở túi để dùng ấn nâng Echo.', 'Open your bag to use an Echo upgrade.'],
+  shield: ['Phá 4 trụ băng để hạ khiên.', 'Break all 4 ice pillars to drop the shield.'],
+  bossPatterns: ['Rời vùng báo đòn. Phản công khi hiện “Sơ hở”.', 'Leave marked zones. Strike when “Opening” appears.'],
+  skillPickups: ['Chạm ấn phát sáng để nhận hiệu ứng ngay.', 'Walk over a glowing pickup for an instant effect.'],
+  shieldRestored: ['Khiên đã trở lại. Phá 4 trụ lần nữa.', 'The shield is back. Break the 4 pillars again.'],
+  decoy: ['Gọi Echo để kéo sự chú ý của Thủ vệ.', 'Summon an Echo to draw the Guardian’s attention.'],
+  vulnerable: ['Khiên đã vỡ. Đánh Thủ vệ ngay!', 'Shield broken. Strike the Guardian now!'],
+};
+
+const KEY = 'second-me-mechanics-guide-v1';
+const HINT_SECONDS = 4;
+
 export class TutorialDirector {
-  active:GuideTopic|null=null;
-  libraryOpen=false;
-  readonly seen=new Set<GuideTopic>();
-  private queue:GuideTopic[]=[];
-  constructor(private storage:Pick<Storage,'getItem'|'setItem'>|null=typeof localStorage==='undefined'?null:localStorage) {
-    try {const saved=JSON.parse(storage?.getItem(KEY)??'[]');if(Array.isArray(saved))for(const id of saved)if(typeof id==='string'&&id in GUIDE_TOPICS)this.seen.add(id as GuideTopic);} catch {/* Storage can be unavailable. */}
+  active: GuideTopic | null = null;
+  libraryOpen = false;
+  readonly seen = new Set<GuideTopic>();
+  private queue: GuideTopic[] = [];
+  private remaining = 0;
+
+  constructor(private storage: Pick<Storage, 'getItem' | 'setItem'> | null =
+    typeof localStorage === 'undefined' ? null : localStorage) {
+    try {
+      const saved = JSON.parse(storage?.getItem(KEY) ?? '[]');
+      if (Array.isArray(saved)) {
+        for (const id of saved) {
+          if (typeof id === 'string' && Object.hasOwn(GUIDE_TOPICS, id)) this.seen.add(id as GuideTopic);
+        }
+      }
+    } catch { /* Storage can be unavailable. */ }
   }
-  get blocking(){return this.active!==null||this.libraryOpen;}
-  offer(topic:GuideTopic){if(this.seen.has(topic)||this.active===topic||this.queue.includes(topic))return;this.queue.push(topic);if(!this.blocking)this.active=this.queue.shift()??null;}
-  dismiss(){if(this.active)this.seen.add(this.active);try{this.storage?.setItem(KEY,JSON.stringify([...this.seen]));}catch{}this.active=this.queue.shift()??null;}
-  openLibrary(){this.libraryOpen=true;this.active=null;this.queue=[];}
-  replay(topic:GuideTopic){this.libraryOpen=false;this.active=topic;}
-  closeLibrary(){this.libraryOpen=false;}
+
+  get blocking() { return this.libraryOpen; }
+
+  offer(topic: GuideTopic) {
+    if (this.libraryOpen || this.seen.has(topic) || this.active === topic || this.queue.includes(topic)) return;
+    this.queue.push(topic);
+    if (!this.active) this.nextHint();
+  }
+
+  advance(dt: number) {
+    if (this.libraryOpen || !this.active) return;
+    this.remaining -= dt;
+    if (this.remaining <= 0) this.dismiss();
+  }
+
+  dismiss() {
+    if (this.libraryOpen) {
+      this.active = null;
+      return;
+    }
+    if (this.active) {
+      this.seen.add(this.active);
+      try { this.storage?.setItem(KEY, JSON.stringify([...this.seen])); } catch { /* Storage can be unavailable. */ }
+    }
+    this.nextHint();
+  }
+
+  private nextHint() {
+    this.active = this.queue.shift() ?? null;
+    this.remaining = HINT_SECONDS;
+  }
+
+  reset() {
+    this.active = null;
+    this.queue = [];
+    this.libraryOpen = false;
+    this.remaining = 0;
+  }
+
+  openLibrary() {
+    this.reset();
+    this.libraryOpen = true;
+  }
+
+  replay(topic: GuideTopic) { this.active = topic; }
+  closeLibrary() { this.reset(); }
 }

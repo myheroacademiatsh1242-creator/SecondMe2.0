@@ -19,7 +19,7 @@ import { MechanicGuide } from './components/MechanicGuide.tsx';
 
 const initial: HUDState = { screen:'intro', levelName:'LEVEL 01', levelSubtitle:'ECHO GROVE', recordingStatus:'idle', echoCharges:2, echoStability:0, echoElapsedMs:0, echoDurationMs:0, echoEvents:[], dissonanceSeconds:0,
   recordingTimeRemaining:8000, echoStatus:'none', echoCount:0, isMuted:false, bannerMessage:'', elapsedLevelTime:0,
-  completed:[], forged:false, lastReward:null, health:100, bossHp:0, bossPhase:0, attackCooldown:0, dodgeCooldown:0, legTimeRemaining:null, checkpointIndex:0, checkpointCount:0, slowed:false, defeatReason:'damage', volume:.25, effectsVolume:1, musicVolume:1, voiceVolume:1, reducedMotion:false, showHints:true, devUnlocked:false, language:'en', characterClass:'mage', weapon:'staff', coins:0, timeItems:0, limitRings:0, chestKeys:0, echoLimit:4, limitRingActive:false, bestStars:{}, lastRating:null, skillCooldown:0, bossArmor:0, pillarsRemaining:0, activeBuff:'', skillDrop:null, mechanicalOwned:false };
+  completed:[], forged:false, lastReward:null, health:100, bossHp:0, bossPhase:0, attackCooldown:0, dodgeCooldown:0, legTimeRemaining:null, checkpointIndex:0, checkpointCount:0, slowed:false, defeatReason:'damage', volume:.25, effectsVolume:1, musicVolume:1, voiceVolume:1, reducedMotion:false, showHints:true, devUnlocked:false, language:'vi', characterClass:'mage', weapon:'staff', coins:0, timeItems:0, limitRings:0, chestKeys:0, echoLimit:4, limitRingActive:false, bestStars:{}, lastRating:null, skillCooldown:0, bossArmor:0, pillarsRemaining:0, activeBuff:'', skillDrop:null, mechanicalOwned:false };
 export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngine) => void } = {}) {
   const [touchControls]=useState(isTouchDevice);
   // Keep the 1280×720 arena and its 78/142px HUD rails in one coordinate system.
@@ -78,8 +78,8 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'shop' && <Shop engine={engine} hud={hud}/>}
     {hud.screen === 'characters' && <Characters engine={engine} hud={hud}/>}
     {hud.screen === 'playing' && <AdventureHUD engine={engine} hud={hud}/>}
-    {/* The boss cutscene first; its mechanic guide follows once the fight begins (the game is frozen meanwhile). */}
-    {hud.screen === 'playing' && !hud.bossIntroduction && <MechanicGuide engine={engine} hud={hud}/>}
+    {/* Combat hints appear only once the arena is playable. */}
+    {hud.screen === 'playing' && !hud.bossIntroduction && <MechanicGuide engine={engine} hud={hud} touch={touchControls}/>}
     {hud.screen === 'victory' && <Completion engine={engine} hud={hud}/>}
     {hud.screen === 'forge' && <Forge engine={engine} hud={hud}/>}
     {(hud.screen === 'ending' || hud.screen === 'defeat') && <EndScreen engine={engine} hud={hud}/>}

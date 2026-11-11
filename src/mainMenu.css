@@ -9,12 +9,8 @@
 .portal-breath{animation:portal-breathe 4.2s ease-in-out infinite}
 .plasma-wave{transform-box:view-box;transform-origin:309px 445px;animation:plasma-inward 3.9s linear infinite}
 .portal-core{transform-box:view-box;transform-origin:309px 445px;animation:plasma-core 3.9s ease-in-out infinite}
-.portal-motes circle{filter:drop-shadow(0 0 4px #7effd9);animation:portal-mote-inward var(--mote-duration) ease-in var(--mote-delay) infinite}
-.intro-fireflies circle{opacity:.2;filter:drop-shadow(0 0 5px var(--fly-color));animation:firefly-float var(--fly-duration) ease-in-out var(--fly-delay) infinite,firefly-twinkle var(--twinkle-duration) ease-in-out var(--fly-delay) infinite}
-.intro-foliage-patch{position:absolute;inset:0;background:url('/assets/menu/second-me-forest-clean.png') center / 100% 100% no-repeat;opacity:.9;animation:foliage-sway 5.8s ease-in-out infinite alternate}
-.foliage-left{clip-path:polygon(0 70%,12% 70%,12% 100%,0 100%);mask-image:radial-gradient(ellipse 8% 18% at 4% 91%,#000 16%,transparent 100%);transform-origin:4% 100%}
-.foliage-center{clip-path:polygon(49% 75%,63% 75%,63% 100%,49% 100%);mask-image:radial-gradient(ellipse 7% 9% at 56% 89%,#000 12%,transparent 100%);transform-origin:56% 100%;animation-delay:-2.6s;animation-duration:7.2s}
-.foliage-right{clip-path:polygon(94% 82%,100% 82%,100% 100%,94% 100%);mask-image:radial-gradient(ellipse 6% 13% at 97% 93%,#000 13%,transparent 100%);transform-origin:97% 100%;animation-delay:-1.5s;animation-duration:6.5s}
+.portal-motes circle{animation:portal-mote-inward var(--mote-duration) ease-in var(--mote-delay) infinite}
+.intro-fireflies circle{opacity:.2;animation:firefly-float var(--fly-duration) ease-in-out var(--fly-delay) infinite,firefly-twinkle var(--twinkle-duration) ease-in-out var(--fly-delay) infinite}
 @keyframes plasma-inward{0%{transform:scale(1.13);opacity:0}18%{opacity:.65}70%{opacity:.76}100%{transform:scale(.12);opacity:0}}
 @keyframes plasma-core{0%,100%{transform:scale(.72);opacity:.28}45%{opacity:.48}78%{transform:scale(1.08);opacity:.7}}
 @keyframes portal-mote-inward{0%{transform:translate(0,0) scale(.9);opacity:0}20%{opacity:.75}72%{opacity:.55}100%{transform:translate(var(--mote-x),var(--mote-y)) scale(.4);opacity:0}}
@@ -37,7 +33,6 @@ body.reduced-motion .portal-swirl{animation:none}
 @keyframes wizard-bob{50%{transform:scale(1.03,.95)}}
 body.reduced-motion :is(.rune-lit,.menu-wizard.is-idle){animation:none}
 @media(prefers-reduced-motion:reduce){:is(.rune-lit,.menu-wizard.is-idle){animation:none}}
-@keyframes foliage-sway{from{transform:translateX(-1px) rotate(-.16deg)}to{transform:translateX(2px) rotate(.23deg)}}
 .intro-accessible-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .intro-mobile-title{display:none}
 .intro-language{position:absolute;z-index:3;top:23.6%;left:73.42%;width:10%;display:flex;align-items:center;justify-content:center;gap:7px;color:#d0c789;font:700 clamp(10px,.8vw,14px)/1.3 system-ui,'Segoe UI',sans-serif;text-shadow:0 2px 4px #000}
@@ -63,8 +58,8 @@ body.reduced-motion :is(.rune-lit,.menu-wizard.is-idle){animation:none}
    is selected (more thickness shows under it) and sinks 2 px while pressed. */
 .intro-menu-item{background:none!important;border:0!important;box-shadow:none!important;padding:0;isolation:isolate;overflow:visible}
 .intro-menu-item::before,.intro-menu-face{position:absolute;left:-1%;right:-1%;top:-1.9%;bottom:-1.9%;background-image:url('/assets/menu/stone-button.png');background-size:500% 300%;background-repeat:no-repeat;image-rendering:pixelated}
-.intro-menu-item::before{content:'';z-index:-1;background-position:calc(var(--slab) * 25%) 0}
-.intro-menu-face{display:block;background-position:calc(var(--slab) * 25%) 50%;transition:transform .17s cubic-bezier(.3,1.8,.55,1)}
+.intro-menu-item::before{content:'';pointer-events:none;z-index:-1;background-position:calc(var(--slab) * 25%) 0}
+.intro-menu-face{display:block;pointer-events:none;background-position:calc(var(--slab) * 25%) 50%;transition:transform .17s ease-out}
 .intro-menu-label{position:absolute;left:0;right:0;top:9%;height:69.2%;display:flex;align-items:center;justify-content:center}
 .intro-menu-item.selected .intro-menu-face{background-position-y:100%;transform:translateY(-3.85%)}
 .intro-menu-item:active:not(:disabled) .intro-menu-face{transform:translateY(2.56%);transition-duration:.06s}

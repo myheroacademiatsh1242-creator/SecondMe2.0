@@ -4,7 +4,8 @@ import {drawGuardianShield} from './guardianShield.ts';
 import {drawIceProjectile} from './iceProjectile.ts';
 import { drawSkillPickup } from './skillPickup.ts';
 import {drawWizardSprite} from './wizardSprite.ts';
-import {drawGateLabels,drawRuneBadge} from './runeLabels.ts';
+import { drawRuneHints } from './runeLabels.ts';
+import { trailObjective } from '../logic/trailObjective.ts';
 import { drawBossFrostZone } from './bossFrostZone.ts';
 import { drawEnemies, drawEnemyAttacks } from './enemies.ts';
 import { drawMageStaff, drawLightningOrb } from './mageMagic.ts';
@@ -58,22 +59,12 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   // only falling boulders go on top here.
   const trapLayer = trapSpritesReady() ? 'overhead' : 'all';
   for (const trap of game.currentLevel.traps ?? []) drawTrap(ctx, trap, time, trapLayer, game.currentLevel.id);
-  drawGateLabels(ctx,game.currentLevel);
+  if (game.showHints) drawRuneHints(ctx, game.currentLevel, game.discoveredRunes);
   if (game.legTimeRemaining !== null) {
     if (game.timePickup) {
       const { x, y } = game.timePickup;
       drawTimeRelic(ctx, x, y, time, game.reducedMotion, game.showHints);
     }
-    game.currentLevel.plates.forEach((plate, index) => {
-      const current = index === game.checkpointIndex;
-      const visited = index < game.checkpointIndex;
-      const cx = plate.x + plate.width/2;
-      const cy = plate.y-25<140 && cx>430 && cx<830 ? plate.y+plate.height+25 : plate.y-25;
-      drawRuneBadge(ctx, cx, cy, index, plate.y + plate.height/2, current ? 'next' : visited ? 'reached' : 'ahead');
-      if (current) {
-        ctx.strokeStyle = '#f3d79b'; ctx.setLineDash([6,5]); ctx.strokeRect(plate.x-8,plate.y-8,plate.width+16,plate.height+16); ctx.setLineDash([]);
-      }
-    });
     if (game.slowed) {
       ctx.font = 'bold 12px "Second Me Pixel", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#c1e28b';
       ctx.fillText(translate('CHẬM 45%', getCurrentLanguage()),game.player.x,game.player.y-40);
@@ -187,6 +178,23 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   }
   if(game.hurtFlash>0){ctx.save();ctx.globalAlpha=game.hurtFlash/.28*.24;ctx.fillStyle='#e85c43';ctx.beginPath();ctx.ellipse(game.player.x,game.player.y-15,21,31,0,0,Math.PI*2);ctx.fill();ctx.restore();}
   drawCombatHits(ctx, game.combatHits, game.reducedMotion);
+  const objective = trailObjective(game);
+  if (objective) {
+    const { x, y, width, height } = objective.target;
+    const left = x - 7, right = x + width + 7, top = y - 7, bottom = y + height + 7;
+    const length = 13;
+    ctx.beginPath();
+    ctx.moveTo(left, top + length); ctx.lineTo(left, top); ctx.lineTo(left + length, top);
+    ctx.moveTo(right - length, top); ctx.lineTo(right, top); ctx.lineTo(right, top + length);
+    ctx.moveTo(left, bottom - length); ctx.lineTo(left, bottom); ctx.lineTo(left + length, bottom);
+    ctx.moveTo(right - length, bottom); ctx.lineTo(right, bottom); ctx.lineTo(right, bottom - length);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#152018';
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffe3a0';
+    ctx.stroke();
+  }
   if (game.isTraining) drawTrainingBoard(ctx, game);
   ctx.restore();
 }

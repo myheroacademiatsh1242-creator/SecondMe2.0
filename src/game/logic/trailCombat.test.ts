@@ -14,7 +14,10 @@ test('enemy kills restore time and a summon charge exactly once; neither combat 
  const g=setup(t),enemy=g.enemies[0];g.legTimeRemaining=5;g.echoCharges=1;(g as any).damageCombatTarget(enemy.x,enemy.y,100,10);assert.equal(enemy.hp,0);assert.equal(g.legTimeRemaining,8);assert.equal(g.echoCharges,2);assert.equal(g.checkpointIndex,0);
  (g as any).damageCombatTarget(enemy.x,enemy.y,100,10);assert.equal(g.echoCharges,2);assert.equal(g.legTimeRemaining,8);
 });
-test('pause and a mechanic guide freeze enemies as well as the puzzle clock',t=>{
+test('pause and the manual guide freeze combat; automatic hints leave it running',t=>{
  const g=setup(t);g.enemies[0].mode='warning';g.enemies[0].timer=.7;g.screen='paused';(g as any).update(.5);assert.equal(g.enemies[0].timer,.7);
- g.screen='playing';g.tutorialEnabled=true;g.guides.offer('enemies');const time=g.legTimeRemaining;(g as any).update(.5);assert.equal(g.enemies[0].timer,.7);assert.equal(g.legTimeRemaining,time);
+ g.screen='playing';g.tutorialEnabled=true;g.guides.offer('enemies');const time=g.legTimeRemaining!;
+ (g as any).update(.1);assert.ok(g.enemies[0].timer<.7);assert.ok(g.legTimeRemaining!<time);
+ g.openGuide();const enemyTimer=g.enemies[0].timer,pausedTime=g.legTimeRemaining;
+ (g as any).update(.5);assert.equal(g.enemies[0].timer,enemyTimer);assert.equal(g.legTimeRemaining,pausedTime);
 });
