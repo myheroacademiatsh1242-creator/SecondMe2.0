@@ -1,4 +1,4 @@
-export const ECHO_RUNES = [
+const RUNE_CATALOG = [
  {id:'call',glyph:'ᚠ',vi:'Triệu hồi',en:'Calling',detailVi:'Thêm 1 lượt gọi Echo, tối đa 4; tối đa 6 khi dùng nhẫn tăng giới hạn.',detailEn:'Gain 1 summon charge, up to 4; up to 6 with an active limit ring.',color:'#dfc687'},
  {id:'guard',glyph:'ᚢ',vi:'Bền bỉ',en:'Endurance',detailVi:'Giảm 35% sát thương và hao ổn định khi tạm dừng cho Echo trong màn này. Hoán đổi vẫn tốn 30.',detailEn:'Echoes take 35% less damage and paused stability drain this attempt. Swapping still costs 30.',color:'#9bd8c0'},
  {id:'power',glyph:'ᚦ',vi:'Khuếch đại',en:'Amplification',detailVi:'Đòn đánh của Echo mạnh hơn 30% trong màn hiện tại.',detailEn:'Echo attacks deal 30% more damage this level attempt.',color:'#e3a684'},
@@ -12,7 +12,9 @@ export const ECHO_RUNES = [
  {id:'swap',glyph:'ᛞ',vi:'Hoán ảnh',en:'Phasewalk',detailVi:'Hoán đổi Shift+Q chỉ tốn 15 ổn định và hồi trong 4 giây. Vẫn không xuyên tường.',detailEn:'Shift+Q swaps cost 15 stability and recharge in 4 seconds. Walls still block swapping.',color:'#a4cdeb'},
  {id:'execute',glyph:'ᛟ',vi:'Kết liễu',en:'Execution',detailVi:'Echo gây thêm 25% sát thương lên mục tiêu còn tối đa 30% HP. Không bỏ qua giáp boss.',detailEn:'Echoes deal 25% more damage to targets at or below 30% HP. Does not bypass boss armor.',color:'#f0a576'},
 ] as const;
-export type EchoRuneId = typeof ECHO_RUNES[number]['id'];
+// Retain historical IDs for compatibility with old saves and replay data.
+export type EchoRuneId = typeof RUNE_CATALOG[number]['id'];
+export const ECHO_RUNES = RUNE_CATALOG.filter(r => ['call', 'guard', 'power', 'restore'].includes(r.id));
 export type EchoRuneStock = Partial<Record<EchoRuneId,number>>;
 /** Independent uniform rolls: no level/rarity weighting, duplicate protection or pity. */
 export function rollEchoRune(random:()=>number=Math.random):EchoRuneId {
@@ -21,7 +23,7 @@ export function rollEchoRune(random:()=>number=Math.random):EchoRuneId {
 export function cleanRuneStock(value:unknown):EchoRuneStock {
  const stock:EchoRuneStock={};
  if(!value||typeof value!=='object'||Array.isArray(value))return stock;
- for(const rune of ECHO_RUNES){const n=(value as Record<string,unknown>)[rune.id];if(Number.isSafeInteger(n)&&Number(n)>0)stock[rune.id]=Math.min(9999,Number(n));}
+ for(const rune of RUNE_CATALOG){const n=(value as Record<string,unknown>)[rune.id];if(Number.isSafeInteger(n)&&Number(n)>0){const id:EchoRuneId=({lure:'call',rapid:'power',vamp:'restore',cleave:'power',anchor:'guard',regen:'restore',swap:'call',execute:'power'} as Partial<Record<EchoRuneId,EchoRuneId>>)[rune.id]??rune.id;stock[id]=Math.min(9999,(stock[id]??0)+Number(n));}}
  return stock;
 }
 
@@ -32,5 +34,7 @@ export function rollRuneChoices(random:()=>number=Math.random):EchoRuneId[]{
 }
 export function cleanRuneChoices(value:unknown):EchoRuneId[]{
  if(!Array.isArray(value)||value.length!==3||new Set(value).size!==3)return [];
- return value.every(id=>ECHO_RUNES.some(r=>r.id===id))?value as EchoRuneId[]:[];
+ if(value.every(id=>ECHO_RUNES.some(r=>r.id===id)))return value as EchoRuneId[];
+ // A valid old reward still deserves three current choices.
+ return value.every(id=>RUNE_CATALOG.some(r=>r.id===id))?rollRuneChoices():[];
 }

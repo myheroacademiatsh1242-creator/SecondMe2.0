@@ -731,7 +731,7 @@ export class GameEngine {
     for(const rune of ECHO_RUNES)this.campaign.echoRunes[rune.id]=9999;
     // Keep the developer's selected build, filling only unused slots.
     for(const rune of ECHO_RUNES){
-      if(this.campaign.runeLoadout.length>=5)break;
+      if(this.campaign.runeLoadout.length>=4)break;
       if(!this.campaign.runeLoadout.includes(rune.id))this.campaign.runeLoadout.push(rune.id);
     }
     this.campaign.pendingRuneChoices=[];
@@ -1528,6 +1528,7 @@ export class GameEngine {
     this.lastRuneReward=id;this.notifyHUD();return true;
   }
   public canUseEchoRune(id:EchoRuneId):boolean {
+    if(!ECHO_RUNES.some(r=>r.id===id))return false;
     if(this.orientationBlocked||this.runeEditing||this.screen!=='playing'||this.currentLevel.id<2||(this.boss&&this.boss.hp<=0)||this.bossDeathPending||this.exitTravelRemaining>0||this.guides.blocking||!((this.campaign.echoRunes[id]??0)>0))return false;
     if(id==='call')return this.echoCharges+(this.echoFreeSummon?1:0)<this.echoLimit;
     if(id==='restore')return this.echoes.some(e=>(e.stability??100)<100);

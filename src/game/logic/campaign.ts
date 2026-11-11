@@ -70,7 +70,7 @@ export class Campaign {
       this.lastChestRewards=Array.isArray(value.lastChestRewards)?value.lastChestRewards.filter((id:unknown)=>CHEST_POOL.some(r=>r.id===id)).slice(0,10):[];
       this.echoRunes=cleanRuneStock(value.echoRunes);
       this.pendingRuneChoices=cleanRuneChoices(value.pendingRuneChoices);
-      this.runeLoadout=Array.isArray(value.runeLoadout)?[...new Set(value.runeLoadout.filter((id:unknown)=>typeof id==='string'&&ECHO_RUNES.some(r=>r.id===id)))].slice(0,5) as EchoRuneId[]:ECHO_RUNES.filter(r=>(this.echoRunes[r.id]??0)>0).slice(0,5).map(r=>r.id);
+      this.runeLoadout=Array.isArray(value.runeLoadout)?[...new Set(value.runeLoadout.filter((id:unknown)=>typeof id==='string'&&ECHO_RUNES.some(r=>r.id===id)))].slice(0,4) as EchoRuneId[]:ECHO_RUNES.filter(r=>(this.echoRunes[r.id]??0)>0).slice(0,4).map(r=>r.id);
       const migrateRunes=value.echoRunes===undefined&&this.completed.length>0;
       if(migrateRunes)for(const _id of this.completed)this.grantRune();
       this.bestStars = Object.fromEntries(Object.entries(value.bestStars ?? {}).filter(([id, stars]) => Number(id) >= 1 && Number(id) <= 6 && Number.isInteger(stars) && Number(stars) >= 0 && Number(stars) <= 3)) as Record<number, number>;
@@ -102,12 +102,12 @@ export class Campaign {
     const id=rollEchoRune(random);this.echoRunes[id]=Math.min(9999,(this.echoRunes[id]??0)+1);this.autoSlotRune(id);return id;
   }
   chooseRune(id:EchoRuneId):boolean {
-    if(!this.pendingRuneChoices.includes(id))return false;
+    if(!ECHO_RUNES.some(r=>r.id===id)||!this.pendingRuneChoices.includes(id))return false;
     this.echoRunes[id]=Math.min(9999,(this.echoRunes[id]??0)+1);this.autoSlotRune(id);this.lastRuneDrop=id;this.pendingRuneChoices=[];this.save();return true;
   }
-  private autoSlotRune(id:EchoRuneId){if(this.runeLoadout.length<5&&!this.runeLoadout.includes(id))this.runeLoadout.push(id);}
+  private autoSlotRune(id:EchoRuneId){if(this.runeLoadout.length<4&&!this.runeLoadout.includes(id))this.runeLoadout.push(id);}
   setRuneSlot(slot:number,id:EchoRuneId|null):boolean{
-    if(!Number.isInteger(slot)||slot<0||slot>4)return false;
+    if(!Number.isInteger(slot)||slot<0||slot>3)return false;
     if(id===null){if(slot>=this.runeLoadout.length)return false;this.runeLoadout.splice(slot,1);}
     else{
       if(!ECHO_RUNES.some(r=>r.id===id)||(this.echoRunes[id]??0)<=0)return false;
