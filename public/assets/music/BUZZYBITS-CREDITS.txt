@@ -1,0 +1,12 @@
+BUZZY BITS — music by DYLANN TAYLOR
+Source: user-provided BUZZY BITS pack (OGG loop editions).
+
+Scene assignments:
+- Menu / lobby: Bloom
+- Shop: Low Key Buzzing (Light)
+- Normal levels: Golden Grove, Sunny Sprites, Pixel Pollen (random selection)
+- Boss: Hive and Seek
+
+The local- prefix gives these tracks priority over bundled music.
+Existing intro, victory and defeat music is preserved.
+Original track names are retained after the scene prefix for attribution.
