@@ -5,8 +5,8 @@ Scene assignments:
 - Menu / lobby: Bloom
 - Shop: Low Key Buzzing (Light)
 - Normal levels: Golden Grove, Sunny Sprites, Pixel Pollen (random selection)
-- Boss: Hive and Seek
+- Boss: original bundled track (Nhạc đánh boss.mp3)
 
 The local- prefix gives these tracks priority over bundled music.
-Existing intro, victory and defeat music is preserved.
+Existing boss, intro, victory and defeat music is preserved.
 Original track names are retained after the scene prefix for attribution.
