@@ -33,6 +33,14 @@ const RULES: [MusicScene, RegExp][] = [
   ['menu', /theme|menu|sanh|lobby|chu de|main/],
 ];
 const LOCAL_PREFIX = 'local-';
+const BUNDLED_TRACKS = [
+  'Theme song.mp3',
+  'Nhạc intro game.mp3',
+  'Nhạc ở các màn.mp3',
+  'Nhạc đánh boss.mp3',
+  'defeat-fading-echo.wav',
+  'victory-ember-rise.wav',
+];
 const FALLBACK: Partial<Record<MusicScene, MusicScene>> = { ending: 'victory', victory: 'menu', shop: 'menu' };
 const LEVEL = 0.55;   // music sits under effects and voice
 const FADE = 1.2;
@@ -65,11 +73,17 @@ class MusicDirector {
   private retryAt=0;
 
   private load() {
-    this.index ??= fetch(`${BASE}/index.json`).then(r => (r.ok ? r.json() : [])).catch(() => [])
+    this.index ??= fetch(`${BASE}/index.json`)
+      .then(async response => {
+        if (!response.ok) return BUNDLED_TRACKS;
+        const files: unknown = await response.json();
+        return Array.isArray(files) && files.length > 0 && files.every(file => typeof file === 'string')
+          ? files as string[] : BUNDLED_TRACKS;
+      })
+      .catch(() => BUNDLED_TRACKS)
       .then((files: string[]) => {
         const out: Partial<Record<MusicScene, string[]>> = {};
         for (const f of files) {
-          if (f.startsWith(LOCAL_PREFIX) && !import.meta.env?.DEV) continue;
           const s = sceneOf(f);
           if (s) (out[s] ??= []).push(f);
           else if (import.meta.env?.DEV) console.info(`[music] "${f}" matches no scene name, ignored`);
