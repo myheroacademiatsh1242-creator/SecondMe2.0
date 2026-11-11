@@ -18,10 +18,10 @@
 @media(prefers-reduced-motion:reduce){.rest-firelight,.rest-embers i{animation:none}}
 /* Keep the painting and hero on the same coordinate system at every viewport. */
 .journey-lobby .integrated-camp .rest-scene{flex:none;aspect-ratio:3/2;min-height:0;max-height:none;height:auto;background-size:100% 100%;background-position:center;margin-top:auto}
-.journey-lobby .integrated-camp .rest-hero{left:78%;bottom:14%;width:30%;height:auto;aspect-ratio:1;transform:translateX(-50%)}
+.journey-lobby .integrated-camp .rest-hero{left:76%;bottom:10%;width:18%;height:auto;aspect-ratio:1;transform:translateX(-50%)}
 .journey-lobby .integrated-camp .rest-hero>span,.journey-lobby .integrated-camp .rest-hero .wizard-avatar,.journey-lobby .integrated-camp .rest-hero .selected-soldier-avatar{width:100%;height:100%}
 .journey-lobby .integrated-camp .rest-hero canvas{width:100%!important;height:100%!important}
-.journey-lobby .integrated-camp .rest-hero:after{left:30%;bottom:9%;width:45%;height:8%}
+.journey-lobby .integrated-camp .rest-hero:after{left:28%;bottom:10%;width:44%;height:8%}
 .journey-lobby .integrated-camp .rest-firelight{left:55%;bottom:9%;width:26%;height:39%}
 .journey-lobby .integrated-camp .rest-embers i{left:55%;bottom:20%}.journey-lobby .integrated-camp .rest-embers i:nth-child(2){left:57%}.journey-lobby .integrated-camp .rest-embers i:nth-child(3){left:53%}
 .journey-lobby .integrated-camp .rest-scene-caption{bottom:0;transform:translateY(100%);background:#0d2018;padding-top:3px}
