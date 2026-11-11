@@ -62,8 +62,13 @@ test('the first trail follows recording, reaching the rune, playback, crossing a
   game.spawnEcho();
   assert.equal(action(), 'wait');
   for (let i = 0; i < 120 && action() === 'wait'; i++) internal.update(.02);
+  door.openProgress = .5;
+  assert.deepEqual(trailObjective(game), { action: 'opening', target: door });
+  for (let i = 0; i < 20 && action() === 'opening'; i++) internal.update(.02);
   assert.deepEqual(trailObjective(game), { action: 'cross', target: door });
-  game.player.x = door.x + door.width + 28;
+  game.player.x = door.x - 20;
+  game.player.y = door.y + door.height / 2;
+  move('x', door.x + door.width + 28, 'KeyD');
   assert.deepEqual(trailObjective(game), { action: 'exit', target: game.currentLevel.exit });
   game.setShowHints(false);
   assert.equal(trailObjective(game), null);

@@ -4,7 +4,7 @@ import { GameEngine } from '../GameEngine.ts';
 import { LEVELS } from './levels.ts';
 import { getActiveObstacles, rectIntersects, getCharacterBoundingBox } from './collision.ts';
 import { trapPhase, trapEffects } from './traps.ts';
-import { isPuzzleExitOpen } from './puzzle.ts';
+import { isPuzzleExitOpen, updateSecurityDoors } from './puzzle.ts';
 import { trailObjective } from './trailObjective.ts';
 import { MapValidator } from './mapValidator.ts';
 import { sounds } from './sound.ts';
@@ -14,11 +14,16 @@ sounds.setMuted(true);
 test('redesigned maps have no geometry errors and require escalating simultaneous Echo holds',()=>{
  const audit=MapValidator.validateAll(LEVELS);assert.equal(audit.errorsCount,0,JSON.stringify(audit.issues));
  assert.deepEqual(LEVELS.slice(0,5).map(l=>l.plates.length),[1,2,3,4,5]);
- for(const level of LEVELS.slice(0,5)) {
-  const copy=structuredClone(level);assert.equal(isPuzzleExitOpen(copy,copy.plates.length),false);
-  copy.plates.forEach(p=>p.isPressed=true);assert.equal(isPuzzleExitOpen(copy,copy.plates.length),true);
-  copy.plates.find(p=>p.id===copy.exitRequiredPlates![0])!.isPressed=false;assert.equal(isPuzzleExitOpen(copy,copy.plates.length),false);
- }
+ assert.deepEqual(LEVELS.slice(0,5).map(level => Math.max(...level.doors.map(door => door.requiredPlates.length))), [1,1,2,3,4]);
+ const relay = structuredClone(LEVELS[4]);
+ relay.plates.forEach(plate => { plate.isPressed = true; });
+ const finalGate = relay.doors.at(-1)!;
+ updateSecurityDoors(relay.doors, relay.plates, relay.playerSpawn, null, 1);
+ assert.equal(finalGate.openProgress, 0, 'an extra Echo on rune I must block the final gate');
+ relay.plates[0].isPressed = false;
+ updateSecurityDoors(relay.doors, relay.plates, relay.playerSpawn, null, 1);
+ assert.equal(finalGate.openProgress, 1);
+ assert.equal(isPuzzleExitOpen(relay, relay.plates.length, false), false, 'opening alone does not unlock the exit');
 });
 
 function route(game:GameEngine,x:number,y:number) {
@@ -43,13 +48,18 @@ function route(game:GameEngine,x:number,y:number) {
  throw new Error(`No route in level ${game.currentLevel.id} to ${x},${y}`);
 }
 
-for(let index=0;index<5;index++)test(`trail ${index+1}: real movement, timed traps and ${LEVELS[index].plates.length} recorded Echoes can reach victory`,t=>{
+for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false],[4,true]] as const)test(`trail ${index+1}${withRing ? ' with a limit ring' : ''}: recorded Echoes can reach victory`,t=>{
  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
  Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});
  t.after(()=>previous?Object.defineProperty(globalThis,'document',previous):Reflect.deleteProperty(globalThis,'document'));
  const game=new GameEngine();game.currentLevelIdx=index;game.tutorialEnabled=true;game.restartLevel();
+ if (withRing) game.limitRingActive = true;
  const control=game as unknown as {update(dt:number):void;heldKeys:Set<string>;elapsedLevelTime:number};
- const tick=(dt:number)=>{control.update(dt);assert.ok(game.screen==='playing'||game.screen==='victory',`level ${index+1}: ${game.defeatReason} at ${game.player.x},${game.player.y}`);};
+ const tick=(dt:number)=>{
+  const crossed = game.finalGateCrossed;
+  control.update(dt);
+  if (!crossed && game.finalGateCrossed) while (game.echoes.length) game.dismissEcho();
+  assert.ok(game.screen==='playing'||game.screen==='victory',`level ${index+1}: ${game.defeatReason} at ${game.player.x},${game.player.y}`);};
  const move=(x:number,y:number)=>{
   for(const [px,py] of route(game,x,y))for(const axis of ['x','y'] as const) {
    const goal=axis==='x'?px:py;let guard=0;
@@ -65,8 +75,8 @@ for(let index=0;index<5;index++)test(`trail ${index+1}: real movement, timed tra
   }
  };
  for(const plate of game.currentLevel.plates) {
-  if(game.echoes.length===4) {
-   const obsolete=game.echoes.findIndex(e=>game.currentLevel.plates.some(p=>!game.currentLevel.exitRequiredPlates!.includes(p.id)&&Math.hypot(p.x+25-e.x,p.y+25-e.y)<35));
+  if(game.echoes.length===game.echoLimit) {
+   const obsolete=game.echoes.findIndex(e=>game.currentLevel.plates.some(p=>!game.currentLevel.doors.at(-1)!.requiredPlates.includes(p.id)&&Math.hypot(p.x+25-e.x,p.y+25-e.y)<35));
    assert.equal(obsolete,0,'the oldest Echo is the reusable one in the final relay');game.dismissEcho();
   }
   game.toggleRecording();move(plate.x+25,plate.y+25);
@@ -81,9 +91,19 @@ for(let index=0;index<5;index++)test(`trail ${index+1}: real movement, timed tra
   assert.ok(game.echoes.includes(summoned) && rectIntersects(getCharacterBoundingBox(summoned.x,summoned.y,24,24),plate), 'Echo reaches its rune after combat');
   assert.ok(game.currentLevel.plates.find(p=>p.id===plate.id)!.isPressed);
  }
- assert.equal(game.echoes.length,game.currentLevel.exitRequiredPlates!.length);
- assert.equal(isPuzzleExitOpen(game.currentLevel,game.checkpointIndex),true);
+ if (withRing) {
+  const gate = game.currentLevel.doors.at(-1)!;
+  assert.equal(game.echoes.length, 5);
+  assert.equal(gate.openProgress, 0);
+  assert.deepEqual(trailObjective(game), { action: 'release', target: gate });
+  game.dismissEcho();
+  for (let time = 0; time < .4; time += .02) tick(.02);
+ }
+ assert.equal(isPuzzleExitOpen(game.currentLevel, game.checkpointIndex, game.finalGateCrossed), false);
  move(game.currentLevel.exit.x+30,game.currentLevel.exit.y+30);
+ assert.equal(game.finalGateCrossed, true);
+ assert.equal(game.echoes.length, 0);
+ assert.equal(isPuzzleExitOpen(game.currentLevel, game.checkpointIndex, game.finalGateCrossed), true);
  for(let i=0;i<45&&game.screen==='playing';i++)tick(.02);
  assert.equal(game.screen,'victory');assert.ok(game.health>0);
  console.log(`Solved trail ${index+1}: ${control.elapsedLevelTime.toFixed(1)}s, ${game.health}/5 HP, ${game.echoes.length} Echoes`);

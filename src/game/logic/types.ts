@@ -49,6 +49,7 @@ export interface SecurityDoor {
   isOpen: boolean;
   openProgress: number; // 0 (closed) to 1 (fully open)
   requiredPlates: string[]; // plate IDs that must all be pressed
+  releasedPlate?: string; // this plate must be unoccupied
   orientation: 'vertical' | 'horizontal';
 }
 
@@ -66,7 +67,6 @@ export interface LevelData {
   subtitle: string;
   description: string;
   difficulty?: number;
-  exitRequiredPlates?: string[];
   traps?: Trap[];
   hazards?: { x: number; y: number; radius: number; period: number; offset: number }[];
   playerSpawn: { x: number; y: number; direction: Direction };

@@ -108,6 +108,8 @@ export function resolveSpawnPosition(
  * - Closed (< 0.75): Full door rectangle blocks movement.
  * - Open (>= 0.75): Door panels slide into wall recesses, leaving doorway completely clear.
  */
+export const GATE_PASSABLE_PROGRESS = 0.75;
+
 export function getActiveObstacles(
   walls: Rect[],
   doors: SecurityDoor[]
@@ -116,7 +118,7 @@ export function getActiveObstacles(
 
   for (const door of doors) {
     // If door is closed or still opening/closing below threshold
-    if (door.openProgress < 0.75) {
+    if (door.openProgress < GATE_PASSABLE_PROGRESS) {
       if (door.openProgress === 0) {
         // Fully closed door: single solid obstacle
         obstacles.push({

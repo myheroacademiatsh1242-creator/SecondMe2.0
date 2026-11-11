@@ -19,6 +19,8 @@ const trailCopy = {
   wait: ['', '', '', 'Chờ Echo tới giữ ấn', 'Wait for your Echo to reach the rune'],
   recall: ['X', 'Thu Echo', 'Recall Echo', 'Thu Echo cũ để gọi thêm', 'Recall the oldest Echo to free a slot'],
   recharge: ['', '', '', 'Hết lượt Echo · chạm ấn mới hoặc hạ quái', 'Out of Echo charges · reach a new rune or defeat an enemy'],
+  opening: ['', '', '', 'Cổng đang mở…', 'Gate opening…'],
+  release: ['X', 'Thu Echo', 'Recall Echo', 'Nhả ấn I để mở cổng cuối', 'Release rune I to open the final gate'],
   cross: ['', '', '', 'Qua cổng viền vàng', 'Cross the outlined gate'],
   exit: ['', '', '', 'Đi vào cổng thoát', 'Enter the exit portal'],
 } as const;

@@ -3,12 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { pointInRect, rectIntersects, getCharacterBoundingBox } from './collision.ts';
+import { pointInRect, rectIntersects, getCharacterBoundingBox, GATE_PASSABLE_PROGRESS } from './collision.ts';
 import { PressurePlate, SecurityDoor, ExitPortal, Rect } from './types.ts';
 import type { LevelData } from './types.ts';
 
-export function isPuzzleExitOpen(level:LevelData,checkpoint:number):boolean {
-  return checkpoint>=level.plates.length && (level.exitRequiredPlates??[]).every(id=>level.plates.some(p=>p.id===id&&p.isPressed));
+export function isPuzzleExitOpen(level: LevelData, checkpoint: number, finalGateCrossed: boolean): boolean {
+  return checkpoint >= level.plates.length && (!level.doors.length || finalGateCrossed);
+}
+
+export function crossedGateTowardExit(
+  gate: SecurityDoor, exit: ExitPortal, before: CharacterPosition, after: CharacterPosition,
+): boolean {
+  if (gate.openProgress < GATE_PASSABLE_PROGRESS) return false;
+  const horizontal = gate.orientation === 'horizontal';
+  const axis = horizontal ? 'y' : 'x';
+  const across = horizontal ? 'x' : 'y';
+  const depth = horizontal ? 'height' : 'width';
+  const span = horizontal ? 'width' : 'height';
+  const middle = gate[axis] + gate[depth] / 2;
+  const direction = Math.sign(exit[axis] + exit[depth] / 2 - middle);
+  if (direction === 0) return false;
+  const farEdge = middle + direction * (gate[depth] / 2);
+  if ((before[axis] - farEdge) * direction >= 0 || (after[axis] - farEdge) * direction < 0) return false;
+  const t = (farEdge - before[axis]) / (after[axis] - before[axis]);
+  const crossing = before[across] + (after[across] - before[across]) * t;
+  return crossing > gate[across] && crossing < gate[across] + gate[span];
 }
 
 export interface CharacterPosition {
@@ -108,12 +127,13 @@ export function updateSecurityDoors(
       (id) => plateStateMap.get(id) === true
     );
 
+    const canOpen = allRequiredPressed && (!door.releasedPlate || plateStateMap.get(door.releasedPlate) === false);
     const prevOpen = door.isOpen;
-    door.isOpen = allRequiredPressed;
+    door.isOpen = canOpen;
 
-    if (allRequiredPressed !== prevOpen) {
+    if (canOpen !== prevOpen) {
       doorStateChanged = true;
-      if (allRequiredPressed) {
+      if (canOpen) {
         openedDoorIds.push(door.id);
       } else {
         closedDoorIds.push(door.id);

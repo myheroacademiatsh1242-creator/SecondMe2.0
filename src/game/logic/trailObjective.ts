@@ -1,8 +1,8 @@
 import type { GameEngine } from '../GameEngine.ts';
-import { getCharacterBoundingBox, rectIntersects } from './collision.ts';
+import { getCharacterBoundingBox, rectIntersects, GATE_PASSABLE_PROGRESS } from './collision.ts';
 import type { Rect } from './types.ts';
 
-export type TrailAction = 'record' | 'reach' | 'save' | 'summon' | 'wait' | 'recall' | 'recharge' | 'cross' | 'exit';
+export type TrailAction = 'record' | 'reach' | 'save' | 'summon' | 'wait' | 'recall' | 'recharge' | 'opening' | 'release' | 'cross' | 'exit';
 type Position = { x: number; y: number };
 
 export function trailObjective(game: GameEngine): { action: TrailAction; target: Rect } | null {
@@ -10,10 +10,12 @@ export function trailObjective(game: GameEngine): { action: TrailAction; target:
   if (!game.tutorialEnabled || !game.showHints || game.screen !== 'playing' ||
       game.guides.blocking || game.exitTravelRemaining > 0 || !level.plates.length) return null;
 
+  if (game.finalGateCrossed) return { action: 'exit', target: level.exit };
+
   const nextRune = level.plates[game.checkpointIndex];
   const nextGate = level.doors[game.checkpointIndex - 1];
   const destination = nextRune ?? level.exit;
-  const requirements = nextGate?.requiredPlates ?? level.exitRequiredPlates ?? [];
+  const requirements = nextGate?.requiredPlates ?? [];
   const occupies = (position: Position, target: Rect) =>
     rectIntersects(getCharacterBoundingBox(position.x, position.y), target);
 
@@ -23,14 +25,16 @@ export function trailObjective(game: GameEngine): { action: TrailAction; target:
   const gateAhead = !!nextGate &&
     (destination[axis] + destination[size] / 2 - gateMiddle) * (game.player[axis] - gateMiddle) < 0;
 
-  const required = nextRune
-    ? (gateAhead ? requirements : [])
-    : level.exitRequiredPlates ?? requirements;
+  const required = gateAhead || !nextRune ? requirements : [];
   const missing = [...level.plates].reverse().find(plate =>
     required.includes(plate.id) && !game.echoes.some(echo => occupies(echo, plate)));
   const target = missing ?? nextRune;
 
-  if (!missing && gateAhead && nextGate) return { action: 'cross', target: nextGate };
+  if (!missing && nextGate && (gateAhead || !nextRune)) {
+    const release = level.plates.find(plate => plate.id === nextGate.releasedPlate);
+    if (release && game.echoes.some(echo => occupies(echo, release))) return { action: 'release', target: nextGate };
+    return { action: nextGate.openProgress >= GATE_PASSABLE_PROGRESS ? 'cross' : 'opening', target: nextGate };
+  }
   if (!target) return { action: 'exit', target: level.exit };
 
   const recording = game.recorder.getStatus();

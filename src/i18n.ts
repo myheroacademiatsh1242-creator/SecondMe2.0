@@ -5,9 +5,10 @@ export function getCurrentLanguage() { return currentLanguage; }
 
 // Each entry is [English, Vietnamese]. Game names and control keys remain proper names.
 const pairs: [string, string][] = [
-  ['Hold rune I in the southern grove, cross north and record rune II in the east. Both Echoes unlock the western sanctuary: the exit is back toward where your journey began.', 'Giữ ấn I ở khu rừng phía nam, vượt lên phía bắc rồi ghi Echo giữ ấn II ở phía đông. Hai Echo cùng mở điện thờ phía tây: cổng thoát nằm về phía nơi bạn bắt đầu.'],
-  ['Start in the north-east. Echo I opens the westward crossing; Echo II unlocks the descent; Echo III keeps the southern crossing open. Circle through all four chambers to reach the south-east exit.', 'Bắt đầu từ góc đông bắc. Echo I mở đường sang tây; Echo II mở lối xuống; Echo III giữ cổng phía nam. Đi vòng qua bốn khu để tới cổng thoát ở đông nam.'],
-  ['Wind from the eastern grove toward the inner sanctuary. Hold I in the south-east, II beyond the first gate, III in the northern chamber, then IV in the south-west. All four Echoes open the last turn north.', 'Đi từ khu rừng phía đông vào điện thờ bên trong. Giữ I ở đông nam, II sau cổng đầu, III trong phòng phía bắc và IV ở tây nam. Cả bốn Echo mở lối rẽ cuối cùng lên phía bắc.'],
+  ["Use rune I to cross north. Keep that Echo in place until the next Echo reaches rune II. Only II opens the western gate.","Dùng ấn I để qua cổng phía bắc. Giữ Echo I cho tới khi Echo kế tiếp tới ấn II. Cổng phía tây chỉ cần ấn II."],
+  ["Hold I and II to go south. Once Echo III reaches its rune, II and III open the last gate.","Giữ I và II để đi xuống phía nam. Khi Echo III tới ấn, giữ II và III để mở cổng cuối."],
+  ["Open each gate with a different set of runes. The last gate needs I, III and IV.","Mỗi cổng cần một nhóm ấn khác nhau. Cổng cuối cần I, III và IV."],
+  ["Hold II, III, IV and V together, and leave I empty. Recall the first Echo after passing the third gate.","Giữ đồng thời II, III, IV và V, đồng thời nhả ấn I. Thu Echo đầu tiên sau khi đã qua cổng thứ ba."],
 
   ['Your relics and weapon remain. Destroy four corner pillars, collect a skill every five seconds, and use Echo to distract the boss.', 'Di vật và vũ khí vẫn được giữ lại. Phá bốn trụ ở góc bản đồ trước, nhặt ô kỹ năng rơi mỗi 5 giây và dùng Echo đánh lạc hướng boss.'],
   ['Character and class', 'Nhân vật và class'], ['Characters', 'NHÂN VẬT'], ['Inventory', 'TÚI ĐỒ'],

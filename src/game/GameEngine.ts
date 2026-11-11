@@ -11,7 +11,7 @@ import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
 import {ICE_MAGIC,FROST_STRIKE,insideIceRay,type FrostZone} from './logic/iceMagic.ts';
 import { puzzleBalance, SHARD_BONUS, PUZZLE_HINTS } from './logic/balance.ts';
 import { TutorialDirector, type GuideTopic } from './logic/tutorials.ts';
-import { isPuzzleExitOpen } from './logic/puzzle.ts';
+import { crossedGateTowardExit, isPuzzleExitOpen } from './logic/puzzle.ts';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -125,6 +125,8 @@ export interface HUDState {
   legTimeBudget?: number;
   runesHeld?: number;
   runesRequired?: number;
+  finalGateCrossed?: boolean;
+  finalGateNeedsRelease?: boolean;
   slowed: boolean;
   frostSlow?:number;
   defeatReason: 'timeout' | 'damage';
@@ -279,6 +281,7 @@ export class GameEngine {
   public vfx: Vfx[] = [];
   private startVfx(kind: VfxKind, follow = false) { this.vfx.push({ kind, x: this.player.x, y: this.player.y, age: 0, follow }); }
   public exitTravelRemaining = 0;
+  public finalGateCrossed = false;
   private exitOpenedAt: number | null = null;
   public combatHits: { x: number; y: number; damage: number; life: number; broken: boolean }[] = [];
   public dodgeCooldown = 0;
@@ -628,7 +631,7 @@ export class GameEngine {
     this.hurtFlash=0;this.incomingHits=[];
     this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
     this.combatHits = [];
-    this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.exitOpenedAt = null;
+    this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.finalGateCrossed = false; this.exitOpenedAt = null;
     this.boss = this.currentLevel.id === 6 ? createBoss() : null;
     this.bossIntroduction = !!this.boss;
     this.enemies=createEnemies(this.currentLevel);
@@ -1928,6 +1931,7 @@ export class GameEngine {
       if (this.exitTravelRemaining === 0) this.handleVictory();
       return;
     }
+    const beforeMove = { x: this.player.x, y: this.player.y };
     for (const effect of this.summonEffects) effect.life -= dt;
     this.summonEffects = this.summonEffects.filter(effect=>effect.life>0);
     for (const fx of this.vfx) fx.age += dt;
@@ -2202,7 +2206,7 @@ export class GameEngine {
       this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
       this.showBanner(this.checkpointIndex < this.currentLevel.plates.length
         ? (this.language==='vi'?`Chặng mới ${puzzleBalance(this.currentLevel.id).legSeconds}s · Đến rune ${this.checkpointIndex+1}!`:`New leg · ${puzzleBalance(this.currentLevel.id).legSeconds}s · Reach rune ${this.checkpointIndex + 1}!`)
-        : (this.language==='vi'?'Giữ tất cả rune bằng Echo, rồi tới cổng thoát!':'Hold every rune with Echoes, then reach the exit!'));
+        : (this.language==='vi'?'Kiểm tra các ấn ở cổng cuối rồi đi qua!':'Check the final gate’s runes, then cross!'));
     }
     const plateUpdates = updatePressurePlates(
       this.currentLevel.plates,
@@ -2240,6 +2244,11 @@ export class GameEngine {
       this.echoes,
       dt
     );
+    const finalGate = this.currentLevel.doors.at(-1);
+    if (!this.finalGateCrossed && finalGate && this.checkpointIndex >= this.currentLevel.plates.length &&
+        crossedGateTowardExit(finalGate, this.currentLevel.exit, beforeMove, this.player)) {
+      this.finalGateCrossed = true;
+    }
     if (doorUpdates.openedDoorIds.length > 0) {
       sounds.playDoorOpen();
     }
@@ -2283,7 +2292,7 @@ export class GameEngine {
         this.takeDamage(bossDamage);
       }
       if(this.boss.phase!==previousPhase)this.echoCharges=Math.max(1,this.echoCharges);
-    } else if ((this.devUnlocked || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex)) &&
+    } else if ((this.devUnlocked || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed)) &&
       checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
       this.exitTravelRemaining = .7;
     }
@@ -2317,7 +2326,7 @@ export class GameEngine {
 
     this.renderer.stage.levelTime = this.elapsedLevelTime;
     this.renderer.stage.reducedMotion = this.reducedMotion;
-    this.renderer.stage.exitOpen = !this.boss && (this.devUnlocked || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex));
+    this.renderer.stage.exitOpen = !this.boss && (this.devUnlocked || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed));
     this.renderer.render(
       this.ctx,
       this.canvas.width,
@@ -2349,6 +2358,7 @@ export class GameEngine {
 
   private notifyHUD() {
     if (this.onHUDChange) {
+      const finalGate = this.currentLevel.doors.at(-1);
       const echoState: EchoStatus = this.echo?.status??'none';
 
       this.onHUDChange({
@@ -2385,8 +2395,10 @@ export class GameEngine {
         checkpointIndex: this.checkpointIndex,
         checkpointCount: this.currentLevel.plates.length,
         legTimeBudget: puzzleBalance(this.currentLevel.id).legSeconds,
-        runesHeld: this.currentLevel.plates.filter(p=>p.isPressed&&this.currentLevel.exitRequiredPlates?.includes(p.id)).length,
-        runesRequired: this.currentLevel.exitRequiredPlates?.length??0,
+        runesHeld: this.currentLevel.plates.filter(p => p.isPressed && finalGate?.requiredPlates.includes(p.id)).length,
+        runesRequired: finalGate?.requiredPlates.length ?? 0,
+        finalGateCrossed: this.finalGateCrossed,
+        finalGateNeedsRelease: this.checkpointIndex >= this.currentLevel.plates.length && this.currentLevel.plates.some(p => p.id === finalGate?.releasedPlate && p.isPressed),
         slowed: this.slowed,frostSlow:this.frostSlow,
         defeatReason: this.defeatReason,
         volume: sounds.getVolume(),

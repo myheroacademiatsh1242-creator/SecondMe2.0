@@ -1,3 +1,4 @@
+import { GATE_PASSABLE_PROGRESS } from '../logic/collision.ts';
 import type { LevelData, Rect } from '../logic/types.ts';
 
 export const romanRune = (index: number) => ['I', 'II', 'III', 'IV', 'V', 'VI'][index] ?? String(index + 1);
@@ -116,7 +117,7 @@ export function drawRuneHints(ctx: CanvasRenderingContext2D, level: LevelData, d
   level.doors.forEach((door, index) => {
     if (!door.requiredPlates.some(id => discovered.has(id))) return;
     const box = layout.gates[index];
-    drawFrame(ctx, box, door, door.requiredPlates.every(id => level.plates.some(plate => plate.id === id && plate.isPressed)));
+    drawFrame(ctx, box, door, door.isOpen && door.openProgress >= GATE_PASSABLE_PROGRESS);
     door.requiredPlates.forEach((id, slot) => {
       const runeIndex = level.plates.findIndex(plate => plate.id === id);
       const x = box.x + 4 + slot * CELL;
