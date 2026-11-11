@@ -361,6 +361,7 @@ export class LoadingScene {
       ctx.imageSmoothingEnabled = true;
       if (this.opts.portal) ctx.drawImage(images.arch!, layout.arch.x, layout.arch.y);   // no portal for lobby level loads
       ctx.drawImage(images.barFrame!, layout.barFrame.x, layout.barFrame.y);
+      ctx.imageSmoothingEnabled = this.opts.language !== 'vi';
       ctx.drawImage(title!, layout.title.x, layout.title.y);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
@@ -752,7 +753,7 @@ export class LoadingScene {
     const title = this.titleArt();
     if (tk < 1 && title) {
       ctx.globalAlpha = 1 - smooth(0.15, 1, tk);
-      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingEnabled = this.opts.language !== 'vi';
       ctx.drawImage(title, layout.title.x, layout.title.y + 170 * tk * tk);
       ctx.globalAlpha = 1;
     }
