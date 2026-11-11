@@ -1703,7 +1703,8 @@ export class GameEngine {
 
 
     if (this.screen === 'forge') {
-      if (code === 'Enter') this.campaign.forged ? this.enterBoss() : this.forgeWeapon();
+      if (code === 'Escape') this.goToLobby();
+      else if (code === 'Enter') this.campaign.forged ? this.enterBoss() : this.forgeWeapon();
       return;
     }
     if (this.screen === 'ending') {
