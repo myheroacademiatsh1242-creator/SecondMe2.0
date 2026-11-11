@@ -19,3 +19,5 @@ import './components/PixelPausePrototype.css';
 import './components/InventoryColumns.css';
 
 import './components/FramedDialogs.css';
+
+import './components/SettingsPanel.css';

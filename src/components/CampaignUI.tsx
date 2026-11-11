@@ -158,19 +158,33 @@ function CreditsPanel({ vi, close }: { vi: boolean; close: () => void }) {
 }
 
 export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | null; hud: HUDState; close: () => void }) {
-  return localize(<div className="modal-backdrop"><div className="panel settings-panel"><div className="panel-top"><span className="eyebrow gold">CÀI ĐẶT TRÒ CHƠI</span></div><h2>Điều chỉnh trải nghiệm</h2><div className="settings-scroll">
-    <div className="setting-row"><span><Map size={18}/><b>{hud.language==='vi'?'Toàn màn hình':'Full screen'}</b><small>F</small></span><FullscreenButton vi={hud.language==='vi'}/></div>
+  const [tab,setTab]=useState<'audio'|'display'>('audio');
+  const vi=hud.language==='vi';
+  return localize(<div className="modal-backdrop settings-backdrop"><div className="panel settings-panel settings-clean" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div className="panel-top"><span className="eyebrow gold">CÀI ĐẶT TRÒ CHƠI</span></div>
+    <h2 id="settings-title">Điều chỉnh trải nghiệm</h2>
+    <div className="settings-tabs" role="tablist" aria-label={vi?'Nhóm cài đặt':'Settings groups'}>
+      {(['audio','display'] as const).map(id=><button key={id} id={`settings-tab-${id}`} type="button" role="tab" aria-selected={tab===id} aria-controls={`settings-${id}`} tabIndex={tab===id?0:-1} onClick={()=>setTab(id)} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?'audio':e.key==='End'?'display':tab==='audio'?'display':'audio';setTab(next);document.getElementById(`settings-tab-${next}`)?.focus();}}}>{id==='audio'?(vi?'Âm thanh':'Audio'):(vi?'Hiển thị & điều khiển':'Display & controls')}</button>)}
+    </div>
+    <div className="settings-scroll" key={tab}>
+      <div id={`settings-${tab}`} role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
+      {tab==='audio'?<>
     <label className="setting-row"><span><Volume2 size={18}/><b>Âm lượng tổng</b><small>Toàn bộ âm thanh trò chơi</small></span><input aria-label="Âm lượng tổng" type="range" min="0" max="1" step="0.05" value={hud.volume} onChange={e=>engine?.setVolume(Number(e.target.value))}/><strong>{Math.round(hud.volume*100)}%</strong></label>
     <label className="setting-row"><span><MusicIcon size={18}/><b>Nhạc nền</b><small>Nhạc màn hình chính, nhạc boss và intro</small></span><input aria-label="Nhạc nền" type="range" min="0" max="1" step="0.05" value={hud.musicVolume} onChange={e=>engine?.setMusicVolume(Number(e.target.value))}/><strong>{Math.round(hud.musicVolume*100)}%</strong></label>
     <label className="setting-row"><span><Zap size={18}/><b>Hiệu ứng (SFX)</b><small>Đòn đánh, kỹ năng, bẫy và môi trường</small></span><input aria-label="Hiệu ứng (SFX)" type="range" min="0" max="1" step="0.05" value={hud.effectsVolume} onChange={e=>engine?.setEffectsVolume(Number(e.target.value))}/><strong>{Math.round(hud.effectsVolume*100)}%</strong></label>
     <label className="setting-row"><span><Volume2 size={18}/><b>Giọng nói</b><small>Lồng tiếng nhân vật và người kể chuyện</small></span><input aria-label="Giọng nói" type="range" min="0" max="1" step="0.05" value={hud.voiceVolume} onChange={e=>engine?.setVoiceVolume(Number(e.target.value))}/><strong>{Math.round(hud.voiceVolume*100)}%</strong></label>
     <label className="setting-row switch-row"><span><VolumeX size={18}/><b>Tắt âm</b><small>Tắt toàn bộ âm thanh trò chơi</small></span><input type="checkbox" checked={hud.isMuted} onChange={()=>engine?.toggleAudio()}/><i/></label>
+      </>:<>
+    <div className="setting-row"><span><Map size={18}/><b>{hud.language==='vi'?'Toàn màn hình':'Full screen'}</b><small>F</small></span><FullscreenButton vi={hud.language==='vi'}/></div>
     <label className="setting-row switch-row"><span><SlidersHorizontal size={18}/><b>Giảm chuyển động</b><small>Giảm sương, rung và hiệu ứng lặp</small></span><input type="checkbox" checked={hud.reducedMotion} onChange={e=>engine?.setReducedMotion(e.target.checked)}/><i/></label>
     <label className="setting-row switch-row"><span><Map size={18}/><b>Nhãn trong màn</b><small>Hiện gợi ý rune và nhãn mảnh thời gian</small></span><input type="checkbox" checked={hud.showHints} onChange={e=>engine?.setShowHints(e.target.checked)}/><i/></label>
     <label className="setting-row"><span><Map size={18}/><b>Language</b><small>Choose the game language</small></span><select aria-label="Language" value={hud.language} onChange={e=>engine?.setLanguage(e.target.value as 'en' | 'vi')}><option value="en">English</option><option value="vi">Tiếng Việt</option></select></label>
     <details className="setting-controls"><summary>{hud.language==='vi'?'Xem điều khiển':'View controls'}</summary><p>{hud.language==='vi'?'WASD / phím mũi tên: di chuyển · E: ghi đường đi · Q: gọi Echo · 1–6: chọn Echo · C: tạm dừng / tiếp tục Echo · Shift + Q: hoán đổi · X: thu hồi Echo lâu nhất · R: dùng vật phẩm thời gian · F: bật/tắt toàn màn hình · Chuột trái: tấn công · Chuột phải / Space: kỹ năng · Shift: lướt né · Esc: tạm dừng':'WASD / arrow keys: move · E: record path · Q: summon Echo · 1–6: select Echo · C: pause / resume Echo · Shift + Q: swap · X: recall oldest Echo · R: use time item · F: full screen · Left click: attack · Right click / Space: skill · Shift: dodge · Esc: pause'}</p></details>
-    {hud.devUnlocked&&<div className="dev-supplies"><button className="secondary" onClick={()=>engine?.unlockDevMode()}>{hud.language==='vi'?'DEV · NẠP ĐẦY ĐỒ':'DEV · REFILL ALL ITEMS'}</button><p role="status">{hud.language==='vi'?'Đang sở hữu':'Owned'}: {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/12 rune · {hud.chestKeys.toLocaleString()} {hud.language==='vi'?'chìa khóa':'keys'} · {hud.limitRings.toLocaleString()} {hud.language==='vi'?'nhẫn':'rings'}</p></div>}
-    </div><button className="primary" onClick={close}>LƯU & ĐÓNG</button></div></div>);
+    {hud.devUnlocked&&<div className="dev-supplies"><button className="secondary" onClick={()=>engine?.unlockDevMode()}>{hud.language==='vi'?'DEV · NẠP ĐẦY ĐỒ':'DEV · REFILL ALL ITEMS'}</button><p role="status">{hud.language==='vi'?'Đang sở hữu':'Owned'}: {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/{ECHO_RUNES.length} rune · {hud.chestKeys.toLocaleString()} {hud.language==='vi'?'chìa khóa':'keys'} · {hud.limitRings.toLocaleString()} {hud.language==='vi'?'nhẫn':'rings'}</p></div>}
+      </>}
+      </div>
+    </div><button className="primary" onClick={close}>LƯU & ĐÓNG</button>
+  </div></div>);
 }
 
 const latestNews = { title: 'Diện mạo Tanuki mới', description: 'Chủ quầy có bộ lông nâu, mõm sáng và chiếc lá xanh trên đầu. Các động tác chào khách cũng được cập nhật đồng bộ.' };
