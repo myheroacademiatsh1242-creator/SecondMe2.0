@@ -15,3 +15,6 @@
 .outfit-shop-description>p{flex:none;margin:0;font-size:14px;line-height:1.35}
 .outfit-shop-description>small{flex:none;font-size:11px!important;line-height:1.3;color:#a9bca9}
 .outfit-shop-description>[role=status]{flex:none;font-size:12px;color:#d4efc9}
+/* Align the label with the centre of the painted purchase plaque. */
+html body .trading-world .outfit-shop .outfit-shop-actions{top:318px;height:38px;display:flex;align-items:center;justify-content:center;padding:0}
+html body .trading-world .outfit-shop .outfit-shop-actions>button{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:0;padding:0 4px!important;margin:0;border:0!important;background:none!important;font-size:30px!important;font-weight:700!important;line-height:1!important;letter-spacing:.02em;color:#fff0b4!important;text-align:center;text-shadow:1px 1px #342919!important;-webkit-text-stroke:.25px currentColor;white-space:nowrap}
