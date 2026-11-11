@@ -1,4 +1,4 @@
-# SECOND ME - The Emberforge
+# SECOND ME - Echoes of the Wild
 
 Game giải đố hành động góc nhìn từ trên xuống, dùng Echo ghi và phát lại đường đi, giữ công tắc và chiến đấu. Dự án dùng React, TypeScript, Vite và Canvas 2D.
 

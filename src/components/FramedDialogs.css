@@ -58,34 +58,3 @@ html body .modal-backdrop.modal-backdrop .settings-panel.panel.panel.panel>.prim
  background:linear-gradient(#dfc985,#b2934e)!important;border:2px solid #dcc282!important;border-image:none!important;
  box-shadow:inset 2px 2px #f0dca0,inset -2px -2px #8c733b!important;color:#493c20!important;
 }
-/* Boss preparation shares the corrected atlas and stone cards. */
-html body .adventure-app .forge-panel.hero-preparation{
- border-image-source:url('/assets/ui/inventory-nine-slice-pixel.png')!important;
- border-image-slice:25% fill!important;border-image-repeat:round!important;
- display:flex;flex-direction:column;width:min(1080px,calc(100vw - 40px));
- max-height:calc(100dvh - 40px);padding:26px 30px;overflow:hidden;
-}
-html body .hero-preparation>.panel-top,html body .hero-preparation>.forge-footer{flex:none}
-html body .hero-preparation .forge-columns{
- min-height:0;overflow:auto;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(200px,.7fr);
- align-items:center;gap:24px;padding:18px 0;overscroll-behavior:contain;
- scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227;
-}
-html body .hero-preparation .forge-columns>div{min-width:0}
-html body .hero-preparation .echo-rune-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-html body .hero-preparation .echo-rune{
- width:auto;min-width:0;border:1px solid transparent!important;
- border-image:var(--forest-card) 100 fill / 10px / 0 round!important;
- background:#414435!important;box-shadow:none!important;padding:12px 7px;
-}
-html body .hero-preparation .echo-rune :is(strong,small){white-space:normal;color:#e9d49a!important}
-html body .hero-preparation .forge-footer{padding-top:14px;margin-top:0;gap:18px}
-html body .hero-preparation .rune-reward-note{color:#cbbd91}
-@media(max-height:480px),(max-width:600px){
- html body .adventure-app .forge-panel.hero-preparation{padding:16px;max-height:calc(100dvh - 24px);width:calc(100vw - 24px)}
- html body .hero-preparation .forge-columns{grid-template-columns:minmax(0,1fr) 160px;gap:12px;padding:10px 0}
- html body .hero-preparation #forge-title{font-size:26px!important}
- html body .hero-preparation .forge-hero{min-height:220px}
-}
-html body .hero-preparation .echo-rune-list{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-html body .hero-preparation .echo-rune strong{overflow-wrap:normal!important;font-size:15px!important}

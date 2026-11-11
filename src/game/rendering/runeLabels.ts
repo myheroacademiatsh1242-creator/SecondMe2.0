@@ -34,7 +34,7 @@ export function runeLabelLayout(level: LevelData): Rect[] {
     const below = { ...above, y: plate.y + plate.height + 12 };
     const left = { ...above, x: plate.x - CELL - 12, y: centerY(plate) - HEIGHT / 2 };
     const right = { ...left, x: plate.x + plate.width + 12 };
-    return [above, below, left, right].find(box =>
+    return [below, left, right, above].find(box =>
       obstacles.every(obstacle => !overlaps(padded(box, 3), obstacle))
     ) ?? above;
   });
@@ -49,11 +49,11 @@ export function gateLabelLayout(level: LevelData): Rect[] {
   return level.doors.map(door => {
     const width = door.requiredPlates.length * CELL + 8;
     const candidates: { box: Rect; cost: number }[] = [];
-    for (const gap of [18, 30, 46, 66, 94, 128]) {
-      for (const offset of [0, -24, 24, -48, 48, -72, 72]) {
+    for (const gap of [14, 22, 34, 46, 66, 94, 128, 160]) {
+      for (const offset of [0, -24, 24, -48, 48, -72, 72, -96, 96, -120, 120]) {
         const besideY = centerY(door) - HEIGHT / 2 + offset;
         const acrossX = centerX(door) - width / 2 + offset;
-        const cost = gap + Math.abs(offset) * 2;
+        const cost = gap + Math.abs(offset) * 3;
         const sideCost = door.orientation === 'horizontal' ? 60 : 0;
         const topCost = door.orientation === 'horizontal' ? 0 : 60;
         candidates.push(
@@ -74,22 +74,9 @@ export function gateLabelLayout(level: LevelData): Rect[] {
   });
 }
 
-function drawFrame(ctx: CanvasRenderingContext2D, box: Rect, anchor: Rect, lit: boolean) {
-  const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
-  const anchorX = clamp(centerX(box), anchor.x, anchor.x + anchor.width);
-  const anchorY = clamp(centerY(box), anchor.y, anchor.y + anchor.height);
-  const startX = clamp(anchorX, box.x, box.x + box.width);
-  const startY = clamp(anchorY, box.y, box.y + box.height);
-
+function drawFrame(ctx: CanvasRenderingContext2D, box: Rect, lit: boolean) {
   ctx.strokeStyle = lit ? '#8bd8b4' : '#d1b47b';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  const distance = Math.hypot(anchorX - startX, anchorY - startY);
-  // A short tab points at the target without touching its gold objective brackets.
-  const fraction = distance ? Math.min(6, Math.max(0, distance - 11)) / distance : 0;
-  ctx.lineTo(startX + (anchorX - startX) * fraction, startY + (anchorY - startY) * fraction);
-  ctx.stroke();
   ctx.fillStyle = '#101d17';
   ctx.fillRect(box.x, box.y, box.width, box.height);
   ctx.strokeRect(box.x, box.y, box.width, box.height);
@@ -109,7 +96,7 @@ export function drawRuneHints(ctx: CanvasRenderingContext2D, level: LevelData, d
   level.plates.forEach((plate, index) => {
     if (!discovered.has(plate.id)) return;
     const box = layout.runes[index];
-    drawFrame(ctx, box, plate, plate.isPressed);
+    drawFrame(ctx, box, plate.isPressed);
     ctx.fillStyle = plate.isPressed ? '#caffdf' : '#fff0bd';
     drawRoman(ctx, romanRune(index), centerX(box), centerY(box));
   });
@@ -117,7 +104,7 @@ export function drawRuneHints(ctx: CanvasRenderingContext2D, level: LevelData, d
   level.doors.forEach((door, index) => {
     if (!door.requiredPlates.some(id => discovered.has(id))) return;
     const box = layout.gates[index];
-    drawFrame(ctx, box, door, door.isOpen && door.openProgress >= GATE_PASSABLE_PROGRESS);
+    drawFrame(ctx, box, door.isOpen && door.openProgress >= GATE_PASSABLE_PROGRESS);
     door.requiredPlates.forEach((id, slot) => {
       const runeIndex = level.plates.findIndex(plate => plate.id === id);
       const x = box.x + 4 + slot * CELL;

@@ -9,7 +9,8 @@ import { sounds } from './sound.ts';
  *   defeat  "thua" / "defeat" / "game over"                         defeat screen
  *   ending  "ending" / "kết thúc" / "chiến thắng" / "victory"       ending after the boss
  *   level   "level" / "màn" (màn chơi, trong màn, các màn) / "gameplay"  normal levels
- *   menu    "theme" / "menu" / "sảnh" / "lobby" / "chủ đề" / "main"  title, lobby, shop, characters
+ *   shop    "shop" / "cua hang"                                       shop
+ *   menu    "theme" / "menu" / "sảnh" / "lobby" / "chủ đề" / "main"  title, lobby, characters
  *
  * Checked top to bottom, so "Nhạc trong màn đánh bos" is boss music. Without a level track the
  * levels are silent; without an ending track the ending plays the menu theme. The loading screen
@@ -18,18 +19,21 @@ import { sounds } from './sound.ts';
  * The folder listing comes from assets/music/index.json, which vite.config.ts serves live in dev
  * and writes at build time.
  */
-export type MusicScene = 'menu' | 'level' | 'boss' | 'intro' | 'defeat' | 'ending';
+export type MusicScene = 'menu' | 'shop' | 'level' | 'boss' | 'intro' | 'defeat' | 'victory' | 'ending';
 
 const BASE = `${import.meta.env?.BASE_URL ?? "/"}assets/music`;
 const RULES: [MusicScene, RegExp][] = [
   ['boss', /boss?|trum/],
   ['intro', /intro|mo dau|cinematic/],
   ['defeat', /thua|defeat|game ?over/],
-  ['ending', /ending|ket thuc|chien thang|victory/],
+  ['ending', /ending|ket thuc/],
+  ['victory', /victory|chien thang|hoan thanh/],
+  ['shop', /\bshop\b|cua hang/],
   ['level', /level|\bman\b|gameplay/],   // "màn" as a word: "màn chơi", "trong màn", "ở các màn"
   ['menu', /theme|menu|sanh|lobby|chu de|main/],
 ];
-const FALLBACK: Partial<Record<MusicScene, MusicScene>> = { ending: 'menu' };
+const LOCAL_PREFIX = 'local-';
+const FALLBACK: Partial<Record<MusicScene, MusicScene>> = { ending: 'victory', victory: 'menu', shop: 'menu' };
 const LEVEL = 0.55;   // music sits under effects and voice
 const FADE = 1.2;
 /*
@@ -65,6 +69,7 @@ class MusicDirector {
       .then((files: string[]) => {
         const out: Partial<Record<MusicScene, string[]>> = {};
         for (const f of files) {
+          if (f.startsWith(LOCAL_PREFIX) && !import.meta.env?.DEV) continue;
           const s = sceneOf(f);
           if (s) (out[s] ??= []).push(f);
           else if (import.meta.env?.DEV) console.info(`[music] "${f}" matches no scene name, ignored`);
@@ -168,8 +173,12 @@ class MusicDirector {
       return;
     }
     this.setLevel(LEVEL);
-    const list = scene ? (tracks[scene]?.length ? tracks[scene]! : tracks[FALLBACK[scene] as MusicScene] ?? []) : [];
+    let next: MusicScene | null = scene;
+    while (next && !tracks[next]?.length) next = FALLBACK[next] ?? null;
+    const available = next ? tracks[next] ?? [] : [];
     if (token !== this.seq) return;
+    const local = available.filter(file => file.startsWith(LOCAL_PREFIX));
+    const list = local.length ? local : available;
     if (this.current && list.includes(this.current.file)) return; // same track keeps playing
     if (!list.length) { this.stop(); return; }
     const file = list[Math.floor(Math.random() * list.length)];

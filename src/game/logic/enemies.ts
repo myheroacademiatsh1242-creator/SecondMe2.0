@@ -35,7 +35,7 @@ export function createEnemies(level:LevelData):Enemy[]{
 }
 export interface EnemyTarget{x:number;y:number;echoIndex:number|null}
 /** Leashed, wall-aware enemies telegraph a locked impact point before attacking. */
-export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y:number},echoes:{x:number;y:number;aggroTime?:number}[],dt:number,onHit:(target:EnemyTarget,damage:number,source:Enemy)=>void){
+export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y:number},echoes:{x:number;y:number;aggroTime?:number}[],dt:number,onHit:(target:EnemyTarget,damage:number,source:Enemy)=>void,onAttack?:(enemy:Enemy,stage:'warning'|'release')=>void){
  const obstacles=getActiveObstacles(level.walls,level.doors);
  const sight=(a:{x:number;y:number},b:{x:number;y:number})=>!obstacles.some(w=>segmentWall(a,b,w,0)!==null);
  for(const e of enemies){
@@ -48,6 +48,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   if(e.mode==='warning'){
    if(e.timer<=0){
     e.attackFx=.32;
+    onAttack?.(e,'release');
     const index=e.targetEcho?echoes.indexOf(e.targetEcho):-1;
     const target=e.targetId===null?player:index>=0?echoes[index]:undefined;
     if(target&&Math.hypot(target.x-e.targetX,target.y-e.targetY)<(e.kind==='shaman'?34:44)&&sight(e,target))onHit({...target,echoIndex:e.targetId===null?null:index},stat.damage,e);
@@ -70,7 +71,11 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   const engaged=!!decoy||(distance<stat.notice&&fromHome<235&&sight(e,target));
   // Even ranged enemies close in on an Echo, allowing it to defend itself inside 3m.
   const attackReach=decoy?Math.min(stat.reach,90):stat.reach;
-  if(engaged&&distance<attackReach&&e.timer<=0&&sight(e,target)){e.mode='warning';e.timer=e.kind==='minotaur'?.9:.7;e.targetX=target.x;e.targetY=target.y;e.targetId=target.echoIndex;e.targetEcho=target.echoIndex===null?undefined:echoes[target.echoIndex];continue;}
+  if(engaged&&distance<attackReach&&e.timer<=0&&sight(e,target)){
+   e.mode='warning';e.timer=e.kind==='minotaur'?.9:.7;e.targetX=target.x;e.targetY=target.y;e.targetId=target.echoIndex;e.targetEcho=target.echoIndex===null?undefined:echoes[target.echoIndex];
+   onAttack?.(e,'warning');
+   continue;
+  }
   // No way through to the Echo (a gate closed between them): give it up instead of walking into the wall.
   let way=decoy?reachableWaypoint(e,target,obstacles,dt):target;
   if(!way){e.lureEcho=undefined;e.lureTime=0;way={x:e.homeX,y:e.homeY};}

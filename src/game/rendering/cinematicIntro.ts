@@ -22,8 +22,8 @@ const rgba = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${clamp01(a)})
 
 const C = INTRO.cue;
 const TEXT = {
-  en: { aeris: 'AERIS', aerisSub: 'MAGE OF ECHOES', kael: 'KAEL', kaelSub: 'SWORDSMAN OF THE EMBER', eyebrow: 'CHAPTER II · THE EMBERFORGE', tag: 'ECHOES OF THE WILD' },
-  vi: { aeris: 'AERIS', aerisSub: 'PHÁP SƯ TIẾNG VỌNG', kael: 'KAEL', kaelSub: 'KIẾM SĨ CỦA LỬA THIÊNG', eyebrow: 'CHƯƠNG II · LÒ RÈN EMBERFORGE', tag: 'TIẾNG VỌNG CỦA RỪNG HOANG' },
+  en: { aeris: 'AERIS', aerisSub: 'MAGE OF ECHOES', kael: 'KAEL', kaelSub: 'SWORDSMAN OF THE EMBER', eyebrow: 'CHAPTER II · ECHOES OF THE WILD', tag: 'ECHOES OF THE WILD' },
+  vi: { aeris: 'AERIS', aerisSub: 'PHÁP SƯ TIẾNG VỌNG', kael: 'KAEL', kaelSub: 'KIẾM SĨ CỦA LỬA THIÊNG', eyebrow: 'CHƯƠNG II · TIẾNG VỌNG CỦA RỪNG HOANG', tag: 'TIẾNG VỌNG CỦA RỪNG HOANG' },
 } as const;
 
 /** Screen pixels per art pixel, per scene. Changes only behind a black dip or the whiteout. */

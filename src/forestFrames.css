@@ -5,7 +5,7 @@
  --forest-ink:#34372b;--forest-gold:#ead394;--forest-rune:#b9c999;
 }
 html body :is(.adventure-app,.modal-backdrop,.pause-menu-backdrop) :is(
- .panel.panel.panel:not(.completion-panel):not(.forge-panel),
+ .panel.panel.panel:not(.completion-panel),
  .mechanic-guide,.chest-panel,.trading-confirm,.fullscreen-hint,.outfit-collection
 ),html body .rune-loadout-editor.panel,html body .fullscreen-hint{
  border-style:solid!important;border-image:var(--forest-stone) 16% fill / 36px / 4px stretch!important;
@@ -64,7 +64,7 @@ html body .adventure-app .inventory-modal .inventory-footer .inventory-done{
  html body .adventure-app .inventory-modal :is(.inventory-heading,.inventory-scroll,.inventory-footer){padding-inline:20px}
 }
 /* Reserve real space for the chunky outer stones so footer/scroll surfaces cannot cover them. */
-html body :is(.adventure-app,.modal-backdrop,.pause-menu-backdrop) :is(.panel.panel.panel:not(.completion-panel):not(.forge-panel),.mechanic-guide,.chest-panel,.trading-confirm,.fullscreen-hint),html body .rune-loadout-editor.panel,html body .fullscreen-hint{
+html body :is(.adventure-app,.modal-backdrop,.pause-menu-backdrop) :is(.panel.panel.panel:not(.completion-panel),.mechanic-guide,.chest-panel,.trading-confirm,.fullscreen-hint),html body .rune-loadout-editor.panel,html body .fullscreen-hint{
  border:18px solid transparent!important;
  border-image:var(--forest-stone) 12% fill / 48px / 0 stretch!important;
 }
@@ -84,7 +84,7 @@ html body .adventure-app .inventory-modal :is(.inventory-supplies article,.inven
  html body .adventure-app .inventory-modal .trail-inventory{max-height:calc(100dvh / var(--desktop-scale,1) - 64px)}
 }
 /* Preparation, campaign ending, rune library and character cards use the same materials. */
-html body .adventure-app :is(.hero-preparation.forge-panel,.journey-finale){
+html body .adventure-app .journey-finale{
  border:18px solid transparent!important;border-image:var(--forest-stone) 12% fill / 48px / 0 stretch!important;
  background:#34372b!important;box-shadow:0 14px 48px #0008!important;color:#e7d7a3;
 }
@@ -92,7 +92,7 @@ html body :is(.loadout-preview,.loadout-owned>button,.loadout-list-heading,.fina
  border-image:var(--forest-card) 8% fill / 10px / 0 stretch!important;
  background:#424536!important;box-shadow:none!important;
 }
-@media(max-height:480px),(max-width:600px){html body .adventure-app :is(.hero-preparation.forge-panel,.journey-finale){border-width:12px!important;border-image-width:30px!important}}
+@media(max-height:480px),(max-width:600px){html body .adventure-app .journey-finale{border-width:12px!important;border-image-width:30px!important}}
 html body .rune-loadout-editor.panel{padding-bottom:34px}
 html body .rune-loadout-editor .loadout-scenery{display:none}
 html body .rune-loadout-editor .loadout-equipped>header{background:transparent!important;box-shadow:none;border:0;border-bottom:1px solid #877a51}

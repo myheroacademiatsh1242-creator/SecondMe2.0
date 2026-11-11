@@ -2,7 +2,7 @@
    play from their first keyframe into it (fill: both), so skipping simply turns them off.
    Timeline: the Guardian drops from high above to the centre, both arms raised, and slams them down as it lands
    (.55s: hard shake, flash, snow burst) · breathes at the centre · 1.3-1.8s it is pushed to the right while the frost
-   band sweeps in behind it. The briefing and start action are visible throughout. */
+   band sweeps in behind it. The name arrives on impact, followed by the briefing. */
 .boss-cut{--frost:#9fe3f2;--deep:#06141d;--gold:#e6c46e;--ink:#03090d;
   /* Guardian sprite cell height on screen (the 192 x 128 cell keeps its 3:2 shape) and the centre line both the
      band and the Guardian stand on, so they always line up whatever the screen size. */
@@ -39,8 +39,7 @@
 .boss-cut-copy{position:absolute;left:max(16px,5%);top:0;bottom:0;width:min(42%,88dvh);display:flex;flex-direction:column;justify-content:safe center;
   padding:16px 0;overflow-y:auto;scrollbar-width:none}
 .boss-cut h2{margin:6px 0 4px;font-size:clamp(44px,12dvh,150px);transform-origin:0 50%;font-weight:400;color:#f2fdff;letter-spacing:.02em;
-  text-shadow:4px 4px 0 #0e3a4d,8px 8px 0 var(--ink);animation:boss-stamp .32s steps(4) 1.9s both}
-.boss-cut-brief{animation:boss-rise .4s cubic-bezier(.2,.9,.3,1) 2.5s both}
+  text-shadow:4px 4px 0 #0e3a4d,8px 8px 0 var(--ink)}
 .boss-cut-brief ol{list-style:none;counter-reset:boss-steps;margin:8px 0;padding:0;display:grid;gap:10px}
 .boss-cut-brief li{counter-increment:boss-steps;position:relative;padding:.4em 10px .4em calc(clamp(17px,2.3dvh,28px) * 2.5);background:#0b2230d9;border:3px solid var(--ink);box-shadow:inset 0 2px 0 #2b5c70}
 .boss-cut-brief li::before{content:counter(boss-steps,upper-roman);position:absolute;left:10px;top:6px;color:var(--gold);font-size:clamp(17px,2.3dvh,28px)}
@@ -81,9 +80,7 @@ body.reduced-motion .boss-cut-snow{display:none}
 @keyframes boss-idle{to{background-position-x:calc(var(--cell-h) * -9)}}
 @keyframes boss-burst{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(1.5) translateY(-14px)}}
 @keyframes boss-shake{0%{transform:translate(-18px,12px)}12%{transform:translate(16px,-10px)}25%{transform:translate(-13px,9px)}37%{transform:translate(11px,-7px)}50%{transform:translate(-8px,5px)}62%{transform:translate(6px,-4px)}75%{transform:translate(-3px,2px)}87%{transform:translate(2px,-1px)}100%{transform:none}}
-@keyframes boss-stamp{from{transform:scale(1.6);opacity:0}50%{opacity:1}}
 @keyframes boss-fade{from{opacity:0}}
-@keyframes boss-rise{from{opacity:0;transform:translateY(24px)}}
 @keyframes boss-snow{to{transform:translate(var(--drift),110dvh)}}
 
 /* Phones (landscape, short): smaller type, tighter briefing; the copy column scrolls if it still does not fit. */
@@ -99,11 +96,9 @@ body.reduced-motion .boss-cut-snow{display:none}
 }
 
 #root .boss-cut h2#boss-intro-name {
-  font-size: clamp(32px, 8dvh, 90px);
-  animation: none;
+  font-size: clamp(32px, min(9dvh, 8vw), 100px);
 }
 
-.boss-cut-brief { animation: none; }
 .boss-cut-brief ol { counter-reset: none; }
 .boss-cut-brief li {
   display: flex;
@@ -113,3 +108,101 @@ body.reduced-motion .boss-cut-snow{display:none}
 }
 .boss-cut-brief li::before { content: none; }
 .boss-cut-brief li svg { flex: none; width: 17px; height: 17px; color: var(--frost); }
+
+/* Cold backlight separates the Guardian from the ice without changing the silhouette. */
+.boss-cut {
+  background: radial-gradient(ellipse at 66% 54%, #153443 0%, #0a1d2a 48%, #050e17 85%);
+}
+.boss-cut-band {
+  background:
+    radial-gradient(ellipse at 50% 57%, #39768e 0%, #224b65 38%, transparent 72%),
+    linear-gradient(155deg, #101d30 5%, #18364c 52%, #0b263b 100%);
+}
+.boss-cut-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(125deg, transparent 0 56px, #a5edff12 57px 58px, transparent 59px 118px);
+  pointer-events: none;
+}
+.boss-cut-shockwave {
+  position: absolute;
+  z-index: 1;
+  inset: auto 17% 7%;
+  height: 11%;
+  border: 3px solid #beeefe;
+  border-radius: 50%;
+  box-shadow: 0 0 18px #81e0ff80, inset 0 0 12px #81e0ff66;
+  opacity: 0;
+  animation: boss-ice-impact 560ms ease-out .55s both;
+}
+.boss-cut-burst { z-index: 2; }
+#root .boss-cut h2#boss-intro-name {
+  color: #ff645b;
+  text-shadow: 3px 3px #8a211e, 6px 6px #190407, 0 0 25px #ff332c55;
+}
+.boss-cut-danger {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 65% 48%, transparent 32%, #45070d80 74%, #ba1924b8 100%);
+}
+.boss-cut-copy {
+  z-index: 4;
+}
+.boss-cut-brief li:first-child {
+  border-left-color: #d8a276;
+  background: linear-gradient(90deg, #372b2bea, #0b2230e8 70%);
+}
+@keyframes boss-ice-impact {
+  from { opacity: .9; transform: scale(.45); }
+  to { opacity: 0; transform: scale(1.7); }
+}
+.boss-cut.is-skipped .boss-cut-shockwave { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .boss-cut, .boss-cut::before,
+  .boss-cut :is(.boss-cut-band, .boss-cut-guardian, .boss-cut-shockwave, .boss-cut-burst) {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .boss-cut { --name-delay: 650ms; }
+  #root .boss-cut:not(.is-skipped) h2#boss-intro-name {
+    animation: boss-name-enter 900ms var(--name-delay) backwards;
+  }
+  .boss-cut:not(.is-skipped) .boss-cut-danger {
+    animation: boss-danger-pulse 1200ms ease-out var(--name-delay);
+  }
+  .boss-cut:not(.is-skipped) .boss-cut-brief {
+    animation: boss-copy-enter 440ms cubic-bezier(.18,.82,.26,1) 2650ms backwards;
+  }
+}
+@keyframes boss-name-enter {
+  0% {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(-110%);
+    animation-timing-function: cubic-bezier(.44,.05,.24,1);
+  }
+  65% {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
+    text-shadow: 4px 4px #a2251e, 8px 8px #190407, 0 0 35px #ff493bc9;
+    animation-timing-function: ease-out;
+  }
+  78% { transform: translateX(-5px) scaleY(.97); }
+  100% { transform: translateX(0); }
+}
+@keyframes boss-danger-pulse {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes boss-copy-enter {
+  from { visibility: hidden; opacity: 0; transform: translateX(-110%); }
+  to { visibility: visible; opacity: 1; transform: translateX(0); }
+}

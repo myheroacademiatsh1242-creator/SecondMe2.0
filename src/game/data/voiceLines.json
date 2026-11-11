@@ -3,18 +3,11 @@
   "narrator": {
     "intro": [
       {
-        "id": "n1",
-        "at": 1.2,
-        "until": 4.6,
-        "en": "Long ago... when the Emberforge still burned...",
-        "vi": "Thuở xa xưa... khi lò rèn Emberforge vẫn còn rực lửa..."
-      },
-      {
         "id": "n2",
         "at": 4.9,
         "until": 9.6,
-        "en": "the forest learned to remember. Every step. Every echo.",
-        "vi": "khu rừng đã học cách ghi nhớ. Từng bước chân. Từng tiếng vọng."
+        "en": "The forest learned to remember. Every step. Every echo.",
+        "vi": "Khu rừng đã học cách ghi nhớ. Từng bước chân. Từng tiếng vọng."
       },
       {
         "id": "n3",
@@ -36,13 +29,6 @@
         "until": 27.6,
         "en": "Your past is the key.",
         "vi": "Quá khứ chính là chìa khóa."
-      }
-    ],
-    "dialogue": [
-      {
-        "id": "forge",
-        "en": "Five relics, gathered at last. Now... the forge awakens.",
-        "vi": "Năm di vật đã hội tụ. Giờ đây... lò rèn thức tỉnh."
       }
     ]
   },
@@ -247,11 +233,6 @@
         "id": "atk2",
         "en": "Take this!",
         "vi": "Đỡ này!"
-      },
-      {
-        "id": "atk3",
-        "en": "For the forge!",
-        "vi": "Vì lò rèn!"
       }
     ],
     "skill": [

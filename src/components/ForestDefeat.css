@@ -1,4 +1,4 @@
-.defeat-backdrop:has(.forest-defeat){position:fixed!important;inset:0!important;z-index:110;padding:16px!important;display:grid;place-items:center;background:#03100bbb;overflow:auto;backdrop-filter:blur(2px)}
+.defeat-backdrop:has(.forest-defeat){position:fixed!important;inset:0!important;z-index:110;padding:16px!important;display:grid;place-items:center;background:#03100bbb;overflow:auto;backdrop-filter:none}
 .defeat-stage.forest-defeat{position:relative;isolation:isolate;box-sizing:border-box;width:min(680px,94vw);height:min(800px,95dvh);max-height:none;padding:155px 76px 44px;display:flex;flex-direction:column;align-items:stretch;gap:15px;border:0;background:none;box-shadow:none;border-radius:0;overflow:visible;text-align:center;color:#ded7ae}
 .forest-defeat:before{content:'';position:absolute;inset:0;background:url('../../public/assets/ui/defeat-forest-frame.png') center/100% 100% no-repeat;z-index:-1;image-rendering:pixelated;pointer-events:none}
 .forest-defeat:after{content:'';position:absolute;inset:20% 10% 8%;background:#1c211de8;z-index:-2;pointer-events:none}

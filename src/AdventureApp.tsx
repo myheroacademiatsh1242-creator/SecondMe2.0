@@ -10,7 +10,7 @@ import {readLandscapeRequirement,isTouchDevice} from './game/logic/orientation.t
 import { installScreenControls, FullscreenButton } from './components/FullscreenButton.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine, readSavedSettings, type HUDState } from './game/GameEngine.ts';
-import { Intro, Lobby, Shop, Characters, AdventureHUD, Completion, Forge, EndScreen } from './components/CampaignUI.tsx';
+import { Intro, Lobby, Shop, Characters, AdventureHUD, Completion, EndScreen } from './components/CampaignUI.tsx';
 import { CinematicIntro } from './components/CinematicIntro.tsx';
 import { StudioSplash } from './components/StudioSplash.tsx';
 import { LoadingScreen } from './components/LoadingScreen.tsx';
@@ -19,7 +19,7 @@ import { MechanicGuide } from './components/MechanicGuide.tsx';
 
 const initial: HUDState = { screen:'intro', levelName:'LEVEL 01', levelSubtitle:'ECHO GROVE', recordingStatus:'idle', echoCharges:2, echoStability:0, echoElapsedMs:0, echoDurationMs:0, echoEvents:[], dissonanceSeconds:0,
   recordingTimeRemaining:8000, echoStatus:'none', echoCount:0, isMuted:false, bannerMessage:'', elapsedLevelTime:0,
-  completed:[], forged:false, lastReward:null, health:100, bossHp:0, bossPhase:0, attackCooldown:0, dodgeCooldown:0, legTimeRemaining:null, checkpointIndex:0, checkpointCount:0, slowed:false, defeatReason:'damage', volume:.25, effectsVolume:1, musicVolume:1, voiceVolume:1, reducedMotion:false, showHints:true, devUnlocked:false, language:'vi', characterClass:'mage', weapon:'staff', coins:0, timeItems:0, limitRings:0, chestKeys:0, echoLimit:4, limitRingActive:false, bestStars:{}, lastRating:null, skillCooldown:0, bossArmor:0, pillarsRemaining:0, activeBuff:'', skillDrop:null, mechanicalOwned:false };
+  completed:[], lastReward:null, health:100, bossHp:0, bossPhase:0, attackCooldown:0, dodgeCooldown:0, legTimeRemaining:null, checkpointIndex:0, checkpointCount:0, slowed:false, defeatReason:'damage', volume:.25, effectsVolume:1, musicVolume:1, voiceVolume:1, reducedMotion:false, showHints:true, devUnlocked:false, language:'vi', characterClass:'mage', weapon:'staff', coins:0, timeItems:0, limitRings:0, chestKeys:0, echoLimit:4, limitRingActive:false, bestStars:{}, lastRating:null, skillCooldown:0, bossArmor:0, pillarsRemaining:0, activeBuff:'', skillDrop:null, mechanicalOwned:false };
 export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngine) => void } = {}) {
   const [touchControls]=useState(isTouchDevice);
   // Keep the 1280×720 arena and its 78/142px HUD rails in one coordinate system.
@@ -81,11 +81,8 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {/* Combat hints appear only once the arena is playable. */}
     {hud.screen === 'playing' && !hud.bossIntroduction && <MechanicGuide engine={engine} hud={hud} touch={touchControls}/>}
     {hud.screen === 'victory' && <Completion engine={engine} hud={hud}/>}
-    {hud.screen === 'forge' && <Forge engine={engine} hud={hud}/>}
     {(hud.screen === 'ending' || hud.screen === 'defeat') && <EndScreen engine={engine} hud={hud}/>}
-    {/* Lobby and play have it in their toolbars; the loading transition stays clean, and the forge panel fills a
-        phone screen corner to corner, so no free corner there (F still works everywhere). */}
-    {!['lobby', 'playing', 'paused', 'loading', 'forge', 'shop'].includes(hud.screen) && <FullscreenButton floating vi={hud.language === 'vi'}/>}
+    {!['lobby', 'playing', 'paused', 'loading', 'shop'].includes(hud.screen) && <FullscreenButton floating vi={hud.language === 'vi'}/>}
     {hud.screen === 'paused' && <PauseMenu engine={engine} hud={hud}/>}
 
   </div></main>);

@@ -59,7 +59,6 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   // only falling boulders go on top here.
   const trapLayer = trapSpritesReady() ? 'overhead' : 'all';
   for (const trap of game.currentLevel.traps ?? []) drawTrap(ctx, trap, time, trapLayer, game.currentLevel.id);
-  if (game.showHints) drawRuneHints(ctx, game.currentLevel, game.discoveredRunes);
   if (game.legTimeRemaining !== null) {
     if (game.timePickup) {
       const { x, y } = game.timePickup;
@@ -195,6 +194,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.strokeStyle = '#ffe3a0';
     ctx.stroke();
   }
+  if (game.showHints) drawRuneHints(ctx, game.currentLevel, game.discoveredRunes);
   if (game.isTraining) drawTrainingBoard(ctx, game);
   ctx.restore();
 }

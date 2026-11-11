@@ -6,7 +6,7 @@ import {drawRuneHints,gateLabelLayout,overlaps,romanRune,runeLabelLayout} from '
 test('Roman rune strips clear every campaign rune, other strip, and HUD',()=>{
  for(const level of LEVELS){const boxes=gateLabelLayout(level);for(const [i,box] of boxes.entries()){
   assert.ok(box.x>=44&&box.x+box.width<=1236&&box.y>=44&&box.y+box.height<=676,`bounds ${level.id}/${i}`);
-  for(const plate of level.plates)assert.ok(!overlaps(box,{x:plate.x-12,y:plate.y-55,width:plate.width+24,height:plate.height+67}),`rune ${level.id}/${i}`);
+  for(const label of runeLabelLayout(level))assert.ok(!overlaps(box,label),`rune label ${level.id}/${i}`);
   assert.ok(!overlaps(box,{x:450,y:0,width:360,height:140}),`HUD ${level.id}/${i}`);
   assert.ok(box.y>=105,`toolbar ${level.id}/${i}`);
   for(const other of boxes.slice(0,i))assert.ok(!overlaps(box,other),`strip ${level.id}/${i}`);
@@ -75,28 +75,14 @@ test('every discovered numeral is centered over its rune and in the matching gat
   }
 });
 
-test('tabs stay clear of the objective outline for every rune and gate', () => {
+test('rune and gate badges clear all objective outlines', () => {
   for (const level of LEVELS) {
-    const tabs: Rect[] = [];
-    let from = { x: 0, y: 0 };
-    const ctx = {
-      save() {}, restore() {}, beginPath() {}, stroke() {}, strokeRect() {}, fillRect() {},
-      moveTo(x: number, y: number) { from = { x, y }; },
-      lineTo(x: number, y: number) {
-        tabs.push({ x: Math.min(from.x, x) - 1, y: Math.min(from.y, y) - 1,
-          width: Math.abs(from.x - x) + 2, height: Math.abs(from.y - y) + 2 });
-      },
-    } as unknown as CanvasRenderingContext2D;
-    drawRuneHints(ctx, level, new Set(level.plates.map(plate => plate.id)));
-    const targets = [...level.plates, ...level.doors];
-    assert.equal(tabs.length, targets.length);
-    for (const tab of tabs) {
-      for (const target of targets) {
-        const clearance = 10;
-        assert.ok(!overlaps(tab, {
-          x: target.x - clearance, y: target.y - clearance,
-          width: target.width + clearance * 2, height: target.height + clearance * 2,
-        }), `level ${level.id}: tab overlaps outline on ${target.id}`);
+    for (const badge of [...runeLabelLayout(level), ...gateLabelLayout(level)]) {
+      for (const target of [...level.plates, ...level.doors]) {
+        assert.ok(!overlaps(badge, {
+          x: target.x - 10, y: target.y - 10,
+          width: target.width + 20, height: target.height + 20,
+        }), `level ${level.id}: badge overlaps outline on ${target.id}`);
       }
     }
   }

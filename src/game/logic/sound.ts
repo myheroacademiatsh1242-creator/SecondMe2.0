@@ -4,8 +4,18 @@
  */
 
 import type { INTRO } from './introTimeline.ts';
+import type { EnemyKind } from './enemies.ts';
 import { loadSfxIndex, sfxFiles, sfxUrl, type SfxId } from './sfx.ts';
 type IntroCues = typeof INTRO.cue;
+
+// Fundamental, resonance, and release texture for each creature.
+const ENEMY_SOUND = {
+  goblin: { pitch: 190, grit: 1250, release: 720 },
+  bear: { pitch: 68, grit: 390, release: 290 },
+  skull: { pitch: 240, grit: 2450, release: 1750 },
+  shaman: { pitch: 310, grit: 1050, release: 2350 },
+  minotaur: { pitch: 92, grit: 560, release: 360 },
+} satisfies Record<Exclude<EnemyKind, 'dummy'>, { pitch: number; grit: number; release: number }>;
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -216,6 +226,132 @@ class SoundEngine {
 
   /** Main-menu stone slab pressed: grind plus a low thud. */
   public playStoneClick() { this.stoneHit(0.22, 520, 0.16, 140, 50, 0.32); }
+
+  public playGuardianLanding() { this.stoneHit(.55, 460, .24, 125, 42, .45); }
+
+  private guardianRoar: AudioBuffer | null = null;
+
+  public playGuardianReveal() {
+    this.playGuardianRoar(1, 1);
+  }
+
+  private playGuardianRoar(rate: number, volume: number) {
+    if (this.isMuted || this.effectsVolume === 0) return;
+    this.initCtx();
+    const ctx = this.ctx;
+    if (!ctx || !this.effectsGain) return;
+    if (!this.guardianRoar) {
+      const duration = 1.4;
+      const roar = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate);
+      const samples = roar.getChannelData(0);
+      let phase = 0;
+      let breath = 0;
+      for (let i = 0; i < samples.length; i++) {
+        const t = i / ctx.sampleRate;
+        const pitch = 119 - 42 * t + 18 * Math.sin(8 * t) * Math.exp(-2 * t);
+        phase += 2 * Math.PI * pitch / ctx.sampleRate;
+        breath += .11 * (Math.random() * 2 - 1 - breath);
+        const throat = Math.sin(phase + 1.25 * Math.sin(phase * .49));
+        const rasp = .53 * Math.sin(phase * 3.02) + .27 * Math.sin(phase * 5.03);
+        const pulse = .75 + .25 * Math.sin(2 * Math.PI * (17 * t - 2.8 * t * t));
+        const envelope = Math.min(1, t / .035) * Math.pow(1 - t / duration, .9);
+        samples[i] = .82 * envelope * Math.tanh((throat + rasp + breath * 2.2) * 1.2) * pulse;
+      }
+      this.guardianRoar = roar;
+    }
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = this.guardianRoar;
+    source.playbackRate.value = rate;
+    gain.gain.value = volume;
+    source.connect(gain).connect(this.effectsGain);
+    source.onended = () => { source.disconnect(); gain.disconnect(); };
+    source.start();
+  }
+
+  public playGuardianAttack(attack: 'melee' | 'triple' | 'volley' | undefined, release: boolean, phase: number) {
+    const intensity = 1 + (phase - 1) * .1;
+    if (attack === 'melee') {
+      if (release) this.stoneHit(.48, 620, .27 * intensity, 140, 42, .43 * intensity);
+      else this.playGuardianRoar(phase === 3 ? 1.82 : 1.53, .77 * intensity);
+    } else if (attack === 'volley') {
+      if (!release) this.threatGrowl(170, 2100, .72, .23 * intensity);
+    } else {
+      if (release) this.stoneHit(.57, 1950, .36 * intensity, 175, 60, .26 * intensity);
+      else this.threatGrowl(112, 1150, .72, .23 * intensity);
+    }
+  }
+
+  public playGuardianVolley() { this.stoneHit(.25, 2600, .33, 212, 74, .23); }
+
+  public playGuardianStep() { this.stoneHit(.19, 460, .09, 113, 47, .19); }
+
+  public playGuardianBodyHit() { this.stoneHit(.19, 830, .14, 145, 63, .2); }
+
+  public playGuardianShieldBlock() { this.stoneHit(.21, 3100, .27, 390, 160, .14); }
+
+  public playGuardianShield(raised: boolean) {
+    if (raised) {
+      this.stoneHit(.55, 1150, .21, 134, 54, .28);
+      this.playGuardianRoar(1.18, .67);
+    } else {
+      this.stoneHit(.66, 2400, .34, 175, 48, .33);
+      this.threatGrowl(86, 700, .56, .23);
+    }
+  }
+
+  public playGuardianDefeat() { this.playGuardianRoar(.81, .75); }
+
+  public playFrostCharge() { this.threatGrowl(270, 2400, .36, .15); }
+  public playFrostBurst() { this.stoneHit(.29, 3100, .29, 230, 85, .19); }
+  public playSanctuary() { this.threatGrowl(330, 1150, .68, .13); }
+  public playOverdrive() { this.threatGrowl(155, 1900, .54, .23); }
+  public playBeamCharge() { this.threatGrowl(215, 2200, .48, .17); }
+  public playBeamRelease() { this.stoneHit(.59, 1650, .35, 290, 64, .31); }
+  public playTimeStop() { this.stoneHit(.56, 780, .18, 445, 45, .29); }
+  public playTimeResume() { this.threatGrowl(180, 1350, .28, .13); }
+  public playIcicleRain() { this.stoneHit(.47, 3300, .26, 410, 125, .16); }
+
+  public playEnemyAttack(kind: EnemyKind, release: boolean, distance: number) {
+    if (kind === 'dummy' || distance >= 380) return;
+    const { pitch, grit, release: texture } = ENEMY_SOUND[kind];
+    const level = 1 - distance / 380;
+    if (release) this.stoneHit(.19, texture, .13 * level, pitch * 1.25, pitch * .55, .14 * level);
+    else this.threatGrowl(pitch, grit, kind === 'minotaur' ? .65 : .44, .13 * level);
+  }
+
+  /** A rising, rough two-voice growl through a moving resonant filter. */
+  private threatGrowl(pitch: number, grit: number, duration: number, level: number) {
+    if (this.isMuted || this.effectsVolume === 0) return;
+    this.initCtx();
+    const ctx = this.ctx;
+    if (!ctx || !this.effectsGain) return;
+    const t = ctx.currentTime;
+    const end = t + duration;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 3;
+    filter.frequency.setValueAtTime(grit * .64, t);
+    filter.frequency.exponentialRampToValueAtTime(grit, t + duration * .5);
+    filter.frequency.exponentialRampToValueAtTime(grit * .35, end);
+    const envelope = ctx.createGain();
+    envelope.gain.setValueAtTime(.001, t);
+    envelope.gain.exponentialRampToValueAtTime(level, t + duration * .24);
+    envelope.gain.exponentialRampToValueAtTime(.001, end);
+    filter.connect(envelope).connect(this.effectsGain);
+    const voices = [ctx.createOscillator(), ctx.createOscillator()];
+    voices.forEach((voice, index) => {
+      const fundamental = pitch * (index === 0 ? 1 : 1.53);
+      voice.type = index === 0 ? 'sawtooth' : 'triangle';
+      voice.frequency.setValueAtTime(fundamental * .78, t);
+      voice.frequency.exponentialRampToValueAtTime(fundamental, t + duration * .44);
+      voice.frequency.exponentialRampToValueAtTime(fundamental * .62, end);
+      voice.connect(filter);
+      voice.start(t);
+      voice.stop(end);
+      voice.onended = () => voice.disconnect();
+    });
+  }
 
   /** Filtered noise burst (stone grit) over a falling sine (the weight of the slab). */
   private stoneHit(dur: number, gritHz: number, gritPeak: number, thudFrom: number, thudTo: number, thudPeak: number) {

@@ -57,7 +57,7 @@ test('all three attempt buffs end in lobby and on retry; unused inventory is ret
 
 test('every rune is usable only in trails 2–6 and cannot spend inventory outside gameplay',t=>{
  const {g,summon}=setup(t);const ids=ECHO_RUNES.map(r=>r.id);
- for(const screen of ['intro','loading','lobby','shop','characters','paused','victory','defeat','forge','ending'] as const){
+ for(const screen of ['intro','loading','lobby','shop','characters','paused','victory','defeat','ending'] as const){
   g.screen=screen;for(const id of ids)assert.equal(g.useEchoRune(id),false,screen+':'+id);
  }
  for(let index=0;index<6;index++){

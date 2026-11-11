@@ -12,9 +12,8 @@ import { BossIntro } from './BossIntro.tsx';
 import { isTouchDevice } from '../game/logic/orientation.ts';
 import { TrailInventory } from './TrailInventory.tsx';
 import { TanukiShop } from './TanukiShop.tsx';
-import { puzzleBalance } from '../game/logic/balance.ts';
 import { ECHO_RUNES } from '../game/logic/echoRunes.ts';
-import { EchoRuneStock, RuneChoicePicker, RuneChoiceDialog } from './EchoRunes.tsx';
+import { RuneChoicePicker, RuneChoiceDialog } from './EchoRunes.tsx';
 import { JourneyCamp } from './JourneyCamp.tsx';
 import { MechanicalPortrait } from './MechanicalPortrait.tsx';
 import { IntroEffects } from './IntroEffects.tsx';
@@ -27,7 +26,7 @@ import { sounds } from '../game/logic/sound.ts';
 import { drawSoldierSprite } from '../game/rendering/soldierSprite.ts';
 import { localize } from '../localize.tsx';
 import { translate } from '../i18n.ts';
-import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Hammer, Check, Shield, Flame, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap } from 'lucide-react';
+import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Check, Shield, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { MECHANICAL_ENABLED } from '../game/logic/campaign.ts';
 import { LEVELS } from '../game/logic/levels.ts';
@@ -61,7 +60,7 @@ function SelectedCharacterAvatar({hud}:{hud:HUDState}) {
 export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   const [panel, setPanel] = useState<'none' | 'settings' | 'credits' | 'quit'>('none');
   const vi = hud.language === 'vi';
-  const hasProgress = hud.completed.length > 0 || hud.forged;
+  const hasProgress = hud.completed.length > 0;
   // At most one highlighted item: the one under the mouse (none once it leaves), or the one
   // moved to with the arrow keys. -1 = none; Enter then falls through to "start".
   const items = [
@@ -189,7 +188,7 @@ export function Notifications({ close }: { close: () => void }) {
     <article><time>08.11.2026</time><div><h3>Trượng phép và cầu sét mới</h3><p>Trượng của Aeris có tinh thể xanh và kích thước cân đối hơn. Cầu phép và cầu sét được làm mới theo phong cách pixel xanh lam.</p></div></article>
     <article><time>08.11.2026</time><div><h3>Diện mạo mới cho Aeris</h3><p>Pháp sư Aeris khoác áo choàng xanh viền vàng theo phong cách pixel chibi. Các hướng nhìn và chuyển động của Aeris cùng Echo đã được làm mới.</p></div></article>
     <article><time>08.11.2026</time><div><h3>Diện mạo mới cho Kael</h3><p>Kỵ sĩ Kael có diện mạo pixel chibi mới với tóc vàng, giáp bạc và áo choàng đỏ. Các hướng di chuyển và động tác chém cũng được làm mới.</p></div></article>
-    <article><span>LÒ RÈN 1.5</span><div><h3>Thử thách từng chặng</h3><p>Năm màn đầu có thời gian theo độ khó từng chặng. Mỗi chặng có một mảnh +3 giây; các rune cuối cần nhiều Echo giữ đồng thời. Bẫy dập và đá rơi giữ chân 0,25 giây; dây leo làm chậm cả một dải.</p></div></article>
+    <article><div><h3>Thử thách từng chặng</h3><p>Năm màn đầu có thời gian theo độ khó từng chặng. Mỗi chặng có một mảnh +3 giây; các rune cuối cần nhiều Echo giữ đồng thời. Bẫy dập và đá rơi giữ chân 0,25 giây; dây leo làm chậm cả một dải.</p></div></article>
     <article><time>06.11.2026</time><div><h3>Sảnh hành trình đã mở</h3><p>Chọn màn, xem tiến độ, điều chỉnh cài đặt và chơi lại bất kỳ màn nào sau khi hoàn thành chiến dịch.</p></div></article>
   </div></div>);
 }
@@ -206,7 +205,7 @@ export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panel, bag, engine]);
-  return localize(<div className="lobby-screen overlay journey-lobby"><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud}/><span><b>SECOND ME</b><small>THE EMBERFORGE</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
+  return localize(<div className="lobby-screen overlay journey-lobby"><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
     <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} traveler={<SelectedCharacterAvatar hud={hud}/>} onNews={()=>setPanel('news')}/>
     {bag&&<div className="modal-backdrop inventory-backdrop" onClick={()=>document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e=>e.stopPropagation()}><Inventory engine={engine} hud={hud} close={()=>setBag(false)}/></div></div>}
     <RuneChoiceDialog engine={engine} hud={hud}/>{panel==='news'&&<Notifications close={()=>setPanel('none')}/>} {panel==='settings'&&<SettingsPanel engine={engine} hud={hud} close={()=>setPanel('none')}/>}</div>);
@@ -261,50 +260,19 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   </div>;
 }
 
-export function StaffArt({ large = false }: { large?: boolean }) {
-  return <svg viewBox="0 0 100 210" className={large ? 'sword-art large' : 'sword-art'} aria-label="Trượng Echo" shapeRendering="crispEdges"><path d="M43 75H57V202H43Z" fill="#261b18"/><path d="M47 79H54V198H47Z" fill="#75503a"/><path d="M27 30H39V51H61V30H73V57H66V70H58V83H42V70H34V57H27Z" fill="#2a1d19"/><path d="M32 34H38V55H44V68H56V68H62V55H68V34H72V57H65V69H58V78H42V69H35V57H32Z" fill="#76513a"/><path d="M44 13H56V20H64V45H58V56H42V45H36V20H44Z" fill="#073e67"/><path d="M46 17H54V23H60V42H54V51H46V44H40V23H46Z" fill="#078fc4"/><path d="M46 22H51V26H55V31H51V41H46V36H43V27H46Z" fill="#68e6ff"/><path d="M47 28H51V33H47Z" fill="#e1ffff"/></svg>;
-}
-
-export function SwordArt({ large = false }: { large?: boolean }) {
-  return localize(<svg viewBox="0 0 100 210" className={large ? 'sword-art large' : 'sword-art'} aria-label="Kiếm Echo">
-    <defs><linearGradient id="blade" x1="0" x2="1"><stop stopColor="#7ab8b0"/><stop offset=".48" stopColor="#e6fff1"/><stop offset=".52" stopColor="#b9eee0"/><stop offset="1" stopColor="#4f948b"/></linearGradient></defs>
-    <path d="M50 8 63 31 58 139 42 139 37 31Z" fill="url(#blade)" stroke="#c7ede0"/>
-    <path d="M50 24V129" stroke="#eaffdc" opacity=".8"/><path d="m50 55 5 10-5 11-5-11Z" fill="#326f63"/>
-    <path d="m17 139 14-7 19 5 19-5 14 7-6 10-27-6-27 6Z" fill="#d4ac6d" stroke="#f1d29b"/>
-    <rect x="44" y="144" width="12" height="41" rx="3" fill="#684a38"/>
-    {[151,160,169,178].map(y => <path key={y} d={`m44 ${y} 12-4`} stroke="#bb9062"/>)}
-    <path d="m50 183 10 10-10 10-10-10Z" fill="#b48b55"/><circle cx="50" cy="141" r="7" fill="#80e7cc"/>
-  </svg>);
-}
-export function ForgeArt({ forged, weapon }: { forged: boolean; weapon: 'staff'|'sword' }) {
-  return localize(<div className={'forge-art ' + (forged ? 'is-forged' : '')}>
-    <div className="forge-halo"/><div className="forge-sparks"><i/><i/><i/><i/><i/></div>
-    {forged ? weapon === 'staff' ? <StaffArt large/> : <SwordArt large/> : <svg viewBox="0 0 340 260" aria-label="Lò rèn cổ">
-      <path d="M55 235V98L85 52h170l30 46v137Z" fill="#303c32" stroke="#75806a" strokeWidth="3"/>
-      <path d="M102 194v-73a68 68 0 0 1 136 0v73Z" fill="#121b18" stroke="#626e54" strokeWidth="8"/>
-      <path d="M128 181c-32-43 25-43 25-87 30 20 10 48 27 48 11-13 7-27 7-27 44 40 40 63 22 76Z" fill="#ee9255"/>
-      <path d="M157 189c-13-17 7-40 14-54 0 19 23 30 15 54Z" fill="#ffe1a3"/>
-      <path d="M84 197h180l-19 21h-27l10 25H123l10-25h-30Z" fill="#6b7662" stroke="#a0aa89" strokeWidth="3"/>
-      <path d="M60 92h46m128 0h46M75 63l-10 17m210-17 10 17" stroke="#9aa180" strokeWidth="5"/>
-      <path d="M154 61h32l-16 23Z" fill="#a6d8bc"/>
-    </svg>}
-    <span className="forge-art-caption">{forged ? weapon === 'staff' ? 'ECHO STAFF · ĐÃ THỨC TỈNH' : 'ECHO BLADE · ĐÃ THỨC TỈNH' : 'LỬA THIÊNG ĐANG CHỜ'}</span>
-  </div>);
-}
-
 export function Title({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   const [tab, setTab] = useState<'none' | 'trails' | 'help'>('none');
   return localize(<div className="title-screen overlay">
-    <div className="title-top"><span className="eyebrow">THE OVERGROWN RUINS / CHAPTER II</span><span className="version">THE EMBERFORGE</span></div>
-    <div className="title-lockup"><span className="eyebrow gold">KÝ ỨC · LỬA THIÊNG · LƯỠI KIẾM</span><h1>SECOND ME</h1><p className="title-sub">ECHOES OF THE WILD</p><div className="title-rule"/><p className="title-description">Để quá khứ dẫn lối.<br/>Thu hồi năm di vật. Rèn kiếm. Đánh thức khu rừng.</p>
+    <div className="title-top"><span className="eyebrow">THE OVERGROWN RUINS / CHAPTER II</span><span className="version">ECHOES OF THE WILD</span></div>
+    <div className="title-lockup"><span className="eyebrow gold">KÝ ỨC · LỬA THIÊNG · LƯỠI KIẾM</span><h1>SECOND ME</h1><p className="title-sub">ECHOES OF THE WILD</p><div className="title-rule"/><p className="title-description">Để quá khứ dẫn lối.<br/>Thu hồi năm di vật. Đánh thức khu rừng.</p>
       <div className="title-actions">{hud.completed.length > 0 && <button className="primary" onClick={() => engine?.continueGame()}>TIẾP TỤC HÀNH TRÌNH <ArrowRight size={18}/></button>}
         <button className={hud.completed.length ? 'secondary' : 'primary'} onClick={() => engine?.startGame()}>{hud.completed.length ? 'HÀNH TRÌNH MỚI' : 'BẮT ĐẦU HÀNH TRÌNH'} <ArrowRight size={18}/></button>
         <div className="button-row"><button className="text-button" onClick={() => setTab('trails')}>CÁC MÀN CHƠI</button><button className="text-button" onClick={() => setTab('help')}>CÁCH CHƠI</button></div>
       </div>
-    </div><div className="title-footer">5 MÀN GIẢI ĐỐ <span>◇</span> 1 LÒ RÈN <span>◇</span> 1 TRẬN BOSS</div>
+    </div><div className="title-footer">5 MÀN GIẢI ĐỐ <span>◇</span> 1 TRẬN BOSS</div>
     {tab !== 'none' && <div className="modal-backdrop"><div className="panel trail-panel"><div className="panel-top"><span className="eyebrow gold">{tab === 'trails' ? 'HÀNH TRÌNH CỦA BẠN' : 'DẤU VẾT CỦA QUÁ KHỨ'}</span><button className="text-button" onClick={() => setTab('none')}>ĐÓNG ×</button></div>
       {tab === 'trails' ? <><h2>Những lối mòn</h2><div className="trail-list">{LEVELS.map((level, index) => {
-        const unlocked = index <= hud.completed.length && (index < 5 || hud.forged);
+        const unlocked = index <= hud.completed.length;
         return <button key={level.id} disabled={!unlocked} onClick={() => engine?.selectLevel(index)} className="trail-item"><span className="trail-number">0{level.id}</span><span><strong>{level.subtitle}</strong><small>{level.description}</small></span>{!unlocked ? <Lock size={17}/> : hud.completed.includes(level.id) ? <Check size={18}/> : <ArrowRight size={18}/>}</button>;
       })}</div></> : <><h2>Hợp tác với chính mình</h2><div className="help-grid"><p><kbd>W A S D</kbd> / phím mũi tên: di chuyển.</p><p><kbd>E</kbd> bắt đầu ghi; nhấn lần nữa để lưu. Echo đứng ở điểm cuối.</p><p><kbd>1–6</kbd> chọn Echo; <kbd>C</kbd> tạm dừng; <kbd>Shift + Q</kbd> hoán đổi khi đường thẳng không bị chặn.</p><p><kbd>Q</kbd> gọi Echo. Để Echo giữ nút trong khi bạn vượt cổng. <kbd>X</kbd> xóa Echo.</p><p>5 màn đầu: thời gian mỗi chặng thay đổi theo màn. Đặt Echo giữ các rune được ghi bên cổng cuối; màn 5 có 5 rune nhưng chỉ cần giữ đúng 4 rune cuối. Mỗi chặng có tối đa một mảnh +3 giây và dùng một bình +2 giây; không thể farm vô hạn. Chỉ nhân vật chạm rune kế tiếp mới được nạp giờ.</p><p>Bẫy dập và đá rơi có viền vàng báo trước, gây 20 sát thương và giữ chân 0,25 giây khi trúng. Dây leo làm chậm 45% trên cả dải; có thể đi vòng.</p><p>Sau mỗi màn 1–5, chọn một trong ba ấn Echo ngẫu nhiên. Hoàn thành năm màn để mở trạm chuẩn bị; không tiêu hao ấn để mở boss.</p><p>Chuột trái tấn công; chuột phải hoặc <kbd>Space</kbd> dùng kỹ năng class; <kbd>R</kbd> dùng vật phẩm +2 giây; <kbd>F</kbd> bật/tắt toàn màn hình. <kbd>Shift</kbd> lướt né; <kbd>Esc</kbd> tạm dừng.</p><p>Boss báo trước đòn đánh bằng vòng băng xanh. Né ra ngoài; Echo giữ ấn sẽ tăng sức mạnh.</p></div></>}
     </div></div>}
@@ -358,33 +326,20 @@ export function Completion({ engine, hud }: { engine: GameEngine | null; hud: HU
   return <RuneRewardFlow engine={engine} hud={hud}/>;
 }
 
-export function Forge({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
-  const vi=hud.language==='vi',hero=hud.characterClass==='swordsman'?'Kael':hud.characterClass==='mechanical'?'Rivet-07':'Aeris';
-  return localize(<div className="modal-backdrop forge-backdrop"><div className="panel forge-panel hero-preparation" role="dialog" aria-modal="true" aria-labelledby="forge-title"><div className="panel-top"><span className="eyebrow gold">TRẠM NGHỈ / SAU MÀN 05</span><div className="forge-header-actions"><span className="forge-badge"><Flame size={13}/> LÒ RÈN CỔ</span><button type="button" className="secondary forge-back" onClick={() => engine?.goToLobby()}>{hud.language === 'vi' ? '← Về trại' : '← Back to camp'}</button></div></div>
-    <div className="forge-columns"><div><h2 id="forge-title">{vi?`Đánh thức\ntiếng vọng ${hero}.`:`Awaken\n${hero}’s Echo.`}</h2><p className="muted forge-description">{hud.forged?(hud.language==='vi'?'Vũ khí Echo đã thức tỉnh. Chuẩn bị những ấn bạn muốn dùng trước trận Thủ Vệ Băng.':'Your Echo weapon is ready. Review your runes before facing the Frost Guardian.'):(hud.language==='vi'?'Hoàn thành năm màn để thức tỉnh vũ khí. Việc chuẩn bị này không tiêu hao ấn nâng Echo.':'Complete five trails to awaken your weapon. Preparation does not consume Echo upgrade runes.')}</p>
-      <EchoRuneStock engine={engine} hud={hud} summaryOnly/><p className="rune-reward-note">{hud.language==='vi'?'Không cần đủ cả 5 loại ấn để mở boss. Ấn chưa dùng vẫn nằm trong túi.':'No complete rune set is required to enter the arena. Unused runes stay in your inventory.'}</p>
-      <div className="sword-stats"><span>ATK <strong>15</strong></span><span>{hud.language==='vi'?'COMBO 4 ĐÒN':'4-HIT COMBO'} <strong>12 · 14 · 17 · 33</strong></span></div>
-    </div><div className={`forge-hero ${hud.forged?'is-awakened':''}`} data-character={hud.characterClass} role="img" aria-label={vi?`Bóng nhân vật ${hero}`:`${hero} silhouette`}><div className="hero-echo-ring"/><div className="hero-shadow"><SelectedCharacterAvatar hud={hud}/></div><span className="forge-hero-name">{hero}</span><small>{hud.forged?(vi?'TIẾNG VỌNG ĐÃ THỨC TỈNH':'ECHO AWAKENED'):(vi?'KÝ ỨC ĐANG HỘI TỤ':'MEMORIES CONVERGE')}</small></div></div>
-    <div className="forge-footer"><p>{hud.forged ? 'Đã trang bị · Chuột trái tấn công · Chuột phải / Space kỹ năng' : (hud.language==='vi'?'Đã hoàn thành 5 / 5 màn · Không tiêu hao ấn Echo':'Five trails completed · No Echo runes consumed')}</p><button className="primary" disabled={!hud.forged && hud.completed.length < 5} onClick={() => hud.forged ? engine?.enterBoss() : engine?.forgeWeapon()}>{hud.forged ? <>BƯỚC VÀO ĐẤU TRƯỜNG <ArrowRight size={18}/></> : <><Hammer size={18}/> RÈN {hud.weapon==='staff'?'TRƯỢNG':'KIẾM'} ECHO</>}</button></div>
-  </div></div>);
-}
-
 function DefeatScreen({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  const vi=hud.language==='vi',timeout=hud.defeatReason==='timeout',boss=!!engine?.boss;
- const seconds=puzzleBalance((engine?.currentLevelIdx??0)+1).legSeconds;
- const hint=timeout
-  ?(vi?`Mỗi chặng có ${seconds} giây. Chạm rune theo thứ tự để nạp lại giờ; nhặt mảnh thời gian +3 giây và để Echo giữ cổng.`:`Each leg gives you ${seconds} seconds. Reach runes in order to refill the timer, collect +3s shards and leave Echoes holding the gates.`)
-  :boss
-   ?(vi?'Phá bốn trụ trước để gỡ giáp boss; mỗi khi boss mất 25% máu, khiên và bốn trụ sẽ quay lại. Gọi Echo hỗ trợ, né ba tia băng trên mặt đất để tránh sát thương và làm chậm và tận dụng kỹ năng rơi trên sân.':'Break all four pillars to remove the Guardian’s armor; every 25% of health it loses brings the shield and the pillars back. Summon Echoes, evade the three ground ice rays and their slowing effect and collect the arena skill drops.')
-   :(vi?'Né khỏi vùng cảnh báo trước khi bẫy hoặc quái ra đòn. Gọi Echo hỗ trợ chiến đấu và giữ rune để mở đường.':'Leave warning zones before traps or enemies strike. Let Echoes help in combat and hold runes to open the path.');
- return <div className="modal-backdrop defeat-backdrop"><section className="defeat-stage forest-defeat" data-reason={timeout?'timeout':'damage'} role="dialog" aria-modal="true" aria-labelledby="defeat-title">
+ const hint = timeout
+  ? (vi ? 'Chạm ấn kế tiếp để nạp lại giờ. Mảnh thời gian cộng 3 giây.' : 'Reach the next rune to refill the timer. Time shards add 3 seconds.')
+  : boss
+   ? (vi ? 'Phá 4 trụ để hạ khiên. Rời vùng báo đòn, rồi đánh khi hiện “Sơ hở”.' : 'Break 4 pillars to drop the shield. Dodge marked attacks, then strike during “Opening”.')
+   : (vi ? 'Rời vòng cảnh báo trước khi quái hoặc bẫy ra đòn.' : 'Leave the marked area before enemies or traps strike.');
+ return <div className="modal-backdrop defeat-backdrop"><section className="defeat-stage forest-defeat" data-reduced-motion={hud.reducedMotion} data-reason={timeout?'timeout':'damage'} role="dialog" aria-modal="true" aria-labelledby="defeat-title">
   <span className="defeat-kicker">{vi?'MỘT LẦN VẤP NGÃ · CHƯA PHẢI KẾT THÚC':'ONE FALL · NOT THE END'}</span>
   <h2 id="defeat-title">{timeout?(vi?'HẾT THỜI GIAN':'TIME RAN OUT'):(vi?'GỤC NGÃ':'FALLEN')}</h2>
   <p className="defeat-level">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>
   <div className="defeat-hero-scene" data-hero={hud.characterClass} role="img" aria-label={timeout?(vi?'Nhân vật bị dừng lại vì hết giờ':'Your hero stopped as time expired'):(vi?'Nhân vật đã gục ngã':'Your fallen hero')}><div className="defeat-rays"/>{timeout?<div className="defeat-timeout-art"/>:<div className="defeat-collapse-art"/>}</div>
   <div className="defeat-stats"><span>{vi?'THỜI GIAN':'TIME'} <b>{hud.elapsedLevelTime.toFixed(1)}s</b></span><span>{vi?'MÀN CHƠI':'TRAIL'} <b>{String((engine?.currentLevelIdx??0)+1).padStart(2,'0')}</b></span></div>
-  <div className="defeat-hint"><p>{timeout?(vi?'Thời gian trên chặng đường này đã hết.':'Your time has expired on this trail.'):(vi?'Bạn đã gục ngã giữa khu rừng sâu.':'You collapsed in the depths of the forest.')}</p><details><summary>{vi?'Gợi ý thử lại':'Retry hint'}</summary><p>{hint}</p></details></div>
-  <p className="defeat-kept">{vi?'Ấn chưa dùng và tiến trình vẫn được giữ lại.':'Unused runes and campaign progress are safe.'}</p>
+  <p className="defeat-hint">{hint}</p>
   {engine?.canUseSupply('revive')&&<button className="defeat-revive" onClick={()=>engine.useSupply('revive')}>{vi?'DÙNG TRỤC PHỤC SINH · VỀ PHÁP ĐÀN':'USE REVIVAL SCROLL · RETURN TO ALTAR'} <span>× {hud.supplies?.revive??0}</span></button>}
   <button className="defeat-retry" onClick={()=>engine?.restartLevel()}><RotateCcw size={18}/>{vi?'THỬ LẠI':'TRY AGAIN'}<ArrowRight size={17}/></button>
   <button className="defeat-return" onClick={()=>engine?.goToLobby()}><Map size={15}/>{vi?'VỀ TRẠI':'BACK TO BASE CAMP'}</button>
@@ -394,10 +349,10 @@ function DefeatScreen({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
 export function EndScreen({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   if(hud.screen!=='ending')return <DefeatScreen engine={engine} hud={hud}/>;
   const vi=hud.language==='vi',hero=hud.characterClass==='swordsman'?'Kael':hud.characterClass==='mechanical'?'Rivet-07':'Aeris';
-  return <div className="modal-backdrop finale-backdrop"><section className="journey-finale" role="dialog" aria-modal="true" aria-labelledby="finale-title">
+  return <div className="modal-backdrop finale-backdrop"><section className="journey-finale" data-reduced-motion={hud.reducedMotion} role="dialog" aria-modal="true" aria-labelledby="finale-title">
     <header className="finale-heading"><span>{vi?'HÀNH TRÌNH HOÀN TẤT':'JOURNEY COMPLETE'}</span><b>VI / VI</b></header>
     <div className="finale-body"><div className="finale-hero" data-character={hud.characterClass}><div className="hero-echo-ring"/><div className="finale-portrait"><SelectedCharacterAvatar hud={hud}/></div><span>{hero}</span><small>{vi?'NGƯỜI GÌN GIỮ KÝ ỨC':'KEEPER OF ECHOES'}</small></div>
-    <div className="finale-story"><span className="finale-kicker">{vi?'THỦ VỆ BĂNG ĐÃ GỤC NGÃ':'THE FROST GUARDIAN HAS FALLEN'}</span><h2 id="finale-title">{vi?'Khu rừng\nđã thức giấc.':'The forest\nawakens.'}</h2><p>{vi?'Qua sáu thử thách, bạn và những tiếng vọng đã đưa ký ức trở về khu rừng. Hành trình này sẽ được ghi nhớ.':'Through six trials, you and your Echoes have returned the forest’s memories. Your journey will be remembered.'}</p>
+    <div className="finale-story"><span className="finale-kicker">{vi?'THỦ VỆ BĂNG ĐÃ GỤC NGÃ':'THE FROST GUARDIAN HAS FALLEN'}</span><h2 id="finale-title">{vi?'Khu rừng\nđã thức giấc.':'The forest\nawakens.'}</h2><p>{vi?'Bạn và các Echo đã hoàn thành cả sáu thử thách.':'You and your Echoes completed all six trials.'}</p>
     <div className="finale-seals" aria-label={vi?'Đã hoàn thành 6 màn':'All six trials completed'}>{['I','II','III','IV','V','VI'].map(n=><span key={n}>{n}<Check size={12}/></span>)}</div>
     <div className="finale-stats"><span>{vi?'THỜI GIAN ĐẤU BOSS':'BOSS BATTLE'}<b>{hud.elapsedLevelTime.toFixed(1)}s</b></span><span>{vi?'XẾP HẠNG':'RATING'}<b aria-label={`${hud.lastRating?.stars??0} / 3`}>{'★'.repeat(hud.lastRating?.stars??0)}{'☆'.repeat(3-(hud.lastRating?.stars??0))}</b></span></div>
     <p className="finale-key-reward">+{hud.lastRating?.keys??0} {vi?'CHÌA KHÓA MỞ RƯƠNG':'CHEST KEYS'}</p>

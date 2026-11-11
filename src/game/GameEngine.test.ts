@@ -316,7 +316,7 @@ test('pressing Y four times unlocks every trail for the current dev session', t 
   assert.deepEqual(engine.campaign.runeLoadout.slice(0,2),['swap','regen']);
   assert.equal(engine.campaign.runeLoadout.length,5);assert.deepEqual(engine.campaign.pendingRuneChoices,[]);
   assert.deepEqual(engine.campaign.completed,[1,2,3,4,5]);
-  assert.equal(engine.campaign.forged,true);
+  assert.equal(engine.campaign.unlockedLevel,5);
   engine.setInventoryOpen(false);engine.setRuneEditing(false);
   engine.selectLevel(5);
   assert.equal(engine.currentLevelIdx,5);
@@ -326,7 +326,7 @@ test('pressing Y four times unlocks every trail for the current dev session', t 
 test('completed campaign can replay any level from lobby',t=>{
   mockDocument(t);
   const engine=new GameEngine();
-  engine.campaign.completed=[1,2,3,4,5];engine.campaign.forged=true;engine.campaign.bossDefeated=true;
+  engine.campaign.completed=[1,2,3,4,5];engine.campaign.bossDefeated=true;
   engine.goToLobby();engine.selectLevel(1);
   assert.equal(engine.currentLevelIdx,1);assert.equal(engine.screen,'playing');
   engine.goToLobby();engine.selectLevel(5);

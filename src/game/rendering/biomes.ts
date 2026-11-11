@@ -1,3 +1,4 @@
+import { drawTerrain } from './terrain.ts';
 import type { LevelData } from '../logic/types.ts';
 import { livingImage } from './livingAssets.ts';
 import { drawForestBoundary } from './forestBoundary.ts';
@@ -35,7 +36,11 @@ export function drawBiomeFloor(ctx: CanvasRenderingContext2D, w: number, h: numb
   const index = biomeIndex(level.id), img = load('forest-floors-pixel.png');
   if (!img) return false;
   const cw = img.width / 3, ch = img.height / 2;
+  drawTerrain(ctx, w, h, level);
+  ctx.save();
+  ctx.globalAlpha = .24;
   ctx.drawImage(img, index % 3 * cw, Math.floor(index / 3) * ch, cw, ch, 0, 0, w, h);
+  ctx.restore();
   // Keep the playfield bright; only the outside edge recedes into shadow.
   const shade = ctx.createRadialGradient(w / 2, h / 2, h * .22, w / 2, h / 2, w * .62);
   shade.addColorStop(0, '#07131c00'); shade.addColorStop(1, '#07131c77');

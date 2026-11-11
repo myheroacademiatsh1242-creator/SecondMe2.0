@@ -44,7 +44,7 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
     raf=requestAnimationFrame(step);
     return ()=>cancelAnimationFrame(raf);
   },[here,hud.reducedMotion]);
-  const unlocked=(i:number)=>hud.devUnlocked||complete||(i<=hud.completed.length&&(i<5||hud.forged));
+  const unlocked=(i:number)=>hud.devUnlocked||complete||i<=hud.completed.length;
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
     <aside className="journey-camp integrated-camp">
       <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><span>{count} / 6</span></header>

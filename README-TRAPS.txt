@@ -1,4 +1,4 @@
-# SECOND ME — The Emberforge
+# SECOND ME — Echoes of the Wild
 
 Game giải đố hành động bằng React, TypeScript và Vite, sử dụng Echo để ghi và phát lại đường đi.
 

@@ -12,7 +12,7 @@ import { puzzleBalance } from './balance.ts';
 export const MECHANICAL_ENABLED = false;
 export const MATERIALS = [
   { id: 'iron', name: 'Mảnh sắt cổ', detail: 'Kim loại còn ấm dưới lớp rêu.', icon: '◆', color: '#bbc8cf' },
-  { id: 'wood', name: 'Gỗ linh mộc', detail: 'Lõi gỗ dùng để rèn vũ khí Echo.', icon: '✦', color: '#b5c987' },
+  { id: 'wood', name: 'Gỗ linh mộc', detail: 'Lõi gỗ mang dấu vết của khu rừng.', icon: '✦', color: '#b5c987' },
   { id: 'crystal', name: 'Tinh thể Echo', detail: 'Lưu giữ ký ức của khu rừng.', icon: '◈', color: '#6ce5e8' },
   { id: 'ember', name: 'Than lửa thiêng', detail: 'Ngọn lửa không bao giờ tắt.', icon: '✺', color: '#ffaf70' },
   { id: 'rune', name: 'Ấn thạch cổ', detail: 'Mảnh cuối để đánh thức vũ khí Echo.', icon: '◇', color: '#dac18e' },
@@ -28,7 +28,6 @@ export function levelRating(seconds: number, levelId?: number): { stars: number;
 export class Campaign {
   ownedOutfits:ShopOutfitId[]=[];
   completed: number[] = [];
-  forged = false;
   bossDefeated = false;
   mechanicalOwned = false;
   echoRunes:EchoRuneStock = {};
@@ -62,8 +61,7 @@ export class Campaign {
       this.completed = [...new Set<number>((value.completed ?? []).filter((id: unknown) => Number.isInteger(id) && Number(id) >= 1 && Number(id) <= 5))].sort();
       // Only a continuous run unlocks later trails.
       this.completed = this.completed.filter((id, i) => id === i + 1);
-      this.forged = this.canForge && value.forged === true;
-      this.bossDefeated = this.forged && value.bossDefeated === true;
+      this.bossDefeated = this.completed.length === 5 && value.bossDefeated === true;
       this.mechanicalOwned = value.mechanicalOwned === true;
       this.coins = Number.isSafeInteger(value.coins) && value.coins >= 0 ? value.coins : 0;
       this.timeItems = Number.isSafeInteger(value.timeItems) && value.timeItems >= 0 ? value.timeItems : 0;
@@ -84,13 +82,13 @@ export class Campaign {
         this.devShopStockMigrated=true;
       }
       if(migrateRunes||legacyDevStock)this.save();
-    } catch { this.ownedOutfits=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.forged = false; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+    } catch { this.ownedOutfits=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
   }
   save() {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
       ownedOutfits:this.ownedOutfits,devShopStockMigrated:this.devShopStockMigrated,
       supplies:this.supplies,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
-      completed: this.completed, forged: this.forged, bossDefeated: this.bossDefeated,
+      completed: this.completed, bossDefeated: this.bossDefeated,
       echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
   }
@@ -172,15 +170,8 @@ export class Campaign {
   useTimeItem() { if (this.timeItems < 1) return false; this.timeItems--; this.save(); return true; }
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
-  get canForge() { return [1,2,3,4,5].every(id => this.completed.includes(id)); }
-  forge(): boolean {
-    if (!this.canForge || this.forged) return false;
-    this.forged = true;
-    this.save();
-    return true;
-  }
   get unlockedLevel() { return Math.min(5, this.completed.length); }
-  reset() { this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.forged = false; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
+  reset() { this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 }
 
 export interface BossState extends BossBehavior {
