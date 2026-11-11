@@ -21,3 +21,5 @@ import './components/InventoryColumns.css';
 import './components/FramedDialogs.css';
 
 import './components/SettingsPanel.css';
+
+import './components/PurchaseDialog.css';

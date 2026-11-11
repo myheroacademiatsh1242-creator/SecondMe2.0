@@ -1,0 +1,23 @@
+/* Give the confirmation its own inset, clear hierarchy and stable controls. */
+html body :is(#root,.modal-backdrop) .trading-confirm.purchase-dialog{width:480px;max-height:640px;padding:32px;overflow:auto;border:12px solid transparent!important;border-image:url('/assets/ui/inventory-nine-slice-pixel.png') 25% fill / 28px / 0 round!important;box-sizing:border-box;text-align:left}
+html body .purchase-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 16px;border-bottom:1px solid #ad99604d}
+html body .purchase-dialog>header h2{margin:0;font-size:28px!important;line-height:1.2;letter-spacing:.02em}
+html body :is(#root,.modal-backdrop) .purchase-dialog>header>button{display:grid;place-items:center;flex:none;width:32px;height:32px;min-height:0;padding:0!important;border:0!important;border-image:none!important;background:none!important;box-shadow:none!important;font-size:30px!important;line-height:1;color:#ddcc9c!important}
+html body .purchase-dialog .trading-confirm-item{display:grid;grid-template-columns:64px minmax(0,1fr);gap:18px;align-items:start;margin:24px 0}
+html body .purchase-dialog .trading-confirm-item>.shop-item-icon{width:64px;height:64px;margin-top:4px}
+html body .purchase-dialog .trading-confirm-item>div{min-width:0}
+html body .purchase-dialog .trading-confirm-item strong{display:block;font-size:27px;line-height:1.2;font-weight:400}
+html body .purchase-dialog .trading-confirm-item p{margin:10px 0 0;font-size:20px;line-height:1.45;color:#d2c7a5;text-align:left;overflow-wrap:anywhere}
+html body .purchase-dialog .trading-quantity{display:grid;grid-template-columns:1fr 40px 64px 40px;gap:8px;align-items:center;padding:16px 0;border-top:1px solid #ad996033;border-bottom:1px solid #ad996033}
+html body .purchase-dialog .trading-quantity>span{font-size:20px;margin:0}
+html body :is(#root,.modal-backdrop) .purchase-dialog .trading-quantity>button{display:grid;place-items:center;width:40px;height:40px;padding:0!important;min-height:0;border:1px solid #9d8c58!important;border-image:none!important;background:#343c2d!important;box-shadow:none!important;font-size:30px;line-height:1}
+html body .purchase-dialog .trading-quantity input{box-sizing:border-box;width:64px;height:40px;padding:0;border:1px solid #9d8c58;background:#232b21;font-size:27px;line-height:1;text-align:center}
+html body .purchase-dialog .purchase-price{display:flex;align-items:end;justify-content:space-between;gap:20px;padding:18px 0 24px}
+html body .purchase-dialog .purchase-price>span{display:flex;flex-direction:column;gap:4px;font-size:18px;color:#c2b78f;text-align:left;margin:0}
+html body .purchase-dialog .purchase-price b{font-size:24px;font-weight:400;color:#ead89e}
+html body .purchase-dialog .purchase-price>.trading-total{text-align:right;align-items:flex-end}
+html body .purchase-dialog .purchase-price>.trading-total b{font-size:32px;color:#ffe09a}
+html body .purchase-dialog>footer{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+html body :is(#root,.modal-backdrop) .purchase-dialog>footer>button{display:flex;align-items:center;justify-content:center;min-height:48px;padding:8px!important;border:1px solid #9d8c58!important;border-image:none!important;background:#343c2d!important;font-size:25px!important;line-height:1.2;color:#e4d7ac!important;box-shadow:none!important}
+html body :is(#root,.modal-backdrop) .purchase-dialog>footer>button:first-child{background:#d4bb77!important;border-color:#f0daa0!important;color:#302b1c!important;text-shadow:none!important}
+html body .purchase-dialog button:focus-visible,html body .purchase-dialog input:focus-visible{outline:2px solid #ffe3a0;outline-offset:3px}
