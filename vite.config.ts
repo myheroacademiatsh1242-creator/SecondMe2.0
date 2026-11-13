@@ -10,7 +10,7 @@ import {defineConfig, type Plugin} from 'vite';
  * dev (new files work after a page reload), written once into the build.
  */
 function audioIndex(folder: string): Plugin {
-  const dir = path.resolve(__dirname, 'public/assets', folder);
+  const dir = path.resolve(import.meta.dirname, 'public/assets', folder);
   const list = () => (fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => /\.(mp3|ogg|wav|m4a)$/i.test(f)).sort() : []);
   return {
     name: `${folder}-index`,
@@ -34,7 +34,7 @@ function audioIndex(folder: string): Plugin {
  * (src/game/loading/preloader.ts). Live in dev, written once into the build.
  */
 function assetIndex(): Plugin {
-  const root = path.resolve(__dirname, 'public');
+  const root = path.resolve(import.meta.dirname, 'public');
   const dir = path.join(root, 'assets');
   const list = () => {
     const out: {path: string; bytes: number}[] = [];
@@ -68,11 +68,11 @@ function assetIndex(): Plugin {
 
 export default defineConfig(() => {
   return {
-    build: {rollupOptions: {input: {main:path.resolve(__dirname,'index.html'),bossPreview:path.resolve(__dirname,'tools/preview/boss.html')}}},
+    build: {rollupOptions: {input: {main:path.resolve(import.meta.dirname,'index.html'),bossPreview:path.resolve(import.meta.dirname,'tools/preview/boss.html')}}},
     plugins: [react(), tailwindcss(), audioIndex('music'), audioIndex('sfx'), assetIndex()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': import.meta.dirname,
       },
     },
     server: {

@@ -1,3 +1,4 @@
+import { GUARDIAN_HP } from './balance.ts';
 import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
 import {SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
 import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from './bossBehavior.ts';
@@ -193,7 +194,7 @@ export interface BossState extends BossBehavior {
   iceRays:IceRay[];
 }
 export function createBoss(): BossState {
-  return { meleeSwings:0,meleeMisses:0,skillQueue:0,enraged:false,x: 890, y: 350, hp: 240, maxHp: 240, phase: 1, mode: 'stalking', timer: 2,
+  return { meleeSwings:0,meleeMisses:0,skillQueue:0,enraged:false,x: 890, y: 350, hp: GUARDIAN_HP, maxHp: GUARDIAN_HP, phase: 1, mode: 'stalking', timer: 2,
     targetX: 0, targetY: 0, hitFlash: 0, projectiles: [],
     pillars: [[130,125],[1150,125],[130,595],[1150,595]].map(([x,y])=>({x,y,hp:60,maxHp:60})),
     armor: 100, burstCooldown: 5, burstRemaining: 0, burstPulse: 0, iceRays: [], };
@@ -248,7 +249,7 @@ export function updateBoss(boss: BossState, player: { x: number; y: number }, dt
   empowered: boolean, defender: {x:number;y:number} = player, echoDefenders: {x:number;y:number}[] = [], onEchoHit?: (index:number,damage:number) => void, onPlayerHit?: (damage:number) => void,onSlow?:()=>void,playerEvading=false,random:()=>number=Math.random): boolean {
   if (boss.hp <= 0) return false;
   if(boss.kind==='demon')return updateDemonBoss(boss,player,dt,defender,echoDefenders,onEchoHit,onPlayerHit,playerEvading);
-  boss.phase = boss.hp > 160 ? 1 : boss.hp > 80 ? 2 : 3;
+  boss.phase = boss.hp > boss.maxHp * 2 / 3 ? 1 : boss.hp > boss.maxHp / 3 ? 2 : 3;
   boss.hitFlash = Math.max(0, boss.hitFlash - dt);
   boss.shieldBreak = Math.max(0, (boss.shieldBreak ?? 0) - dt);
   boss.shieldRaise = Math.max(0, (boss.shieldRaise ?? 0) - dt);

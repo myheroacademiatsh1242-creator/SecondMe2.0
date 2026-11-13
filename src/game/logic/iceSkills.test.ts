@@ -1,3 +1,4 @@
+import { ICE_MAGIC } from './iceMagic.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {GameEngine} from '../GameEngine.ts';
@@ -7,7 +8,7 @@ import {LEVELS} from './levels.ts';
 test('ice magic prioritizes boss, then living enemies, then cursor; hits once',()=>{
  const g=new GameEngine();g.screen='playing';g.boss=createBoss();g.boss.pillars=[];g.boss.armor=0;g.enemies=createEnemies(LEVELS[1]);
  g.useSkill({x:12,y:34});assert.equal(g.frostZones[0].x,g.boss.x);g.useSkill();assert.equal(g.frostZones.length,1);
- (g as any).updatePersonalSkill(.61);assert.equal(g.boss.hp,200);(g as any).updatePersonalSkill(.1);assert.equal(g.boss.hp,200);
+ (g as any).updatePersonalSkill(.61);assert.equal(g.boss.hp,g.boss.maxHp-ICE_MAGIC.DAMAGE);(g as any).updatePersonalSkill(.1);assert.equal(g.boss.hp,g.boss.maxHp-ICE_MAGIC.DAMAGE);
  g.boss=null;g.skillCooldown=0;g.useSkill();assert.ok(g.enemies.some(e=>e.x===g.frostZones.at(-1)!.x));
  g.enemies=[];g.skillCooldown=0;g.mana.reset();g.useSkill({x:12,y:34});   // targeting is the point here; a third 40 MP cast needs a refillassert.equal(g.frostZones.at(-1)!.x,12);assert.equal(g.frostZones.at(-1)!.y,34);
 });
@@ -21,10 +22,10 @@ test('guardian casts three ground rays, slows on contact and expires',()=>{
 test('an eruption hits every living enemy in its radius once; dead targets do not attract the cast',()=>{
  const g=new GameEngine();g.screen='playing';g.player.x=300;g.player.y=300;
  const base=createEnemies(LEVELS[1])[0];
- g.enemies=[{...base,id:'dead',x:300,y:300,hp:0},{...base,id:'near',x:350,y:300,hp:100,maxHp:100},{...base,id:'within',x:390,y:300,hp:100,maxHp:100},{...base,id:'far',x:700,y:300,hp:100,maxHp:100}];
+ g.enemies=[{...base,id:'dead',x:300,y:300,hp:0},{...base,id:'near',x:350,y:300,hp:100,maxHp:100},{...base,id:'within',x:440,y:300,hp:100,maxHp:100},{...base,id:'far',x:700,y:300,hp:100,maxHp:100}];
  g.useSkill({x:900,y:600});assert.equal(g.frostZones[0].x,350);
- (g as any).updatePersonalSkill(.61);assert.deepEqual(g.enemies.map(e=>e.hp),[0,60,60,100]);
- (g as any).updatePersonalSkill(.1);assert.deepEqual(g.enemies.map(e=>e.hp),[0,60,60,100]);
+ (g as any).updatePersonalSkill(.61);assert.deepEqual(g.enemies.map(e=>e.hp),[0,100-ICE_MAGIC.DAMAGE,100-ICE_MAGIC.DAMAGE,100]);
+ (g as any).updatePersonalSkill(.1);assert.deepEqual(g.enemies.map(e=>e.hp),[0,100-ICE_MAGIC.DAMAGE,100-ICE_MAGIC.DAMAGE,100]);
 });
 
 test('frost slows actual player movement, expires outside the rays, and reset removes it',t=>{

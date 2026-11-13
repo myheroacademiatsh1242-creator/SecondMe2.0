@@ -1,3 +1,4 @@
+import { HERO_COMBO_ATTACK } from './balance.ts';
 /**
  * Four-hit combo for the normal attack (Kael and Aeris): configuration and the input/timing
  * state machine. Pure logic, no rendering or damage: GameEngine reacts to `onStart` (a hit
@@ -41,8 +42,8 @@ export interface ComboHit {
   heavy?: boolean;
 }
 
-/** Base attack of each hero: the damage a normal attack did before combos (15 for both). */
-export const CLASS_ATK: Record<ComboHero, number> = { swordsman: 15, mage: 15 };
+/** Base attack of each hero: used by each combo multiplier. */
+export const CLASS_ATK: Record<ComboHero, number> = HERO_COMBO_ATTACK;
 /** Kael's swing while a pressure plate is held down was 24 instead of 15. */
 export const EMPOWERED_ATK = 1.6;
 /** Share of a hit that must have played before a press is buffered for the next one. */

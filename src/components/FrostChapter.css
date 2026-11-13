@@ -513,6 +513,67 @@
   pointer-events: none;
 }
 
+.frost-map-flow {
+  width: clamp(3px, .65vw, 10px);
+  height: 2px;
+  background: #c7f5ff;
+  box-shadow: 0 0 4px #87d9f3;
+  rotate: -37deg;
+  animation: frost-map-flow linear infinite;
+}
+
+.frost-map-waterfall,
+.frost-map-lavafall {
+  width: 2px;
+  height: clamp(5px, 1.25vw, 18px);
+  rotate: 13deg;
+}
+
+.frost-map-lava,
+.frost-map-lavafall {
+  background: #ffc267;
+  box-shadow: 0 0 6px #ff5b16;
+}
+
+.frost-map-spray {
+  width: 13%;
+  height: 8%;
+  margin: -4% 0 0 -6.5%;
+  background: radial-gradient(ellipse, #defaff75, transparent 68%);
+  animation: frost-map-spray ease-out infinite;
+}
+
+.frost-map-portal-ring {
+  width: 5%;
+  height: 11%;
+  border: 2px solid #a7efff;
+  border-radius: 50%;
+  box-shadow: 0 0 9px #7adbff;
+  animation: frost-map-portal ease-out infinite;
+}
+
+@keyframes frost-map-flow {
+  from { left: var(--from-x); top: var(--from-y); opacity: 0; }
+  18%, 72% { opacity: .84; }
+  to { left: var(--to-x); top: var(--to-y); opacity: 0; }
+}
+
+@keyframes frost-map-spray {
+  from { transform: translate(8%, 12%) scale(.65); opacity: 0; }
+  35% { opacity: .7; }
+  to { transform: translate(-15%, -15%) scale(1.4); opacity: 0; }
+}
+
+@keyframes frost-map-portal {
+  from { transform: translate(-50%, -50%) scale(.4); opacity: 0; }
+  28% { opacity: .48; }
+  to { transform: translate(-50%, -50%) scale(1.12); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frost-ambience { display: none; }
+}
+
 /* Volcano Caldera Summit Glow & Rising Ash */
 .map-volcano-glow {
   width: 140px;
@@ -524,22 +585,30 @@
 }
 
 .map-volcano-smoke {
-  width: 160px;
-  height: 100px;
-  margin: -50px -80px;
-  background: radial-gradient(ellipse at 50% 80%, #29100980 0%, #15060455 45%, transparent 75%);
-  filter: blur(10px);
-  animation: map-volcano-smoke-drift 6.5s ease-in-out infinite alternate;
+  width: 9%;
+  height: 9%;
+  clip-path: polygon(0 53%, 8% 53%, 8% 36%, 20% 36%, 20% 22%, 33% 22%, 33% 10%, 52% 10%, 52% 17%, 66% 17%, 66% 29%, 81% 29%, 81% 42%, 93% 42%, 93% 57%, 100% 57%, 100% 72%, 86% 72%, 86% 86%, 68% 86%, 68% 95%, 45% 95%, 45% 88%, 25% 88%, 25% 78%, 10% 78%, 10% 68%, 0 68%);
+  background:
+    radial-gradient(ellipse at 32% 27%, #6a554a 0 18%, transparent 46%),
+    radial-gradient(ellipse at 67% 36%, #50413b 0 21%, transparent 54%),
+    radial-gradient(ellipse at 48% 100%, #85442e 0 10%, transparent 56%),
+    #302725;
+  animation: map-volcano-smoke-drift ease-out infinite;
+}
+
+.map-volcano-smoke.smoke-alt {
+  width: 7.5%;
+  height: 7%;
+  scale: -1 1;
 }
 
 @keyframes map-volcano-smoke-drift {
-  0% {
-    transform: translateY(0) scale(0.95);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translateY(-22px) scale(1.25);
-    opacity: 0.88;
+  from { transform: translate(-50%, -42%) scale(.22); opacity: 0; }
+  20% { transform: translate(-53%, -77%) rotate(3deg) scale(.55); opacity: .63; }
+  53% { opacity: .48; }
+  to {
+    transform: translate(calc(-50% + var(--smoke-drift)), -185%) rotate(var(--smoke-turn)) scale(1.55);
+    opacity: 0;
   }
 }
 

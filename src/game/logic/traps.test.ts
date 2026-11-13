@@ -1,9 +1,10 @@
+import { segmentWall } from './combatGeometry.ts';
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { GameEngine } from '../GameEngine.ts';
 import { trapEffects, trapPhase } from './traps.ts';
 import { sounds } from './sound.ts';
-import { puzzleBalance } from './balance.ts';
+import { puzzleBalance, SHARD_BONUS } from './balance.ts';
 import { LEVELS } from './levels.ts';
 import { rectIntersects } from './collision.ts';
 sounds.setMuted(true);
@@ -21,10 +22,10 @@ function setup(t: TestContext, index = 0) {
 
 test('per-level timeout shows defeat and retry resets every stage of the attempt', t => {
   const { game, advance } = setup(t);
-  advance(15.99); assert.equal(game.screen,'playing');
+  advance(puzzleBalance(1).legSeconds-.01); assert.equal(game.screen,'playing');
   advance(.01); assert.equal(game.screen,'defeat'); assert.equal(game.defeatReason,'timeout');
   assert.equal(game.legTimeRemaining,0); assert.equal(game.campaign.completed.length,0);
-  game.restartLevel(); assert.equal(game.legTimeRemaining,16); assert.equal(game.checkpointIndex,0);
+  game.restartLevel(); assert.equal(game.legTimeRemaining,puzzleBalance(1).legSeconds); assert.equal(game.checkpointIndex,0);
   assert.equal(game.screen,'playing'); assert.equal(game.echo,null);
 });
 
@@ -88,19 +89,20 @@ test('later trials contain both crushers and spikes with staggered cycles',()=>{
   }
 });
 
-test('each leg offers one safe time shard worth three seconds',t=>{
+test('each leg offers one safe time shard worth the configured bonus',t=>{
   const {game,advance}=setup(t);
-  advance(4.99); assert.equal(game.timePickup,null);
+  advance(puzzleBalance(1).shardInterval-.01); assert.equal(game.timePickup,null);
   advance(.02); assert.ok(game.timePickup);
   const shard=game.timePickup as {x:number;y:number} | null;
   assert.ok(shard);
   assert.ok(Math.hypot(shard.x-game.player.x,shard.y-game.player.y)<=111);
   assert.ok(!game.currentLevel.walls.some(w=>rectIntersects({x:shard.x-12,y:shard.y-12,width:24,height:24},w)));
+  assert.ok(game.currentLevel.walls.every(w=>segmentWall(game.player,shard,w,12)===null));
   const remaining=game.legTimeRemaining!;
   game.player.x=shard.x;game.player.y=shard.y;advance(.01);
   assert.equal(game.timePickup,null);
-  assert.ok(Math.abs(game.legTimeRemaining!-(remaining+3-.01))<.001);
-  advance(.01);assert.ok(game.legTimeRemaining!<remaining+3);
+  assert.ok(Math.abs(game.legTimeRemaining!-(remaining+SHARD_BONUS-.01))<.001);
+  advance(.01);assert.ok(game.legTimeRemaining!<remaining+SHARD_BONUS);
   advance(6);assert.equal(game.timePickup,null,'cannot farm a second shard in the same leg');
 });
 

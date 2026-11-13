@@ -1,3 +1,5 @@
+import { ENEMY_STATS } from './enemies.ts';
+import { EMBER_DEMON_HP, encounterBalance } from './balance.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDemonBoss,updateDemonBoss} from './demonBoss.ts';
@@ -6,9 +8,50 @@ import {GameEngine} from '../GameEngine.ts';
 import {LEVELS} from './levels.ts';
 import {sounds} from './sound.ts';
 sounds.setMuted(true);
+function finishPrelude(game:GameEngine) {
+ for (let stage=0; stage<2 && !game.boss; stage++) {
+  game.enemies.forEach(enemy=>enemy.hp=0);
+  for(let i=0;i<50;i++)(game as any).update(.02);
+ }
+ return game.boss;
+}
 test('final boss is a separate cave level with no puzzle timer or ice pillars',t=>{
  const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));
- const g=new GameEngine();g.devUnlocked=true;g.selectLevel(12);assert.equal(g.currentLevel.id,13);assert.equal(g.boss?.kind,'demon');assert.equal(g.boss?.hp,600);assert.equal(g.boss?.pillars.length,0);assert.equal(g.legTimeRemaining,null);assert.equal(g.bossIntroduction,true);g.beginBossFight();assert.equal(g.bossIntroduction,false);
+ const g=new GameEngine();
+ g.devUnlocked=true;g.selectLevel(12);
+ assert.equal(g.currentLevel.id,13);
+ assert.ok(!g.boss);
+ assert.equal(g.bossIntroduction,false);
+ assert.equal(g.enemies.length,13);
+ const farGuard = g.enemies.find(enemy=>enemy.id==='enemy-13-8')!;
+ const distance = () => Math.hypot(farGuard.x-g.player.x, farGuard.y-g.player.y);
+ const initialDistance = distance();
+ for(let i=0;i<60;i++)(g as any).update(.02);
+ assert.ok(distance() < initialDistance - 20, 'The far guard rushes the player from outside its normal detection range');
+ assert.equal(g.enemies.length,13);
+ const slimes = g.enemies.filter(enemy=>enemy.slimeHue!==undefined);
+ assert.equal(slimes.length,4);
+ const [red] = slimes.filter(enemy=>enemy.slimeHue===0);
+ assert.equal(slimes.filter(enemy=>enemy.slimeHue===0).length,1);
+ slimes.find(enemy=>enemy!==red)!.hp=0;
+ for(let i=0;i<50;i++)(g as any).update(.02);
+ assert.ok(!g.boss);
+ const beforeIntro = g.enemies;
+ red.hp=0;
+ assert.ok(g.enemies.some(enemy=>enemy.hp>0));
+ for(let i=0;i<30;i++)(g as any).update(.02);
+ const boss = finishPrelude(g);
+ assert.equal(g.enemies,beforeIntro);
+ assert.ok(g.enemies.some(enemy=>enemy.hp>0));
+ assert.equal(boss?.kind,'demon');
+ assert.equal(boss?.hp,EMBER_DEMON_HP);
+ assert.equal(boss?.pillars.length,0);
+ assert.equal(g.legTimeRemaining,null);
+ assert.equal(g.bossIntroduction,true);
+ assert.equal((g as any).musicScene(),'level');
+ g.revealDemon();
+ assert.equal((g as any).musicScene(),'boss');
+ g.beginBossFight();assert.equal(g.bossIntroduction,false);
  assert.equal(LEVELS.length,13);
 });
 test('cleave locks its telegraph and can be dodged or redirected into Echoes',()=>{
@@ -17,6 +60,10 @@ test('cleave locks its telegraph and can be dodged or redirected into Echoes',()
  updateDemonBoss(b,player,.02,player,[],undefined,n=>damage+=n,false);assert.equal(damage,24);assert.equal(b.mode,'strike');
  b.mode='warning';b.timer=.01;updateDemonBoss(b,player,.02,player,[],undefined,n=>damage+=n,true);assert.equal(damage,24);
  b.mode='warning';b.timer=.01;updateDemonBoss(b,player,.02,{x:200,y:500},[player],(_,n)=>echoDamage+=n,n=>damage+=n,false);assert.equal(echoDamage,24);assert.equal(damage,24);
+ b.mode='warning';b.timer=.01;
+ const outsideWarning={x:b.x+170,y:b.y};
+ updateDemonBoss(b,player,.02,outsideWarning,[],undefined,n=>damage+=n,false);
+ assert.equal(damage,24,'The cleave cannot hit beyond the marked sector');
 });
 test('later phases add real firebolts and eruptions with at least a second of warning',()=>{
  const b=createDemonBoss();b.hp=180;b.mode='stalking';b.timer=-2;b.attackIndex=2;const player={x:600,y:450};
@@ -29,10 +76,17 @@ test('all uploaded animation rows keep their frame counts and death finishes wit
 });
 test('killing the demon plays its full death and does not alter the old guardian flag',t=>{
  const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));
- const g=new GameEngine();g.currentLevelIdx=12;g.restartLevel();g.beginBossFight();g.tutorialEnabled=false;const boss=g.boss!;
+ const g=new GameEngine();g.currentLevelIdx=12;g.restartLevel();finishPrelude(g);g.beginBossFight();g.tutorialEnabled=false;const boss=g.boss!;
+ g.spawnMagmaMinions(1);
+ const survivor=g.enemies.at(-1)!;
  (g as any).strike(boss,10000,false,g.player);assert.equal(boss.hp,0);assert.equal(g.campaign.bossDefeated,false);assert.ok(g.campaign.completed.includes(13));
  for(let i=0;i<60;i++)(g as any).update(.02);assert.equal(g.screen,'playing');
- for(let i=0;i<65;i++)(g as any).update(.02);assert.equal(g.screen,'victory');
+ for(let i=0;i<65;i++)(g as any).update(.02);
+ assert.equal(g.screen,'playing');assert.ok(survivor.hp>0);
+ assert.equal((g as any).musicScene(),'level');
+ (g as any).strike(survivor,10000,false,g.player);
+ for(let i=0;i<12;i++)(g as any).update(.02);
+ assert.equal(g.screen,'victory');
 });
 
 test('entering ritual smoothly leaps across the arena to center instead of instantly teleporting', () => {
@@ -236,37 +290,40 @@ test('demon boss executes minion swarm summon and engine spawns fiery skull mini
 
   // 1. Minion summon triggers via attack rotation and queues summonPending
   const b = createDemonBoss();
-  b.hp = 300; // Phase 2
+  b.hp = b.maxHp * .5; // Phase 2
   b.mode = 'stalking';
   b.timer = -1;
   b.attackIndex = 3; // index % 4 === 3 => summon
+  b.demon!.summonCooldown = 0;
   const target = { x: 700, y: 350 };
   updateDemonBoss(b, target, 0.02, target, [], undefined, undefined, false);
 
   assert.equal(b.mode, 'warning');
   assert.equal(b.attack, 'summon');
-  assert.ok((b.demon!.summonPending ?? 0) > 0, 'Summon attack must queue pending minions');
+  assert.equal(b.demon!.summonPending, 0, 'Warning gives the player time before minions spawn');
 
   // Complete warning to strike
   b.timer = 0.01;
   updateDemonBoss(b, target, 0.02, target, [], undefined, undefined, false);
   assert.equal(b.mode, 'strike');
+  assert.equal(b.demon!.summonPending, 3, 'The swarm spawns on impact');
   assert.equal(b.demon!.slamShake, true, 'Summon slam shakes screen');
 
   // 2. Engine spawns magma skull minions into game.enemies
   const g = new GameEngine();
   g.devUnlocked = true;
   g.selectLevel(12);
+  finishPrelude(g);
   g.beginBossFight();
-  assert.equal(g.enemies.length, 0);
+  const originalEnemies = g.enemies.length;
 
   g.spawnMagmaMinions(4);
-  assert.equal(g.enemies.length, 4);
-  assert.ok(g.enemies.every(e => e.kind === 'skull'));
-  assert.ok(g.enemies.every(e => e.mode === 'chase'));
-  assert.ok(g.enemies.every(e => e.hp === 30));
+  assert.equal(g.enemies.length, originalEnemies + 4);
+  assert.ok(g.enemies.slice(originalEnemies).every(e => e.kind === 'skull'));
+  assert.ok(g.enemies.slice(originalEnemies).every(e => e.mode === 'chase'));
+  assert.ok(g.enemies.slice(originalEnemies).every(e => e.hp === Math.round(ENEMY_STATS.skull.hp * encounterBalance(g.currentLevel.id).health)));
 
   // Capped at 6
   g.spawnMagmaMinions(5);
-  assert.equal(g.enemies.length, 6, 'Active minions capped at 6');
+  assert.equal(g.enemies.length, originalEnemies + 6, 'Active minions capped at 6');
 });

@@ -7,7 +7,7 @@ function setup(t:TestContext){const old=Object.getOwnPropertyDescriptor(globalTh
 test('inventory freezes the entire combat clock but allows one deliberate consumable activation',t=>{
  const g=setup(t);const time=g.legTimeRemaining!;g.setInventoryOpen(true);(g as any).update(2);assert.equal(g.legTimeRemaining,time);assert.equal(g.health,100);
  assert.ok(g.canUseTimeItem());assert.ok(g.useTimeItem());assert.equal(g.campaign.timeItems,1);assert.equal(g.legTimeRemaining,time+2);assert.ok(g.useTimeItem());assert.equal(g.campaign.timeItems,0);assert.equal(g.legTimeRemaining,time+4);assert.equal(g.useTimeItem(),false);
- assert.ok(g.useEchoRune('guard'));assert.equal(g.campaign.echoRunes.guard,1);assert.equal(g.useEchoRune('guard'),false);
+ assert.ok(g.campaign.setRuneSlot(0,'guard'));assert.ok(g.useEchoRune('guard'));assert.equal(g.campaign.echoRunes.guard,1);assert.equal(g.useEchoRune('guard'),false);
  g.setInventoryOpen(false);(g as any).update(.1);assert.equal(g.legTimeRemaining,time+3.9);
 });
 test('closing nested rune editing keeps the inventory pause and does not consume a potion outside gameplay',t=>{

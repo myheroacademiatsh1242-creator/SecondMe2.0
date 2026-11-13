@@ -87,3 +87,32 @@ test('ranged enemies close to within Echo combat range before attacking',()=>{
  }
  assert.ok(attackedAt<120,`ranged enemy should enter the Echo's 3m area before attacking, got ${attackedAt}`);
 });
+
+test('shamans shoot a dodgeable projectile from range and walls block it',()=>{
+ const level=structuredClone(LEVELS[1]);level.walls=[];level.doors=[];
+ const shaman=createEnemies(level).find(e=>e.kind==='shaman')!;
+ const player={x:470,y:300};
+ const fire=()=>{
+  Object.assign(shaman,{x:240,y:300,homeX:240,homeY:300,mode:'chase',timer:0});
+  updateEnemies([shaman],level,player,[],.01,()=>assert.fail('windup cannot deal damage'));
+  assert.equal(shaman.mode,'warning');
+  updateEnemies([shaman],level,player,[],.65,()=>assert.fail('release cannot deal immediate damage'));
+  assert.ok(shaman.bolt);
+ };
+ fire();
+ let hits=0;
+ updateEnemies([shaman],level,player,[],.35,()=>hits++);
+ assert.equal(hits,0);
+ updateEnemies([shaman],level,player,[],.5,()=>hits++);
+ assert.equal(hits,1);
+ fire();
+ player.y+=60;
+ updateEnemies([shaman],level,player,[],1.3,()=>hits++);
+ assert.equal(hits,1);
+ player.y-=60;
+ fire();
+ level.walls=[{x:360,y:240,width:20,height:120}];
+ updateEnemies([shaman],level,player,[],1,()=>hits++);
+ assert.equal(hits,1);
+ assert.equal(shaman.bolt,undefined);
+});

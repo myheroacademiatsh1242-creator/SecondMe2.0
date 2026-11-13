@@ -11,6 +11,26 @@ import { sounds } from './sound.ts';
 import { createBoss, updateBoss } from './campaign.ts';
 sounds.setMuted(true);
 
+test('trail 10 bridge blocks crossing until fully raised and stays up after recalling Echo I', () => {
+ const level = structuredClone(LEVELS[9]);
+ const [bridge] = level.doors;
+ const rune = level.plates[0];
+ const update = (dt: number) => updateSecurityDoors(level.doors, level.plates, level.playerSpawn, null, dt);
+ const blocked = () => getActiveObstacles(level.walls, level.doors).some(wall => rectIntersects(wall, bridge));
+ assert.ok(blocked());
+ rune.isPressed = true;
+ update(.7);
+ assert.ok(bridge.openProgress > .75 && bridge.openProgress < 1);
+ assert.ok(blocked());
+ update(.2);
+ assert.equal(bridge.openProgress, 1);
+ assert.ok(!blocked());
+ rune.isPressed = false;
+ update(1);
+ assert.equal(bridge.openProgress, 1);
+ assert.ok(!blocked());
+});
+
 test('redesigned maps have no geometry errors and require escalating simultaneous Echo holds',()=>{
  const audit=MapValidator.validateAll(LEVELS);assert.equal(audit.errorsCount,0,JSON.stringify(audit.issues));
  assert.deepEqual(LEVELS.slice(0,5).map(l=>l.plates.length),[1,2,3,4,5]);
@@ -54,7 +74,7 @@ for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false
  t.after(()=>previous?Object.defineProperty(globalThis,'document',previous):Reflect.deleteProperty(globalThis,'document'));
  const game=new GameEngine();game.currentLevelIdx=index;game.tutorialEnabled=true;game.restartLevel();
  // Route audit isolates puzzle geometry; combat is covered separately.
- if(index>=6)game.enemies=[];
+ game.enemies=[];
  if (withRing) game.limitRingActive = true;
  const control=game as unknown as {update(dt:number):void;heldKeys:Set<string>;elapsedLevelTime:number};
  const tick=(dt:number)=>{

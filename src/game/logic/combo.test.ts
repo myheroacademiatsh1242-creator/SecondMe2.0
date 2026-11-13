@@ -1,3 +1,4 @@
+import { GUARDIAN_HP } from './balance.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Combo, COMBO_HITS, CLASS_ATK, comboDamage, hitDuration, hitTime, BUFFER_FROM, type ComboHero } from './combo.ts';
@@ -22,7 +23,7 @@ test('combo config: four hits, 0.8 / 0.9 / 1.1 / 2.2 of ATK, the finisher hits h
   // With 100 ATK the hits are 80 / 90 / 110 / 220 = 500 (the table in the task).
   const atk = 100;
   assert.deepEqual(COMBO_HITS.swordsman.map(h => Math.round(atk * h.multiplier)), [80, 90, 110, 220]);
-  assert.equal(CLASS_ATK.swordsman, 15);
+  assert.ok(CLASS_ATK.swordsman > CLASS_ATK.mage);
 });
 
 /** Runs a combo with presses at the given times (s); returns the order hits started and landed. */
@@ -94,7 +95,7 @@ function arena(t: { after(fn: () => void): void }, hero: ComboHero) {
   const g = new GameEngine(); g.screen = 'playing'; g.characterClass = hero; g.boss = createBoss();
   g.currentLevel.walls = []; g.currentLevel.doors = [];          // an open arena: no wall in the way
   g.boss.pillars.forEach(p => p.hp = 0); g.boss.armor = 0;
-  g.boss.maxHp = 960;                                             // 240 HP is its last quarter: no shield returns mid-combo
+  g.boss.maxHp = GUARDIAN_HP * 4;                                 // The last quarter has no intermediate shield
   g.boss.x = 600; g.boss.y = 320; g.player.x = hero === 'mage' ? 420 : 560; g.player.y = 338;
   return g;
 }
@@ -129,7 +130,7 @@ test('Kael and Aeris: each hit deals ATK × its multiplier exactly once, the fin
     const strikes = fullCombo(g, hero);
     const expected = [0, 1, 2, 3].map(s => comboDamage(hero, s));
     assert.deepEqual(strikes, expected, `${hero}: ${strikes}`);
-    assert.equal(240 - g.boss!.hp, expected.reduce((a, b) => a + b, 0));
+    assert.equal(GUARDIAN_HP - g.boss!.hp, expected.reduce((a, b) => a + b, 0));
     assert.equal(g.combo!.landed, 4);
     assert.equal(g.combo!.active, false);
   }
@@ -182,6 +183,6 @@ test('hit timing: damage lands on the hit frame, not when the swing starts', t =
   const tick = (g as unknown as { updateCombo(dt: number): void }).updateCombo.bind(g);
   const h = COMBO_HITS.swordsman[0];
   g.attack();
-  tick(hitTime(h) * 0.9); assert.equal(g.boss!.hp, 240);
-  tick(hitTime(h) * 0.2); assert.equal(g.boss!.hp, 240 - comboDamage('swordsman', 0));
+  tick(hitTime(h) * 0.9); assert.equal(g.boss!.hp, GUARDIAN_HP);
+  tick(hitTime(h) * 0.2); assert.equal(g.boss!.hp, GUARDIAN_HP - comboDamage('swordsman', 0));
 });

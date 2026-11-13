@@ -34,15 +34,15 @@ test('pending reward blocks continuing and retrying until chosen, even after ret
  const g=setup(t);(g as any).handleVictory();const offer=[...g.campaign.pendingRuneChoices];assert.equal(offer.length,3);g.nextLevel();assert.equal(g.currentLevelIdx,0);g.restartLevel();assert.equal(g.screen,'lobby');assert.deepEqual(g.campaign.pendingRuneChoices,offer);assert.equal(g.chooseRune(offer[0]),true);g.selectLevel(1);assert.equal(g.currentLevelIdx,1);
 });
 test('runes cannot be consumed in level 1 or pause; buffs do not stack and reset on retry',t=>{
- const g=setup(t);g.campaign.echoRunes={guard:2,power:2};assert.equal(g.useEchoRune('guard'),false);g.currentLevelIdx=1;g.restartLevel();assert.equal(g.useEchoRune('guard'),true);assert.equal(g.campaign.echoRunes.guard,1);assert.equal(g.useEchoRune('guard'),false);g.screen='paused';assert.equal(g.useEchoRune('power'),false);g.restartLevel();assert.equal(g.activeEchoRunes.size,0);assert.equal(g.campaign.echoRunes.guard,1);
+ const g=setup(t);g.campaign.echoRunes={guard:2,power:2};g.campaign.runeLoadout=['guard','power'];assert.equal(g.useEchoRune('guard'),false);g.currentLevelIdx=1;g.restartLevel();assert.equal(g.useEchoRune('guard'),true);assert.equal(g.campaign.echoRunes.guard,1);assert.equal(g.useEchoRune('guard'),false);g.screen='paused';assert.equal(g.useEchoRune('power'),false);g.restartLevel();assert.equal(g.activeEchoRunes.size,0);assert.equal(g.campaign.echoRunes.guard,1);
 });
-test('restoration requires an injured Echo; Calling caps at four total summons; retired runes cannot activate',t=>{
- const g=setup(t);g.currentLevelIdx=1;g.restartLevel();g.enemies=[];g.campaign.echoRunes={call:2,restore:2,lure:1};assert.equal(g.useEchoRune('call'),false);assert.equal(g.useEchoRune('restore'),false);
+test('restoration requires an injured Echo; Calling caps at four total summons; Pursuit activates once per attempt',t=>{
+ const g=setup(t);g.currentLevelIdx=1;g.restartLevel();g.enemies=[];g.campaign.echoRunes={call:2,restore:2,lure:1};g.campaign.runeLoadout=['call','restore','lure'];assert.equal(g.useEchoRune('call'),false);assert.equal(g.useEchoRune('restore'),false);
  g.toggleRecording();g.toggleRecording();g.spawnEcho();assert.equal(g.useEchoRune('call'),true);assert.equal(g.campaign.echoRunes.call,1);assert.equal(g.useEchoRune('call'),false);
- g.echo!.stability=30;assert.equal(g.useEchoRune('restore'),true);assert.equal(g.echo!.stability,80);assert.equal(g.useEchoRune('lure'),false);assert.equal(g.campaign.echoRunes.lure,1);
+ g.echo!.stability=30;assert.equal(g.useEchoRune('restore'),true);assert.equal(g.echo!.stability,80);assert.equal(g.useEchoRune('lure'),true);assert.equal(g.useEchoRune('lure'),false);assert.equal(g.campaign.echoRunes.lure,0);
 });
 test('Amplification increases only Echo replay damage against trail enemies',t=>{
- const g=setup(t);g.currentLevelIdx=1;g.restartLevel();g.currentLevel.walls=[];g.currentLevel.doors=[];g.player.x=340;g.player.y=110;g.campaign.echoRunes={power:1};
+ const g=setup(t);g.currentLevelIdx=1;g.restartLevel();g.currentLevel.walls=[];g.currentLevel.doors=[];g.player.x=340;g.player.y=110;g.campaign.echoRunes={power:1};g.campaign.runeLoadout=['power'];
  g.toggleRecording();g.toggleRecording();g.spawnEcho();const enemy=g.enemies[0];g.echo!.x=enemy.x-100;g.echo!.y=enemy.y;
- const event={time:0,kind:'attack' as const,x:0,y:0,targetX:100,targetY:0};(g as any).replayEchoEvent(event);assert.equal(enemy.hp,20);g.useEchoRune('power');(g as any).replayEchoEvent(event);assert.equal(enemy.hp,7);
+ const event={time:0,kind:'attack' as const,x:0,y:0,targetX:100,targetY:0};(g as any).replayEchoEvent(event);assert.equal(enemy.hp,enemy.maxHp-10);g.useEchoRune('power');(g as any).replayEchoEvent(event);assert.equal(enemy.hp,enemy.maxHp-23);
 });

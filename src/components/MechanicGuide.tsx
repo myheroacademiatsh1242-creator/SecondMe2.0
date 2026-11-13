@@ -9,6 +9,7 @@ const hintIcons = {
   spikes: TriangleAlert, rocks: TriangleAlert, time: Clock3, multi: Link, recycle: Footprints,
   upgradeRunes: Sparkles, shield: Snowflake, bossPatterns: TriangleAlert, skillPickups: Sparkles,
   shieldRestored: Shield, decoy: Footprints, vulnerable: Swords,
+  ward: Shield, release: Footprints, rhythm: Clock3,
 };
 
 const trailCopy = {
@@ -24,7 +25,7 @@ const trailCopy = {
   cross: ['', '', '', 'Qua cổng viền vàng', 'Cross the outlined gate'],
   exit: ['', '', '', 'Đi vào cổng thoát', 'Enter the exit portal'],
   ward: ['', '', '', 'Hạ lính gác nối với ấn tím để phá phong ấn', 'Defeat the linked sentries to unseal the rune'],
-  rhythm: ['', '', '', 'Giữ rune · đợi đếm ngược xanh rồi qua cổng', 'Hold the runes and cross during the green countdown'],
+  rhythm: ['', '', '', 'Giữ đủ ấn, qua khi thanh chắn rút', 'Hold the required runes and cross when the barrier retracts'],
   fight: ['', '', '', 'Hạ hết quái để mở cổng thoát', 'Defeat the remaining enemies to unlock the exit'],
 } as const;
 

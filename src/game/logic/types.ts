@@ -43,6 +43,7 @@ export interface PressurePlate {
 }
 
 export interface SecurityDoor {
+  liftBridge?: boolean;
   id: string;
   x: number;
   y: number;

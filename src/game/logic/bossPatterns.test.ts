@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {createBoss,updateBoss} from './campaign.ts';
 const player={x:240,y:600};
 test('later phases fire dense complete rings without a reserved escape sector',()=>{
- for(const [hp,waves] of [[240,4],[150,5],[70,6]]){
-  const b=createBoss();b.hp=hp;b.pillars.forEach(p=>p.hp=0);b.timer=0;b.skillQueue=1;
+ for(const [health,waves] of [[1,4],[.5,5],[.25,6]]){
+  const b=createBoss();b.hp=b.maxHp*health;b.pillars.forEach(p=>p.hp=0);b.timer=0;b.skillQueue=1;
   updateBoss(b,player,.01,false,player,[],undefined,undefined,undefined,false,()=>.1);assert.equal(b.attack,'volley');assert.equal(b.mode,'warning');assert.equal(b.projectiles.length,0);
   updateBoss(b,player,1.16,false);assert.equal(b.burstRemaining,waves);
-  updateBoss(b,player,.21,false);assert.equal(b.projectiles.length,hp===240?36:hp===150?48:60);
+  updateBoss(b,player,.21,false);assert.equal(b.projectiles.length,36+(waves-4)*12);
   const angles=b.projectiles.map(p=>(Math.atan2(p.vy,p.vx)+Math.PI*2)%(Math.PI*2)).sort((a,b)=>a-b);
   const step=Math.PI*2/angles.length;
   for(let i=0;i<angles.length;i++){const next=i+1<angles.length?angles[i+1]:angles[0]+Math.PI*2;assert.ok(Math.abs(next-angles[i]-step)<1e-6);}

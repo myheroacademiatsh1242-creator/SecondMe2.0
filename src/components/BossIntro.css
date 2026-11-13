@@ -224,13 +224,55 @@ body.reduced-motion .boss-cut-snow{display:none}
 }
 
 .demon-intro-portrait {
+  position: relative;
   flex: 0 0 35%;
   height: 70vh;
   max-height: 460px;
-  background: url('/assets/demon-boss/idle.png') center/contain no-repeat;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: pixelated;
   filter: drop-shadow(0 0 30px #ff662255);
+}
+
+.demon-intro-animation {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.demon-intro.is-transforming .demon-intro-animation:not(.demon-intro-animated) {
+  visibility: hidden;
+}
+
+.demon-intro-impact {
+  position: absolute;
+  inset: 12% -12% -8%;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 74%, #ffe0a3 0%, #ff571f99 28%, #d32d242e 56%, transparent 72%);
+  pointer-events: none;
+}
+
+.demon-intro.is-revealed:not(.is-still) .demon-intro-impact {
+  animation: demon-impact 650ms ease-out both;
+}
+
+.demon-intro.is-revealed:not(.is-still) .demon-intro h2 {
+  animation: demon-brief-in 420ms cubic-bezier(.2,.8,.25,1) 420ms both;
+}
+
+@keyframes demon-impact {
+  from { opacity: .9; transform: scale(.68); }
+  to { opacity: .18; transform: scale(1.08); }
+}
+
+@keyframes demon-title-impact {
+  0% { translate: 0 5px; text-shadow: 0 0 24px #ff6b30; }
+  18% { translate: -4px 0; }
+  38% { translate: 3px 0; }
+  62% { translate: -1px 0; }
+  100% { translate: 0 0; }
 }
 
 .demon-intro-content {
@@ -339,7 +381,9 @@ body.reduced-motion .boss-cut-snow{display:none}
     justify-content: flex-start;
   }
   .demon-intro-portrait {
-    display: none;
+    flex: none;
+    width: min(100%, 300px);
+    height: clamp(116px, 36dvh, 265px);
   }
   .demon-intro-content {
     max-width: 100%;
@@ -369,3 +413,236 @@ body.reduced-motion .boss-cut-snow{display:none}
   }
 }
 
+
+.demon-intro {
+  isolation: isolate;
+  background: linear-gradient(90deg, #16090db0, #11080a 85%),
+    url('/assets/demon-boss/cave-arena.png') center/cover no-repeat;
+}
+
+.demon-intro-band {
+  position: absolute;
+  inset: 39% 0 35%;
+  z-index: -1;
+  opacity: 0;
+  border-block: 3px solid #dc884d;
+  background: linear-gradient(90deg, #461b23, #8d3526 48%, #32151a);
+  box-shadow: inset 0 5px #d16e4238, inset 0 -5px #210e16, 0 0 24px #e557242e;
+  pointer-events: none;
+}
+
+.demon-intro.is-revealed .demon-intro-band { opacity: .8; }
+.demon-intro.is-revealed:not(.is-still) .demon-intro-band {
+  animation: demon-band-in 440ms cubic-bezier(.19, .8, .28, 1) both;
+}
+
+.demon-intro.is-transforming .demon-intro-content { visibility: hidden; }
+
+.demon-intro h2 {
+  font-size: clamp(38px, min(9dvh, 6vw), 94px);
+  line-height: .98 !important;
+  text-shadow: 4px 4px #78291e, 7px 7px #19090d;
+}
+
+.demon-intro.is-revealed:not(.is-still) :is(.demon-intro-desc, .demon-intro-tips, .demon-intro-start-btn) {
+  animation: demon-brief-in 380ms ease-out 590ms both;
+}
+
+.demon-intro-skip {
+  position: absolute;
+  z-index: 2;
+  right: 20px;
+  bottom: 16px;
+  padding: 8px 14px;
+  border: 1px solid #bc865b;
+  background: #251713;
+  color: #ffe4bb;
+}
+
+@keyframes demon-band-in {
+  from { opacity: .8; clip-path: inset(0 100% 0 0); }
+  to { opacity: .8; clip-path: inset(0); }
+}
+
+@keyframes demon-brief-in {
+  from { opacity: 0; transform: translateX(90px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 768px), (max-height: 580px) {
+  .demon-intro h2 { font-size: clamp(28px, 7dvh, 42px); }
+  .demon-intro-band { inset: 20% 0 auto; height: 18dvh; }
+}
+
+.demon-intro-flash,
+.demon-intro-shockwave,
+.demon-intro-embers {
+  position: absolute;
+  pointer-events: none;
+}
+
+.demon-intro-flash {
+  inset: 0;
+  z-index: 3;
+  opacity: 0;
+  background: radial-gradient(ellipse at 30% 58%, #ffd194, #d93119 37%, transparent 75%);
+}
+
+.demon-intro-shockwave {
+  inset: auto 6% 9%;
+  height: 17%;
+  border: 4px solid #ffb169;
+  border-radius: 50%;
+  box-shadow: inset 0 0 22px #ff5b24, 0 0 28px #ff471d;
+  opacity: 0;
+}
+
+.demon-intro-embers { inset: 0; }
+
+.demon-intro-embers i {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 5px;
+  height: 7px;
+  opacity: 0;
+  background: #ffc275;
+  box-shadow: 0 0 8px #ff5b24;
+}
+
+.demon-intro.is-revealed:not(.is-still) .demon-intro-flash {
+  animation: demon-reveal-flash 480ms ease-out both;
+}
+
+.demon-intro.is-revealed:not(.is-still) .demon-intro-shockwave {
+  animation: demon-reveal-wave 710ms ease-out both;
+}
+
+.demon-intro.is-revealed:not(.is-still) .demon-intro-embers i {
+  animation: demon-reveal-ember 850ms ease-out both;
+}
+
+.demon-intro.is-revealed:not(.is-still) .demon-intro-portrait {
+  animation: demon-reveal-shake 350ms steps(1);
+}
+
+@keyframes demon-reveal-flash {
+  0% { opacity: .55; }
+  100% { opacity: 0; }
+}
+
+@keyframes demon-reveal-wave {
+  from { opacity: .95; transform: scale(.3); }
+  to { opacity: 0; transform: scale(1.55, 1.16); }
+}
+
+@keyframes demon-reveal-ember {
+  0% { opacity: .95; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(var(--ember-x), var(--ember-y)); }
+}
+
+@keyframes demon-reveal-shake {
+  0%, 100% { translate: 0 0; }
+  15% { translate: -6px 3px; }
+  35% { translate: 5px -2px; }
+  55% { translate: -3px 1px; }
+  75% { translate: 2px 0; }
+}
+
+.demon-intro {
+  background: radial-gradient(ellipse at 28% 61%, #7b211458, #13070bcc 47%, #080508f5 83%),
+    url('/assets/demon-boss/cave-arena.png') center/cover no-repeat;
+  box-shadow: inset 0 0 13vmin #380810;
+}
+
+.demon-intro:not(.is-still) { animation: demon-darken 520ms ease-out both; }
+.demon-intro.is-leaving { animation: demon-exit 300ms ease-in both; pointer-events: none !important; }
+
+.demon-intro-smoke {
+  position: absolute;
+  inset: 10% 42% 0 -8%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 34% 76%, #b53c237a, transparent 43%),
+    radial-gradient(ellipse at 48% 53%, #070407c9, transparent 65%),
+    radial-gradient(ellipse at 27% 28%, #080408c9, transparent 56%);
+}
+.demon-intro:not(.is-still) .demon-intro-smoke { animation: demon-smoke 5s ease-in-out infinite alternate; }
+
+.demon-intro-portrait {
+  flex-basis: 42%;
+  height: 78dvh;
+  max-height: 640px;
+  filter: drop-shadow(16px 22px 0 #0a040ad9) drop-shadow(0 0 24px #ff591e62);
+}
+.demon-intro-animation { transform: scale(1.04); }
+.demon-intro-idle { z-index: 1; }
+.demon-intro.is-idle-ready .demon-intro-final { visibility: hidden; }
+
+.demon-intro-awakened {
+  color: #ffae72;
+  font: 700 clamp(12px, 2dvh, 17px)/1.3 system-ui, sans-serif;
+  letter-spacing: .11em;
+}
+.demon-intro.is-revealed:not(.is-still) :is(.demon-intro-kicker, .demon-intro-awakened) {
+  animation: demon-brief-in 280ms ease-out 330ms both;
+}
+.demon-intro.is-revealed:not(.is-still) :is(.demon-intro-desc, .demon-intro-tips, .demon-intro-start-btn) {
+  animation-delay: 810ms;
+}
+
+.demon-intro .demon-intro-tips li {
+  --skill-color: #f1a368;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  column-gap: 10px;
+  border: 0;
+  border-left: 2px solid var(--skill-color);
+  background: linear-gradient(90deg, #391912e8, #21101378);
+  transition: background-color 180ms ease;
+}
+.demon-intro-tips li:nth-child(2) { --skill-color: #fc8466; }
+.demon-intro-tips li:nth-child(3) { --skill-color: #ffd47d; }
+.demon-intro-tips li:hover { background-color: #5e261f; }
+.demon-intro-tips li svg { width: 21px; height: 21px; grid-row: span 2; color: var(--skill-color); }
+.demon-intro-tips li span { grid-column: 2; }
+
+.demon-intro .demon-intro-start-btn {
+  background: linear-gradient(105deg, #572419, #b04324 46%, #631d19);
+  color: #fff2ce;
+  transition: box-shadow 180ms ease, filter 180ms ease;
+}
+.demon-intro-start-btn:hover { filter: brightness(1.22); box-shadow: 0 0 28px #f3482180; }
+.demon-intro.is-leaving .demon-intro-start-btn { filter: brightness(1.45); }
+
+@keyframes demon-darken { from { opacity: 0; } to { opacity: 1; } }
+@keyframes demon-exit { to { opacity: 0; } }
+@keyframes demon-smoke {
+  from { transform: translate(0, 3%) scale(.94); opacity: .65; }
+  to { transform: translate(4%, -5%) scale(1.1); opacity: 1; }
+}
+
+@media (max-width: 768px), (max-height: 580px) {
+  .demon-intro-portrait { flex: none; width: min(90%, 320px); height: clamp(135px, 40dvh, 300px); }
+}
+
+.demon-intro-final { transition: opacity 240ms ease-out; }
+.demon-intro.is-idle-ready .demon-intro-final { visibility: visible; opacity: 0; }
+.demon-intro-idle { opacity: 0; transition: opacity 240ms ease-out; }
+.demon-intro.is-idle-ready .demon-intro-idle { opacity: 1; }
+.demon-intro.is-revealed:not(.is-still) .demon-intro-idle {
+  animation: demon-heat 1.9s ease-in-out infinite alternate;
+}
+.demon-intro.is-revealed:not(.is-still) .demon-intro-start-btn {
+  background-size: 180% 100%;
+  animation: demon-brief-in 380ms ease-out 810ms both, demon-button-fire 2.8s ease-in-out 1.2s infinite alternate;
+}
+@keyframes demon-heat {
+  from { filter: drop-shadow(0 0 7px #ec5b3455); }
+  to { filter: drop-shadow(0 0 19px #fa6c4590); }
+}
+@keyframes demon-button-fire {
+  from { background-position: 0 0; }
+  to { background-position: 100% 0; }
+}

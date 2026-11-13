@@ -16,12 +16,16 @@ test('a level loads its scenery and the chosen hero, not the menu or other heroe
   assert.ok(!levelUses('assets/music/Nhạc đánh boss.mp3', spec));
 });
 
-test('the boss level adds the guardian, its music and its voice in the current language', () => {
+test('only the selected boss art blocks loading, while audio loads on demand', () => {
   const spec = level(6);
   assert.ok(levelUses('assets/frost-guardian/sheet.png', spec));
-  assert.ok(levelUses('assets/music/Nhạc đánh boss.mp3', spec));
-  assert.ok(levelUses('assets/voice/guardian/vi/g1.mp3', spec));
-  assert.ok(levelUses('assets/voice/aeris/vi/a1.mp3', spec));
+  assert.ok(!levelUses('assets/music/Nhạc đánh boss.mp3', spec));
+  assert.ok(!levelUses('assets/voice/guardian/vi/g1.mp3', spec));
+  assert.ok(!levelUses('assets/voice/aeris/vi/a1.mp3', spec));
   assert.ok(!levelUses('assets/voice/guardian/en/g1.mp3', spec));
   assert.ok(!levelUses('assets/voice/narrator/vi/n1.mp3', spec));
+  assert.ok(levelUses('assets/demon-boss/cave-arena.png', level(13)));
+  assert.ok(!levelUses('assets/demon-boss/cave-arena.png', spec));
+  assert.ok(levelUses('assets/volcano/v2/icefire-11.png', level(11)));
+  assert.ok(!levelUses('assets/volcano/v2/icefire-12.png', level(11)));
 });

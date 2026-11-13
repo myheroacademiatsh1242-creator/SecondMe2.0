@@ -3,6 +3,8 @@ import type { LevelData } from '../logic/types.ts';
 import { livingImage } from './livingAssets.ts';
 import { drawForestBoundary } from './forestBoundary.ts';
 import { drawVolcanoFloor, drawVolcanoWallDecor } from './demonArena.ts';
+import { drawWindBridgeFloor } from './volcanoStages.ts';
+import { WIND_BRIDGE } from '../logic/frostLevels.ts';
 
 // Original generated art: six floor paintings and eight isolated environment props.
 const palettes = [
@@ -34,6 +36,7 @@ export function drawBiomeProp(ctx: CanvasRenderingContext2D, index: number, x: n
 }
 
 export function drawBiomeFloor(ctx: CanvasRenderingContext2D, w: number, h: number, level: LevelData) {
+  if (level.id === 10) return drawWindBridgeFloor(ctx, w, h);
   if (level.id === 11 || level.id === 12) {
     return drawVolcanoFloor(ctx, w, h, level, 0);
   }
@@ -53,6 +56,15 @@ export function drawBiomeFloor(ctx: CanvasRenderingContext2D, w: number, h: numb
 }
 
 export function drawBiomeWalls(ctx: CanvasRenderingContext2D, level: LevelData) {
+  if (level.id === 10) {
+    const bridgeDown = level.doors.some(door => door.liftBridge && door.openProgress < 1);
+    for (const wall of level.walls) {
+      if (wall.x === WIND_BRIDGE.x && wall.width === WIND_BRIDGE.width) continue;
+      if (bridgeDown && wall.x >= WIND_BRIDGE.x && wall.x < WIND_BRIDGE.x + WIND_BRIDGE.width) continue;
+      drawVolcanoWallDecor(ctx, wall, wall.x < WIND_BRIDGE.x + WIND_BRIDGE.width ? 11 : 12);
+    }
+    return;
+  }
   if (level.id === 11 || level.id === 12) {
     for (const wall of level.walls) {
       drawVolcanoWallDecor(ctx, wall, level.id);
@@ -95,6 +107,22 @@ export function drawBiomeWalls(ctx: CanvasRenderingContext2D, level: LevelData) 
 }
 
 export function drawBiomeWeather(ctx: CanvasRenderingContext2D, level: LevelData, time: number, w: number, h: number) {
+  if (level.id === 10) {
+    ctx.save();
+    for (const cold of [true, false]) {
+      const span = cold ? WIND_BRIDGE.x + 100 : w - WIND_BRIDGE.x - WIND_BRIDGE.width + 100;
+      const start = cold ? 0 : w - span;
+      ctx.fillStyle = cold ? '#daf3ff' : '#ffac5d';
+      for (let i = 0; i < 24; i++) {
+        const x = start + ((i * 71 + time * (cold ? 17 : -11)) % span + span) % span;
+        const y = ((i * 113 + time * (cold ? 21 : -32)) % h + h) % h;
+        ctx.globalAlpha = .23 + .22 * (.5 + .5 * Math.sin(i + time * 2));
+        ctx.fillRect(Math.round(x), Math.round(y), 2, cold ? 2 : 3);
+      }
+    }
+    ctx.restore();
+    return;
+  }
   const isVolcano = level.id === 12;
   const isRock = level.id === 11;
   const ice = level.id >= 5 && !isVolcano && !isRock;

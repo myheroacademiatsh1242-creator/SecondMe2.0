@@ -26,8 +26,8 @@ export function ultimateVariant(move: { x: number; y: number }, from: { x: numbe
 /** Aeris. ICICLE_IMPACT is when pixelfx ice/icicle-fall stabs the floor; BEAM_REACH is its beam's length in the sheet;
  *  STOP ends as the arcane/time-stop clock shatters (2.4 s). */
 export const AERIS_ULT = {
-  RAIN: { RADIUS: 150, COUNT: 12, SPAN: 1.6, DAMAGE: 30, HIT_RADIUS: 42, ICICLE_IMPACT: .944 },
-  BEAM: { CHARGE: .4, TIME: 1.2, TICKS: 6, DAMAGE: 22, LENGTH: 400, HALF_WIDTH: 26, BEAM_REACH: 200 },
+  RAIN: { RADIUS: 150, COUNT: 12, SPAN: 1.6, DAMAGE: 23, HIT_RADIUS: 42, ICICLE_IMPACT: .944 },
+  BEAM: { CHARGE: .4, TIME: 1.2, TICKS: 6, DAMAGE: 17, LENGTH: 400, HALF_WIDTH: 26, BEAM_REACH: 200 },
   STOP: { TIME: 2.4 },
 } as const;
 

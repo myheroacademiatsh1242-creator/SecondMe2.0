@@ -128,7 +128,9 @@ export function updateSecurityDoors(
       (id) => plateStateMap.get(id) === true
     );
 
-    const canOpen = (!door.pulse || pulseWindow(door,elapsed).open) && allRequiredPressed && (!door.releasedPlate || plateStateMap.get(door.releasedPlate) === false);
+    const bridgeRaised = door.liftBridge && door.openProgress >= 1;
+    const canOpen = !!bridgeRaised || ((!door.pulse || pulseWindow(door,elapsed).open) && allRequiredPressed && (!door.releasedPlate || plateStateMap.get(door.releasedPlate) === false));
+    const speed = door.liftBridge ? 1.2 : openSpeed;
     const prevOpen = door.isOpen;
     door.isOpen = canOpen;
 
@@ -151,7 +153,7 @@ export function updateSecurityDoors(
     if (door.isOpen) {
       // Animate opening
       if (door.openProgress < 1) {
-        door.openProgress = Math.min(1, door.openProgress + dt * openSpeed);
+        door.openProgress = Math.min(1, door.openProgress + dt * speed);
       }
     } else {
       // Safety check: is player or echo inside the doorway?
@@ -161,7 +163,7 @@ export function updateSecurityDoors(
       // Only close if doorway is unoccupied to prevent getting crushed or stuck
       if (!playerInside && !echoInside) {
         if (door.openProgress > 0) {
-          door.openProgress = Math.max(0, door.openProgress - dt * openSpeed);
+          door.openProgress = Math.max(0, door.openProgress - dt * speed);
         }
       }
     }

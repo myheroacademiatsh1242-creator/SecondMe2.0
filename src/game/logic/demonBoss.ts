@@ -1,6 +1,23 @@
+import { EMBER_DEMON_HP } from './balance.ts';
 import type {BossState} from './campaign.ts';
 
 export type ElementalCoreType = 'frostfire' | 'magma' | 'shadow';
+export const DEMON_CLEAVE_RADIUS = 155;
+export const DEMON_CLEAVE_HALF_ANGLE = 1.05;
+export const DEMON_VOLLEY_SPREAD = .22;
+export function demonVolleyOrigin(boss: BossState) {
+  const angle = Math.atan2(boss.targetY - boss.y, boss.targetX - boss.x);
+  return { angle, x: boss.x + Math.cos(angle) * 38, y: boss.y + Math.sin(angle) * 38 };
+}
+export const DEMON_SHOCKWAVE_DURATION = .48;
+export function demonShockwaveRadius(age: number) {
+  return 24 + 128 * (1 - (1 - Math.min(1, age / DEMON_SHOCKWAVE_DURATION)) ** 2);
+}
+
+export function demonVolleyCount(boss: BossState) {
+  if (boss.phase !== 3) return 5;
+  return boss.demon?.activeElement === 'magma' ? 9 : 7;
+}
 
 export interface DemonCore {
   id: ElementalCoreType;
@@ -79,8 +96,8 @@ export function createDemonBoss(): BossState {
     kind: 'demon',
     x: 800,
     y: 300,
-    hp: 600,
-    maxHp: 600,
+    hp: EMBER_DEMON_HP,
+    maxHp: EMBER_DEMON_HP,
     phase: 1,
     mode: 'stalking',
     timer: 1.5,
@@ -436,11 +453,9 @@ export function updateDemonBoss(
       }
 
       // Minion Summon attack: triggers periodically and more aggressively in Phase 2 & 3
-      const shouldSummon = (b.phase >= 2 || (d.summonCooldown ?? 0) <= 0) && (index % 4 === 3);
+      const shouldSummon = (d.summonCooldown ?? 0) <= 0 && index % 4 === 3;
       if (shouldSummon) {
         b.attack = 'summon';
-        d.summonCooldown = b.phase === 3 ? 11 : 16;
-        d.summonPending = (d.summonPending ?? 0) + (b.phase === 3 ? 4 : 3);
       } else {
         b.attack = dist < 165 && index % 3 !== 2 ? 'melee' : b.phase >= 2 && index % 3 === 2 ? 'triple' : 'volley';
       }
@@ -509,18 +524,16 @@ export function updateDemonBoss(
     d.facingRight = b.targetX > b.x;
     if (b.timer <= 0) {
       if (b.attack === 'melee') {
-        // Heavy forward leap slam towards target on cleave execution:
+        // Resolve the same sector shown during the warning.
         const aim = Math.atan2(b.targetY - b.y, b.targetX - b.x);
-        const lungeDist = d.activeElement === 'frostfire' ? 35 : 28;
-        b.x = Math.max(160, Math.min(1120, b.x + Math.cos(aim) * lungeDist));
-        b.y = Math.max(150, Math.min(580, b.y + Math.sin(aim) * lungeDist));
 
         d.landingImpact = 0.24;
         d.crouch = 14;
         d.slamShake = true;
 
         const within = (p: { x: number; y: number }) =>
-          Math.hypot(p.x - b.x, p.y - b.y) <= 155 && Math.abs(angleDiff(Math.atan2(p.y - b.y, p.x - b.x), aim)) < 1.05;
+          Math.hypot(p.x - b.x, p.y - b.y) <= DEMON_CLEAVE_RADIUS &&
+          Math.abs(angleDiff(Math.atan2(p.y - b.y, p.x - b.x), aim)) < DEMON_CLEAVE_HALF_ANGLE;
 
         if (!evading && within(player)) {
           hit = true;
@@ -537,21 +550,21 @@ export function updateDemonBoss(
             y: b.targetY,
             radius: 60,
             age: 0,
-            delay: 0.1,
+            delay: 0.55,
             life: 3.5,
             tick: 0,
             element: 'magma',
           });
         }
       } else if (b.attack === 'volley') {
-        const aim = Math.atan2(b.targetY - b.y, b.targetX - b.x);
-        const count = b.phase === 3 ? (d.activeElement === 'magma' ? 9 : 7) : 5;
+        const origin = demonVolleyOrigin(b);
+        const count = demonVolleyCount(b);
         const speed = d.activeElement === 'frostfire' ? 260 : b.phase === 3 ? 230 : 190;
         for (let i = 0; i < count; i++) {
-          const a = aim + (i - (count - 1) / 2) * 0.22;
+          const a = origin.angle + (i - (count - 1) / 2) * DEMON_VOLLEY_SPREAD;
           b.projectiles.push({
-            x: b.x,
-            y: b.y,
+            x: origin.x,
+            y: origin.y,
             vx: Math.cos(a) * speed,
             vy: Math.sin(a) * speed,
             life: 5,
@@ -562,6 +575,8 @@ export function updateDemonBoss(
         d.crouch = 16;
         d.slamShake = true;
       } else if (b.attack === 'summon') {
+        d.summonCooldown = b.phase === 3 ? 11 : 16;
+        d.summonPending = (d.summonPending ?? 0) + (b.phase === 3 ? 4 : 3);
         d.landingImpact = 0.38;
         d.crouch = 18;
         d.slamShake = true;
@@ -570,19 +585,21 @@ export function updateDemonBoss(
     }
   } else if (b.mode === 'strike') {
     d.facingRight = b.targetX > b.x;
+    if (b.attack === 'summon' && d.modeAge - dt < DEMON_SHOCKWAVE_DURATION) {
+      const inner = d.modeAge <= dt ? 0 : demonShockwaveRadius(d.modeAge - dt);
+      const outer = demonShockwaveRadius(d.modeAge);
+      const reached = (target: {x:number;y:number}) => {
+        const distance = Math.hypot(target.x-b.x,target.y-b.y);
+        return distance >= inner && distance < outer;
+      };
+      if (!evading && reached(player)) { hit = true; hitPlayer?.(16); }
+      echoes.forEach((echo,index)=>{if(reached(echo))hitEcho?.(index,16);});
+    }
     if (b.timer <= 0) {
       mode('recover', b.phase === 3 ? 0.85 : 1.25);
     }
   } else if (b.mode === 'recover') {
     d.facingRight = target.x > b.x;
-    // Fluid recovery stance: if player is hugging the boss, boss eases back slightly
-    const distToTarget = Math.hypot(target.x - b.x, target.y - b.y);
-    if (distToTarget < 95 && distToTarget > 10) {
-      const stepBackX = (b.x - target.x) / distToTarget;
-      const stepBackY = (b.y - target.y) / distToTarget;
-      b.x = Math.max(160, Math.min(1120, b.x + stepBackX * 30 * dt));
-      b.y = Math.max(150, Math.min(580, b.y + stepBackY * 30 * dt));
-    }
     if (b.timer <= 0) {
       mode('stalking', b.phase === 3 ? 0.5 : 0.9);
     }

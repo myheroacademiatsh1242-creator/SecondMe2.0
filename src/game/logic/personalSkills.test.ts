@@ -1,3 +1,6 @@
+import { comboDamage } from './combo.ts';
+import { ICE_MAGIC } from './iceMagic.ts';
+import { GUARDIAN_HP } from './balance.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Campaign, createBoss } from './campaign.ts';
@@ -32,17 +35,17 @@ test('locked mechanical class cannot be selected; purchased class gets its own s
 test('ice magic warns before its single impact and consumes MP only on successful cast',t=>{
  const g=setup(t);const tick=(g as any).updatePersonalSkill.bind(g);
  g.useSkill();g.useSkill();assert.equal(g.frostZones.length,1);assert.equal(g.mana.value,60);
- tick(.3);assert.equal(g.boss!.hp,240);tick(.31);assert.equal(g.boss!.hp,200);
- tick(.1);assert.equal(g.boss!.hp,200);tick(.3);assert.equal(g.frostZones.length,0);
+ tick(.3);assert.equal(g.boss!.hp,GUARDIAN_HP);tick(.31);assert.equal(g.boss!.hp,GUARDIAN_HP-ICE_MAGIC.DAMAGE);
+ tick(.1);assert.equal(g.boss!.hp,GUARDIAN_HP-ICE_MAGIC.DAMAGE);tick(.3);assert.equal(g.frostZones.length,0);
  g.skillCooldown=0;g.mana.value=39;g.useSkill();assert.equal(g.frostZones.length,0);assert.equal(g.mana.value,39);
 });
 test('sanctuary heals and boosts damage only inside its fixed radius, and expires',t=>{
   const g=setup(t);g.currentLevel.walls=[];g.currentLevel.doors=[];g.characterClass='swordsman';g.health=40;g.player.x=500;g.player.y=300;
   g.useSkill();const tick=(g as any).updatePersonalSkill.bind(g);tick(2);assert.equal(g.health,60);
   const combo=(g as any).updateCombo.bind(g);
-  g.boss!.x=540;g.boss!.y=300;g.attack();combo(.1);assert.equal(g.boss!.hp,240-12*1.2);   // Quick Slash, +20% in the circle
+  g.boss!.x=540;g.boss!.y=300;g.attack();combo(.1);assert.equal(g.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0)*1.2);   // Quick Slash, +20% in the circle
   g.player.x=650;tick(2);assert.equal(g.health,60);g.attack({x:540,y:300});combo(.3);combo(.3);
-  assert.ok(Math.abs(g.boss!.hp-(240-12*1.2-14))<1e-9);                                     // Reverse Slash outside it
+  assert.ok(Math.abs(g.boss!.hp-(GUARDIAN_HP-comboDamage('swordsman',0)*1.2-comboDamage('swordsman',1)))<1e-9);                                     // Reverse Slash outside it
   tick(1.1);assert.equal(g.lightCircle,null);
 });
 test('restart clears personal effects and cooldowns',t=>{

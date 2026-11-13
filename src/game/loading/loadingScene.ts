@@ -59,7 +59,7 @@ const STRIPE = 26;                        // spacing of the light bands in the b
  *   portalOpen  from the start of `activate` (its burst lands on the rumble) through the dive;
  *               its decaying tail runs on past the flash and fades over the next screen.
  */
-const FADE_S = 0.9;                       // the plain fade into a level (CSS .loading-v2 transition matches)
+const FADE_S = 0.28;                      // matches the loading overlay's CSS fade
 const PULL_S = 1.8;                       // the wizard is lifted off the bar and pulled into the portal
 const PULL_LIFT = 0.25;                   // …the first part of it: lifted up, hanging in the pull
 const MOVE_S = 1.5;
@@ -401,7 +401,7 @@ export class LoadingScene {
     const dv = WIZARD_ACCEL * dt;
     this.wizSpeed = want > this.wizSpeed ? Math.min(want, this.wizSpeed + dv) : Math.max(want, this.wizSpeed - dv * 1.5);
     this.shown = Math.min(real, this.shown + (this.wizSpeed * dt) / b.w);
-    if (this.load.done && gap < 1) this.shown = 1;
+    if (this.load.done) this.shown = 1;
     this.wizX = b.x + this.shown * b.w - FOOT_LEAD;
     // Stride rate follows speed: 120 ms per frame standing in, 80 ms at a full sprint.
     const stride = Math.min(1, this.wizSpeed / (WIZARD_MAX_SPEED * 0.8));
@@ -416,7 +416,14 @@ export class LoadingScene {
     // Phases: loading → (real 100%) finishing: let the wizard complete his stride → pull: the
     // portal lifts him off the bar and draws him in → the portal transition (move → activate →
     // dive) → done. Reduced motion: a short fade.
-    if (this.phase === 'loading' && this.shown >= 1 && !this.opts.hold) this.setPhase('finishing');
+    if (this.phase === 'loading' && this.load.done && !this.opts.hold) {
+      if (this.opts.portal && import.meta.env.DEV && new URLSearchParams(location.search).has('portalPreview')) {
+        this.setPhase('finishing');
+      } else {
+        this.setPhase('fade');
+        this.opts.onReveal?.();
+      }
+    }
     else if (this.phase === 'finishing' && this.frame === 0 && this.phaseTime > 0.05) {
       // (A load too quick for the warp sheet to be drawn meanwhile finishes it now.)
       if (this.opts.portal && !this.opts.reducedMotion && transitionArtReady()) this.setPhase(prepareWarpSheet(WARP_FRAMES) ? 'pull' : 'move');

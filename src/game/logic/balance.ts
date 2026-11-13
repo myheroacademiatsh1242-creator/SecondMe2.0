@@ -1,18 +1,31 @@
+export const HERO_MAX_HP = { mage: 100, swordsman: 135, mechanical: 100 } as const;
+export const HERO_COMBO_ATTACK = { mage: 11, swordsman: 19 } as const;
+export const GUARDIAN_HP = 380;
+export const EMBER_DEMON_HP = 1020;
+export const BOSS_PLAYER_DAMAGE = { guardian: 1.25, demon: 1.4 } as const;
+export const SWORD_WAVE_RANGE = 96;
+
+export function encounterBalance(levelId: number) {
+  const progression = Math.max(0, Math.min(11, levelId - 2));
+  return { health: 1 + progression * .065, damage: 1 + progression * .042 };
+}
+
 export const PUZZLE_BALANCE = [
-  { legSeconds:16, shardInterval:5, threeStars:16 },
-  { legSeconds:24, shardInterval:6, threeStars:38 },
-  { legSeconds:30, shardInterval:7, threeStars:55 },
-  { legSeconds:32, shardInterval:8, threeStars:65 },
-  { legSeconds:30, shardInterval:8, threeStars:80 },
-  {legSeconds:0,shardInterval:8,threeStars:120},
-  {legSeconds:60,shardInterval:8,threeStars:140},
-  {legSeconds:65,shardInterval:8,threeStars:160},
-  {legSeconds:65,shardInterval:8,threeStars:200},
-  {legSeconds:70,shardInterval:9,threeStars:230},
-  {legSeconds:75,shardInterval:9,threeStars:250},
-  {legSeconds:70,shardInterval:9,threeStars:290},
+  { legSeconds:14, shardInterval:5, threeStars:16 },
+  { legSeconds:20, shardInterval:8, threeStars:38 },
+  { legSeconds:24, shardInterval:10, threeStars:55 },
+  { legSeconds:26, shardInterval:11, threeStars:65 },
+  { legSeconds:25, shardInterval:10, threeStars:80 },
+  {legSeconds:0, shardInterval:0,threeStars:120},
+  {legSeconds:44, shardInterval:18,threeStars:140},
+  {legSeconds:46, shardInterval:19,threeStars:160},
+  {legSeconds:48, shardInterval:20,threeStars:200},
+  {legSeconds:52, shardInterval:22,threeStars:230},
+  {legSeconds:55, shardInterval:23,threeStars:250},
+  {legSeconds:52, shardInterval:22,threeStars:290},
 ] as const;
-export const SHARD_BONUS = 3;
+export const SHARD_BONUS = 5;
+export const ENEMY_TIME_BONUS = 1;
 export const PUZZLE_HINTS = [
   'Ghi đường tới rune 1 bằng E, nhấn E để lưu rồi Q gọi Echo. Để Echo giữ rune khi bạn đi qua cổng.',
   'Cổng cuối cần rune 1 và 2 cùng sáng. Giữ Echo đầu, rồi ghi đường cho Echo thứ hai.',

@@ -1,3 +1,4 @@
+import { GUARDIAN_HP } from './logic/balance.ts';
 import {makeIceRays} from './logic/iceMagic.ts';
 import test, {type TestContext} from 'node:test';
 import assert from 'node:assert/strict';
@@ -93,10 +94,10 @@ test('boss area attacks hit every Echo and the player; a projectile is consumed 
 test('automatic Echo attacks damage a boss after its existing armor is broken',t=>{
   const {game,update,summon}=setup(t,5);const echo=summon(500,350);echo.status='finished';
   const boss=game.boss!;boss.x=565;boss.y=350;boss.mode='recover';boss.timer=100;boss.burstCooldown=100;
-  update();assert.equal(boss.hp,240,'armor still protects the boss');
+  update();assert.equal(boss.hp,GUARDIAN_HP,'armor still protects the boss');
   boss.pillars.forEach(p=>p.hp=0);boss.armor=0;
   for(let i=0;i<21;i++)update();
-  assert.ok(boss.hp<240,'Echo damages the exposed boss');
+  assert.ok(boss.hp<GUARDIAN_HP,'Echo damages the exposed boss');
 });
 
 test('enemy and boss damage accumulate in the same stability pool',t=>{
@@ -108,12 +109,12 @@ test('enemy and boss damage accumulate in the same stability pool',t=>{
     update();assert.ok(game.echoes.includes(echo));
   }
   boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
-  assert.ok(game.echoes.includes(echo),'24 enemy damage plus 24 boss damage leaves 52 stability');
-  assert.equal(echo.stability,52);
+  assert.ok(game.echoes.includes(echo),'28 enemy damage plus 24 boss damage leaves 48 stability');
+  assert.equal(echo.stability,48);
   boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
-  assert.equal(echo.stability,28);
+  assert.equal(echo.stability,24);
   boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
-  assert.equal(echo.stability,4);boss.mode='warning';boss.timer=.01;update();assert.equal(game.echoes.length,0);
+  assert.equal(game.echoes.length,0);
 });
 
 test('Echo combat cannot damage an enemy through a closed wall',t=>{
@@ -137,7 +138,7 @@ test('passive stability depletion recalls an Echo without any enemy hits',t=>{
   for(let i=0;i<5;i++)hit(5);
   assert.equal(echo.stability,75);assert.ok(game.echoes.includes(echo));
   hit(60);assert.equal(echo.stability,15);
-  game.campaign.echoRunes.restore=1;game.useEchoRune('restore');
+  game.campaign.echoRunes.restore=1;game.campaign.setRuneSlot(0,'restore');game.useEchoRune('restore');
   assert.equal(echo.stability,65);
   hit(64);assert.ok(game.echoes.includes(echo));
   hit(1);assert.ok(!game.echoes.includes(echo));

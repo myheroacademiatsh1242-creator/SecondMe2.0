@@ -1,4 +1,5 @@
-import { COMBO_HITS, hitDuration } from './combo.ts';
+import { GUARDIAN_HP } from './balance.ts';
+import { COMBO_HITS, comboDamage, hitDuration } from './combo.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Campaign, createBoss, swordHit, updateBoss, levelRating, bossShieldFloor, bossSegment, bossSegmentTop } from './campaign.ts';
@@ -63,12 +64,12 @@ test('mage magic and class skill damage the boss, while the class fixes the weap
   game.player.x=game.boss!.x-200;game.player.y=game.boss!.y;
   const target = {x:game.boss!.x,y:game.boss!.y};
   game.attack(target);
-  assert.equal(game.boss!.hp,240);                 // no damage when the cast starts
+  assert.equal(game.boss!.hp,GUARDIAN_HP);                 // no damage when the cast starts
   for(let i=0;i<20;i++)update(.05);
-  assert.equal(game.boss!.hp,228);                 // Arcane Bolt: 0.8 × 15 ATK, once
+  assert.equal(game.boss!.hp,GUARDIAN_HP-comboDamage('mage',0));
   game.useSkill({x:game.boss!.x,y:game.boss!.y});
   for(let i=0;i<7;i++)update(.05);
-  assert.equal(game.boss!.hp,228);
+  assert.equal(game.boss!.hp,GUARDIAN_HP-comboDamage('mage',0));
   assert.equal(game.frostZones.length,1);
   game.goToLobby();game.selectClass('swordsman');
   assert.equal(game.weapon,'sword');
@@ -142,16 +143,16 @@ test('four pillars shield the boss until destroyed, then damage reaches its heal
   assert.equal(game.boss!.pillars.length,4);
   assert.equal(game.boss!.armor,100);
   hit.damageCombatTarget(game.boss!.x,game.boss!.y,60);
-  assert.equal(game.boss!.hp,240);
+  assert.equal(game.boss!.hp,GUARDIAN_HP);
   for(const pillar of game.boss!.pillars)hit.damageCombatTarget(pillar.x,pillar.y,60);
   assert.equal(game.boss!.armor,0);
-  hit.damageCombatTarget(game.boss!.x,game.boss!.y,60);
-  // A quarter of its health gone (81 dealt, stopped at 180): the shield is back, the pillars whole.
-  assert.equal(game.boss!.hp,180);
+  hit.damageCombatTarget(game.boss!.x,game.boss!.y,GUARDIAN_HP/4);
+  // The phase floor stops excess damage and restores the pillars.
+  assert.equal(game.boss!.hp,GUARDIAN_HP*.75);
   assert.equal(game.boss!.armor,100);
   assert.ok(game.boss!.pillars.every(p=>p.hp===p.maxHp));
   hit.damageCombatTarget(game.boss!.x,game.boss!.y,60);
-  assert.equal(game.boss!.hp,180);
+  assert.equal(game.boss!.hp,GUARDIAN_HP*.75);
 });
 
 test('the boss health comes in four quarters, each one behind the four pillars, the last one ending in its death',t=>{
@@ -162,13 +163,13 @@ test('the boss health comes in four quarters, each one behind the four pillars, 
   game.selectLevel(5);game.beginBossFight();
   const hit=game as unknown as {damageCombatTarget(x:number,y:number,amount:number,radius?:number):boolean};
   const boss=game.boss!;
-  assert.deepEqual([bossShieldFloor(boss),bossSegment(boss)],[180,1]);
-  for(const [floor,segment] of [[120,2],[60,3],[0,4]]){
+  assert.deepEqual([bossShieldFloor(boss),bossSegment(boss)],[GUARDIAN_HP*.75,1]);
+  for(const [floor,segment] of [[GUARDIAN_HP*.5,2],[GUARDIAN_HP*.25,3],[0,4]]){
     for(const pillar of boss.pillars)hit.damageCombatTarget(pillar.x,pillar.y,60);
     assert.equal(boss.armor,0);
     boss.mode='stalking';
     while(boss.armor===0)hit.damageCombatTarget(boss.x,boss.y,1000);
-    assert.equal(boss.hp,floor+60);
+    assert.equal(boss.hp,floor+GUARDIAN_HP*.25);
     assert.deepEqual([bossShieldFloor(boss),bossSegment(boss)],[floor,segment]);
     assert.equal((boss.shieldRaise??0)>0,true);
   }
@@ -179,8 +180,8 @@ test('the boss health comes in four quarters, each one behind the four pillars, 
 });
 
 test('each later quarter of its health, the boss pauses less between attacks and recovers sooner',()=>{
-  const gaps=[240,180,120,60].map(hp=>{
-    const boss=createBoss();boss.hp=hp;boss.pillars.forEach(p=>p.hp=0);boss.phase=1;
+  const gaps=[1,.75,.5,.25].map(ratio=>{
+    const boss=createBoss();boss.hp=boss.maxHp*ratio;boss.pillars.forEach(p=>p.hp=0);boss.phase=1;
     boss.mode='recover';boss.timer=0;updateBoss(boss,{x:boss.x+300,y:boss.y},.001,false);
     const pause=boss.timer;
     boss.mode='strike';boss.timer=0;updateBoss(boss,{x:boss.x+300,y:boss.y},.001,false);
@@ -190,10 +191,10 @@ test('each later quarter of its health, the boss pauses less between attacks and
 });
 
 test('standing pillars heal the boss only up to the top of its current quarter',()=>{
-  const boss=createBoss();boss.hp=150;boss.timer=100;
-  assert.equal(bossSegmentTop(boss),180);
+  const boss=createBoss();boss.hp=boss.maxHp*.625;boss.timer=100;
+  assert.equal(bossSegmentTop(boss),GUARDIAN_HP*.75);
   for(let i=0;i<100;i++)updateBoss(boss,{x:100,y:100},.1,false);
-  assert.equal(boss.hp,180);
+  assert.equal(boss.hp,GUARDIAN_HP*.75);
 });
 
 test('skill drops are class-specific and Echo cannot collect one',t=>{
@@ -249,7 +250,7 @@ test('combat Echo pursues and automatically damages an exposed boss',t=>{
   game.boss!.pillars.forEach(p=>p.hp=0);game.boss!.armor=0;game.boss!.timer=100;game.boss!.burstCooldown=100;
   game.echo={x:game.boss!.x-80,y:game.boss!.y,direction:'right',isMoving:false,elapsedMs:0,status:'replaying',samples:[{time:0,x:game.boss!.x-80,y:game.boss!.y,direction:'right'},{time:100,x:game.boss!.x-80,y:game.boss!.y,direction:'right'}],events:[{time:40,kind:'attack',x:game.boss!.x-80,y:game.boss!.y,targetX:game.boss!.x,targetY:game.boss!.y}],nextEvent:0,stability:100,aggroTime:3,characterClass:'mage'};
   for (let i=0;i<5;i++) (game as unknown as {update(dt:number):void}).update(.05);
-  assert.equal(game.boss!.hp,232.5);
+  assert.equal(game.boss!.hp,GUARDIAN_HP-7.5);
 });
 
 test('all six class pickups apply their distinct damage or defense',t=>{
@@ -259,10 +260,10 @@ test('all six class pickups apply their distinct damage or defense',t=>{
   const game=new GameEngine();for(let i=1;i<=5;i++)game.campaign.award(i);
   game.selectLevel(5);game.beginBossFight();
   game.boss!.pillars.forEach(p=>p.hp=0);game.boss!.armor=0;
-  game.boss!.maxHp=960;                             // 240 HP is then its last quarter: no shield returns mid-test
+  game.boss!.maxHp=GUARDIAN_HP*4;                   // The last quarter has no intermediate shield
   const internal=game as unknown as {collectCombatSkill(kind:import('../GameEngine.ts').CombatSkill):void;takeDamage():void};
-  internal.collectCombatSkill('fire');assert.equal(game.boss!.hp,205);assert.equal(game.fireBurnTime,3);
-  internal.collectCombatSkill('lightning');assert.equal(game.boss!.hp,155);
+  internal.collectCombatSkill('fire');assert.equal(game.boss!.hp,GUARDIAN_HP-35);assert.equal(game.fireBurnTime,3);
+  internal.collectCombatSkill('lightning');assert.equal(game.boss!.hp,GUARDIAN_HP-85);
   internal.collectCombatSkill('stone');assert.equal(game.stoneShield,40);
   internal.takeDamage();assert.equal(game.health,100);assert.equal(game.stoneShield,20);
   game.invulnerability=0;internal.takeDamage();assert.equal(game.stoneShield,0);
@@ -273,7 +274,11 @@ test('all six class pickups apply their distinct damage or defense',t=>{
   assert.equal(game.attackCooldown,hitDuration(COMBO_HITS.swordsman[0])/2);
   internal.collectCombatSkill('armor');assert.equal(game.armorShield,20);
   game.invulnerability=0;internal.takeDamage();assert.equal(game.health,100);assert.equal(game.armorShield,0);
-  const before=game.boss!.hp;internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before-55);
+  const before=game.boss!.hp;
+  game.player.x=game.boss!.x-250;game.player.direction='right';
+  internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before);
+  game.player.x=game.boss!.x-80;
+  internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before-55);
 });
 
 test('later trails increase gate and trap count',()=>{
@@ -306,12 +311,12 @@ test('attack cooldown prevents duplicate hits and a dodge prevents immediate dam
   game.boss!.pillars.forEach(p=>p.hp=0);game.boss!.armor=0;
   game.player.x=game.boss!.x-70;game.player.y=game.boss!.y;
   game.attack();game.attack();                     // the second press is too early to count
-  assert.equal(game.boss!.hp,240);
+  assert.equal(game.boss!.hp,GUARDIAN_HP);
   const tick=(game as unknown as {updateCombo(dt:number):void}).updateCombo.bind(game);
   for(let i=0;i<10;i++)tick(.05);
-  assert.equal(game.boss!.hp,228);
+  assert.equal(game.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0));
   game.dodge();(game as unknown as {takeDamage():void}).takeDamage();
-  assert.equal(game.health,100);assert.ok(game.dodgeCooldown>0);
+  assert.equal(game.health,game.maxHealth);assert.ok(game.dodgeCooldown>0);
 });
 
 test('losing and retrying a boss fight keeps sword and restores health and boss', t=>{
@@ -325,6 +330,6 @@ test('losing and retrying a boss fight keeps sword and restores health and boss'
   for(let i=0;i<5;i++){game.invulnerability=0;internal.takeDamage();}
   assert.equal(game.screen,'defeat');game.restartLevel();
   assert.equal(game.screen,'playing');assert.equal(game.health,100);
-  assert.equal(game.boss!.hp,240);assert.equal(game.campaign.unlockedLevel,5);
+  assert.equal(game.boss!.hp,GUARDIAN_HP);assert.equal(game.campaign.unlockedLevel,5);
   assert.equal(game.campaign.completed.length,5);
 });

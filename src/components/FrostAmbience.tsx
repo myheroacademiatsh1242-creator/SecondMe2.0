@@ -23,11 +23,48 @@ const crystalGlints = [
   { x: 340, y: 480, fire: false },
 ];
 
+// Each segment follows a painted stretch of water or lava on the map.
+const flows = [
+  { kind: 'water', from: [42, 61], to: [34, 70], duration: 3.4, count: 4 },
+  { kind: 'waterfall', from: [34, 70], to: [30, 90], duration: 1.8, count: 7 },
+  { kind: 'water', from: [30, 90], to: [21, 99], duration: 2.8, count: 4 },
+  { kind: 'lava', from: [84, 15], to: [80, 36], duration: 3.1, count: 3 },
+  { kind: 'lava', from: [83, 61], to: [78.8, 69], duration: 2.5, count: 3 },
+  { kind: 'lavafall', from: [78.8, 69], to: [78.5, 76], duration: 1.5, count: 3 },
+  { kind: 'lava', from: [78.5, 76], to: [72, 83], duration: 2.6, count: 3 },
+  { kind: 'lava', from: [68, 85], to: [60, 97], duration: 3.3, count: 4 },
+];
+
+const smokePuffs = [
+  { x: 1280, delay: .3, duration: 6.2, drift: -62, turn: -18 },
+  { x: 1294, delay: 1.4, duration: 6.8, drift: -43, turn: 14 },
+  { x: 1302, delay: 2.6, duration: 7.5, drift: -27, turn: -9 },
+  { x: 1284, delay: 3.8, duration: 6.7, drift: -70, turn: 19 },
+  { x: 1296, delay: 5.1, duration: 7.2, drift: -49, turn: -15 },
+  { x: 1278, delay: 6.1, duration: 7.4, drift: -76, turn: 11 },
+];
+
 export function FrostAmbience({ still }: { still?: boolean }) {
   if (still) return null;
 
   return (
     <div className="journey-ambience frost-ambience" aria-hidden="true">
+      {flows.flatMap(({kind, from, to, duration, count}, segment) =>
+        Array.from({length: count}, (_, index) => (
+          <i key={`flow-${segment}-${index}`} className={`frost-map-flow frost-map-${kind}`} style={{
+            '--from-x': `${from[0] + (index % 3 - 1) * .65}%`,
+            '--from-y': `${from[1]}%`,
+            '--to-x': `${to[0] + (index % 3 - 1) * .65}%`,
+            '--to-y': `${to[1]}%`,
+            animationDuration: `${duration}s`,
+            animationDelay: `${-index * duration / count}s`,
+          } as CSSProperties} />
+        )),
+      )}
+      <i className="frost-map-spray" style={at(460, 925, 0, 4.2)} />
+      <i className="frost-map-spray" style={at(440, 950, 1.9, 4.8)} />
+      <i className="frost-map-portal-ring" style={at(145, 151, 0, 3.4)} />
+      <i className="frost-map-portal-ring" style={at(145, 151, 1.7, 3.4)} />
       {/* 1. Mystical Blue Portal - Cyan Glowing Aura (Top-Left) */}
       <i className="map-portal-cyan-glow" style={at(160, 160, 0, 3.2)} />
       <i className="map-portal-spark" style={at(155, 150, 0, 2.5)} />
@@ -47,7 +84,13 @@ export function FrostAmbience({ still }: { still?: boolean }) {
 
       {/* 4. Volcano Caldera Molten Heart & Rising Ash (Top-Right) */}
       <i className="map-volcano-glow" style={at(1244, 211, 0, 2.2)} />
-      <i className="map-volcano-smoke" style={at(1244, 120, 0, 7.5)} />
+      {smokePuffs.map(({ x, delay, duration, drift, turn }, index) => (
+        <i key={x} className={`map-volcano-smoke${index % 2 ? ' smoke-alt' : ''}`} style={{
+          ...at(x, 124, delay, duration),
+          '--smoke-drift': `${drift}%`,
+          '--smoke-turn': `${turn}deg`,
+        } as CSSProperties} />
+      ))}
 
       {/* 5. Canyon Stone Post Torch Flame (Right) */}
       <i className="map-torch-glow" style={at(1088, 750, 0, 2.1)} />

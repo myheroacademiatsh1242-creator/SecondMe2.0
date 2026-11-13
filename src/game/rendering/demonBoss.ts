@@ -1,5 +1,6 @@
 import type {BossState} from '../logic/campaign.ts';
 import type {ElementalCoreType} from '../logic/demonBoss.ts';
+import { DEMON_CLEAVE_HALF_ANGLE, DEMON_CLEAVE_RADIUS, DEMON_SHOCKWAVE_DURATION, demonShockwaveRadius, DEMON_VOLLEY_SPREAD, demonVolleyCount, demonVolleyOrigin } from '../logic/demonBoss.ts';
 
 let sheet: HTMLImageElement | null = null;
 function image() {
@@ -351,13 +352,13 @@ export function drawDemonBoss(ctx: CanvasRenderingContext2D, b: BossState, time:
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(0, 0, 155, -Math.PI / 3, -Math.PI / 3 + p * ((Math.PI * 2) / 3));
+      ctx.arc(0, 0, DEMON_CLEAVE_RADIUS, -DEMON_CLEAVE_HALF_ANGLE, DEMON_CLEAVE_HALF_ANGLE * (2 * p - 1));
       ctx.stroke();
       ctx.restore();
     } else {
       ctx.beginPath();
       ctx.moveTo(b.x, b.y);
-      ctx.arc(b.x, b.y, 155, a - 1.05, a + 1.05);
+      ctx.arc(b.x, b.y, DEMON_CLEAVE_RADIUS, a - DEMON_CLEAVE_HALF_ANGLE, a + DEMON_CLEAVE_HALF_ANGLE);
       ctx.closePath();
       ctx.fillStyle = d.activeElement === 'frostfire' ? '#5de4ff33' : '#fb923c40';
       ctx.strokeStyle = d.activeElement === 'frostfire' ? '#9beaff' : '#ffd58b';
@@ -367,33 +368,59 @@ export function drawDemonBoss(ctx: CanvasRenderingContext2D, b: BossState, time:
     }
   }
 
-  if (b.mode === 'warning' && b.attack === 'volley') {
-    const aimImg = getVfx('telegraphs/aim_ray_indicator.png');
-    const a = Math.atan2(b.targetY - b.y, b.targetX - b.x);
-    const count = d.activeElement === 'magma' ? 9 : 5;
-    if (aimImg && d.activeElement !== 'frostfire') {
-      ctx.save();
-      ctx.imageSmoothingEnabled = false;
-      for (let i = -Math.floor(count / 2); i <= Math.floor(count / 2); i++) {
-        const rayA = a + i * 0.22;
-        ctx.save();
-        ctx.translate(b.x, b.y);
-        ctx.rotate(rayA);
-        ctx.drawImage(aimImg, 0, -8, 256, 16);
-        ctx.restore();
-      }
-      ctx.restore();
-    } else {
-      ctx.strokeStyle = d.activeElement === 'frostfire' ? '#5de4ff' : '#ffad6b';
-      ctx.setLineDash([7, 6]);
-      for (let i = -Math.floor(count / 2); i <= Math.floor(count / 2); i++) {
+  if (b.attack === 'volley' && (b.mode === 'warning' || (b.mode === 'strike' && d.modeAge < .27))) {
+    const origin = demonVolleyOrigin(b);
+    const warning = b.mode === 'warning';
+    const charge = warning ? Math.min(1, d.modeAge / .9) : 1;
+    const fade = warning ? .35 + charge * .65 : 1 - d.modeAge / .27;
+    const ice = d.activeElement === 'frostfire';
+    const edge = ice ? '#78e2ff' : '#ff9d33';
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = edge;
+    if (warning) {
+      ctx.globalAlpha *= .42;
+      ctx.setLineDash([5, 10]);
+      for (let i = -(demonVolleyCount(b) - 1) / 2; i <= (demonVolleyCount(b) - 1) / 2; i++) {
+        const ray = origin.angle + i * DEMON_VOLLEY_SPREAD;
         ctx.beginPath();
-        ctx.moveTo(b.x, b.y);
-        ctx.lineTo(b.x + Math.cos(a + i * 0.22) * 260, b.y + Math.sin(a + i * 0.22) * 260);
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(origin.x + Math.cos(ray) * 190, origin.y + Math.sin(ray) * 190);
         ctx.stroke();
       }
       ctx.setLineDash([]);
+      ctx.globalAlpha = fade;
     }
+    ctx.translate(origin.x, origin.y);
+    ctx.rotate(origin.angle);
+    ctx.scale(1 + (warning ? 0 : d.modeAge * 1.5), 1);
+    ctx.lineWidth = 2;
+    ctx.shadowColor = edge;
+    ctx.shadowBlur = 8;
+    for (const radius of [1, .78]) {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 9 * radius, 28 * radius, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+      const angle = i * Math.PI / 3 + time * 2;
+      ctx.fillStyle = ice ? '#dffaff' : '#ffe593';
+      ctx.fillRect(Math.cos(angle) * 9 - 1, Math.sin(angle) * 28 - 1, 3, 3);
+    }
+    ctx.restore();
+  }
+
+  if (b.mode === 'strike' && (b.attack === 'triple' || b.attack === 'summon') && d.modeAge < DEMON_SHOCKWAVE_DURATION) {
+    const progress = d.modeAge / DEMON_SHOCKWAVE_DURATION;
+    const radius = demonShockwaveRadius(d.modeAge);
+    ctx.save();
+    ctx.globalAlpha = (1 - progress) ** 2;
+    ctx.strokeStyle = d.activeElement === 'frostfire' ? '#bdf6ff' : '#ffc17b';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // 4. Overheat Charge Telegraph Line
@@ -418,6 +445,11 @@ export function drawDemonBoss(ctx: CanvasRenderingContext2D, b: BossState, time:
   if (b.mode === 'warning' && b.attack === 'summon') {
     const p = Math.min(1, d.modeAge / 0.9);
     ctx.save();
+    ctx.strokeStyle = '#ffad616e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, demonShockwaveRadius(DEMON_SHOCKWAVE_DURATION), 0, Math.PI * 2);
+    ctx.stroke();
     ctx.translate(b.x, b.y + 24);
     // Pulsing magma rune circle
     const runeRadius = 78 + Math.sin(time * 12) * 5;
@@ -455,30 +487,25 @@ export function drawDemonBoss(ctx: CanvasRenderingContext2D, b: BossState, time:
     ctx.restore();
   }
 
-  // 5. Draw Projectiles (Pixel Art Fire Projectile VFX)
-  const projPhaseKey = `p${Math.min(3, Math.max(1, b.phase))}`;
-  const projImg = getVfx(`fire_fan/projectile_${projPhaseKey}_sheet.png`);
-  for (const p of b.projectiles) {
-    const isFrost = d.activeElement === 'frostfire';
-    if (!isFrost && projImg) {
-      const angle = Math.atan2(p.vy, p.vx);
-      const frame = Math.floor(time * 12) % 6;
-      ctx.save();
-      ctx.imageSmoothingEnabled = false;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(angle);
-      ctx.drawImage(projImg, frame * 32, 0, 32, 32, -16, -16, 32, 32);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = isFrost ? '#5de4ff' : '#ff6a29';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = isFrost ? '#e8fbff' : '#ffe5a0';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  // Warm orbs use the compact silhouette and yellow cores of the reference.
+  for (const [index, projectile] of b.projectiles.entries()) {
+    const ice = d.activeElement === 'frostfire';
+    const flicker = Math.floor(time * 20 + index) % 3;
+    ctx.save();
+    ctx.translate(Math.round(projectile.x), Math.round(projectile.y));
+    ctx.rotate(Math.atan2(projectile.vy, projectile.vx));
+    ctx.fillStyle = ice ? '#2a8dcc' : '#be411d';
+    ctx.fillRect(-21 - flicker * 2, -2, 17 + flicker * 2, 4);
+    ctx.fillRect(-8, -6, 13, 12);
+    ctx.fillStyle = ice ? '#73deff' : '#ff9b27';
+    ctx.fillRect(-5, -8, 9, 16);
+    ctx.fillRect(-8, -4, 16, 8);
+    ctx.fillStyle = ice ? '#e8fbff' : '#fff187';
+    ctx.fillRect(-2, -5, 7, 10);
+    ctx.fillRect(-5, -2, 12, 4);
+    ctx.globalAlpha *= .65;
+    ctx.fillRect(-24 - flicker * 3, 3 - flicker * 2, 3, 2);
+    ctx.restore();
   }
 
   // 6. Boss Shadow & Fluid Vertical Elevation System

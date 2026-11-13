@@ -1,3 +1,4 @@
+import { puzzleBalance } from './logic/balance.ts';
 import {ECHO_RUNES} from './logic/echoRunes.ts';
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
@@ -357,7 +358,7 @@ test('dev countdown reaches zero without defeat and checkpoints refill it',t=>{
   engine.selectLevel(0);engine.legTimeRemaining=0;
   engine.pauseGame();engine.resumeGame();assert.equal(engine.legTimeRemaining,0);
   const plate=engine.currentLevel.plates[0];engine.player.x=plate.x+plate.width/2;engine.player.y=plate.y+plate.height/2;
-  controls.update(.05);assert.equal(engine.checkpointIndex,1);assert.equal(engine.legTimeRemaining,16);
+  controls.update(.05);assert.equal(engine.checkpointIndex,1);assert.equal(engine.legTimeRemaining,puzzleBalance(1).legSeconds);
   const normal=new GameEngine();normal.restartLevel();normal.legTimeRemaining=.01;
   (normal as unknown as {update(dt:number):void}).update(.05);
   assert.equal(normal.screen,'defeat');assert.equal(normal.defeatReason,'timeout');

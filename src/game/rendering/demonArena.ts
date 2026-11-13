@@ -26,6 +26,16 @@ export {
 const tileImages = new Map<string, HTMLImageElement>();
 const propImages = new Map<string, HTMLImageElement>();
 let assetsPreloaded = false;
+let caveArenaImage: HTMLImageElement | undefined;
+
+function getCaveArenaImage() {
+  if (typeof Image === 'undefined') return null;
+  if (!caveArenaImage) {
+    caveArenaImage = new Image();
+    caveArenaImage.src = `${import.meta.env.BASE_URL}assets/demon-boss/cave-arena.png`;
+  }
+  return caveArenaImage.complete && caveArenaImage.naturalWidth > 0 ? caveArenaImage : null;
+}
 
 export function getVolcanoTile(row: number, col: number): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null;
@@ -316,7 +326,7 @@ function drawAncientPortal(ctx: CanvasRenderingContext2D, x: number, y: number, 
   ctx.restore();
 }
 
-function drawSacrificialAltar(ctx: CanvasRenderingContext2D, cx: number, cy: number, time: number) {
+function drawSacrificialAltar(ctx: CanvasRenderingContext2D, cx: number, cy: number, time: number, drawFloorRings: boolean) {
   const altarImg = getVolcanoProp('altar_brazier');
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -326,7 +336,7 @@ function drawSacrificialAltar(ctx: CanvasRenderingContext2D, cx: number, cy: num
   const ringColors = ['#ff5e0033', '#ff370022', '#ff220015'];
   const ringRadii = [110, 210, 310];
 
-  for (let i = 0; i < ringRadii.length; i++) {
+  for (let i = 0; drawFloorRings && i < ringRadii.length; i++) {
     const pulse = 0.7 + 0.3 * Math.sin(time * 2 + i);
     ctx.strokeStyle = ringColors[i];
     ctx.lineWidth = 2;
@@ -427,6 +437,7 @@ export function drawDemonArena(
   h: number,
   time: number
 ) {
+  const caveArena = getCaveArenaImage();
   preloadVolcanoAssets();
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -435,8 +446,9 @@ export function drawDemonArena(
   const rows = 6;
   const cols = 10;
 
-  // 1. Draw 10x6 Ground Tilemap
-  for (let r = 0; r < rows; r++) {
+  // The illustrated arena already includes its floor rings and perimeter scenery.
+  if (caveArena) ctx.drawImage(caveArena, 0, 0, w, h);
+  for (let r = 0; !caveArena && r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const [tileRow, tileCol] = ARENA_GRID_13[r][c];
       const img = getVolcanoTile(tileRow, tileCol);
@@ -476,16 +488,16 @@ export function drawDemonArena(
   ctx.restore();
 
   // 3. Central Sacrificial Altar & Arena Glyphs
-  drawSacrificialAltar(ctx, 640, 300, time);
+  drawSacrificialAltar(ctx, 640, 300, time, !caveArena);
 
   // 4. Ancient Portal at Boss Entrance / Level Exit (x: 610, y: 90)
   drawAncientPortal(ctx, 610, 85, time);
 
   // 5. Animated Molten Lava Bubbles along the perimeter channels
-  drawAnimatedLava(ctx, time);
+  if (!caveArena) drawAnimatedLava(ctx, time);
 
   // 6. Perimeter Environment Props (Sorted by Y for correct isometric depth)
-  const sortedProps = [...ARENA_PROPS_13].sort((a, b) => a.y - b.y);
+  const sortedProps = caveArena ? [] : [...ARENA_PROPS_13].sort((a, b) => a.y - b.y);
   for (const p of sortedProps) {
     const pImg = getVolcanoProp(p.name);
     ctx.save();

@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { startPreload, startLevelPreload, type LevelLoadSpec } from '../game/loading/preloader.ts';
-import { LoadingScene, preloadLoadingArt, fogTile } from '../game/loading/loadingScene.ts';
+import { LoadingScene, fogTile } from '../game/loading/loadingScene.ts';
 import { layout } from '../game/loading/placement.ts';
 
-preloadLoadingArt();   // the screen's own art starts downloading with the app
 
 /** Fog texture, made once (pixel clusters) and reused as a CSS background. */
 let fogUrl = '';
@@ -21,10 +20,7 @@ const TEXT = {
 /**
  * Loading screen: a pixel forest drawn in code, live portal / wizard / bar on one canvas
  * (src/game/loading/loadingScene.ts), and the progress of real asset loading
- * (src/game/loading/preloader.ts). `level` null is the first load into the lobby (every
- * asset); a level loads just what that level uses. Once loading is done the portal
- * transition plays (loadingScene.ts); onDone(true) comes on its final white flash, which the
- * caller fades out over the next screen (onDone(false): reduced motion, a plain fade).
+ * (src/game/loading/preloader.ts). Once the critical images are ready, fade into the next screen.
  */
 export function LoadingScreen({ language, reducedMotion, level = null, portal = false, onReveal, onDone }: {
   language: 'en' | 'vi'; reducedMotion: boolean; level?: Omit<LevelLoadSpec, 'delayMs'> | null;

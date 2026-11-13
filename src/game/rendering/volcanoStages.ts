@@ -1,3 +1,6 @@
+import { LAVA_RIVER, WIND_BRIDGE } from '../logic/frostLevels.ts';
+import { GATE_PASSABLE_PROGRESS } from '../logic/collision.ts';
+import { pulseWindow } from '../logic/puzzle.ts';
 import type { LevelData, Rect, SecurityDoor, PressurePlate } from '../logic/types.ts';
 
 // ============================================================================
@@ -7,6 +10,72 @@ import type { LevelData, Rect, SecurityDoor, PressurePlate } from '../logic/type
 
 const imageCache = new Map<string, HTMLImageElement>();
 let v2Preloaded = false;
+let atlasImage: HTMLImageElement | undefined;
+let bridgeReference: HTMLImageElement | undefined;
+
+export function windBridgeReference() {
+  if (typeof Image === 'undefined') return null;
+  if (!bridgeReference) {
+    bridgeReference = new Image();
+    bridgeReference.src = `${import.meta.env.BASE_URL}assets/volcano/v2/wind-bridge-reference.png`;
+  }
+  return bridgeReference.complete && bridgeReference.naturalWidth ? bridgeReference : null;
+}
+const floorImages = new Map<number, HTMLImageElement>();
+
+export function icefireFloor(levelId: number) {
+  if (typeof Image === 'undefined') return null;
+  let image = floorImages.get(levelId);
+  if (!image) {
+    image = new Image();
+    image.src = `${import.meta.env.BASE_URL}assets/volcano/v2/icefire-${levelId}.png`;
+    floorImages.set(levelId, image);
+  }
+  return image.complete && image.naturalWidth ? image : null;
+}
+
+export function basaltAtlas() {
+  if (typeof Image === 'undefined') return null;
+  if (!atlasImage) {
+    atlasImage = new Image();
+    atlasImage.src = `${import.meta.env.BASE_URL}assets/volcano/v2/basalt-atlas.png`;
+  }
+  return atlasImage.complete && atlasImage.naturalWidth ? atlasImage : null;
+}
+
+type AtlasRect = [x: number, y: number, width: number, height: number];
+const basaltTiles: AtlasRect[] = [
+  [26, 23, 86, 86], [140, 23, 86, 86], [26, 137, 86, 86],
+  [256, 138, 88, 86], [256, 24, 87, 85],
+];
+const basaltWall: Record<'horizontal' | 'vertical' | 'lava', AtlasRect> = {
+  horizontal: [622, 28, 178, 58],
+  vertical: [619, 319, 47, 109],
+  lava: [734, 253, 291, 45],
+};
+const basaltProps = {
+  shrub: [616, 476, 119, 92],
+  branch: [742, 483, 90, 85],
+  log: [929, 493, 155, 84],
+  rock: [1095, 497, 72, 64],
+  boulders: [613, 669, 122, 82],
+  crystal: [1088, 661, 78, 85],
+  coal: [1270, 589, 87, 64],
+} satisfies Record<string, AtlasRect>;
+type PropPlacement = [kind: keyof typeof basaltProps, x: number, y: number, width: number];
+const courtyardProps: PropPlacement[] = [
+  ['rock', 87, 270, 42], ['shrub', 495, 126, 65], ['log', 218, 330, 78],
+  ['boulders', 460, 330, 64], ['branch', 695, 150, 52], ['shrub', 1192, 177, 68],
+  ['crystal', 1105, 327, 34], ['rock', 528, 546, 42], ['log', 660, 649, 85],
+  ['shrub', 96, 450, 64], ['crystal', 811, 472, 40], ['boulders', 1184, 656, 66],
+];
+const valleyProps: PropPlacement[] = [
+  ['crystal', 96, 299, 42], ['boulders', 338, 285, 61], ['log', 215, 651, 81],
+  ['branch', 348, 480, 53], ['coal', 460, 285, 53], ['crystal', 744, 298, 51],
+  ['crystal', 684, 470, 41], ['boulders', 499, 655, 68], ['coal', 852, 478, 48],
+  ['log', 1061, 644, 80], ['shrub', 1189, 490, 65], ['boulders', 1200, 227, 57],
+  ['crystal', 915, 280, 41], ['branch', 865, 135, 49],
+];
 
 function loadV2(category: string, name: string): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null;
@@ -20,59 +89,20 @@ function loadV2(category: string, name: string): HTMLImageElement | null {
   return img.complete && img.naturalWidth > 0 ? img : null;
 }
 
-export function getV2Tile(name: string) { return loadV2('tiles', name); }
-export function getV2Wall(name: string) { return loadV2('walls', name); }
-export function getV2Gate(name: string) { return loadV2('gates', name); }
-export function getV2Plate(name: string) { return loadV2('plates', name); }
-export function getV2Portal(name: string) { return loadV2('portals', name); }
-export function getV2Grate(name: string) { return loadV2('grates', name); }
-export function getV2Prop(name: string) { return loadV2('props', name); }
+function getV2Gate(name: string) { return loadV2('gates', name); }
+function getV2Plate(name: string) { return loadV2('plates', name); }
+function getV2Portal(name: string) { return loadV2('portals', name); }
+function getV2Prop(name: string) { return loadV2('props', name); }
 
 export function preloadVolcanoV2Assets() {
   if (v2Preloaded || typeof Image === 'undefined') return;
   v2Preloaded = true;
 
-  const tiles = [
-    'floor_basalt_plain', 'floor_basalt_smooth', 'floor_basalt_cracked',
-    'floor_lava_fissure', 'floor_lava_shore_corner', 'floor_lava_shore_straight',
-    'floor_lava_shore_variant', 'floor_lava_shore_inner', 'floor_lava_pool'
-  ];
-  tiles.forEach(t => getV2Tile(t));
-
-  const walls = [
-    'wall_basalt_plain_h', 'wall_basalt_vein_h', 'wall_basalt_slab_v',
-    'wall_basalt_cap_sq', 'wall_basalt_corner_tl', 'wall_basalt_t_junction',
-    'wall_basalt_corner_curve', 'wall_basalt_horizontal', 'fence_iron_short_1',
-    'fence_iron_short_2', 'fence_iron_long', 'wall_post_end'
-  ];
-  walls.forEach(w => getV2Wall(w));
-
-  const gates = [
-    'gate_arch_open', 'gate_arch_chain', 'gate_arch_broken_bars',
-    'gate_bars_closed', 'gate_bars_broken_glow'
-  ];
-  gates.forEach(g => getV2Gate(g));
-
-  const plates = ['plate_flame_dormant', 'plate_flame_active', 'plate_flame_ornate'];
-  plates.forEach(p => getV2Plate(p));
-
-  const portals = ['portal_lava_vortex', 'portal_void_vortex'];
-  portals.forEach(p => getV2Portal(p));
-
-  const grates = [
-    'grate_bars_plain', 'grate_bars_lava', 'grate_mesh_iron',
-    'pedestal_stepping_dormant', 'pedestal_stepping_glowing'
-  ];
-  grates.forEach(g => getV2Grate(g));
-
-  const props = [
-    'pillar_tall_intact', 'pillar_tall_cracked', 'pillar_base_small',
-    'pillar_round_plain', 'pillar_round_cracked', 'pillar_broken_top',
-    'pillar_pedestal', 'rock_boulder_dark', 'rock_coal_pile',
-    'shrub_burnt_bramble', 'log_ember_burnt', 'crystal_lava_cluster',
-    'coal_burning_mound'
-  ];
-  props.forEach(p => getV2Prop(p));
+  basaltAtlas();
+  ['gate_arch_open', 'gate_bars_closed', 'gate_bars_broken_glow'].forEach(getV2Gate);
+  ['plate_flame_dormant', 'plate_flame_active'].forEach(getV2Plate);
+  ['portal_lava_vortex', 'portal_void_vortex'].forEach(getV2Portal);
+  getV2Prop('pillar_tall_intact');
 }
 
 // ============================================================================
@@ -84,260 +114,346 @@ export function drawVolcanoV2Floor(
   w: number,
   h: number,
   level: LevelData,
-  time: number
+  _time: number
 ): boolean {
-  preloadVolcanoV2Assets();
+  const atlas = basaltAtlas();
+  const floor = icefireFloor(level.id);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#252328';
+  ctx.fillRect(0, 0, w, h);
 
-  const tileSize = 64;
-  const cols = Math.ceil(w / tileSize); // 20
-  const rows = Math.ceil(h / tileSize); // 12
-
-  if (level.id === 11) {
-    // ------------------------------------------------------------------------
-    // LEVEL 11: THÁP CANH CỔ THẠCH (Ancient Basalt Watchtower Courtyard)
-    // ------------------------------------------------------------------------
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const dx = c * tileSize;
-        const dy = r * tileSize;
-
-        // Fault line glowing cracks along specific courtyard axes:
-        // Connecting north crypt gate to south courtyard (c === 6 or c === 15)
-        const isFissure = (c === 6 && r >= 3 && r <= 6) ||
-                          (c === 15 && r >= 3 && r <= 7) ||
-                          (r === 7 && c >= 6 && c <= 11);
-
-        const isSmoothPath = (r === 2 || r === 5) || (c === 3 && r <= 3) || (c === 17 && r >= 4 && r <= 6);
-        const isCracked = ((r * 7 + c * 13) % 5 === 0);
-
-        const tile = isFissure
-          ? getV2Tile('floor_lava_fissure')
-          : isSmoothPath
-          ? getV2Tile('floor_basalt_smooth')
-          : isCracked
-          ? getV2Tile('floor_basalt_cracked')
-          : getV2Tile('floor_basalt_plain');
-
-        if (tile) {
-          ctx.drawImage(tile, dx, dy, tileSize, tileSize);
-        } else {
-          ctx.fillStyle = '#222329';
-          ctx.fillRect(dx, dy, tileSize, tileSize);
-        }
-      }
-    }
-
-    // Flagstone grid texture overlay for stone courtyard feel
-    ctx.strokeStyle = '#15161b44';
-    ctx.lineWidth = 1;
-    for (let c = 0; c <= cols; c++) {
-      ctx.beginPath(); ctx.moveTo(c * tileSize, 0); ctx.lineTo(c * tileSize, h); ctx.stroke();
-    }
-    for (let r = 0; r <= rows; r++) {
-      ctx.beginPath(); ctx.moveTo(0, r * tileSize); ctx.lineTo(w, r * tileSize); ctx.stroke();
-    }
-
-  } else if (level.id === 12) {
-    // ------------------------------------------------------------------------
-    // LEVEL 12: THUNG LŨNG NHAM THẠCH (Molten Lava Valley / Canyon)
-    // ------------------------------------------------------------------------
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const dx = c * tileSize;
-        const dy = r * tileSize;
-
-        // Row 0: Boiling molten lava lake
-        // Row 1: Lava shore transitioning to basalt cliff
-        // Row 10: Lava shore transitioning to southern lava lake
-        // Row 11: Molten lava river
-        let tileName = 'floor_basalt_cracked';
-
-        if (r === 0) {
-          tileName = 'floor_lava_pool';
-        } else if (r === 1) {
-          tileName = (c === 0) ? 'floor_lava_shore_corner' : (c === cols - 1) ? 'floor_lava_shore_variant' : 'floor_lava_shore_straight';
-        } else if (r === rows - 2) {
-          tileName = (c === 0) ? 'floor_lava_shore_inner' : 'floor_lava_shore_straight';
-        } else if (r === rows - 1) {
-          tileName = 'floor_lava_pool';
-        } else {
-          // Central canyon pathway
-          const isFissure = ((r + c) % 4 === 0) || (r === 5 && c >= 4 && c <= 16);
-          tileName = isFissure ? 'floor_lava_fissure' : ((r * 3 + c * 5) % 3 === 0 ? 'floor_basalt_cracked' : 'floor_basalt_plain');
-        }
-
-        const tile = getV2Tile(tileName);
-        if (tile) {
-          ctx.drawImage(tile, dx, dy, tileSize, tileSize);
-        } else {
-          ctx.fillStyle = (r === 0 || r === rows - 1) ? '#8b1800' : '#231d20';
-          ctx.fillRect(dx, dy, tileSize, tileSize);
-        }
+  if (floor) {
+    ctx.drawImage(floor, 0, 0, w, h);
+    ctx.fillStyle = '#10121b25';
+    ctx.fillRect(0, 0, w, h);
+  } else if (atlas) {
+    const tileSize = 64;
+    for (let y = 0; y < h; y += tileSize) {
+      for (let x = 0; x < w; x += tileSize) {
+        const row = y / tileSize, column = x / tileSize;
+        const variant = (row * 17 + column * 11 + row * column * 3) % 13;
+        const nearRiver = level.id === 12 && Math.abs(y + tileSize / 2 - LAVA_RIVER.y - LAVA_RIVER.height / 2) < 125;
+        const fissure = variant === 0 || (nearRiver && variant <= 2);
+        const source = fissure ? basaltTiles[4] : basaltTiles[variant % 4];
+        ctx.drawImage(atlas, ...source, x, y, tileSize, tileSize);
       }
     }
   }
 
-  // Soft atmospheric dungeon shadow along edges
-  const vignette = ctx.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, w * 0.68);
-  vignette.addColorStop(0, 'rgba(10, 6, 8, 0)');
-  vignette.addColorStop(0.7, 'rgba(12, 7, 9, 0.25)');
-  vignette.addColorStop(1, 'rgba(14, 8, 10, 0.65)');
+  if (level.id === 12) {
+    const {x, y, width, height} = LAVA_RIVER;
+    ctx.fillStyle = '#b63813';
+    ctx.fillRect(x, y, width, height);
+    if (atlas) {
+      for (let dx = x; dx < x + width; dx += 60) {
+        const dy = ((dx - x) / 60) % 2 === 0 ? 20 : 135;
+        ctx.drawImage(atlas, 370, dy + 2, 86, 88, dx, y, 60, height / 2);
+        ctx.save();
+        ctx.translate(dx + 60, y + height);
+        ctx.rotate(Math.PI);
+        ctx.drawImage(atlas, 370, dy + 2, 86, 88, 0, 0, 60, height / 2);
+        ctx.restore();
+      }
+    }
+  }
+
+  const vignette = ctx.createRadialGradient(w / 2, h / 2, h * .3, w / 2, h / 2, w * .69);
+  vignette.addColorStop(0, '#10080b00');
+  vignette.addColorStop(1, '#10080b88');
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, w, h);
-
   ctx.restore();
   return true;
 }
 
-// ============================================================================
-// LEVEL 11 & 12: WALL & FENCE RENDERING
-// ============================================================================
-
-export function drawVolcanoV2Wall(
-  ctx: CanvasRenderingContext2D,
-  wall: Rect,
-  levelId: number
-) {
-  preloadVolcanoV2Assets();
+export function drawWindBridgeFloor(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const {x, y, width, height} = WIND_BRIDGE;
+  const reference = windBridgeReference();
+  if (reference) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    const bankWidth = w - x - width;
+    ctx.drawImage(reference, 8, 30, 294, 747, 0, 0, x, h);
+    const hotBank = x + width;
+    ctx.drawImage(reference, 952, 30, 123, 747, hotBank, 0, 120, h);
+    ctx.drawImage(reference, 1119, 30, 225, 747, hotBank + 120, 0, bankWidth - 120, h);
+    // Replace the reference's baked portal, rune and gate with nearby terrain.
+    for (const [sx, sy, sw, sh, dx, dy] of [
+      [72, 545, 96, 108, 72, 132], [147, 547, 65, 66, 180, 413],
+      [1140, 198, 118, 116, 1124, 353],
+    ]) ctx.drawImage(reference, sx, sy, sw, sh, dx, dy, sw, sh);
+    ctx.drawImage(reference, 344, 75, 608, 203, x, 0, width, y);
+    ctx.drawImage(reference, 344, 562, 608, 184, x, y + height, width, h - y - height);
+    ctx.drawImage(reference, 344, 75, 608, 203, x, y, width, height / 2);
+    ctx.drawImage(reference, 344, 562, 608, 184, x, y + height / 2, width, height / 2);
+    ctx.restore();
+    return true;
+  }
+  const atlas = basaltAtlas();
+  const canyon = ctx.createLinearGradient(x, 0, x + width, 0);
+  canyon.addColorStop(0, '#3e7986');
+  canyon.addColorStop(.55, '#204853');
+  canyon.addColorStop(.78, '#37616a');
+  canyon.addColorStop(.89, '#65514a');
+  canyon.addColorStop(1, '#392421');
+  ctx.fillStyle = canyon;
+  ctx.fillRect(0, 0, w, h);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-
-  const { x, y, width: w, height: h } = wall;
-  const isOuter = x <= 0 || y <= 0 || x + w >= 1280 || y + h >= 720;
-
-  if (isOuter) {
-    // Outer perimeter: heavy obsidian basalt base
-    ctx.fillStyle = levelId === 12 ? '#12080a' : '#18191e';
-    ctx.fillRect(x, y, w, h);
-
-    // Decorative wall cap along inner boundary
-    ctx.strokeStyle = levelId === 12 ? '#4e2824' : '#3d404a';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
-
+  for (const bank of [{start: 0, end: x, snow: true}, {start: x + width, end: w, snow: false}]) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bank.start, 0, bank.end - bank.start, h);
+    ctx.clip();
+    for (let ty = 0; ty < h; ty += 64) {
+      for (let tx = bank.start; tx < bank.end; tx += 64) {
+        const variant = (Math.floor(tx / 64) * 7 + ty / 64 * 11) % 5;
+        if (atlas) ctx.drawImage(atlas, ...basaltTiles[variant], tx, ty, 64, 64);
+        ctx.fillStyle = bank.snow ? ['#d9f2f6e8','#e4f8fbea','#b2dce9e8','#d3eef4e8','#c7e6f0e8'][variant]
+          : ['#4f292866','#7a3b2955','#43232055','#a34a2933','#662a2444'][variant];
+        ctx.fillRect(tx, ty, 64, 64);
+      }
+    }
     ctx.restore();
-    return;
   }
 
-  // Interior dividing walls
-  const isHorizontal = w >= h;
-
-  if (levelId === 11) {
-    // ------------------------------------------------------------------------
-    // LEVEL 11 WALLS: Basalt stone walls with iron picket fences on top
-    // ------------------------------------------------------------------------
-    // Wall shadow
-    ctx.fillStyle = '#08090d';
-    ctx.fillRect(x + 2, y + 4, w, h);
-
-    // Basalt foundation
-    const basaltImg = getV2Wall('wall_basalt_plain_h');
-    const veinImg = getV2Wall('wall_basalt_vein_h');
-    const slabVImg = getV2Wall('wall_basalt_slab_v');
-    const fenceImg = getV2Wall('fence_iron_long');
-    const fenceShortImg = getV2Wall('fence_iron_short_1');
-    const postImg = getV2Wall('wall_post_end');
-
-    if (isHorizontal) {
-      // Horizontal parapet wall (height ~32)
-      for (let at = 0; at < w; at += 80) {
-        const segW = Math.min(80, w - at);
-        const useVein = (Math.floor(at / 80) % 2 === 1) && veinImg;
-        const img = useVein ? veinImg : basaltImg;
-        if (img) {
-          ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, x + at, y, segW, h);
-        } else {
-          ctx.fillStyle = '#2c272a';
-          ctx.fillRect(x + at, y, segW, h);
-        }
-      }
-
-      // Iron fence mounted along top ledge
-      const fenceH = 24;
-      const fenceY = y - fenceH + 8;
-      for (let fx = 0; fx < w; fx += 64) {
-        const fW = Math.min(64, w - fx);
-        const fImg = fW >= 50 && fenceImg ? fenceImg : fenceShortImg;
-        if (fImg) {
-          ctx.drawImage(fImg, 0, 0, fImg.naturalWidth, fImg.naturalHeight, x + fx, fenceY, fW, fenceH);
-        }
-      }
-
-      // End pillars
-      if (postImg) {
-        ctx.drawImage(postImg, x - 6, y - 8, 16, h + 12);
-        ctx.drawImage(postImg, x + w - 10, y - 8, 16, h + 12);
-      }
-    } else {
-      // Vertical barrier wall (e.g. x=720, x=1080)
-      for (let at = 0; at < h; at += 80) {
-        const segH = Math.min(80, h - at);
-        if (slabVImg) {
-          ctx.drawImage(slabVImg, 0, 0, slabVImg.naturalWidth, slabVImg.naturalHeight, x, y + at, w, segH);
-        } else {
-          ctx.fillStyle = '#2c272a';
-          ctx.fillRect(x, y + at, w, segH);
-        }
-      }
-
-      // Vertical wall pillar cap
-      const pillarCap = getV2Prop('pillar_tall_intact');
-      if (pillarCap) {
-        ctx.drawImage(pillarCap, x - 6, y - 16, w + 12, 32);
-      }
+  // The stepped rock faces sit outside the deck and mark the drop.
+  for (const edge of [x, x + width]) {
+    const cold = edge === x;
+    for (let row = 0; row < h; row += 12) {
+      const depth = 14 + (row * 7 % 19);
+      ctx.fillStyle = cold ? '#527386' : '#754335';
+      ctx.fillRect(cold ? edge : edge - depth, row, depth, 12);
+      ctx.fillStyle = cold ? '#a3c4d2' : '#a45a3e';
+      ctx.fillRect(cold ? edge : edge - 4, row, 4, 9);
     }
-
-  } else {
-    // ------------------------------------------------------------------------
-    // LEVEL 12 WALLS: Fiery basalt canyon crags and cracked cylindrical pillars
-    // ------------------------------------------------------------------------
-    // Wall shadow
-    ctx.fillStyle = '#0a0405';
-    ctx.fillRect(x + 2, y + 4, w, h);
-
-    const veinImg = getV2Wall('wall_basalt_vein_h');
-    const slabImg = getV2Wall('wall_basalt_slab_v');
-
-    if (isHorizontal) {
-      for (let at = 0; at < w; at += 80) {
-        const segW = Math.min(80, w - at);
-        if (veinImg) {
-          ctx.drawImage(veinImg, 0, 0, veinImg.naturalWidth, veinImg.naturalHeight, x + at, y, segW, h);
-        } else {
-          ctx.fillStyle = '#321f21';
-          ctx.fillRect(x + at, y, segW, h);
-        }
-      }
-    } else {
-      // Canyon monolith crags
-      for (let at = 0; at < h; at += 80) {
-        const segH = Math.min(80, h - at);
-        if (slabImg) {
-          ctx.drawImage(slabImg, 0, 0, slabImg.naturalWidth, slabImg.naturalHeight, x, y + at, w, segH);
-        } else {
-          ctx.fillStyle = '#321f21';
-          ctx.fillRect(x, y + at, w, segH);
-        }
-      }
-
-      // Crown top with cracked cylindrical pillar
-      const pillar = (x % 3 === 0) ? getV2Prop('pillar_tall_cracked') : getV2Prop('pillar_round_cracked');
-      if (pillar) {
-        ctx.drawImage(pillar, x - 4, y - 20, w + 8, 38);
-      }
-    }
-
-    // Glowing magma vein edge
-    ctx.strokeStyle = '#ff4d0088';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
   }
+  if (atlas) {
+    for (let row = 0; row < h; row += 48) {
+      ctx.drawImage(atlas, 370, 22, 86, 88, x + width - 43, row, 43, 48);
+    }
+  }
+  ctx.restore();
+  return true;
+}
 
+const riverRocks = [
+  {x:386,y:106,r:24}, {x:492,y:149,r:15}, {x:618,y:88,r:21}, {x:730,y:130,r:29},
+  {x:413,y:615,r:22}, {x:529,y:653,r:26}, {x:663,y:598,r:18}, {x:770,y:653,r:19},
+];
+
+export function drawWindBridgeRiver(ctx: CanvasRenderingContext2D, time: number, height: number) {
+  const {x, width} = WIND_BRIDGE;
+  const atlas = basaltAtlas();
+  const reference = windBridgeReference();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x + 14, 0, width - 83, height);
+  ctx.clip();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 66; i++) {
+    const y = ((i * 79 + time * (26 + i % 5 * 7)) % (height + 100)) - 50;
+    const lane = x + 25 + (i * 83) % (width - 98);
+    const rock = riverRocks.find(r => y > r.y - r.r * 3 && y < r.y + r.r * 4 && Math.abs(lane - r.x) < r.r + 10);
+    const bend = rock ? (lane < rock.x ? -1 : 1) * rock.r * Math.max(0, 1 - Math.abs(y - rock.y) / (rock.r * 3)) : 0;
+    const px = lane + Math.sin(y * .018 + i) * 7 + bend;
+    const length = 12 + i % 6 * 7;
+    ctx.strokeStyle = i % 5 === 0 ? '#d4f6eeb0' : '#85c6cd45';
+    ctx.lineWidth = i % 5 === 0 ? 2.5 : 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px + 8, y - length);
+    ctx.quadraticCurveTo(px + 3, y - length * .4, px, y);
+    ctx.stroke();
+  }
+  for (const rock of riverRocks) {
+    const {x, y, r} = rock;
+    for (let wave = 0; wave < 3; wave++) {
+      const phase = (time * .65 + wave / 3) % 1;
+      ctx.strokeStyle = `rgba(212,247,239,${.52 * (1 - phase)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(x, y + phase * r * 2, r * (1 + phase * .7), r * .55, 0, .18, Math.PI - .18);
+      ctx.stroke();
+    }
+    if (reference) continue;
+    ctx.fillStyle = '#213d46';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 4, r, r * .62, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (atlas) ctx.drawImage(atlas, ...basaltProps.rock, x - r, y - r, r * 2, r * 1.8);
+  }
   ctx.restore();
 }
 
+export function drawWindBridgeDeck(ctx: CanvasRenderingContext2D, progress: number, reducedMotion?: boolean) {
+  if (progress <= 0 || (reducedMotion && progress < 1)) return;
+  const {x, y, width, height} = WIND_BRIDGE;
+  const depth = (1 - progress) ** 1.4;
+  ctx.save();
+  ctx.translate(x + width / 2, y + height / 2 + 92 * depth);
+  ctx.scale(1 - .22 * depth, 1 - .38 * depth);
+  ctx.translate(-x - width / 2, -y - height / 2);
+  ctx.globalAlpha = Math.min(1, progress * 2);
+  const reference = windBridgeReference();
+  if (reference) {
+    ctx.imageSmoothingEnabled = false;
+    // Keep the painted ice and scorch marks while replacing the two baked gate columns.
+    const bands = [[344, 202], [522, 52], [599, 188], [752, 44], [831, 121]];
+    let destination = x;
+    for (const [sourceX, sourceWidth] of bands) {
+      const bandWidth = width * sourceWidth / 607;
+      ctx.drawImage(reference, sourceX, 278, sourceWidth, 284, destination, y - 5, bandWidth, height + 10);
+      destination += bandWidth;
+    }
+    ctx.restore();
+    return;
+  }
+  ctx.fillStyle = '#0a1019aa';
+  ctx.fillRect(x, y + 10, width, height + 9);
+  const deck = ctx.createLinearGradient(x, 0, x + width, 0);
+  deck.addColorStop(0, '#627b86');
+  deck.addColorStop(.45, '#635449');
+  deck.addColorStop(1, '#854e3b');
+  ctx.fillStyle = deck;
+  ctx.fillRect(x, y, width, height);
+  for (let plank = x + 4; plank < x + width; plank += 19) {
+    const seamHeight = 3 + (plank % 5);
+    ctx.fillStyle = '#1b171a99';
+    ctx.fillRect(plank, y, 3, height);
+    ctx.fillStyle = '#c3a68b55';
+    ctx.fillRect(plank + 3, y + seamHeight, 2, height - seamHeight * 2);
+  }
+  for (const rail of [y + 2, y + height - 7]) {
+    ctx.fillStyle = '#25202a';
+    ctx.fillRect(x, rail, width, 5);
+    for (let post = x + 12; post < x + width; post += 64) {
+      ctx.fillStyle = post < x + width / 2 ? '#b0d7df' : '#ce885e';
+      ctx.fillRect(post, rail - 3, 7, 10);
+    }
+    for (let offset = 0; offset < width * .48; offset += 5) {
+      const crust = 4 + (offset * 19 % 13);
+      ctx.fillStyle = offset % 3 === 0 ? '#f0fcff' : '#b5e3ee';
+      ctx.fillRect(x + offset, rail - 2, 5, crust);
+    }
+    for (let offset = Math.floor(width * .67); offset < width; offset += 6) {
+      ctx.fillStyle = '#291e1b';
+      ctx.fillRect(x + offset, rail - 1, 6, 4 + (offset * 11 % 12));
+    }
+  }
+  ctx.restore();
+}
+
+export function drawVolcanoV2Wall(ctx: CanvasRenderingContext2D, wall: Rect, levelId: number) {
+  const { x, y, width, height } = wall;
+  if (levelId === 12 && isLavaBank(wall)) return;
+  const atlas = basaltAtlas();
+  const horizontal = width >= height;
+  const length = horizontal ? width : height;
+  const segments = Math.ceil(length / 112);
+  const step = length / segments;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#110e13';
+  ctx.fillRect(x + 2, y + 4, width, height);
+  ctx.fillStyle = '#29252a';
+  ctx.fillRect(x, y, width, height);
+
+  if (atlas) {
+    for (let segment = 0; segment < segments; segment++) {
+      if (horizontal) {
+        const source = levelId === 12 ? basaltWall.lava : basaltWall.horizontal;
+        ctx.drawImage(atlas, ...source, x + segment * step, y, step, height);
+      } else {
+        ctx.drawImage(atlas, ...basaltWall.vertical, x, y + segment * step, width, step);
+      }
+    }
+  }
+  // Rime gathers on the cold side of the same walls that contain the lava.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+  ctx.clip();
+  const edgeLength = horizontal ? width : height;
+  for (let offset = 0; offset < edgeLength; offset += 4) {
+    const frostX = horizontal ? x + offset : x;
+    const frostY = horizontal ? y : y + offset;
+    const edgeVariation = ((Math.floor(frostX / 4) * 13 + Math.floor(frostY / 4) * 7) % 23);
+    if (frostX * .55 + frostY > 445 + edgeVariation * 5) continue;
+    const depth = 2 + edgeVariation % 6;
+    ctx.fillStyle = '#7697ae';
+    ctx.fillRect(frostX, frostY, horizontal ? 4 : depth, horizontal ? depth : 4);
+    if (edgeVariation % 3 === 0) {
+      ctx.fillStyle = '#bcdae7';
+      ctx.fillRect(frostX, frostY, horizontal ? 4 : 2, horizontal ? 2 : 4);
+    }
+  }
+  ctx.restore();
+  ctx.restore();
+}
+
+function isLavaBank(rect: Rect) {
+  return rect.y === LAVA_RIVER.y && rect.height === LAVA_RIVER.height;
+}
+
+function drawIcefireBridge(ctx: CanvasRenderingContext2D, door: SecurityDoor, time: number, levelId: number) {
+  const {x, y, width, height, openProgress} = door;
+  const atlas = basaltAtlas();
+  const floor = icefireFloor(levelId);
+  ctx.fillStyle = '#231f24';
+  ctx.fillRect(x, y, width, height);
+  if (floor) {
+    ctx.drawImage(floor, 120, 150, floor.naturalWidth - 240, floor.naturalHeight - 300, x, y, width, height);
+  } else if (atlas) {
+    ctx.drawImage(atlas, ...basaltTiles[1], x, y, width, height);
+  }
+  const deckLight = ctx.createLinearGradient(x, y, x + width, y + height);
+  deckLight.addColorStop(0, '#92d5f26b');
+  deckLight.addColorStop(.48, '#152a360a');
+  deckLight.addColorStop(1, '#e66b2b68');
+  ctx.fillStyle = deckLight;
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = '#b4e6fa';
+  ctx.fillRect(x + 10, y + 2, width - 20, 2);
+  ctx.fillStyle = '#e98846';
+  ctx.fillRect(x + 10, y + height - 4, width - 20, 2);
+  if (atlas) {
+    ctx.drawImage(atlas, ...basaltWall.vertical, x, y, 10, height);
+    ctx.drawImage(atlas, ...basaltWall.vertical, x + width - 10, y, 10, height);
+  }
+  ctx.strokeStyle = '#504148';
+  for (let seam = y + 16; seam < y + height; seam += 16) {
+    ctx.beginPath();
+    ctx.moveTo(x + 10, seam);
+    ctx.lineTo(x + width - 10, seam);
+    ctx.stroke();
+  }
+  const passable = openProgress >= GATE_PASSABLE_PROGRESS;
+  if (!passable) {
+    const barWidth = (width - 20) * (1 - openProgress);
+    const barX = x + (width - barWidth) / 2;
+    const barY = y + height / 2 - 8;
+    ctx.fillStyle = '#180f12';
+    ctx.fillRect(barX, barY, barWidth, 16);
+    if (atlas) ctx.drawImage(atlas, ...basaltWall.lava, barX, barY, barWidth, 16);
+  }
+  drawGateStatus(ctx, door, time, x + width / 2, y + height / 2, '#ff7430');
+}
+
+function drawGateStatus(ctx: CanvasRenderingContext2D, door: SecurityDoor, time: number, x: number, y: number, closedColor: string) {
+  const passable = door.openProgress >= GATE_PASSABLE_PROGRESS;
+  const color = passable ? '#45ef90' : closedColor;
+  ctx.fillStyle = color;
+  ctx.fillRect(x - 3, y - 3, 6, 6);
+  if (door.pulse) {
+    const window = pulseWindow(door, time);
+    const duration = window.open ? door.pulse.openSeconds : door.pulse.period - door.pulse.openSeconds;
+    ctx.fillStyle = '#170e13';
+    ctx.fillRect(x - 16, y + 7, 32, 4);
+    ctx.fillStyle = window.open ? '#45ef90' : closedColor;
+    ctx.fillRect(x - 16, y + 7, 32 * window.remaining / duration, 4);
+  }
+}
 // ============================================================================
 // LEVEL 11 & 12: GATES / DOORS RENDERING
 // ============================================================================
@@ -354,6 +470,12 @@ export function drawVolcanoV2Door(
 
   const { x, y, width: w, height: h, orientation, openProgress } = door;
   const isVertical = orientation === 'vertical';
+
+  if ((levelId === 12 && isLavaBank(door)) || (levelId === 11 && door.id === 'crypt_back')) {
+    drawIcefireBridge(ctx, door, time, levelId);
+    ctx.restore();
+    return;
+  }
 
   // Ground threshold underneath gate
   ctx.fillStyle = levelId === 12 ? '#3a1208' : '#232025';
@@ -443,19 +565,7 @@ export function drawVolcanoV2Door(
     }
   }
 
-  // Rune status crystal / gem above gate
-  const gemX = x + w / 2;
-  const gemY = y - 6;
-  const gemPulse = 0.6 + 0.4 * Math.sin(time * 3);
-
-  ctx.save();
-  ctx.fillStyle = isOpen ? '#38ef7d' : (levelId === 12 ? '#ff4d00' : '#ffaa00');
-  ctx.shadowColor = ctx.fillStyle;
-  ctx.shadowBlur = isOpen ? 12 : 6 * gemPulse;
-  ctx.beginPath();
-  ctx.arc(gemX, gemY, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  drawGateStatus(ctx, door, time, x + w / 2, y - 6, levelId === 12 ? '#ff7430' : '#ffaa40');
 
   ctx.restore();
 }
@@ -658,113 +768,26 @@ export function drawVolcanoV2ExitPortal(
 
 export function drawVolcanoV2StageDecor(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
+  _w: number,
+  _h: number,
   lvl: LevelData,
   clear: Rect[]
 ) {
-  preloadVolcanoV2Assets();
+  const atlas = basaltAtlas();
+  if (!atlas) return;
+  const layout = lvl.id === 12 ? valleyProps : courtyardProps;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-
-  let seed = lvl.id * 929 + 41;
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-
-  const hits = (a: Rect, b: Rect, pad = 0) =>
-    a.x < b.x + b.width + pad &&
-    a.x + a.width > b.x - pad &&
-    a.y < b.y + b.height + pad &&
-    a.y + a.height > b.y - pad;
-
-  const placed: Rect[] = [];
-
-  // Pool of authentic props extracted from user sheet
-  const pool11 = [
-    { name: 'pillar_tall_intact', w: 38, h: 90 },
-    { name: 'pillar_tall_cracked', w: 38, h: 90 },
-    { name: 'pillar_broken_top', w: 45, h: 78 },
-    { name: 'pillar_pedestal', w: 44, h: 66 },
-    { name: 'rock_boulder_dark', w: 46, h: 50 },
-    { name: 'rock_coal_pile', w: 54, h: 50 },
-    { name: 'shrub_burnt_bramble', w: 56, h: 50 },
-    { name: 'log_ember_burnt', w: 68, h: 44 },
-    { name: 'grate_bars_plain', w: 48, h: 48 },
-    { name: 'grate_mesh_iron', w: 46, h: 48 }
-  ];
-
-  const pool12 = [
-    { name: 'crystal_lava_cluster', w: 48, h: 54 },
-    { name: 'coal_burning_mound', w: 52, h: 42 },
-    { name: 'grate_bars_lava', w: 52, h: 52 },
-    { name: 'log_ember_burnt', w: 68, h: 44 },
-    { name: 'shrub_burnt_bramble', w: 56, h: 50 },
-    { name: 'rock_coal_pile', w: 54, h: 50 },
-    { name: 'pedestal_stepping_glowing', w: 42, h: 68 },
-    { name: 'pillar_tall_cracked', w: 38, h: 90 }
-  ];
-
-  const pool = lvl.id === 12 ? pool12 : pool11;
-  const targetCount = lvl.id === 12 ? 18 : 20;
-
-  for (let attempt = 0; attempt < 500 && placed.length < targetCount; attempt++) {
-    const item = pool[Math.floor(rand() * pool.length)];
-    const flip = rand() > 0.5;
-
-    let x: number, y: number;
-    if (attempt % 2 === 0 && lvl.walls.length > 0) {
-      // Along interior walls
-      const wall = lvl.walls[Math.floor(rand() * lvl.walls.length)];
-      const side = rand() > 0.5 ? 1 : -1;
-      x = side > 0 ? wall.x + wall.width + item.w * 0.6 : wall.x - item.w * 0.6;
-      y = wall.y + rand() * wall.height;
-    } else {
-      // Near perimeter margins
-      x = 85 + rand() * (w - 170);
-      y = rand() > 0.5 ? 80 + rand() * 85 : h - 80 - rand() * 85;
-    }
-
-    const rect: Rect = {
-      x: x - item.w / 2,
-      y: y - item.h * 0.7,
-      width: item.w,
-      height: item.h
-    };
-
-    if (
-      rect.x < 55 ||
-      rect.y < 55 ||
-      rect.x + rect.width > w - 55 ||
-      rect.y + rect.height > h - 55
-    ) {
-      continue;
-    }
-
-    if (
-      clear.some(c => hits(rect, c, 18)) ||
-      lvl.walls.some(wall => hits(rect, wall, 6)) ||
-      placed.some(p => hits(rect, p, 24))
-    ) {
-      continue;
-    }
-
-    placed.push(rect);
-    const img = getV2Prop(item.name) || getV2Grate(item.name);
-    if (img) {
-      ctx.save();
-      if (flip) {
-        ctx.translate(x, y);
-        ctx.scale(-1, 1);
-        ctx.drawImage(img, -item.w / 2, -item.h * 0.7, item.w, item.h);
-      } else {
-        ctx.drawImage(img, rect.x, rect.y, item.w, item.h);
-      }
-      ctx.restore();
-    }
+  for (const [kind, x, y, width] of layout) {
+    const source = basaltProps[kind];
+    const height = width * source[3] / source[2];
+    const rect = {x: x - width / 2, y: y - height, width, height};
+    if ([...clear, ...lvl.walls].some(area =>
+      rect.x < area.x + area.width && rect.x + rect.width > area.x &&
+      rect.y < area.y + area.height && rect.y + rect.height > area.y
+    )) continue;
+    ctx.drawImage(atlas, ...source, rect.x, rect.y, width, height);
   }
-
   ctx.restore();
 }
 
@@ -783,12 +806,12 @@ export function drawVolcanoDynamicEffects(
 
   ctx.save();
 
-  // 1. Level 12: Animated bubbling lava in north and south lakes
+  // Animated bubbles follow the unbridged river sections.
   if (level.id === 12) {
-    const bubbleSpots = [
-      { x: 120, y: 35 }, { x: 380, y: 40 }, { x: 740, y: 32 }, { x: 1050, y: 38 },
-      { x: 220, y: 680 }, { x: 540, y: 685 }, { x: 890, y: 678 }, { x: 1180, y: 682 }
-    ];
+    const bubbleSpots = level.walls.filter(isLavaBank).flatMap(wall => [
+      {x: wall.x + wall.width * .3, y: wall.y + 29},
+      {x: wall.x + wall.width * .7, y: wall.y + 64},
+    ]);
 
     for (let i = 0; i < bubbleSpots.length; i++) {
       const b = bubbleSpots[i];

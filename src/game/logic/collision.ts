@@ -118,8 +118,8 @@ export function getActiveObstacles(
 
   for (const door of doors) {
     // If door is closed or still opening/closing below threshold
-    if (door.openProgress < GATE_PASSABLE_PROGRESS) {
-      if (door.openProgress === 0) {
+    if (door.openProgress < (door.liftBridge ? 1 : GATE_PASSABLE_PROGRESS)) {
+      if (door.liftBridge || door.openProgress === 0) {
         // Fully closed door: single solid obstacle
         obstacles.push({
           x: door.x,

@@ -38,7 +38,7 @@ export function trailObjective(game: GameEngine): { action: TrailAction; target:
     const release = level.plates.find(plate => plate.id === nextGate.releasedPlate);
     if (release && game.echoes.some(echo => occupies(echo, release))) return { action: 'release', target: nextGate };
     if(nextGate.pulse&&!nextGate.isOpen)return {action:'rhythm',target:nextGate};
-    return { action: nextGate.openProgress >= GATE_PASSABLE_PROGRESS ? 'cross' : 'opening', target: nextGate };
+    return { action: nextGate.openProgress >= (nextGate.liftBridge ? 1 : GATE_PASSABLE_PROGRESS) ? 'cross' : 'opening', target: nextGate };
   }
   if(target?.wardLocked){const enemy=game.enemies.find(e=>e.hp>0&&target.wardEnemyIds?.includes(e.id));if(enemy)return{action:'ward',target:{x:enemy.x-18,y:enemy.y-18,width:36,height:36}};}
   if (!target) return { action: 'exit', target: level.exit };

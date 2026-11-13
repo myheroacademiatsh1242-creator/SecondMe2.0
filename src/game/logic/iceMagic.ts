@@ -1,4 +1,4 @@
-export const ICE_MAGIC={RADIUS:82,WARNING:.6,IMPACT:.3,DAMAGE:40,COOLDOWN:6} as const;
+export const ICE_MAGIC={RADIUS:100,WARNING:.6,IMPACT:.3,DAMAGE:29,COOLDOWN:6} as const;
 export const FROST_STRIKE={LENGTH:300,HALF_WIDTH:22,SPREAD:.35,LIFE:2.3,FADE:.5,TICK:.75,DAMAGE:24,SLOW:.55,SLOW_TIME:1.2} as const;
 export interface FrostZone {x:number;y:number;radius:number;timer:number;struck:boolean}
 export interface IceRay {x:number;y:number;angle:number;timer:number;tick:number}

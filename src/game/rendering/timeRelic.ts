@@ -1,3 +1,4 @@
+import { SHARD_BONUS } from '../logic/balance.ts';
 import { livingImage } from './livingAssets.ts';
 import { drawPixelInteraction } from './pixelInteractions.ts';
 
@@ -28,7 +29,7 @@ export function drawTimeRelic(ctx: CanvasRenderingContext2D, x: number, y: numbe
   ctx.globalAlpha = 1;
   if (hint) {
     ctx.font = '600 11px "Second Me Pixel", monospace';ctx.textAlign = 'center';ctx.shadowColor = '#10231a';ctx.shadowBlur = 4;
-    ctx.fillStyle = '#ffedbd';ctx.fillText('+3s', x, y - 32 + bob);
+    ctx.fillStyle = '#ffedbd';ctx.fillText(`+${SHARD_BONUS}s`, x, y - 32 + bob);
   }
   ctx.restore();
 }

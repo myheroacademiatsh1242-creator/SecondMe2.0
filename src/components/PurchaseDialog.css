@@ -21,3 +21,25 @@ html body .purchase-dialog>footer{display:grid;grid-template-columns:1.4fr 1fr;g
 html body :is(#root,.modal-backdrop) .purchase-dialog>footer>button{display:flex;align-items:center;justify-content:center;min-height:48px;padding:8px!important;border:1px solid #9d8c58!important;border-image:none!important;background:#343c2d!important;font-size:25px!important;line-height:1.2;color:#e4d7ac!important;box-shadow:none!important}
 html body :is(#root,.modal-backdrop) .purchase-dialog>footer>button:first-child{background:#d4bb77!important;border-color:#f0daa0!important;color:#302b1c!important;text-shadow:none!important}
 html body .purchase-dialog button:focus-visible,html body .purchase-dialog input:focus-visible{outline:2px solid #ffe3a0;outline-offset:3px}
+
+.trading-confirm-backdrop.outfit-confirm-backdrop {
+  justify-content: center;
+}
+
+html body :is(#root,.modal-backdrop) .trading-confirm.purchase-dialog.outfit-confirm {
+  width: 480px;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 32px;
+}
+
+.outfit-confirm .trading-confirm-item canvas {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.outfit-confirm footer > button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

@@ -7,11 +7,11 @@ import { ManaPool, MAX_MP, comboManaCost, skillManaCost } from './logic/mana.ts'
 import {SHOP_ITEMS,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
 import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logic/damage.ts';
-import { createEnemies, updateEnemies, type Enemy } from './logic/enemies.ts';
+import { createCaveSlimes, createEnemies, ENEMY_STATS, EMBER_SLIME_ID, updateEnemies, type Enemy } from './logic/enemies.ts';
 import { ECHO_RUNES, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
 import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
 import {ICE_MAGIC,FROST_STRIKE,insideIceRay,type FrostZone} from './logic/iceMagic.ts';
-import { puzzleBalance, SHARD_BONUS, PUZZLE_HINTS } from './logic/balance.ts';
+import { puzzleBalance, SHARD_BONUS, ENEMY_TIME_BONUS, PUZZLE_HINTS, HERO_MAX_HP, GUARDIAN_HP, BOSS_PLAYER_DAMAGE, SWORD_WAVE_RANGE, encounterBalance } from './logic/balance.ts';
 import { TutorialDirector, type GuideTopic } from './logic/tutorials.ts';
 import { crossedGateTowardExit, isPuzzleExitOpen } from './logic/puzzle.ts';
 /**
@@ -303,7 +303,7 @@ export class GameEngine {
   public get isTraining() { return this.currentLevel.id === TRAINING_LEVEL_ID; }
   public legTimeRemaining: number | null = null;
   public timePickup: { x: number; y: number } | null = null;
-  public pickupSpawnTimer = 5;
+  public pickupSpawnTimer: number = puzzleBalance(1).shardInterval;
   private shardClaimedThisLeg = false;
   private timeItemsUsedThisLevel = 0;
   public trappedTime = 0;
@@ -340,7 +340,14 @@ export class GameEngine {
   public skillDropTimer = 5;
   public stoneShield = 0;
   public bossIntroduction = false;
-  public beginBossFight() { this.bossIntroduction=false;this.heldKeys.clear();this.notifyHUD(); }
+  private demonPreludeWait = 0;
+  private demonRevealed = false;
+  public revealDemon() { if (this.bossIntroduction && this.boss?.kind === 'demon') this.demonRevealed = true; }
+  public beginBossFight() {
+    if (!this.bossIntroduction) return;
+    this.revealDemon();
+    this.bossIntroduction=false;this.heldKeys.clear();this.notifyHUD();
+  }
   public armorShield = 0;
   public hasteTime = 0;
   public fireBurnTime = 0;
@@ -642,16 +649,19 @@ export class GameEngine {
     this.guides.reset();
     this.slowed = false;
     this.defeatReason = 'damage';
-    this.maxHealth=PLAYER_MAX_HP;this.usedSupplies.clear();this.supportAlly=null;
+    this.maxHealth=HERO_MAX_HP[this.characterClass];this.usedSupplies.clear();this.supportAlly=null;
     this.health = this.maxHealth;
     this.hurtFlash=0;this.incomingHits=[];
     this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
     this.combatHits = [];
     this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.finalGateCrossed = false; this.exitOpenedAt = null;
-    this.boss = this.currentLevel.id===13?createDemonBoss():this.currentLevel.id === 6 ? createBoss() : null;
-    if(this.boss?.kind==='demon')loadDemonSprites();
+    this.boss = this.currentLevel.id === 6 ? createBoss() : null;
+    this.demonPreludeWait = 0;
+    this.demonRevealed = false;
+    if(this.currentLevel.id===13)loadDemonSprites();
     this.bossIntroduction = !!this.boss;
     this.enemies=createEnemies(this.currentLevel);
+    if(this.currentLevel.id===13)this.enemies.push(...createCaveSlimes());
     this.magicShots = [];
     this.combo?.cancel(); this.comboShots = []; this.comboFx = []; this.damageTexts = []; this.lunge.time = 0; this.hitFeel.reset(); this.pfx = []; this.rage.reset(); this.delayedHits = []; this.ultBeam = null; this.timeStop = 0;
     preloadComboSprites(); preloadPfx(['hit-spark', 'crit-hit', 'shield-block', ...(this.characterClass === 'mage' ? ['icicle-fall', 'spell-charge', 'arcane-beam', 'time-stop'] as const : [])]);
@@ -672,7 +682,7 @@ export class GameEngine {
     document.body.dataset.state = 'playing';
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
     if(this.isTraining){this.showBanner(this.language==='vi'?'Bãi tập (dev) · Hình nộm không chết, không đánh trả · Cổng ra để về trại':'Training ground (dev) · Dummies never die or fight back · Exit portal returns to camp',6);this.voiceLevelStart();this.notifyHUD();return;}
-    if(this.currentLevel.id===13)this.showBanner(this.currentLevel.description,3.2);
+    if(this.currentLevel.id===13)this.showBanner(this.language==='vi'?'Hang Tâm Hỏa':'Ember Cave',3);
     else if(this.currentLevel.id>=7)this.showBanner(this.currentLevel.description,8);
     else if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
     this.voiceLevelStart();
@@ -683,7 +693,7 @@ export class GameEngine {
   private voiceLevelStart() {
     voice.stopAll();
     void voice.preload(this.voiceRole);
-    if(this.boss?.kind==='demon'){voice.say(this.voiceRole,'combatStart',{delay:1});return;}
+    if(this.currentLevel.id===13){voice.say(this.voiceRole,'combatStart',{delay:1});return;}
     if (this.boss) {
       // The Guardian laughs at the intruders, then the hero answers with a battle cry.
       void voice.preload('guardian');
@@ -806,7 +816,7 @@ export class GameEngine {
   private autoRevive(){
     if(this.usedSupplies.has('chances'))return false;
     if(this.campaign.chanceCharges===0){if(this.campaign.supplies.chances<=0)return false;this.campaign.supplies.chances--;this.campaign.chanceCharges=3;}
-    this.maxHealth=100-(3-this.campaign.chanceCharges)*10;
+    this.maxHealth=HERO_MAX_HP[this.characterClass]-(3-this.campaign.chanceCharges)*10;
     this.campaign.chanceCharges--;this.usedSupplies.add('chances');
     this.reviveAt(this.player.x,this.player.y);this.campaign.save();
     this.showBanner(this.language==='vi'?`3 cơ hội · Đã hồi sinh · ${this.campaign.chanceCharges} lượt còn lại`:`Three chances · Revived · ${this.campaign.chanceCharges} charges left`);
@@ -849,6 +859,7 @@ export class GameEngine {
       } else this.campaign.bossDefeated = true;
       this.campaign.save();
       this.bossDeathPending = true;
+      if (this.boss.demon) this.boss.demon.zones=[];
       this.boss.iceRays=[];this.boss.projectiles=[];this.frostSlow=0;this.frostZones=[];
       this.bossDeathElapsed = 0;
       this.heldKeys.clear();
@@ -898,7 +909,15 @@ export class GameEngine {
       const result=applyDamage(enemy.hp,amount);const dealt=result.dealt;enemy.hp=result.hp;enemy.hitFlash=.18;
       this.combatHits.push({x:enemy.x,y:enemy.y-30,damage:Math.round(dealt*10)/10,life:.7,broken:enemy.hp===0});this.combatHits=this.combatHits.slice(-24);
       this.renderer.emitMagic('sparkle',enemy.x,enemy.y,heavy?48:24);sounds.playIceHit(false);
-      if(enemy.hp===0){enemy.deathAge=0;if(this.legTimeRemaining!==null)this.legTimeRemaining=Math.max(this.legTimeRemaining,Math.min(puzzleBalance(this.currentLevel.id).legSeconds,this.legTimeRemaining+3));this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);this.showBanner(this.language==='vi'?'Hạ quái · +3 giây · +1 lượt Echo':'Enemy defeated · +3s · +1 Echo charge');}
+      if(enemy.hp===0){
+        enemy.deathAge=0;
+        const budget=puzzleBalance(this.currentLevel.id).legSeconds;
+        const timeBonus=this.legTimeRemaining===null?0:Math.min(ENEMY_TIME_BONUS,Math.max(0,budget-this.legTimeRemaining));
+        if(this.legTimeRemaining!==null)this.legTimeRemaining+=timeBonus;
+        this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);
+        const label=this.language==='vi'?'Hạ quái · +1 lượt Echo':'Enemy defeated · +1 Echo charge';
+        this.showBanner(timeBonus>0?`${label} · +${Number(timeBonus.toFixed(1))}s`:label);
+      }
       this.notifyHUD();return true;
     }
     if (!this.boss || this.bossDeathPending || this.boss.hp<=0) return false;
@@ -1068,7 +1087,7 @@ export class GameEngine {
       stone:['Stone shield: absorb 40 damage','Khiên đá: hấp thụ 40 sát thương'],
       haste:['Haste: attack twice as fast for 6s','Tăng tốc chém gấp đôi trong 6 giây'],
       armor:['Armor: absorb 20 damage','Giáp: hấp thụ 20 sát thương'],
-      wave:['Sword wave: 55 damage','Kiếm quang: 55 sát thương'],
+      wave:['Close-range sword burst: 55 damage','Kiếm quang cận chiến: 55 sát thương'],
     };
     this.showBanner(names[kind][this.language==='vi'?1:0],3);
     this.combatFlash={x:this.player.x,y:this.player.y,kind,time:.65};
@@ -1077,7 +1096,7 @@ export class GameEngine {
     if(kind==='stone')this.stoneShield=SHIELD.stone;
     else if(kind==='armor')this.armorShield=SHIELD.armor;
     else if(kind==='haste')this.hasteTime=6;
-    else if(aim) {
+    else if(aim || kind==='wave') {
       if(kind==='lightning' || kind==='wave') {
         // Ultimate: shout the build-up, and release the hit on the skill name.
         const length = voice.lengthOf(this.voiceRole, kind);
@@ -1094,8 +1113,22 @@ export class GameEngine {
 
   private releaseCombatSkill(kind:CombatSkill) {
     const aim=this.combatAim();
-    if(!aim) return;
-    const damage=kind==='fire'?35:kind==='lightning'?50:55;
+    if(!aim && kind!=='wave') return;
+    if(kind==='wave'){
+      const facing=this.player.direction;
+      const direction=aim??this.cursorTarget??{
+        x:this.player.x+(facing==='left'?-1:facing==='right'?1:0),
+        y:this.player.y+(facing==='up'?-1:facing==='down'?1:0),
+      };
+      const angle=Math.atan2(direction.y-this.player.y,direction.x-this.player.x);
+      const x=this.player.x+Math.cos(angle)*40,y=this.player.y+Math.sin(angle)*40;
+      this.damageArea(x,y,SWORD_WAVE_RANGE-40,55,new Set(),3,true);
+      this.combatFlash={x,y,kind,time:.65};
+      this.notifyHUD();
+      return;
+    }
+    if(!aim)return;
+    const damage=kind==='fire'?35:50;
     if(this.damageCombatTarget(aim.x,aim.y,damage,65) && kind==='fire' && this.boss?.armor===0) { this.fireBurnTime=3; this.fireBurnTick=1; }
     this.combatFlash={x:aim.x,y:aim.y,kind,time:.65};
     this.notifyHUD();
@@ -1118,7 +1151,7 @@ export class GameEngine {
 
   public attack(target?: { x: number; y: number }) {
     if(this.orientationBlocked||this.bossIntroduction||this.inventoryOpen||this.runeEditing||this.guides.blocking)return;
-    if (this.screen !== 'playing' || this.bossDeathPending || this.exitTravelRemaining > 0) return;
+    if (this.screen !== 'playing' || (this.bossDeathPending && this.boss?.kind !== 'demon') || this.exitTravelRemaining > 0) return;
     const combo = this.comboFor();
     if (combo) {
       if (this.dodgeTime > 0) return;                   // mid-dodge: no attack
@@ -1267,7 +1300,7 @@ export class GameEngine {
 
   /** V / middle button / touch: spends a full rage bar on the hero's Ultimate, picked by how she is moving. */
   public useUltimate(target?: { x: number; y: number }) {
-    if (this.orientationBlocked || this.screen !== 'playing' || this.bossDeathPending || this.exitTravelRemaining > 0) return;
+    if (this.orientationBlocked || this.screen !== 'playing' || (this.bossDeathPending && this.boss?.kind !== 'demon') || this.exitTravelRemaining > 0) return;
     if (this.bossIntroduction || this.inventoryOpen || this.runeEditing || this.guides.blocking || !this.hasUltimate) return;
     if (this.ultBeam || this.timeStop > 0 || !this.rage.full) return;
     const aim = target ?? this.combatAim() ?? this.cursorTarget ?? { x: this.player.x + (this.player.direction === 'left' ? -200 : 200), y: this.player.y };
@@ -1338,7 +1371,7 @@ export class GameEngine {
 
   public useSkill(_target?: { x: number; y: number }) {
     if(this.orientationBlocked)return;
-    if (this.screen !== 'playing' || this.bossDeathPending || this.exitTravelRemaining > 0 || this.skillCooldown > 0) return;
+    if (this.screen !== 'playing' || (this.bossDeathPending && this.boss?.kind !== 'demon') || this.exitTravelRemaining > 0 || this.skillCooldown > 0) return;
     if(this.bossIntroduction||this.inventoryOpen||this.runeEditing||this.guides.blocking)return;
     if(!this.spendMana(skillManaCost(this.characterClass)))return;
     if (this.characterClass === 'mage') {
@@ -1432,8 +1465,9 @@ export class GameEngine {
       const x = Math.max(55, Math.min(1225, this.player.x + Math.cos(angle) * distance));
       const y = Math.max(55, Math.min(665, this.player.y + Math.sin(angle) * distance));
       const box = getCharacterBoundingBox(x, y, 24, 24);
-      if (obstacles.some(obstacle => rectIntersects(box, obstacle))) continue;
+      if (obstacles.some(obstacle => rectIntersects(box, obstacle) || segmentWall(this.player, {x,y}, obstacle, 12) !== null)) continue;
       if ((this.currentLevel.traps ?? []).some(trap => rectIntersects(box, trap))) continue;
+      if (Math.hypot(x-this.player.x,y-this.player.y)<40) continue;
       if (this.currentLevel.plates.some(plate => rectIntersects(box, plate))) continue;
       this.timePickup = { x, y };
       return;
@@ -1565,6 +1599,9 @@ export class GameEngine {
   public setRuneSlot(slot:number,id:EchoRuneId|null):boolean{
     if(!['lobby','playing','paused','victory'].includes(this.screen))return false;
     if(!this.campaign.setRuneSlot(slot,id))return false;
+    for (const active of this.activeEchoRunes) {
+      if (!this.campaign.runeLoadout.includes(active)) this.activeEchoRunes.delete(active);
+    }
     this.notifyHUD();return true;
   }
   public chooseRune(id:EchoRuneId):boolean {
@@ -1572,7 +1609,7 @@ export class GameEngine {
     this.lastRuneReward=id;this.notifyHUD();return true;
   }
   public canUseEchoRune(id:EchoRuneId):boolean {
-    if(!ECHO_RUNES.some(r=>r.id===id))return false;
+    if(!this.campaign.runeLoadout.includes(id))return false;
     if(this.orientationBlocked||this.runeEditing||this.screen!=='playing'||this.currentLevel.id<2||(this.boss&&this.boss.hp<=0)||this.bossDeathPending||this.exitTravelRemaining>0||this.guides.blocking||!((this.campaign.echoRunes[id]??0)>0))return false;
     if(id==='call')return this.echoCharges+(this.echoFreeSummon?1:0)<this.echoLimit;
     if(id==='restore')return this.echoes.some(e=>(e.stability??100)<100);
@@ -1581,9 +1618,15 @@ export class GameEngine {
   public useEchoRune(id:EchoRuneId):boolean {
     if(!ECHO_RUNES.some(r=>r.id===id)||!this.canUseEchoRune(id)||!this.campaign.spendRune(id))return false;
     if(id==='call')this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);
-    else if(id==='restore')for(const echo of this.echoes)echo.stability=Math.min(100,(echo.stability??100)+50);
+    else if(id==='restore')for(const echo of this.echoes){
+      const before = echo.stability ?? 100;
+      echo.stability = Math.min(100, before + 50);
+      if (echo.stability > before) this.renderer.emitMagic('sparkle', echo.x, echo.y, 28);
+    }
     else this.activeEchoRunes.add(id);
     const rune=ECHO_RUNES.find(r=>r.id===id)!;
+    this.renderer.emitMagic('sparkle', this.player.x, this.player.y, 22);
+    sounds.playStoneClick();
     this.showBanner(`${rune.glyph} ${this.language==='vi'?rune.vi:rune.en} · ${this.language==='vi'?'Đã dùng 1 ấn':'1 rune consumed'}`);
     this.notifyHUD();return true;
   }
@@ -1730,7 +1773,7 @@ export class GameEngine {
       if(e.code==='Escape'){if(this.guides.active)this.dismissGuide();else this.closeGuide();}
       return;
     }
-    if (this.bossDeathPending) return;
+    if (this.bossDeathPending && this.boss?.kind !== 'demon') return;
 
     const key = e.key.toLowerCase();
     const code = e.code;
@@ -1866,7 +1909,8 @@ export class GameEngine {
       case 'loading': return null;
       case 'shop': return 'shop';
       case 'victory': return 'victory';
-      case 'playing': case 'paused': return this.boss ? 'boss' : 'level';
+      case 'playing': case 'paused':
+        return this.boss && this.boss.hp > 0 && (this.boss.kind !== 'demon' || this.demonRevealed) ? 'boss' : 'level';
       case 'defeat': return 'defeat';
       case 'ending': return 'ending';
       default: return 'menu';
@@ -1920,7 +1964,7 @@ export class GameEngine {
       const tint = this.screen === 'playing' && this.timeStop > 0 ? 'grayscale(.65) brightness(.92)' : '';
       if (this.canvas.style.filter !== tint) this.canvas.style.filter = tint;
     }
-    music.set(this.musicScene(), this.screen === 'paused');
+    music.set(this.musicScene(), this.screen === 'paused' || (this.bossIntroduction && this.boss?.kind === 'demon' && !this.demonRevealed));
 
     // Check throttled HUD update
     if (this.screen !== 'intro' && !this.suspendVisuals && timestamp - this.lastHUDNotify >= 80) {
@@ -1943,6 +1987,10 @@ export class GameEngine {
       if(this.boss.armor===0)offer('vulnerable');
       if(bossSegment(this.boss)>1)offer('shieldRestored');
       return;
+    }
+    if(this.currentLevel.id>=7){
+      const action=trailObjective(this)?.action;
+      if(action==='ward'||action==='release'||action==='rhythm')offer(action);
     }
     if(this.timePickup)offer('time');
     for(const trap of this.currentLevel.traps??[])if(Math.hypot(this.player.x-trap.x-trap.width/2,this.player.y-trap.y-trap.height/2)<150)offer(trap.kind);
@@ -1972,7 +2020,8 @@ export class GameEngine {
     this.vfx = this.vfx.filter(fx => fx.age < vfxSeconds(fx.kind));
     if (this.bossDeathPending) {
       this.bossDeathElapsed += dt;
-      if (this.bossDeathElapsed >= (this.boss?.kind==='demon'?2.3:1.05)) {
+      const demon = this.boss?.kind === 'demon';
+      if (this.bossDeathElapsed >= (demon ? 2.3 : 1.05) && (!demon || this.enemies.every(enemy => enemy.hp <= 0))) {
         sounds.playGuardianLanding();
         sounds.playVictory();
         this.bossDeathPending = false;
@@ -1980,7 +2029,7 @@ export class GameEngine {
         document.body.dataset.state = 'gameover';
         this.notifyHUD();
       }
-      return;
+      if (!demon || !this.bossDeathPending) return;
     }
     if (this.hitFeel.hold(dt)) return;   // hit-stop: the whole fight holds, timers included
     for (const fx of this.pfx) fx.age += dt;
@@ -2025,7 +2074,7 @@ export class GameEngine {
     if (this.legTimeRemaining !== null) {
       this.pickupSpawnTimer -= dt;
       if (this.pickupSpawnTimer <= 0 && !this.shardClaimedThisLeg && !this.timePickup) {
-        this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
+        this.pickupSpawnTimer = 1;
         this.spawnTimePickup();
       }
       if (this.timePickup && Math.hypot(this.player.x - this.timePickup.x, this.player.y - this.timePickup.y) < 30) {
@@ -2335,7 +2384,7 @@ export class GameEngine {
       if (active && Math.hypot(this.player.x - hazard.x, this.player.y - hazard.y) < hazard.radius + 10) this.takeDamage(DAMAGE.hazard);
     }
     if (this.screen !== 'playing') return;
-    if (this.boss) {
+    if (this.boss && this.boss.hp > 0) {
       const previousPhase=this.boss.phase;
       const boss = this.boss;
       const normalBossEchoes=[...this.echoes];
@@ -2383,9 +2432,11 @@ export class GameEngine {
       if (boss.kind!=='demon'&&!this.bossLowVoiced && this.boss.hp > 0 && this.boss.hp < this.boss.maxHp * 0.15) { this.bossLowVoiced = true; voice.say('guardian', 'lowHealth'); }
       if (bossHit) {
         // A decoy redirects attacks; it never makes the player immune to stray projectiles.
-        this.takeDamage(bossDamage);
+        this.takeDamage(Math.round(bossDamage * BOSS_PLAYER_DAMAGE[boss.kind==='demon'?'demon':'guardian']));
       }
       if(this.boss.phase!==previousPhase)this.echoCharges=Math.max(1,this.echoCharges);
+    } else if (this.currentLevel.id === 13) {
+      if (!this.boss) this.updateDemonPrelude(dt);
     } else if ((this.currentLevel.id < 7 || (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0)))) &&
       ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed)) &&
       checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
@@ -2393,8 +2444,23 @@ export class GameEngine {
     }
   }
 
+  private updateDemonPrelude(dt: number) {
+    const slime = this.enemies.find(enemy => enemy.id === EMBER_SLIME_ID);
+    if (!slime || slime.hp > 0) return;
+    this.demonPreludeWait += dt;
+    if (this.demonPreludeWait < .48) return;
+
+    this.boss = createDemonBoss();
+    this.boss.x = slime.x;
+    this.boss.y = slime.y;
+    this.echoCharges = Math.max(this.echoCharges, 1);
+    this.bossIntroduction = true;
+    this.heldKeys.clear();
+    this.notifyHUD();
+  }
+
   public spawnMagmaMinions(count: number) {
-    const liveMinions = this.enemies.filter(e => e.hp > 0).length;
+    const liveMinions = this.enemies.filter(e => e.hp > 0 && e.id.startsWith('magma-skull-')).length;
     const toSpawn = Math.min(count, Math.max(0, 6 - liveMinions));
     if (toSpawn <= 0) return;
 
@@ -2407,6 +2473,7 @@ export class GameEngine {
       { x: 640, y: 560 },
     ];
 
+    const maxHp = Math.round(ENEMY_STATS.skull.hp * encounterBalance(this.currentLevel.id).health);
     sounds.playGuardianVolley();
     for (let i = 0; i < toSpawn; i++) {
       const fissure = fissures[(Math.floor(Math.random() * fissures.length) + i) % fissures.length];
@@ -2422,8 +2489,8 @@ export class GameEngine {
         y: spawnY,
         homeX: spawnX,
         homeY: spawnY,
-        hp: 30,
-        maxHp: 30,
+        hp: maxHp,
+        maxHp,
         mode: 'chase',
         timer: 0.15 + i * 0.1,
         targetX: this.player.x,
@@ -2466,14 +2533,14 @@ export class GameEngine {
 
     this.renderer.stage.levelTime = this.elapsedLevelTime;
     this.renderer.stage.reducedMotion = this.reducedMotion;
-    const enemiesCleared = this.currentLevel.id < 7 ||
-      (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0)));
+    const enemiesCleared = this.currentLevel.id !== 13 && (this.currentLevel.id < 7 ||
+      (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0))));
     this.renderer.stage.exitOpen = !this.boss && enemiesCleared && ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed));
     this.renderer.render(
       this.ctx,
       this.canvas.width,
       this.canvas.height,
-      this.boss ? { ...this.currentLevel, exit: { ...this.currentLevel.exit, x: -300, y: -300 } } : this.currentLevel,
+      this.boss || this.currentLevel.id === 13 ? { ...this.currentLevel, exit: { ...this.currentLevel.exit, x: -300, y: -300 } } : this.currentLevel,
       // All heroes are drawn by renderAdventure after the stage walls, including idle Aeris.
       {...this.player,x:-1000,y:-1000},
       null,
@@ -2527,7 +2594,7 @@ export class GameEngine {
         lastReward: this.lastReward,
         lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
-        bossHp: this.boss?.hp ?? 0,bossMaxHp:this.boss?.maxHp??240,bossKind:this.boss?.kind,
+        bossHp: this.boss?.hp ?? 0,bossMaxHp:this.boss?.maxHp??GUARDIAN_HP,bossKind:this.boss?.kind,
         bossPhase: this.boss?.phase ?? 0,
         bossIntroduction:this.bossIntroduction,bossAction:this.boss?.attack,
         bossVulnerable: this.boss ? (this.boss.kind === 'demon' ? ((this.boss.demon?.stunned ?? 0) > 0 || (this.boss.mode === 'recover' && (this.boss.demon?.heatShield ?? 0) === 0)) : (this.boss.mode === 'recover' && this.boss.armor === 0)) : false,

@@ -15,6 +15,8 @@ import {
  */
 import type { LevelData, Rect, SecurityDoor, PressurePlate } from '../logic/types.ts';
 import { drawTrap, trapSpritesReady } from './traps.ts';
+import { basaltAtlas, drawWindBridgeDeck, drawWindBridgeRiver, icefireFloor, windBridgeReference } from './volcanoStages.ts';
+import { WIND_BRIDGE } from '../logic/frostLevels.ts';
 import { biomeIndex, biomeLoaded, drawBiomeFloor, drawBiomeProp, drawBiomeWalls, drawBiomeWeather } from './biomes.ts';
 import { livingReady, livingImage, drawLivingDecor } from './livingAssets.ts';
 import { drawPortalEnergy } from './portalEffects.ts';
@@ -71,7 +73,8 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
     // A new level (or a restart) rewinds the clock: forget per-level animation state.
     if (state.levelTime < lastTime) { plateSince.clear(); exitOpenedAt = null; }
     lastTime = state.levelTime;
-    const key = `${w}:${h}:${lvl.id}:${forestLoaded()}:${biomeLoaded()}:${livingReady()}:${understoryReady()}:${JSON.stringify(lvl.walls)}:${JSON.stringify(lvl.traps ?? [])}`;
+    const volcano = lvl.id === 11 || lvl.id === 12;
+    const key = `${w}:${h}:${lvl.id}:${forestLoaded()}:${biomeLoaded()}:${livingReady()}:${understoryReady()}:${(volcano || lvl.id === 10) && !!basaltAtlas()}:${volcano && !!icefireFloor(lvl.id)}:${lvl.id === 10 && !!windBridgeReference()}:${JSON.stringify(lvl.walls)}:${JSON.stringify(lvl.traps ?? [])}`;
     if (key !== cacheKey) {
       cacheKey = key;
       let layers = layerCache.get(key);
@@ -82,7 +85,10 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
       [ground, props] = layers;
     }
     if (ground) ctx.drawImage(ground, 0, 0);
-    if (lvl.id === 11 || lvl.id === 12) {
+    if (lvl.id === 10) drawWindBridgeRiver(ctx, state.reducedMotion ? 0 : state.levelTime, h);
+    const lift = lvl.doors.find(door => door.liftBridge);
+    if (lift) drawWindBridgeDeck(ctx, lift.openProgress, state.reducedMotion);
+    if (volcano) {
       drawVolcanoDynamicEffects(ctx, w, h, lvl, state.reducedMotion ? 0 : state.levelTime);
     }
     drawUnderstoryMotion(ctx,lvl.id,state.reducedMotion?0:state.levelTime);
@@ -91,6 +97,10 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
   };
 
   scene.drawRunes = (ctx, lvl, time) => {
+    if (lvl.id === 10 && lvl.doors.some(door => door.liftBridge && door.openProgress < 1)) {
+      const onBank = <T extends Rect>(item: T) => item.x < WIND_BRIDGE.x || item.x >= WIND_BRIDGE.x + WIND_BRIDGE.width;
+      lvl = {...lvl, plates: lvl.plates.filter(onBank), traps: lvl.traps?.filter(onBank)};
+    }
     if (trapSpritesReady()) for (const trap of lvl.traps ?? []) drawTrap(ctx, trap, state.levelTime, 'floor', lvl.id);
     if (lvl.id === 11 || lvl.id === 12) {
       for (const plate of lvl.plates) drawLinks(ctx, lvl, plate, time);
@@ -116,7 +126,7 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
   };
 
   scene.drawGateThresholds = (ctx, lvl) => {
-    if (lvl.id === 11 || lvl.id === 12) return;
+    if (lvl.id >= 10) return;
     if (!forestReady('door')) orig.drawGateThresholds(ctx, lvl);
   };
   scene.drawGates = (ctx, lvl) => {
@@ -124,13 +134,17 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
       for (const door of lvl.doors) drawVolcanoV2Door(ctx, door, state.levelTime, lvl.id);
       return;
     }
-    if (!forestReady('door')) return orig.drawGates(ctx, lvl);
-    for(const door of lvl.doors) drawDoor(ctx,door);
+    if (!forestReady('door') && lvl.id !== 10) return orig.drawGates(ctx, lvl);
+    const bridgeDown = lvl.doors.some(door => door.liftBridge && door.openProgress < 1);
+    for(const door of lvl.doors) {
+      if (door.liftBridge || (bridgeDown && door.x >= WIND_BRIDGE.x && door.x < WIND_BRIDGE.x + WIND_BRIDGE.width)) continue;
+      drawDoor(ctx,door);
+    }
   };
 
   scene.drawWalls = (ctx, lvl, time) => {
     if(lvl.id===13)return;
-    if (biomeLoaded()) drawBiomeWalls(ctx, lvl);
+    if (lvl.id >= 10 || biomeLoaded()) drawBiomeWalls(ctx, lvl);
     else orig.drawWalls(ctx, lvl, time);
     if (props && lvl === level) ctx.drawImage(props, 0, 0);
   };
@@ -258,13 +272,14 @@ function keepClear(lvl: LevelData): Rect[] {
 
 function buildLayers(w: number, h: number, lvl: LevelData): [HTMLCanvasElement | null, HTMLCanvasElement | null] {
   const tile = groundImage();
-  if (!tile || typeof document === 'undefined') return [null, null];
+  if (typeof document === 'undefined' || (!tile && lvl.id < 10)) return [null, null];
   const ground = document.createElement('canvas'), props = document.createElement('canvas');
   ground.width = props.width = w; ground.height = props.height = h;
   const g = ground.getContext('2d')!, p = props.getContext('2d')!;
   const rand = rng(lvl.id * 977 + 13);
 
   if (drawBiomeFloor(g, w, h, lvl)) {
+    if (lvl.id === 10) return [ground, props];
     const clear = keepClear(lvl);
     if (lvl.id === 6) {
       for (const x of [130, 1150]) for (const y of [120, 580]) clear.push({ x: x - 80, y: y - 80, width: 160, height: 160 });
@@ -342,6 +357,7 @@ function buildLayers(w: number, h: number, lvl: LevelData): [HTMLCanvasElement |
   }
 
   // Ground: the painted forest floor, repeated down the stage, a touch darker so play pieces pop.
+  if (!tile) return [null, null];
   const scale = w / tile.width;
   for (let y = 0; y < h; y += tile.height * scale) g.drawImage(tile, 0, y, w, tile.height * scale);
   g.fillStyle = 'rgba(6, 22, 16, 0.22)'; g.fillRect(0, 0, w, h);

@@ -1,4 +1,40 @@
-import type { Enemy, EnemyKind } from '../logic/enemies.ts';
+import { SHAMAN_BOLT_RADIUS, type Enemy, type EnemyKind } from '../logic/enemies.ts';
+let slimeSheet: HTMLImageElement | undefined;
+
+function drawEmberSlime(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
+ if (!slimeSheet && typeof Image !== 'undefined') {
+  slimeSheet = new Image();
+  slimeSheet.src = `${import.meta.env.BASE_URL}assets/demon-boss/slime-idle.png`;
+ }
+ if (!slimeSheet?.naturalWidth || enemy.deathAge >= .48) return;
+ const frame = Math.floor(time * 10) % 8;
+ const windup = enemy.mode === 'warning' && enemy.hp > 0;
+ const leaping = windup && enemy.timer < .18;
+ const hop = leaping ? Math.sin(Math.PI * Math.max(0, enemy.timer) / .18) * 1.8
+  : enemy.mode === 'chase' ? Math.abs(Math.sin(time * 8 + enemy.homeX)) : 0;
+ const hitSquash = Math.min(.23, enemy.hitFlash * 1.5);
+ const landingSquash = Math.min(.2, (enemy.attackFx ?? 0) * .62);
+ const squash = windup ? .76 + .24 * Math.min(1, enemy.timer / .48) : 1 - Math.max(hitSquash, landingSquash);
+ ctx.save();
+ ctx.imageSmoothingEnabled = false;
+ ctx.globalAlpha = enemy.hp > 0 ? 1 : Math.max(0, 1 - enemy.deathAge / .48);
+ if (windup) {
+  ctx.strokeStyle = '#ffc889';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(enemy.targetX, enemy.targetY, 28, 16, 0, 0, Math.PI * 2);
+  ctx.stroke();
+ }
+ ctx.fillStyle = '#100d1880';
+ ctx.beginPath();
+ ctx.ellipse(enemy.x, enemy.y + 3, 16, 5, 0, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.filter = `hue-rotate(${enemy.slimeHue ?? 0}deg) brightness(${enemy.hitFlash > 0 ? 1.6 : 1})`;
+ ctx.translate(Math.round(enemy.x), Math.round(enemy.y - hop * 8));
+ ctx.scale(leaping ? .92 : 1 + (1 - squash) * .65, leaping ? 1.1 : squash);
+ ctx.drawImage(slimeSheet, frame * 58, 0, 58, 66, -29, -61, 58, 66);
+ ctx.restore();
+}
 const sheets=new Map<string,HTMLCanvasElement>();const loading=new Set<string>();
 const cells:Record<Exclude<EnemyKind,'dummy'>,number>={goblin:256,bear:256,skull:192,shaman:192,minotaur:320};
 function sheet(kind:Exclude<EnemyKind,'dummy'>,moving:boolean){
@@ -10,6 +46,7 @@ function sheet(kind:Exclude<EnemyKind,'dummy'>,moving:boolean){
 }
 export function drawEnemies(ctx:CanvasRenderingContext2D,enemies:Enemy[],time:number){
  for(const e of [...enemies].sort((a,b)=>a.y-b.y)){
+  if(e.slimeHue!==undefined){drawEmberSlime(ctx,e,time);continue;}
   if(e.kind==='dummy'){drawDummy(ctx,e);continue;}
   if(e.hp<=0&&e.deathAge>.55)continue;const moving=e.mode==='chase',image=sheet(e.kind,moving),cell=cells[e.kind];
   if(!image)continue;const size=e.kind==='minotaur'?180:e.kind==='bear'?154:e.kind==='goblin'?150:e.kind==='shaman'?126:110;
@@ -19,11 +56,13 @@ export function drawEnemies(ctx:CanvasRenderingContext2D,enemies:Enemy[],time:nu
   ctx.translate(Math.round(e.x+dx/len*lunge),Math.round(e.y+dy/len*lunge));
   ctx.fillStyle='#06171180';ctx.beginPath();ctx.ellipse(0,4,size*.18,7,0,0,Math.PI*2);ctx.fill();
   ctx.save();if(e.facingLeft)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;if(e.hitFlash>0)ctx.filter='brightness(1.8)';
-  const frame=e.mode==='warning'?0:Math.floor(time*(moving?10:6))%(image.width/cell);
+  const frameCount=Math.floor(image.width/cell);
+  const cadence=e.kind==='bear'?7:e.kind==='minotaur'?6:e.kind==='skull'?13:10;
+  const frame=e.mode==='warning'?0:Math.floor((time+e.homeX*.003)*(moving?cadence:6))%frameCount;
   ctx.drawImage(image,frame*cell,0,cell,cell,-size/2,-size*.67,size,size);ctx.restore();
   if(e.hp>0){ctx.fillStyle='#121e18';ctx.fillRect(-18,-size*.36,36,4);ctx.fillStyle=e.mode==='warning'?'#ffd18b':'#e19378';ctx.fillRect(-18,-size*.36,36*e.hp/e.maxHp,4);if(e.hp<e.maxHp){ctx.font='bold 9px "Second Me Pixel", monospace';ctx.textAlign='center';ctx.fillStyle='#ffe2b6';ctx.fillText(`${Math.round(e.hp*10)/10}/${e.maxHp}`,0,-size*.36-5);}}
   ctx.restore();
-  if(e.mode==='warning'&&e.hp>0){ctx.save();ctx.strokeStyle='#f7b872';ctx.fillStyle='#e969413b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.targetX,e.targetY,e.kind==='shaman'?34:44,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ffe2ac';ctx.textAlign='center';ctx.font='bold 19px "Second Me Pixel", monospace';ctx.fillText('!',e.x,e.y-size*.50);ctx.restore();}
+  if(e.mode==='warning'&&e.hp>0){ctx.save();ctx.strokeStyle='#f7b872';ctx.fillStyle='#e969413b';ctx.lineWidth=2;ctx.beginPath();if(e.kind==='shaman'){ctx.strokeStyle='#e5a6ff';ctx.setLineDash([7,7]);ctx.moveTo(e.x,e.y);ctx.lineTo(e.targetX,e.targetY);ctx.stroke();ctx.setLineDash([]);}else{ctx.arc(e.targetX,e.targetY,44,0,Math.PI*2);ctx.fill();ctx.stroke();}ctx.fillStyle='#ffe2ac';ctx.textAlign='center';ctx.font='bold 19px "Second Me Pixel", monospace';ctx.fillText('!',e.x,e.y-size*.50);ctx.restore();}
  }
 }
 
@@ -58,12 +97,23 @@ function drawDummy(ctx:CanvasRenderingContext2D,e:Enemy){
 /** Attack effects persist through recovery, including attacks the player dodges. */
 export function drawEnemyAttacks(ctx:CanvasRenderingContext2D,enemies:Enemy[],reduced=false){
  for(const e of enemies){
+  if(e.bolt){
+   const {x,y,vx,vy}=e.bolt;
+   const angle=Math.atan2(vy,vx);
+   ctx.save();
+   ctx.translate(Math.round(x),Math.round(y));
+   ctx.rotate(angle);
+   ctx.fillStyle='#9b56c983';ctx.fillRect(-24,-3,20,6);
+   ctx.fillStyle='#b663e5';ctx.fillRect(-13,-5,16,10);
+   ctx.fillStyle='#d899f6';ctx.fillRect(-5,-SHAMAN_BOLT_RADIUS,10,SHAMAN_BOLT_RADIUS*2);
+   ctx.fillStyle='#fff0ff';ctx.fillRect(-3,-3,8,6);
+   ctx.restore();
+  }
   if(e.hp<=0||(e.attackFx??0)<=0)continue;
   const progress=1-e.attackFx!/.32,angle=Math.atan2(e.targetY-e.y,e.targetX-e.x);
   ctx.save();ctx.globalAlpha=Math.min(1,e.attackFx!/.08);ctx.lineCap='round';
   if(e.kind==='shaman'){
-   ctx.strokeStyle='#c898ef';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x,e.y-20);ctx.lineTo((e.x+e.targetX)/2+8,e.targetY-15);ctx.lineTo(e.targetX,e.targetY);ctx.stroke();
-   ctx.strokeStyle='#e7c5ff';ctx.beginPath();ctx.arc(e.targetX,e.targetY,12+progress*23,0,Math.PI*2);ctx.stroke();
+   ctx.strokeStyle='#e7c5ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,7+progress*17,0,Math.PI*2);ctx.stroke();ctx.restore();continue;
   }else{
    ctx.strokeStyle=e.kind==='minotaur'?'#ffc183':'#fff0cf';ctx.lineWidth=e.kind==='minotaur'?6:4;
    ctx.beginPath();ctx.arc(e.x,e.y,28+progress*18,angle-1.1+progress*.4,angle+1.1);ctx.stroke();

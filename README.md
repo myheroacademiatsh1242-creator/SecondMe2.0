@@ -13,8 +13,8 @@ Game giải đố hành động góc nhìn từ trên xuống, dùng Echo ghi v�
 - Lựa chọn thưởng và số lượng ấn được lưu; tải lại không tạo lại bộ ba. Cần chọn thưởng trước khi vào màn tiếp theo.
 - Đồng hồ tính theo từng chặng, không tính cho trận boss. Ngân sách màn 1-5: 16 / 24 / 30 / 32 / 30 giây mỗi chặng.
 - Hạ quái hồi tối đa 3 giây (không vượt ngân sách chặng) và 1 lượt Echo (giới hạn 4). Không bắt buộc giết hết quái để mở cổng.
-- Mảnh thời gian +3 giây: tối đa 1 mỗi chặng. Bình thời gian +2 giây giá 5 xu: dùng tối đa 1 mỗi chặng.
-- Boss có 240 HP, 4 trụ 60 HP và 3 pha. Phải phá trụ để gây sát thương lên boss.
+- Mảnh thời gian +5 giây: tối đa 1 mỗi chặng. Bình thời gian +2 giây giá 5 xu: dùng tối đa 1 mỗi chặng.
+- Boss có 380 HP, 4 trụ 60 HP và 3 pha. Phải phá trụ để gây sát thương lên boss.
 - Boss mở khi hoàn thành 5 màn và thức tỉnh vũ khí ở trạm chuẩn bị; không cần đủ cả 5 loại ấn và không tiêu hao ấn khi chuẩn bị.
 - Chơi được Aeris và Kael. Rivet có dữ liệu thử nghiệm nhưng đang bị ẩn.
 - Bản đồ chọn màn có đường chấm bám lối mòn, hiệu ứng đom đóm, đèn, lá rơi, tuyết, suối và thác; hỗ trợ giảm chuyển động.
@@ -23,15 +23,15 @@ Game giải đố hành động góc nhìn từ trên xuống, dùng Echo ghi v�
 ## Chạy local
 
 ```sh
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 Mở http://localhost:3000. Node.js 24 đã được dùng trong lần kiểm tra hiện tại.
 
 ```sh
-npm run build
-npm run preview
+pnpm build
+pnpm preview
 ```
 
 Thư mục build là `dist/`. Chưa xác nhận triển khai GitHub Pages hoặc hosting khác chỉ bằng việc push code.
@@ -62,18 +62,18 @@ Gõ Y bốn lần trong phiên kiểm thử để mở khóa màn và bỏ deadl
 ## Kiểm tra
 
 ```sh
-node node_modules/typescript/bin/tsc --noEmit
-node node_modules/vite/bin/vite.js build
+pnpm lint
+pnpm build
 ```
 
 PowerShell, chạy toàn bộ bài kiểm tra:
 
 ```powershell
 $testFiles = @(rg --files src -g '*.test.ts' -g '*.test.tsx')
-node node_modules/tsx/dist/cli.mjs --test $testFiles
+pnpm exec tsx --test $testFiles
 ```
 
-Lần kiểm tra của phiên bản này: **131/131 bài đạt**, TypeScript không lỗi, build thành công. Có cảnh báo Vite về `__dirname` và bundle lớn hơn 500 kB; chưa tối ưu tách bundle.
+Lần kiểm tra của phiên bản này: **285/285 bài đạt**, TypeScript không lỗi, build thành công.
 
 ## Lưu tiến trình
 

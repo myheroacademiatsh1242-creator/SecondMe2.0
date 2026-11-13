@@ -1,3 +1,4 @@
+import { encounterBalance, HERO_MAX_HP } from './balance.ts';
 import test,{type TestContext} from 'node:test';
 import assert from 'node:assert/strict';
 import { applyDamage } from './damage.ts';
@@ -27,7 +28,9 @@ test('each enemy attack delivers its configured damage to either hero or Echo an
  for(const e of createEnemies(level)){
   const player={x:e.x+10,y:e.y};e.mode='warning';e.timer=.01;e.targetX=player.x;e.targetY=player.y;
   let damage=0;updateEnemies([e],level,player,[],.02,(_,n)=>damage=n);
-  assert.equal(damage,ENEMY_STATS[e.kind].damage);assert.equal(e.attackFx,.32);
+  assert.equal(e.attackFx,.32);
+  if(e.kind==='shaman')updateEnemies([e],level,player,[],.06,(_,n)=>damage=n);
+  assert.equal(damage,Math.round(ENEMY_STATS[e.kind].damage*encounterBalance(level.id).damage));
   e.mode='warning';e.timer=.01;player.y+=100;damage=0;updateEnemies([e],level,player,[],.02,(_,n)=>damage=n);assert.equal(damage,0);assert.equal(e.attackFx,.32,'misses still animate');
  }
 });
@@ -49,4 +52,18 @@ test('Sanctuary damage bonus uses the attacker position, not a remote player pos
  const strike=(source:{x:number;y:number})=>(g as unknown as {strike(t:unknown,n:number,h:boolean,s:{x:number;y:number}):void}).strike(e,10,false,source);
  strike({x:400,y:300});assert.equal(e.hp,90,'remote Echo gets no Sanctuary bonus');
  strike({x:100,y:100});assert.equal(e.hp,78,'attacker inside receives 20 percent');
+});
+
+test('encounters scale both health and attack, while Kael starts a run with more health than Aeris',t=>{
+ const g=setup(t);
+ assert.equal(g.maxHealth,HERO_MAX_HP.mage);
+ g.characterClass='swordsman';
+ g.restartLevel();
+ assert.equal(g.health,HERO_MAX_HP.swordsman);
+ assert.ok(g.maxHealth>HERO_MAX_HP.mage);
+ const early=createEnemies(LEVELS[1]).find(e=>e.kind==='goblin')!;
+ const late=createEnemies(LEVELS[12]).find(e=>e.kind==='goblin')!;
+ assert.ok(late.maxHp>early.maxHp);
+ assert.ok(encounterBalance(13).damage>encounterBalance(7).damage);
+ assert.ok(encounterBalance(7).damage>encounterBalance(2).damage);
 });

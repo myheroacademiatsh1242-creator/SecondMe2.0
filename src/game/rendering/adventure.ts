@@ -23,12 +23,16 @@ import { drawPillars, drawCombatHits } from './bossFeedback.ts';
 import {drawTripleFrost} from './tripleFrost.ts';
 import { drawVfx, drawHexShield } from './vfx.ts';
 import { drawPfxShots } from './pixelfx.ts';
+import { WIND_BRIDGE } from '../logic/frostLevels.ts';
 let echoCanvas:HTMLCanvasElement|undefined;
 export const ECHO_COLORS=['#67e8f9','#c084fc','#fbbf24','#fb7185','#a3e635','#f9a8d4'];
 
 export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine, time: number) {
   ctx.save();
-  drawEnemies(ctx,game.enemies,time);
+  const bridgeDown = game.currentLevel.doors.some(door => door.liftBridge && door.openProgress < 1);
+  const visibleOnGround = ({x}: {x:number}) => !bridgeDown || x < WIND_BRIDGE.x || x >= WIND_BRIDGE.x + WIND_BRIDGE.width;
+  const visibleEnemies = bridgeDown ? game.enemies.filter(visibleOnGround) : game.enemies;
+  drawEnemies(ctx,visibleEnemies,time);
   if(game.supportAlly){
     const a=game.supportAlly;ctx.save();ctx.globalAlpha=.9;
     if(a.hero==='mage')drawWizardSprite(ctx,a.x,a.y,a.direction,a.isMoving,true,time);
@@ -60,7 +64,9 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   // With the hand-drawn art the trap floors were drawn under the characters by the renderer;
   // only falling boulders go on top here.
   const trapLayer = trapSpritesReady() ? 'overhead' : 'all';
-  for (const trap of game.currentLevel.traps ?? []) drawTrap(ctx, trap, time, trapLayer, game.currentLevel.id);
+  for (const trap of game.currentLevel.traps ?? []) {
+    if (visibleOnGround(trap)) drawTrap(ctx, trap, time, trapLayer, game.currentLevel.id);
+  }
   if (game.legTimeRemaining !== null) {
     if (game.timePickup) {
       const { x, y } = game.timePickup;
@@ -168,7 +174,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.beginPath(); ctx.arc(game.player.x, game.player.y, 24, 0, Math.PI * 2);
     ctx.strokeStyle = '#ecc99d'; ctx.globalAlpha = .5 + Math.sin(time * 25) * .3; ctx.lineWidth = 2; ctx.stroke();
   }
-  drawEnemyAttacks(ctx,game.enemies,game.reducedMotion);
+  drawEnemyAttacks(ctx,visibleEnemies,game.reducedMotion);
   // Hits on the hero have a distinct red impact, shield feedback and actual HP loss.
   for(const hit of game.incomingHits){
     const k=1-hit.life/.85;ctx.save();ctx.globalAlpha=Math.min(1,hit.life/.2);
