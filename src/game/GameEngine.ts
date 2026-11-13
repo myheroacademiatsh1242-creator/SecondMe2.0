@@ -120,6 +120,9 @@ export interface HUDState {
   mana?:number;maxMana?:number;skillManaCost?:number;rage?:number;maxRage?:number;hasUltimate?:boolean;
   bossPhase: number;
   bossIntroduction?: boolean;bossAction?:string;bossVulnerable?:boolean;
+  demonHeatShield?: boolean;
+  demonStunned?: boolean;
+  demonRitual?: boolean;
   attackCooldown: number;
   dodgeCooldown: number;
   legTimeRemaining: number | null;
@@ -942,8 +945,8 @@ export class GameEngine {
       if (this.boss.demon.stunned > 0) {
         amount *= 2.5;
       } else if (this.boss.demon.heatShield > 0) {
-        amount *= 0.15;
-        this.addDamageText(this.boss.x, this.boss.y - 60, 0, false, this.language === 'vi' ? 'KHÁNG HỎA' : 'HEAT SHIELD');
+        amount *= 0.5;
+        this.addDamageText(this.boss.x, this.boss.y - 60, Math.max(1, Math.round(amount)), false, this.language === 'vi' ? 'KHÁNG HỎA' : 'HEAT SHIELD');
       }
     }
     // Its health comes in quarters: a hit can take it down to the bottom of this one at most,
@@ -2499,7 +2502,11 @@ export class GameEngine {
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
         bossHp: this.boss?.hp ?? 0,bossMaxHp:this.boss?.maxHp??240,bossKind:this.boss?.kind,
         bossPhase: this.boss?.phase ?? 0,
-        bossIntroduction:this.bossIntroduction,bossAction:this.boss?.attack,bossVulnerable:this.boss?.mode==='recover'&&this.boss.armor===0,
+        bossIntroduction:this.bossIntroduction,bossAction:this.boss?.attack,
+        bossVulnerable: this.boss ? (this.boss.kind === 'demon' ? ((this.boss.demon?.stunned ?? 0) > 0 || (this.boss.mode === 'recover' && (this.boss.demon?.heatShield ?? 0) === 0)) : (this.boss.mode === 'recover' && this.boss.armor === 0)) : false,
+        demonHeatShield: this.boss?.kind === 'demon' && (this.boss.demon?.heatShield ?? 0) > 0,
+        demonStunned: this.boss?.kind === 'demon' && (this.boss.demon?.stunned ?? 0) > 0,
+        demonRitual: this.boss?.kind === 'demon' && this.boss.mode === 'ritual',
         attackCooldown: this.attackCooldown,
         dodgeCooldown: this.dodgeCooldown,
         legTimeRemaining: this.legTimeRemaining,
