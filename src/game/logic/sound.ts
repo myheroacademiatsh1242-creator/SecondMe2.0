@@ -269,13 +269,20 @@ class SoundEngine {
     source.start();
   }
 
-  public playGuardianAttack(attack: 'melee' | 'triple' | 'volley' | undefined, release: boolean, phase: number) {
+  public playGuardianAttack(attack: 'melee' | 'triple' | 'volley' | 'summon' | undefined, release: boolean, phase: number) {
     const intensity = 1 + (phase - 1) * .1;
     if (attack === 'melee') {
       if (release) this.stoneHit(.48, 620, .27 * intensity, 140, 42, .43 * intensity);
       else this.playGuardianRoar(phase === 3 ? 1.82 : 1.53, .77 * intensity);
     } else if (attack === 'volley') {
       if (!release) this.threatGrowl(170, 2100, .72, .23 * intensity);
+    } else if (attack === 'summon') {
+      if (release) {
+        this.stoneHit(.65, 1200, .45 * intensity, 120, 35, .45 * intensity);
+        this.playGuardianVolley();
+      } else {
+        this.playGuardianRoar(phase === 3 ? 1.9 : 1.6, .85 * intensity);
+      }
     } else {
       if (release) this.stoneHit(.57, 1950, .36 * intensity, 175, 60, .26 * intensity);
       else this.threatGrowl(112, 1150, .72, .23 * intensity);

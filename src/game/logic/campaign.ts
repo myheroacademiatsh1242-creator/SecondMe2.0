@@ -1,3 +1,4 @@
+import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
 import {SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
 import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from './bossBehavior.ts';
 import {ICE_BARRAGE} from './iceBarrage.ts';
@@ -20,7 +21,7 @@ export const MATERIALS = [
 
 export type CharacterClass = 'mage' | 'swordsman' | 'mechanical';
 export function levelRating(seconds: number, levelId?: number): { stars: number; coins: number } {
-  const target = levelId ? (levelId===6?120:puzzleBalance(levelId).threeStars) : 15;
+  const target = levelId ? (levelId===6?120:levelId===13?180:puzzleBalance(levelId).threeStars) : 15;
   const stars = seconds <= target ? 3 : seconds <= target*4/3 ? 2 : seconds <= target*5/3 ? 1 : 0;
   return { stars, coins: [0, 4, 8, 12][stars] };
 }
@@ -58,10 +59,10 @@ export class Campaign {
       this.heroClears={mage:[],swordsman:[]};
       for(const hero of ['mage','swordsman'])if(Array.isArray(value.heroClears?.[hero]))this.heroClears[hero]=[...new Set<number>(value.heroClears[hero].filter((n:unknown)=>Number.isInteger(n)&&Number(n)>=1&&Number(n)<=6))];
       this.aidUnlocked=value.aidUnlocked===true||value.supportClaimed===true||['mage','swordsman'].every(h=>this.heroClears[h].length===6);
-      this.completed = [...new Set<number>((value.completed ?? []).filter((id: unknown) => Number.isInteger(id) && Number(id) >= 1 && Number(id) <= 5))].sort();
+      this.completed = [...new Set<number>((value.completed ?? []).filter((id: unknown) => Number.isInteger(id) && Number(id) >= 1 && Number(id) <= 13 && Number(id)!==6))].sort((a,b)=>a-b);
       // Only a continuous run unlocks later trails.
-      this.completed = this.completed.filter((id, i) => id === i + 1);
-      this.bossDefeated = this.completed.length === 5 && value.bossDefeated === true;
+      this.completed = this.completed.filter(id=>Array.from({length:id-(id>=7?7:1)+1},(_,i)=>(id>=7?7:1)+i).every(n=>this.completed.includes(n)));
+      this.bossDefeated = this.completed.filter(id=>id<=5).length === 5 && value.bossDefeated === true;
       this.mechanicalOwned = value.mechanicalOwned === true;
       this.coins = Number.isSafeInteger(value.coins) && value.coins >= 0 ? value.coins : 0;
       this.timeItems = Number.isSafeInteger(value.timeItems) && value.timeItems >= 0 ? value.timeItems : 0;
@@ -73,7 +74,7 @@ export class Campaign {
       this.runeLoadout=Array.isArray(value.runeLoadout)?[...new Set(value.runeLoadout.filter((id:unknown)=>typeof id==='string'&&ECHO_RUNES.some(r=>r.id===id)))].slice(0,4) as EchoRuneId[]:ECHO_RUNES.filter(r=>(this.echoRunes[r.id]??0)>0).slice(0,4).map(r=>r.id);
       const migrateRunes=value.echoRunes===undefined&&this.completed.length>0;
       if(migrateRunes)for(const _id of this.completed)this.grantRune();
-      this.bestStars = Object.fromEntries(Object.entries(value.bestStars ?? {}).filter(([id, stars]) => Number(id) >= 1 && Number(id) <= 6 && Number.isInteger(stars) && Number(stars) >= 0 && Number(stars) <= 3)) as Record<number, number>;
+      this.bestStars = Object.fromEntries(Object.entries(value.bestStars ?? {}).filter(([id, stars]) => Number(id) >= 1 && Number(id) <= 13 && Number.isInteger(stars) && Number(stars) >= 0 && Number(stars) <= 3)) as Record<number, number>;
       this.devShopStockMigrated=value.devShopStockMigrated===true;
       const legacyDevStock=!this.devShopStockMigrated&&this.timeItems>=90000&&this.limitRings>=90000;
       if(legacyDevStock){
@@ -93,7 +94,7 @@ export class Campaign {
     })); } catch { /* Play remains available if browser storage is disabled. */ }
   }
   award(levelId: number): boolean {
-    if (levelId < 1 || levelId > 5 || this.completed.includes(levelId)) return false;
+    if (levelId < 1 || (levelId > 13 || levelId===6) || this.completed.includes(levelId)) return false;
     this.completed.push(levelId);
     this.save();
     return true;
@@ -122,9 +123,9 @@ export class Campaign {
   }
   completeLevel(levelId: number, seconds: number, random:()=>number=Math.random) {
     this.lastRuneDrop=null;
-    if(levelId>=1&&levelId<=5&&this.pendingRuneChoices.length===0)this.pendingRuneChoices=rollRuneChoices();
+    if(levelId>=1&&levelId<=12&&levelId!==6&&this.pendingRuneChoices.length===0)this.pendingRuneChoices=rollRuneChoices();
     const reward = levelRating(seconds,levelId);
-    const keys=levelId===6?3+Math.min(2,Math.floor(Math.max(0,random())*3)):levelId>=1&&levelId<=5&&reward.stars>0?reward.stars+2:0;
+    const keys=(levelId===6||levelId===13)?3+Math.min(2,Math.floor(Math.max(0,random())*3)):levelId>=1&&levelId<=12&&levelId!==6&&reward.stars>0?reward.stars+2:0;
     this.chestKeys+=keys;
     this.coins += reward.coins;
     this.bestStars[levelId] = Math.max(this.bestStars[levelId] ?? 0, reward.stars);
@@ -170,13 +171,15 @@ export class Campaign {
   useTimeItem() { if (this.timeItems < 1) return false; this.timeItems--; this.save(); return true; }
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
-  get unlockedLevel() { return Math.min(5, this.completed.length); }
+  get unlockedLevel() { return Math.min(5, this.completed.filter(id=>id<=5).length); }
   reset() { this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 }
 
 export interface BossState extends BossBehavior {
+  kind?:'demon';
+  demon?:DemonCombat;
   x: number; y: number; hp: number; maxHp: number; phase: number;
-  mode: 'stalking' | 'warning' | 'strike' | 'recover'; timer: number;
+  mode: 'stalking' | 'warning' | 'strike' | 'recover' | 'ritual' | 'charge_warning' | 'charge_dash' | 'stunned'; timer: number;
   targetX: number; targetY: number; hitFlash: number;
   projectiles: { x: number; y: number; vx: number; vy: number; life: number }[];
   pillars: { x: number; y: number; hp: number; maxHp: number; hitFlash?: number; destroyedAge?: number; restoreAge?: number }[];
@@ -184,7 +187,7 @@ export interface BossState extends BossBehavior {
   /** 1 → 0 just after the shield comes back up (the pillars rise again), for its effect. */
   shieldRaise?: number;
   attackFacingRight?:boolean; recoveryDuration?:number;
-  attack?:'triple'|'volley'|'melee'; attackIndex?:number; warningDuration?:number; strikeDuration?:number; safeAngle?:number;
+  attack?:'triple'|'volley'|'melee'|'summon'; attackIndex?:number; warningDuration?:number; strikeDuration?:number; safeAngle?:number;
   armor: number;
   burstCooldown: number; burstRemaining: number; burstPulse: number;
   iceRays:IceRay[];
@@ -244,6 +247,7 @@ export function swordHit(boss: BossState, x: number, y: number, empowered = fals
 export function updateBoss(boss: BossState, player: { x: number; y: number }, dt: number,
   empowered: boolean, defender: {x:number;y:number} = player, echoDefenders: {x:number;y:number}[] = [], onEchoHit?: (index:number,damage:number) => void, onPlayerHit?: (damage:number) => void,onSlow?:()=>void,playerEvading=false,random:()=>number=Math.random): boolean {
   if (boss.hp <= 0) return false;
+  if(boss.kind==='demon')return updateDemonBoss(boss,player,dt,defender,echoDefenders,onEchoHit,onPlayerHit,playerEvading);
   boss.phase = boss.hp > 160 ? 1 : boss.hp > 80 ? 2 : 3;
   boss.hitFlash = Math.max(0, boss.hitFlash - dt);
   boss.shieldBreak = Math.max(0, (boss.shieldBreak ?? 0) - dt);

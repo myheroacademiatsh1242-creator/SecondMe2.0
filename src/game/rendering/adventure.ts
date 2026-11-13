@@ -1,3 +1,5 @@
+import {drawDemonBoss} from './demonBoss.ts';
+import {drawFrostMechanics} from './frostMechanics.ts';
 import {getOutfit,outfitTone} from '../logic/outfits.ts';
 import {wantsBossSkill} from '../logic/bossBehavior.ts';
 import {drawGuardianShield} from './guardianShield.ts';
@@ -86,7 +88,8 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.fillText('✦', hazard.x, hazard.y + 7);
   }
   const boss = game.boss;
-  if (boss) {
+  if(boss?.kind==='demon')drawDemonBoss(ctx,boss,time,game.bossDeathElapsed,game.language==='vi');
+  if (boss && boss.kind!=='demon') {
     drawPillars(ctx, boss, time, game.reducedMotion);
     if(boss.hp>0)drawTripleFrost(ctx,boss,game.reducedMotion);
     if(boss.hp>0){
@@ -195,6 +198,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.stroke();
   }
   if (game.showHints) drawRuneHints(ctx, game.currentLevel, game.discoveredRunes);
+  drawFrostMechanics(ctx,game,time);
   if (game.isTraining) drawTrainingBoard(ctx, game);
   ctx.restore();
 }

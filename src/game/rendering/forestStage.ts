@@ -1,3 +1,4 @@
+import {drawDemonArena, drawVolcanoStageDecor} from './demonArena.ts';
 /**
  * Dresses the recovered forest renderer (natureLegacy.js) with the hand-drawn art: ground,
  * scattered props, rune buttons, start and exit portals, stone doors and trap floors.
@@ -57,6 +58,7 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
   let exitOpenedAt: number | null = null, lastTime = 0;
 
   scene.drawGround = (ctx, w, h, lvl) => {
+    if(lvl.id===13){level=lvl;drawDemonArena(ctx,w,h,state.reducedMotion?0:state.levelTime);return;}
     orig.drawGround(ctx, w, h, lvl);
     level = lvl;
     // A new level (or a restart) rewinds the clock: forget per-level animation state.
@@ -99,6 +101,7 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
   };
 
   scene.drawWalls = (ctx, lvl, time) => {
+    if(lvl.id===13)return;
     if (biomeLoaded()) drawBiomeWalls(ctx, lvl);
     else orig.drawWalls(ctx, lvl, time);
     if (props && lvl === level) ctx.drawImage(props, 0, 0);
@@ -237,6 +240,10 @@ function buildLayers(w: number, h: number, lvl: LevelData): [HTMLCanvasElement |
     const clear = keepClear(lvl);
     if (lvl.id === 6) {
       for (const x of [130, 1150]) for (const y of [120, 580]) clear.push({ x: x - 80, y: y - 80, width: 160, height: 160 });
+    }
+    if (lvl.id === 11 || lvl.id === 12) {
+      drawVolcanoStageDecor(g, w, h, lvl, clear);
+      return [ground, props];
     }
     if(understoryReady()) {
       drawUnderstoryStatic(g,planUnderstory(lvl,w,h,clear));

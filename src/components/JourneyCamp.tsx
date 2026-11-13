@@ -1,3 +1,4 @@
+import {FrostChapter} from './FrostChapter.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Flame, Lock, Play, Snowflake, Users, Backpack } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
@@ -23,11 +24,12 @@ const stops = [[215,725],[440,350],[690,630],[920,310],[1200,515],[1355,205]];
 const WALK_MS = 2400, HERO_KEY = 'secondme.journeyHeroAt';
 export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;traveler?:React.ReactNode;onNews?:()=>void}) {
   const vi=hud.language==='vi';
+  const [frost,setFrost]=useState((engine?.currentLevel.id??1)>=7);
   const [runeEditor,setRuneEditor]=useState(false);
   const [inspect,setInspect]=useState<number|null>(null);
   const [touchInspect,setTouchInspect]=useState<number|null>(null);
 
-  const count=hud.completed.length+(complete?1:0);
+  const count=hud.completed.filter(id=>id<=5).length+(complete?1:0);
   const here=complete?5:Math.min(next,5);
   const trailRefs=useRef<(SVGPathElement|null)[]>([]);
   const walker=useRef<HTMLDivElement>(null);
@@ -44,9 +46,10 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
     raf=requestAnimationFrame(step);
     return ()=>cancelAnimationFrame(raf);
   },[here,hud.reducedMotion]);
-  const unlocked=(i:number)=>hud.devUnlocked||complete||i<=hud.completed.length;
+  if(frost)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler}/>;
+  const unlocked=(i:number)=>hud.devUnlocked||complete||i===0||hud.completed.includes(i);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
-    <aside className="journey-camp integrated-camp">
+    <aside className="journey-camp integrated-camp"><button className="frost-back" onClick={()=>setFrost(true)}>{vi?'CHƯƠNG MỚI · BĂNG TUYẾT →':'NEW CHAPTER · FROZEN FRONTIER →'}</button>
       <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><span>{count} / 6</span></header>
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
         <div className="rest-firelight" aria-hidden="true"/><FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx"/><div className="rest-embers" aria-hidden="true"><i/><i/><i/></div>
@@ -55,7 +58,7 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
       </div>
       <div className="rest-kit"><div><span>{vi?'BỘ RUNE':'RUNE LOADOUT'}</span><p>{hud.runeLoadout?.length??0} / 4 {vi?'ấn đã chọn':'equipped'}</p></div><button className="rest-prepare" onClick={()=>setRuneEditor(true)}><Backpack size={18}/>{vi?'Đổi rune':'Edit runes'}</button></div>
       <div className="rest-departure"><span>{complete?(vi?'HÀNH TRÌNH MỚI':'ANOTHER JOURNEY'):(vi?'ĐIỂM ĐẾN TIẾP THEO':'NEXT DESTINATION')}</span><div className="rest-destination"><b>{String((complete?0:next)+1).padStart(2,'0')}</b><strong>{translate(LEVELS[complete?0:next].subtitle,hud.language)}</strong></div>
-        <button className="camp-continue" onClick={()=>complete?engine?.selectLevel(0):hud.completed.length?engine?.continueGame():engine?.selectLevel(0)}><Play size={19} fill="currentColor"/><span>{complete?(vi?'KHÁM PHÁ LẠI':'EXPLORE AGAIN'):hud.completed.length?(vi?'TIẾP TỤC HÀNH TRÌNH':'CONTINUE JOURNEY'):(vi?'LÊN ĐƯỜNG':'BEGIN JOURNEY')}</span><ArrowRight size={18}/></button>
+        <button className="camp-continue" onClick={()=>complete?engine?.selectLevel(0):engine?.selectLevel(next)}><Play size={19} fill="currentColor"/><span>{complete?(vi?'KHÁM PHÁ LẠI':'EXPLORE AGAIN'):hud.completed.length?(vi?'TIẾP TỤC HÀNH TRÌNH':'CONTINUE JOURNEY'):(vi?'LÊN ĐƯỜNG':'BEGIN JOURNEY')}</span><ArrowRight size={18}/></button>
       </div>
       <footer className="rest-progress"><div role="progressbar" aria-label={vi?'Tiến độ hành trình':'Journey progress'} aria-valuenow={count} aria-valuemin={0} aria-valuemax={6}>{Array.from({length:6},(_,i)=><i key={i} className={i<count?'explored':i===next?'next':''}/>)}</div></footer>
     </aside>
@@ -67,7 +70,7 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
         <JourneyAmbience still={hud.reducedMotion}/>
 
         <div className="map-traveler" ref={walker} aria-hidden="true"><span>{traveler}</span></div>
-        {LEVELS.map((item,i)=>{
+        {LEVELS.slice(0,6).map((item,i)=>{
           const ready=unlocked(i),done=i<5?hud.completed.includes(i+1):complete,current=i===next&&!complete;
           return <button key={item.id} className={`journey-stop ${done?'is-done':''} ${current?'is-current':''} ${i===5?'is-boss':''} ${inspect===i?'is-inspected':''}`} style={{left:`${stops[i][0]/15.36}%`,top:`${stops[i][1]/10.24}%`}} aria-disabled={!ready} onMouseEnter={()=>setInspect(i)} onMouseLeave={()=>{if(touchInspect===null)setInspect(null);}} onFocus={()=>setInspect(i)} onBlur={()=>{setInspect(null);setTouchInspect(null);}} onClick={()=>{
               if(window.matchMedia('(hover: none)').matches&&touchInspect!==i){setTouchInspect(i);setInspect(i);return;}

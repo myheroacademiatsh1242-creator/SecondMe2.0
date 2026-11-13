@@ -75,7 +75,49 @@ function laneDistance(x: number, y: number, lanes: Terrain['lanes']) {
 
 /** Ground is rendered once per map on a coarse pixel grid, before interactive objects. */
 export function drawTerrain(ctx: CanvasRenderingContext2D, w: number, h: number, level: LevelData) {
-  const skin = terrain[Math.max(0, Math.min(5, level.id - 1))];
+  let skin: Terrain;
+  if (level.id >= 7) {
+    const lanes: readonly (readonly Point[])[] = [[
+      [level.playerSpawn.x, level.playerSpawn.y],
+      ...level.plates.map((p) => [p.x + 25, p.y + 25] as Point),
+      [level.exit.x + 30, level.exit.y + 30],
+    ]];
+    if (level.id <= 9) {
+      // 07, 08, 09: Snowy Mountain, High Cliff Pass & Stairs
+      skin = {
+        soil: ['#9cb4c0', '#b2c7d2', '#c7dbe3', '#deeef3'],
+        path: ['#58839e', '#6d9cb5', '#88b5cc', '#a4c9d8'],
+        fleck: '#f6ffff',
+        lanes,
+      };
+    } else if (level.id === 10) {
+      // 10: Suspension Bridge over Waterfall Gorge (Dark wet rock & stone approach)
+      skin = {
+        soil: ['#283b42', '#364c54', '#47636e', '#597885'],
+        path: ['#3e352f', '#57483e', '#705c4e', '#8a7260'],
+        fleck: '#a8ecfc',
+        lanes,
+      };
+    } else if (level.id === 11) {
+      // 11: Medieval Stone Watchtower Plateau (Ancient stone courtyard & mountain ash)
+      skin = {
+        soil: ['#2b2b2b', '#3b3b3c', '#4e4e50', '#626265'],
+        path: ['#473f36', '#5e5246', '#756555', '#8c7a68'],
+        fleck: '#d8cfbe',
+        lanes,
+      };
+    } else {
+      // 12: Volcanic Canyon & Flame Brazier (Dark basalt, molten cracks, red/orange embers)
+      skin = {
+        soil: ['#1c1010', '#2d1816', '#42221d', '#582b24'],
+        path: ['#541810', '#7a2214', '#a8321c', '#cf4a24'],
+        fleck: '#ff9922',
+        lanes,
+      };
+    }
+  } else {
+    skin = terrain[Math.max(0, Math.min(5, level.id - 1))];
+  }
   const floor = document.createElement('canvas');
   const width = floor.width = Math.ceil(w / 4), height = floor.height = Math.ceil(h / 4);
   const g = floor.getContext('2d')!;

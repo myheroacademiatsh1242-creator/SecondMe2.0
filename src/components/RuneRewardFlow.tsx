@@ -15,7 +15,7 @@ export function RuneRewardFlow({engine,hud}:{engine:GameEngine|null;hud:HUDState
   <div className="reward-flow-body">{pending?<>
    <p className="reward-intro" role="status">{vi?'Chọn 1 trong 3 ấn để thêm vào túi.':'Choose one of three runes for your inventory.'}</p>
    <div className="reward-three">{hud.pendingRuneChoices!.map(id=>{const rune=ECHO_RUNES.find(r=>r.id===id)!;return <button key={id} onClick={()=>engine?.chooseRune(id)} aria-label={`${vi?'Chọn':'Choose'} ${vi?rune.vi:rune.en}`} style={{'--rune-glow':rune.color} as React.CSSProperties}><div className="reward-pedestal"><RuneStone id={id}/></div><strong>{vi?rune.vi:rune.en}</strong><p>{RUNE_SHORT[id][vi?0:1]}</p><span>{vi?'CHỌN':'CHOOSE'} <ArrowRight size={16}/></span></button>;})}</div>
-   <small className="reward-rule">{vi?'Nhận 1 ấn · Dùng cho Echo ở màn 2–6 · Kích hoạt trong túi đồ':'Keep 1 rune · Use for Echoes in levels 2–6 · Activate from inventory'}</small>
+   <small className="reward-rule">{vi?'Nhận 1 ấn · Dùng cho Echo ở màn 2–12 · Kích hoạt trong túi đồ':'Keep 1 rune · Use for Echoes in levels 2–12 · Activate from inventory'}</small>
   </>:<>
    <p className="reward-intro">{hud.levelName} · {hud.levelSubtitle}</p>
    <VictoryStars count={hud.lastRating?.stars??0} vi={vi}/>

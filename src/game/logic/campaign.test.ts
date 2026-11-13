@@ -277,7 +277,7 @@ test('all six class pickups apply their distinct damage or defense',t=>{
 });
 
 test('later trails increase gate and trap count',()=>{
-  assert.equal(LEVELS.length,6);
+  assert.equal(LEVELS.length,13);
   assert.equal(LEVELS[3].doors.length,4);
   assert.equal(LEVELS[4].doors.length,5);
   assert.ok(LEVELS[4].traps!.length>LEVELS[3].traps!.length);

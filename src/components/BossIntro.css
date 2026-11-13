@@ -206,3 +206,166 @@ body.reduced-motion .boss-cut-snow{display:none}
   from { visibility: hidden; opacity: 0; transform: translateX(-110%); }
   to { visibility: visible; opacity: 1; transform: translateX(0); }
 }
+.demon-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  padding: 32px;
+  background: linear-gradient(135deg, #12080cd8 0%, #1a0f12f2 100%),
+              url('/assets/demon-boss/cave-arena.png') center/cover no-repeat;
+  color: #f7e6ca;
+  pointer-events: auto !important;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.demon-intro-portrait {
+  flex: 0 0 35%;
+  height: 70vh;
+  max-height: 460px;
+  background: url('/assets/demon-boss/idle.png') center/contain no-repeat;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 30px #ff662255);
+}
+
+.demon-intro-content {
+  flex: 1;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  pointer-events: auto !important;
+}
+
+.demon-intro-kicker {
+  color: #ff9d5c;
+  font: 14px "Second Me Pixel", monospace;
+  letter-spacing: 1.5px;
+}
+
+.demon-intro h2 {
+  font-size: clamp(36px, 5.5vw, 60px);
+  line-height: 1.05;
+  margin: 0;
+  color: #ffe6aa;
+  text-shadow: 3px 3px 0 #571710, 6px 6px 0 #1f0502;
+  font-family: Georgia, serif;
+}
+
+.demon-intro-desc {
+  font-size: 16px;
+  line-height: 1.4;
+  color: #e0cfb8;
+  margin: 0 0 4px;
+}
+
+.demon-intro-tips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demon-intro-tips li {
+  background: #241113cc;
+  border: 2px solid #5a2622;
+  box-shadow: inset 0 2px 0 #8f382a33;
+  padding: 8px 14px;
+}
+
+.demon-intro-tips li b {
+  display: block;
+  font-size: 15px;
+  color: #ffb86c;
+  margin-bottom: 2px;
+}
+
+.demon-intro-tips li span {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #dbcbb8;
+}
+
+.demon-intro-start-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  margin-top: 10px;
+  padding: 12px 24px;
+  border: 3px solid #1a0805;
+  background: linear-gradient(180deg, #ff9e42 0%, #db501f 100%);
+  color: #1a0604;
+  font: 600 20px Georgia, serif;
+  letter-spacing: 1px;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  box-shadow: inset 2px 2px 0 #ffd68a, inset -2px -4px 0 #8a2408, 0 4px 8px #00000088;
+  transition: transform 0.1s, filter 0.15s;
+}
+
+.demon-intro-start-btn:hover {
+  background: linear-gradient(180deg, #ffaf5c 0%, #eb5e2a 100%);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.demon-intro-start-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 2px 2px 0 #8a2408, inset -2px -2px 0 #ffd68a;
+}
+
+.demon-intro-start-btn:focus-visible {
+  outline: 3px solid #ffd88a;
+  outline-offset: 3px;
+}
+
+@media (max-width: 768px), (max-height: 580px) {
+  .demon-intro {
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .demon-intro-portrait {
+    display: none;
+  }
+  .demon-intro-content {
+    max-width: 100%;
+    padding: 0;
+    gap: 6px;
+  }
+  .demon-intro h2 {
+    font-size: 28px;
+  }
+  .demon-intro-desc {
+    display: none;
+  }
+  .demon-intro-tips li {
+    padding: 6px 10px;
+  }
+  .demon-intro-tips li b {
+    font-size: 13px;
+  }
+  .demon-intro-tips li span {
+    font-size: 11px;
+  }
+  .demon-intro-start-btn {
+    min-height: 44px;
+    font-size: 17px;
+    padding: 8px 16px;
+    margin-top: 6px;
+  }
+}
+

@@ -1,0 +1,40 @@
+import type {LevelData,Rect,Trap} from './types.ts';
+const edge:Rect[]=[{x:0,y:0,width:1280,height:40},{x:0,y:680,width:1280,height:40},{x:0,y:40,width:40,height:640},{x:1240,y:40,width:40,height:640}];
+const rune=(id:string,x:number,y:number)=>({id,x,y,width:50,height:50,isPressed:false,color:'#9be9ff'});
+const gate=(id:string,x:number,y:number,h:number,requiredPlates:string[])=>({id,x,y,width:36,height:h,orientation:'vertical' as const,isOpen:false,openProgress:0,requiredPlates});
+const split=(x:number,y:number,h=120):Rect[]=>[{x,y:40,width:36,height:y-40},{x,y:y+h,width:36,height:680-y-h}];
+const hazard=(kind:Trap['kind'],x:number,y:number,w=64,h=64,period=5,offset=0):Trap=>({kind,x,y,width:w,height:h,period,offset});
+function map(id:number,subtitle:string,description:string,x:number,y:number,difficulty:number):LevelData{return{id,name:`LEVEL ${id.toString().padStart(2,'0')}`,subtitle,description,difficulty,playerSpawn:{x,y,direction:'right'},walls:edge.map(r=>({...r})),plates:[],doors:[],traps:[],exit:{x:1140,y:520,width:60,height:60,radius:36}};}
+const a=map(7,'ĐÈO TUYẾT ĐẦU MÙA','Giữ I để vào đèo tuyết. Thêm Echo giữ II để mở cổng cuối; dọn quái trước khi rời đèo.',130,540,3);
+a.plates=[rune('snow_I',260,140),rune('snow_II',650,490)];a.walls.push(...split(480,240,160),...split(880,430,150),{x:620,y:220,width:150,height:32});a.doors=[gate('snow_pass',480,240,160,['snow_I']),gate('snow_exit',880,430,150,['snow_I','snow_II'])];a.traps=[hazard('vines',260,340,100,60),hazard('rocks',570,390),hazard('spikes',980,420)];
+const b=map(8,'BẢN TRẠI VÁCH ĐÁ','Vượt qua khu trại đèo cao. Giữ I rồi II; chỉ II mở lối qua hàng rào gác phía tây.',160,560,3);
+b.plates=[rune('lake_I',320,480),rune('lake_II',970,140)];b.walls.push({x:40,y:340,width:560,height:36},{x:740,y:340,width:500,height:36},{x:450,y:40,width:36,height:100},{x:450,y:270,width:36,height:70},{x:820,y:470,width:160,height:32});b.doors=[{...gate('lake_cross',600,340,36,['lake_I']),width:140,orientation:'horizontal'},gate('lake_vault',450,140,130,['lake_II'])];b.exit={x:160,y:150,width:60,height:60,radius:36};b.traps=[hazard('rocks',640,420),hazard('vines',820,200,90,70),hazard('crusher',500,170),hazard('spikes',270,240)];
+const c=map(9,'BẬC THANG VÁCH ĐÁ','Men theo bậc đá cheo leo xuống vực. I mở lối tây, I + II mở gian nam, II + III mở cổng cuối.',1100,160,4);
+c.playerSpawn.direction='left';c.plates=[rune('abbey_I',930,120),rune('abbey_II',180,180),rune('abbey_III',300,520)];c.walls.push({x:640,y:40,width:36,height:120},{x:640,y:300,width:36,height:190},{x:640,y:630,width:36,height:50},{x:40,y:350,width:170,height:36},{x:350,y:350,width:290,height:36},{x:676,y:350,width:564,height:36});c.doors=[gate('abbey_west',640,160,140,['abbey_I']),{...gate('abbey_south',210,350,36,['abbey_I','abbey_II']),width:140,orientation:'horizontal'},gate('abbey_final',640,490,140,['abbey_II','abbey_III'])];c.traps=[hazard('rocks',800,220),hazard('spikes',440,140),hazard('vines',120,440,100,70),hazard('crusher',470,530),hazard('rocks',920,540)];
+const d=map(10,'CẦU TREO VỰC THÁC','Vượt cầu treo qua thác gió: dựng Echo lần lượt, giữ đúng tổ hợp rune trên mỗi nhịp cầu.',120,160,4);
+d.plates=[rune('wind_I',150,490),rune('wind_II',390,120),rune('wind_III',630,490),rune('wind_IV',870,120)];d.walls.push(...split(300,450,140),...split(540,120,140),...split(780,450,140),...split(1020,120,140));d.doors=[gate('wind_1',300,450,140,['wind_I']),gate('wind_2',540,120,140,['wind_I','wind_II']),gate('wind_3',780,450,140,['wind_II','wind_III']),gate('wind_4',1020,120,140,['wind_I','wind_III','wind_IV'])];d.exit={x:1140,y:160,width:60,height:60,radius:36};d.traps=[hazard('vines',140,320,85,65),hazard('rocks',390,350),hazard('spikes',650,280),hazard('crusher',870,430),hazard('rocks',1110,300)];
+const e=map(11,'THÁP CANH CỔ THẠCH','Tiến vào sân đá tháp cổ chân núi lửa. Ba Echo giữ ấn mở đường; giữ IV cùng II và III để qua cổng tháp.',140,120,5);
+e.plates=[rune('crypt_I',400,90),rune('crypt_II',1040,260),rune('crypt_III',190,460),rune('crypt_IV',850,570)];
+e.walls.push({x:40,y:210,width:920,height:32},{x:1100,y:210,width:140,height:32},{x:40,y:400,width:160,height:32},{x:340,y:400,width:900,height:32},{x:720,y:432,width:32,height:90},{x:720,y:650,width:32,height:30});
+e.doors=[{...gate('crypt_down',960,210,32,['crypt_I']),width:140,orientation:'horizontal'},{...gate('crypt_back',200,400,32,['crypt_I','crypt_II']),width:140,orientation:'horizontal'},gate('crypt_seal',720,522,128,['crypt_II','crypt_III'])];
+// IV lies in the last room; the exit seal needs it while the earlier two remain held.
+e.walls.push({x:1080,y:432,width:32,height:100},{x:1080,y:652,width:32,height:28});e.doors.push(gate('crypt_exit',1080,532,120,['crypt_II','crypt_III','crypt_IV']));e.exit={x:1150,y:560,width:60,height:60,radius:36};e.traps=[hazard('rocks',700,100),hazard('spikes',750,290),hazard('vines',480,290,100,65),hazard('crusher',400,490),hazard('rocks',950,470),hazard('spikes',1130,450)];
+const f=map(12,'THUNG LŨNG NHAM THẠCH','Hẻm núi nham thạch trước cửa Hang Quỷ. Năm rune, bốn Echo. Thu Echo I để tái dùng, vượt cổng cuối vào Hang Quỷ.',120,350,5);
+f.plates=[rune('night_I',120,520),rune('night_II',310,110),rune('night_III',500,520),rune('night_IV',690,110),rune('night_V',880,520)];f.walls.push(...split(250,140,120),...split(440,440,120),...split(630,140,120),...split(820,440,120),...split(1010,140,120));f.doors=[gate('night_1',250,140,120,['night_I']),gate('night_2',440,440,120,['night_I','night_II']),gate('night_3',630,140,120,['night_I','night_II','night_III']),gate('night_4',820,440,120,['night_II','night_III','night_IV']),{...gate('night_5',1010,140,120,['night_II','night_III','night_IV','night_V']),releasedPlate:'night_I'}];f.exit={x:1140,y:520,width:60,height:60,radius:36};f.traps=[hazard('vines',130,330,75,65,4.8),hazard('rocks',320,330,64,64,5.5),hazard('spikes',510,300,64,64,4.8),hazard('rocks',710,350,64,64,5.2),hazard('crusher',900,320,64,64,4.8),hazard('rocks',1130,370,64,64,5.2)];
+export const FROST_LEVELS:LevelData[]=[a,b,c,d,e,f];
+
+// Introduce one rule at a time, then combine them in the final two trails.
+function ward(level:LevelData,runeIndex:number,...enemyIndices:number[]){level.plates[runeIndex].wardEnemyIds=enemyIndices.map(i=>`enemy-${level.id}-${i}`);}
+ward(a,1,2);
+ward(b,1,2,3);b.doors[0].pulse={period:8,openSeconds:4};
+ward(c,0,0);ward(c,1,2);ward(c,2,3,4);c.doors[2].pulse={period:8,openSeconds:3.5,offset:2};
+ward(d,1,1,2);ward(d,2,3);ward(d,3,4,5);
+d.doors[1].pulse={period:8,openSeconds:3.5};d.doors[2].releasedPlate='wind_I';d.doors[3].requiredPlates=['wind_II','wind_III','wind_IV'];d.doors[3].releasedPlate='wind_I';d.doors[3].pulse={period:9,openSeconds:4};
+ward(e,2,4,5);ward(e,3,6);e.doors[1].pulse={period:8,openSeconds:3.5};e.doors[2].releasedPlate='crypt_I';e.doors[3].requiredPlates=['crypt_III','crypt_IV'];e.doors[3].releasedPlate='crypt_II';
+ward(f,0,0);ward(f,1,1,2);ward(f,2,3,4);ward(f,3,5);ward(f,4,6,7);f.doors[1].pulse={period:8,openSeconds:3.5};f.doors[3].pulse={period:8,openSeconds:3.5,offset:2};f.doors[4].pulse={period:9,openSeconds:3.5};
+a.description='Ấn II bị phong ấn: hạ lính gác nối với ấn để kích hoạt. Giữ I + II và hạ hết quái để rời đèo tuyết.';
+b.description='Cổng trại mở theo nhịp 4 giây mỗi chu kỳ 8 giây. Giữ I, đợi nhịp xanh rồi qua. Hạ lính gác để mở khóa ấn II.';
+c.description='Ba rune trên dốc đá có lính canh riêng. Hạ đúng nhóm gác, để Echo giữ ấn rồi canh nhịp cổng cuối; không bỏ Echo đang giữ lối cần dùng.';
+d.description='Vượt cầu treo qua thác gió: Giữ I + II qua cổng II theo nhịp. Sau khi có Echo III, thu Echo I: cổng III và IV buộc I trống. Cổng cuối cần II + III + IV.';
+e.description='Thành đá cổ thạch chuyển tiếp hai lần: giữ II + III, thu Echo I để qua ấn III. Khi có IV, thu tiếp Echo II; cổng cuối chỉ nhận III + IV và buộc II trống.';
+f.description='Hẻm núi nham thạch rực lửa: Phá phong ấn từng rune bằng cách hạ lính gác. Canh nhịp cổng II và IV. Sau cổng III thu Echo I, chuyển sang giữ II–V rồi vượt cổng cuối theo nhịp tiến vào Hang Quỷ.';

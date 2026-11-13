@@ -69,7 +69,7 @@ export function updatePressurePlates(
 
     const playerOn = rectIntersects(playerBox, plateRect);
     const echoOn = echoBoxes.some(box=>rectIntersects(box,plateRect));
-    const isNowPressed = playerOn || echoOn;
+    const isNowPressed = !plate.wardLocked && (playerOn || echoOn);
 
     if (isNowPressed !== plate.isPressed) {
       plateChanged = true;
@@ -101,7 +101,8 @@ export function updateSecurityDoors(
   player: CharacterPosition,
   echo: CharacterPosition | CharacterPosition[] | null,
   dt: number,
-  openSpeed: number = 3.5 // full open/close in ~0.3 seconds
+  openSpeed: number = 3.5, // full open/close in ~0.3 seconds
+  elapsed: number = 0
 ): { doorStateChanged: boolean; openedDoorIds: string[]; closedDoorIds: string[] } {
   let doorStateChanged = false;
   const openedDoorIds: string[] = [];
@@ -127,7 +128,7 @@ export function updateSecurityDoors(
       (id) => plateStateMap.get(id) === true
     );
 
-    const canOpen = allRequiredPressed && (!door.releasedPlate || plateStateMap.get(door.releasedPlate) === false);
+    const canOpen = (!door.pulse || pulseWindow(door,elapsed).open) && allRequiredPressed && (!door.releasedPlate || plateStateMap.get(door.releasedPlate) === false);
     const prevOpen = door.isOpen;
     door.isOpen = canOpen;
 
@@ -181,4 +182,11 @@ export function checkExitReached(
   const portalCenterY = exit.y + exit.height / 2;
   const dist = Math.hypot(playerX - portalCenterX, playerY - portalCenterY);
   return dist <= exit.radius;
+}
+
+/** The window is deterministic so the visible countdown and collision always agree. */
+export function pulseWindow(door:SecurityDoor,elapsed:number):{open:boolean;remaining:number}{
+ if(!door.pulse)return{open:true,remaining:Infinity};
+ const {period,openSeconds,offset=0}=door.pulse,phase=((elapsed+offset)%period+period)%period;
+ return{open:phase<openSeconds,remaining:phase<openSeconds?openSeconds-phase:period-phase};
 }

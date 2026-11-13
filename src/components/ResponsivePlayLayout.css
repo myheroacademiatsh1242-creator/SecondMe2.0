@@ -22,7 +22,11 @@
 }
 .adventure-app .adventure-hud .hud-top .level-card {grid-column:1;grid-row:1;padding:7px 12px;justify-content:center;}
 .adventure-app .adventure-hud .hud-top :is(.leg-clock,.boss-bar) {
-  grid-column:2;grid-row:1;padding:6px 12px!important;align-content:center;gap:3px;
+  grid-column:2;grid-row:1;padding:4px 10px!important;align-content:center;gap:2px;
+}
+.adventure-app .adventure-hud .hud-top .boss-bar {
+  display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;
+  max-height:calc(var(--status-rail) - 8px)!important;overflow:hidden!important;
 }
 .adventure-app .adventure-hud .hud-top .leg-clock {display:grid!important;grid-template-rows:22px 4px 12px;}
 .adventure-app .adventure-hud .hud-top .leg-clock>div:first-child {height:auto;gap:10px;}

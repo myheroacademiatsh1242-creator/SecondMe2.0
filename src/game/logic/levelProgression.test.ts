@@ -48,11 +48,13 @@ function route(game:GameEngine,x:number,y:number) {
  throw new Error(`No route in level ${game.currentLevel.id} to ${x},${y}`);
 }
 
-for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false],[4,true]] as const)test(`trail ${index+1}${withRing ? ' with a limit ring' : ''}: recorded Echoes can reach victory`,t=>{
+for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false],[4,true],[6,false],[7,false],[8,false],[9,false],[10,false],[11,false]] as const)test(`trail ${index+1}${withRing ? ' with a limit ring' : ''}: recorded Echoes can reach victory`,t=>{
  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
  Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});
  t.after(()=>previous?Object.defineProperty(globalThis,'document',previous):Reflect.deleteProperty(globalThis,'document'));
  const game=new GameEngine();game.currentLevelIdx=index;game.tutorialEnabled=true;game.restartLevel();
+ // Route audit isolates puzzle geometry; combat is covered separately.
+ if(index>=6)game.enemies=[];
  if (withRing) game.limitRingActive = true;
  const control=game as unknown as {update(dt:number):void;heldKeys:Set<string>;elapsedLevelTime:number};
  const tick=(dt:number)=>{
@@ -61,7 +63,10 @@ for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false
   if (!crossed && game.finalGateCrossed) while (game.echoes.length) game.dismissEcho();
   assert.ok(game.screen==='playing'||game.screen==='victory',`level ${index+1}: ${game.defeatReason} at ${game.player.x},${game.player.y}`);};
  const move=(x:number,y:number)=>{
-  for(const [px,py] of route(game,x,y))for(const axis of ['x','y'] as const) {
+  let path:number[][]|undefined;
+  for(let wait=0;wait<12&&!path;wait+=.02){try{path=route(game,x,y);}catch{tick(.02);}}
+  assert.ok(path,'timed route never opened');
+  for(const [px,py] of path!)for(const axis of ['x','y'] as const) {
    const goal=axis==='x'?px:py;let guard=0;
    while(Math.abs(game.player[axis]-goal)>.2&&game.screen==='playing') {
     assert.ok(++guard<2000,'movement blocked');
@@ -79,7 +84,14 @@ for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false
    const obsolete=game.echoes.findIndex(e=>game.currentLevel.plates.some(p=>!game.currentLevel.doors.at(-1)!.requiredPlates.includes(p.id)&&Math.hypot(p.x+25-e.x,p.y+25-e.y)<35));
    assert.equal(obsolete,0,'the oldest Echo is the reusable one in the final relay');game.dismissEcho();
   }
-  game.toggleRecording();move(plate.x+25,plate.y+25);
+  if(index>=6){
+   for(const [i,door] of game.currentLevel.doors.entries()){
+    if(i>=game.checkpointIndex||!door.releasedPlate)continue;
+    const release=game.currentLevel.plates.find(p=>p.id===door.releasedPlate)!;
+    if(game.echoes.some(e=>Math.hypot(e.x-release.x-25,e.y-release.y-25)<35))game.dismissEcho();
+   }
+   move(plate.x+25,plate.y+25);game.toggleRecording();
+  }else{game.toggleRecording();move(plate.x+25,plate.y+25);}
   assert.deepEqual(trailObjective(game), { action: 'save', target: plate });
   game.toggleRecording();
   assert.deepEqual(trailObjective(game), { action: 'summon', target: plate });
@@ -99,6 +111,7 @@ for(const [index, withRing] of [[0,false],[1,false],[2,false],[3,false],[4,false
   game.dismissEcho();
   for (let time = 0; time < .4; time += .02) tick(.02);
  }
+ if(index>=6){const gate=game.currentLevel.doors.at(-1)!;if(gate.releasedPlate){const p=game.currentLevel.plates.find(p=>p.id===gate.releasedPlate)!;if(game.echoes.some(e=>Math.hypot(e.x-p.x-25,e.y-p.y-25)<35))game.dismissEcho();}}
  assert.equal(isPuzzleExitOpen(game.currentLevel, game.checkpointIndex, game.finalGateCrossed), false);
  move(game.currentLevel.exit.x+30,game.currentLevel.exit.y+30);
  assert.equal(game.finalGateCrossed, true);

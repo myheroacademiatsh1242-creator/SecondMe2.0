@@ -14,8 +14,8 @@ function fogImage() {
 const pct = (v: number, of: number) => `${(v / of * 100).toFixed(3)}%`;
 
 const TEXT = {
-  en: { lines: ['Awakening the forest...', 'Muster Magic...', 'Securing Portal...'], loading: 'LOADING...', caption: 'Prepare your Echo and listen to the memories.' },
-  vi: { lines: ['Đánh thức khu rừng...', 'Hội tụ phép thuật...', 'Gia cố cổng dịch chuyển...'], loading: 'ĐANG TẢI...', caption: 'Chuẩn bị Echo và lắng nghe ký ức.' },
+  en: { lines: ['Awakening the forest...', 'Muster Magic...', 'Preparing journey...'], loading: 'LOADING...', caption: 'Prepare your Echo and listen to the memories.' },
+  vi: { lines: ['Đánh thức khu rừng...', 'Hội tụ phép thuật...', 'Khởi tạo hành trình...'], loading: 'ĐANG TẢI...', caption: 'Chuẩn bị Echo và lắng nghe ký ức.' },
 } as const;
 
 /**

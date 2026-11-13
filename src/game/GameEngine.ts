@@ -1,3 +1,5 @@
+import {loadDemonSprites} from './rendering/demonBoss.ts';
+import {createDemonBoss} from './logic/demonBoss.ts';
 import { trailObjective, type TrailAction } from './logic/trailObjective.ts';
 import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
 import { SKILL_PICKUPS } from './logic/skillPickups.ts';
@@ -26,7 +28,7 @@ import {
   RecordingStatus,
   EchoStatus,
 } from './logic/types.ts';
-import { HitFeel, knockBack, slidePushed } from './logic/hitFeel.ts';
+import { HIT_FEEL, HitFeel, knockBack, slidePushed } from './logic/hitFeel.ts';
 import { pfxSeconds, preloadPfx, type PfxName, type PfxShot } from './rendering/pixelfx.ts';
 import { AERIS_ULT, RAGE, RagePool, icicleRain, insideBeam, ultimateVariant } from './logic/ultimate.ts';
 import { resolveMovement, getActiveObstacles, resolveSpawnPosition, rectIntersects, getCharacterBoundingBox } from './logic/collision.ts';
@@ -113,6 +115,8 @@ export interface HUDState {
   health: number;
   maxHealth?:number;supplies?:Supplies;chanceCharges?:number;aidUnlocked?:boolean;usedSupplies?:SupplyId[];
   bossHp: number;
+  bossMaxHp?:number;
+  bossKind?:'demon';
   mana?:number;maxMana?:number;skillManaCost?:number;rage?:number;maxRage?:number;hasUltimate?:boolean;
   bossPhase: number;
   bossIntroduction?: boolean;bossAction?:string;bossVulnerable?:boolean;
@@ -469,8 +473,8 @@ export class GameEngine {
     this.loop(this.lastTimestamp);
   }
 
-  public openLobby() {
-    this.loadingFromMenu = this.screen === 'intro';
+  public openLobby(withPortal = false) {
+    this.loadingFromMenu = withPortal && this.screen === 'intro';
     this.pendingLevel = null;
     this.screen = 'loading';
     this.heldKeys.clear();
@@ -505,7 +509,7 @@ export class GameEngine {
   private enterLevel(idx: number, after?: () => void) {
     if (!this.levelLoading) { this.currentLevelIdx = idx; this.restartLevel(); after?.(); return; }
     if (this.screen === 'loading') return;   // already on its way to a level
-    this.loadingFromMenu = this.screen === 'intro';   // Continue on the main menu
+    this.loadingFromMenu = false;   // Clean loading screen without portal
     voice.stopAll();
     this.pendingLevel = { idx, built: false, after };
     this.screen = 'loading';
@@ -566,9 +570,22 @@ export class GameEngine {
   }
 
   public continueGame() {
-    if(this.campaign.pendingRuneChoices.length){this.goToLobby();return;}
-    if (this.campaign.bossDefeated) { this.goToLobby(); return; }
-    this.selectLevel(this.campaign.unlockedLevel);
+    if (this.campaign.pendingRuneChoices.length) {
+      this.goToLobby();
+      return;
+    }
+    const frostCompleted = this.campaign.completed.filter(id => id >= 7);
+    if (this.campaign.completed.length >= 5 || frostCompleted.length > 0) {
+      const nextFrostId = [7, 8, 9, 10, 11, 12, 13].find(id => !this.campaign.completed.includes(id)) ?? 7;
+      const idx = Math.min(LEVELS.length - 1, Math.max(0, nextFrostId - 1));
+      this.currentLevelIdx = idx;
+      this.currentLevel = this.cloneLevel(levelAt(idx));
+    } else {
+      const nextId = this.campaign.unlockedLevel;
+      this.currentLevelIdx = nextId;
+      this.currentLevel = this.cloneLevel(levelAt(nextId));
+    }
+    this.openLobby(false);
   }
 
   public pauseGame() {
@@ -611,7 +628,7 @@ export class GameEngine {
     this.pingTarget = null;
     this.recorder.clear();
     this.elapsedLevelTime = 0;
-    this.legTimeRemaining = !this.isTraining && this.currentLevel.id <= 5 ? puzzleBalance(this.currentLevel.id).legSeconds : null;
+    this.legTimeRemaining = !this.isTraining && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) ? puzzleBalance(this.currentLevel.id).legSeconds : null;
     this.training.reset();
     this.timePickup = null;
     this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
@@ -628,7 +645,8 @@ export class GameEngine {
     this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
     this.combatHits = [];
     this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.finalGateCrossed = false; this.exitOpenedAt = null;
-    this.boss = this.currentLevel.id === 6 ? createBoss() : null;
+    this.boss = this.currentLevel.id===13?createDemonBoss():this.currentLevel.id === 6 ? createBoss() : null;
+    if(this.boss?.kind==='demon')loadDemonSprites();
     this.bossIntroduction = !!this.boss;
     this.enemies=createEnemies(this.currentLevel);
     this.magicShots = [];
@@ -651,7 +669,9 @@ export class GameEngine {
     document.body.dataset.state = 'playing';
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
     if(this.isTraining){this.showBanner(this.language==='vi'?'Bãi tập (dev) · Hình nộm không chết, không đánh trả · Cổng ra để về trại':'Training ground (dev) · Dummies never die or fight back · Exit portal returns to camp',6);this.voiceLevelStart();this.notifyHUD();return;}
-    if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
+    if(this.currentLevel.id===13)this.showBanner(this.currentLevel.description,3.2);
+    else if(this.currentLevel.id>=7)this.showBanner(this.currentLevel.description,8);
+    else if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
     this.voiceLevelStart();
     this.notifyHUD();
   }
@@ -660,6 +680,7 @@ export class GameEngine {
   private voiceLevelStart() {
     voice.stopAll();
     void voice.preload(this.voiceRole);
+    if(this.boss?.kind==='demon'){voice.say(this.voiceRole,'combatStart',{delay:1});return;}
     if (this.boss) {
       // The Guardian laughs at the intruders, then the hero answers with a battle cry.
       void voice.preload('guardian');
@@ -678,14 +699,14 @@ export class GameEngine {
         this.notifyHUD();
       });
     } else {
-      // The final completion action starts a fresh run.
-      this.campaign.reset();
-      this.enterLevel(0);
+      // Return to the map without erasing progress at the end of the local chapter.
+      this.goToLobby();
     }
   }
 
   public selectLevel(idx: number) {
     if(this.campaign.pendingRuneChoices.length){this.goToLobby();return;}
+    if(idx>=6){if(!this.devUnlocked&&idx>6&&!this.campaign.completed.includes(idx))return;if(idx<LEVELS.length)this.enterLevel(idx);return;}
     const campaignComplete = this.campaign.bossDefeated;
     if (!this.devUnlocked && !campaignComplete && idx > this.campaign.unlockedLevel) return;
     if (idx >= 0 && idx < LEVELS.length) this.enterLevel(idx);
@@ -714,9 +735,9 @@ export class GameEngine {
 
   public unlockDevMode() {
     this.devUnlocked = true;
-    if (this.legTimeRemaining === null && !this.isTraining && this.currentLevel.id <= 5)
+    if (this.legTimeRemaining === null && !this.isTraining && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12))
       this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
-    this.campaign.completed = [1,2,3,4,5];
+    this.campaign.completed = [...new Set([...this.campaign.completed,1,2,3,4,5])].sort((a,b)=>a-b);
     this.campaign.mechanicalOwned = true;
     this.campaign.coins = 99999;
     // Leave shop stock buyable, including saves filled by the previous dev code.
@@ -736,6 +757,7 @@ export class GameEngine {
     }
     this.campaign.pendingRuneChoices=[];
     this.campaign.save();
+    this.showBanner(this.language==='vi'?`DEV · MỞ TOÀN BỘ ${LEVELS.length} MÀN`:`DEV · ALL ${LEVELS.length} TRAILS UNLOCKED`);
     this.notifyHUD();
   }
 
@@ -810,16 +832,27 @@ export class GameEngine {
     if (this.boss.hp <= 0) {
       this.campaign.recordHeroClear(this.characterClass,this.currentLevel.id);
       this.lastRating = this.campaign.completeLevel(this.currentLevel.id, this.elapsedLevelTime);
-      this.campaign.bossDefeated = true;
+      if(this.boss.kind==='demon') {
+        this.campaign.award(13);
+        try {
+          const key = 'secondme.demonDefeatedForms';
+          const forms: string[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+          const elem = this.boss.demon?.activeElement ?? 'magma';
+          if (!forms.includes(elem)) {
+            forms.push(elem);
+            localStorage.setItem(key, JSON.stringify(forms));
+          }
+        } catch {}
+      } else this.campaign.bossDefeated = true;
       this.campaign.save();
       this.bossDeathPending = true;
       this.boss.iceRays=[];this.boss.projectiles=[];this.frostSlow=0;this.frostZones=[];
       this.bossDeathElapsed = 0;
       this.heldKeys.clear();
       sounds.playGuardianDefeat();
-      voice.say('guardian', 'defeat');
+      if(this.boss.kind!=='demon')voice.say('guardian', 'defeat');
       voice.say(this.voiceRole, 'victory', { delay: 2.4 });
-    } else voice.say('guardian', 'damage', { chance: 0.25, cooldown: 7 });
+    } else if(this.boss.kind!=='demon')voice.say('guardian', 'damage', { chance: 0.25, cooldown: 7 });
     this.notifyHUD();
   }
 
@@ -836,7 +869,7 @@ export class GameEngine {
     if (!this.boss || this.bossDeathPending || this.boss.hp<=0) return false;
     const pillar=this.boss.pillars.find(p=>p.hp>0 && Math.hypot(p.x-x,p.y-y)<=radius);
     if(pillar) return this.strike(pillar, amount, false, source);
-    if(Math.hypot(this.boss.x-x,this.boss.y-y)>radius) return false;
+    if(Math.hypot(this.boss.x-x,this.boss.y-y) > (this.boss.kind === 'demon' ? radius + 38 : radius)) return false;
     return this.strike(this.boss, amount, false, source);
   }
 
@@ -905,9 +938,17 @@ export class GameEngine {
       return false;
     }
     amount*=source===this.player?(this.boss.mode==='recover'?1.35:1):.5;
+    if (this.boss.kind === 'demon' && this.boss.demon) {
+      if (this.boss.demon.stunned > 0) {
+        amount *= 2.5;
+      } else if (this.boss.demon.heatShield > 0) {
+        amount *= 0.15;
+        this.addDamageText(this.boss.x, this.boss.y - 60, 0, false, this.language === 'vi' ? 'KHÁNG HỎA' : 'HEAT SHIELD');
+      }
+    }
     // Its health comes in quarters: a hit can take it down to the bottom of this one at most,
     // where the shield comes back up and the four pillars rise again (except in the last).
-    const floor=bossShieldFloor(this.boss);
+    const floor=this.boss.kind==='demon'?0:bossShieldFloor(this.boss);
     const result=applyDamage(this.boss.hp,amount);
     const shielded=floor>0&&result.hp<=floor;
     const dealt=shielded?damagePoints(this.boss.hp-floor):result.dealt;
@@ -915,7 +956,7 @@ export class GameEngine {
     this.combatHits.push({ x: this.boss.x, y: this.boss.y - 35, damage: dealt, life: .7, broken: shielded });
     this.combatHits = this.combatHits.slice(-24);
     if (!shielded && this.boss.hp > 0 && this.boss.hitFlash <= .06) sounds.playGuardianBodyHit();
-    this.boss.hitFlash=.18;
+    this.boss.hitFlash=.18;if(this.boss.demon)this.boss.demon.hurtTime=.2;
     if(shielded) {
       raiseBossShield(this.boss);
       sounds.playGuardianShield(true);
@@ -940,7 +981,7 @@ export class GameEngine {
     const list: { t: CombatTarget; r: number }[] = this.enemies.filter(e => e.hp > 0).map(t => ({ t, r: ENEMY_R }));
     if (this.boss && !this.bossDeathPending && this.boss.hp > 0) {
       for (const p of this.boss.pillars) if (p.hp > 0) list.push({ t: p, r: PILLAR_R });
-      list.push({ t: this.boss, r: BOSS_R });
+      list.push({ t: this.boss, r: this.boss.kind === 'demon' ? 82 : BOSS_R });
     }
     return list;
   }
@@ -1706,7 +1747,7 @@ export class GameEngine {
     if (this.screen === 'intro') {
       if (e.target instanceof HTMLElement && e.target.closest('button, input, select')) return;
       if (code === 'Enter' || code === 'Space') {
-        this.openLobby();
+        this.openLobby(true);
       }
       return;
     }
@@ -1891,6 +1932,7 @@ export class GameEngine {
     if(this.enemies.some(e=>e.hp>0&&Math.hypot(e.x-this.player.x,e.y-this.player.y)<230))this.guides.offer('enemies');
     if(this.currentLevel.id>=2&&Object.values(this.campaign.echoRunes).some(n=>n>0))this.guides.offer('upgradeRunes');
     const offer=(id:GuideTopic)=>this.guides.offer(id);
+    if(this.boss?.kind==='demon'){if(this.skillDrop)offer('skillPickups');return;}
     if(this.boss){
       if(this.skillDrop)offer('skillPickups');
       if (this.boss.mode === 'warning') offer('bossPatterns');
@@ -1927,11 +1969,11 @@ export class GameEngine {
     this.vfx = this.vfx.filter(fx => fx.age < vfxSeconds(fx.kind));
     if (this.bossDeathPending) {
       this.bossDeathElapsed += dt;
-      if (this.bossDeathElapsed >= 1.05) {
+      if (this.bossDeathElapsed >= (this.boss?.kind==='demon'?2.3:1.05)) {
         sounds.playGuardianLanding();
         sounds.playVictory();
         this.bossDeathPending = false;
-        this.screen = 'ending';
+        this.screen = this.boss?.kind==='demon'?'victory':'ending';
         document.body.dataset.state = 'gameover';
         this.notifyHUD();
       }
@@ -1945,7 +1987,7 @@ export class GameEngine {
     // Expire before accepting a checkpoint: arriving after zero cannot rescue a run.
     if (this.legTimeRemaining !== null) {
       this.legTimeRemaining = Math.max(0, this.legTimeRemaining - dt);
-      if (!this.devUnlocked && this.legTimeRemaining <= 0.000001) {
+      if ((!this.devUnlocked || this.currentLevel.id>=7) && this.legTimeRemaining <= 0.000001) {
         this.legTimeRemaining = 0;
         this.defeatReason = 'timeout';
         voice.say(this.voiceRole, 'defeat');
@@ -2189,9 +2231,11 @@ export class GameEngine {
     // 4. Update Renderer animations & particles
     this.renderer.update(dt, this.player.isMoving);
 
+    // Rune wards must be cleared before they count as a checkpoint or a held switch.
+    for(const plate of this.currentLevel.plates)plate.wardLocked=!!plate.wardEnemyIds?.some(id=>this.enemies.some(e=>e.id===id&&e.hp>0));
     // 5. Update Pressure Plates
     const targetPlate = this.currentLevel.plates[this.checkpointIndex];
-    if (this.currentLevel.id <= 5 && (this.legTimeRemaining !== null || this.devUnlocked) && targetPlate &&
+    if ((this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) && (this.legTimeRemaining !== null || this.devUnlocked) && targetPlate && !targetPlate.wardLocked &&
         rectIntersects(getCharacterBoundingBox(this.player.x, this.player.y, 24, 24), targetPlate)) {
       this.checkpointIndex++;
       this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);
@@ -2236,7 +2280,9 @@ export class GameEngine {
       this.currentLevel.plates,
       this.player,
       this.echoes,
-      dt
+      dt,
+      3.5,
+      this.elapsedLevelTime
     );
     const finalGate = this.currentLevel.doors.at(-1);
     if (!this.finalGateCrossed && finalGate && this.checkpointIndex >= this.currentLevel.plates.length &&
@@ -2274,7 +2320,7 @@ export class GameEngine {
       const bossHit = this.timeStop > 0 ? false : updateBoss(boss, echoTarget??this.player, dt, this.currentLevel.plates.some(p => p.isPressed), this.player, bossEchoes, (index,damage) => {
         if(index>=normalBossEchoes.length)this.hitSupport(damage);else{const echo=normalBossEchoes[index];if(echo)this.hitEcho(echo,damage);}
       }, damage=>{bossDamage=Math.max(bossDamage,damage);},()=>{this.frostSlow=FROST_STRIKE.SLOW_TIME;},this.dodgeTime>0);
-      if (this.boss.phase > this.lastBossPhase) voice.say('guardian', 'event', { id: `phase${this.boss.phase}` });
+      if (boss.kind!=='demon'&&this.boss.phase > this.lastBossPhase) voice.say('guardian', 'event', { id: `phase${this.boss.phase}` });
       this.lastBossPhase = this.boss.phase;
       this.bossStepDistance += Math.hypot(boss.x - bossX, boss.y - bossY);
       if (this.bossStepDistance >= 42) {
@@ -2284,22 +2330,84 @@ export class GameEngine {
       // Play cues on the attack transitions, even if the strike misses the player.
       if (boss.mode === 'warning' && this.lastBossMode !== 'warning') {
         sounds.playGuardianAttack(boss.attack, false, boss.phase);
-        voice.say('guardian', 'attack', { chance: 0.45, cooldown: 5, priority: 3, alignEnd: Math.max(0.3, this.boss.timer) });
+        if(boss.kind!=='demon')voice.say('guardian', 'attack', { chance: 0.45, cooldown: 5, priority: 3, alignEnd: Math.max(0.3, this.boss.timer) });
       }
       if (boss.mode === 'strike' && this.lastBossMode === 'warning') sounds.playGuardianAttack(boss.attack, true, boss.phase);
       if (boss.mode === 'strike' && boss.attack === 'volley' && boss.burstRemaining < burstBefore) sounds.playGuardianVolley();
       this.lastBossMode = this.boss.mode;
       if (burstBefore <= 0 && this.boss.burstRemaining > 0) voice.say('guardian', 'skill', { chance: 0.6, cooldown: 9 });
-      if (!this.bossLowVoiced && this.boss.hp > 0 && this.boss.hp < this.boss.maxHp * 0.15) { this.bossLowVoiced = true; voice.say('guardian', 'lowHealth'); }
+      if (boss.kind === 'demon' && boss.demon) {
+        if (boss.mode === 'ritual' && boss.demon.leapDuration && boss.demon.modeAge >= boss.demon.leapDuration && !boss.demon.leapLanded) {
+          boss.demon.leapLanded = true;
+          sounds.playGuardianLanding();
+          this.hitFeel.shake = HIT_FEEL.SHAKE_TIME * 1.5;
+        }
+        if (boss.demon.slamShake) {
+          boss.demon.slamShake = false;
+          sounds.playGuardianLanding();
+          this.hitFeel.shake = HIT_FEEL.SHAKE_TIME * 1.25;
+        }
+        if (boss.demon.summonPending && boss.demon.summonPending > 0) {
+          const spawnCount = boss.demon.summonPending;
+          boss.demon.summonPending = 0;
+          this.spawnMagmaMinions(spawnCount);
+        }
+      }
+      if (boss.kind!=='demon'&&!this.bossLowVoiced && this.boss.hp > 0 && this.boss.hp < this.boss.maxHp * 0.15) { this.bossLowVoiced = true; voice.say('guardian', 'lowHealth'); }
       if (bossHit) {
         // A decoy redirects attacks; it never makes the player immune to stray projectiles.
         this.takeDamage(bossDamage);
       }
       if(this.boss.phase!==previousPhase)this.echoCharges=Math.max(1,this.echoCharges);
-    } else if ((this.devUnlocked || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed)) &&
+    } else if ((this.currentLevel.id<7 || this.enemies.every(e=>e.hp<=0)) && ((this.devUnlocked && this.currentLevel.id<7) || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed)) &&
       checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
       this.exitTravelRemaining = .7;
     }
+  }
+
+  public spawnMagmaMinions(count: number) {
+    const liveMinions = this.enemies.filter(e => e.hp > 0).length;
+    const toSpawn = Math.min(count, Math.max(0, 6 - liveMinions));
+    if (toSpawn <= 0) return;
+
+    const fissures = [
+      { x: 280, y: 220 },
+      { x: 1000, y: 220 },
+      { x: 320, y: 520 },
+      { x: 960, y: 520 },
+      { x: 640, y: 160 },
+      { x: 640, y: 560 },
+    ];
+
+    sounds.playGuardianVolley();
+    for (let i = 0; i < toSpawn; i++) {
+      const fissure = fissures[(Math.floor(Math.random() * fissures.length) + i) % fissures.length];
+      const offsetX = (Math.random() - 0.5) * 50;
+      const offsetY = (Math.random() - 0.5) * 50;
+      const spawnX = Math.max(160, Math.min(1120, fissure.x + offsetX));
+      const spawnY = Math.max(160, Math.min(580, fissure.y + offsetY));
+
+      const minion: Enemy = {
+        id: `magma-skull-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+        kind: 'skull',
+        x: spawnX,
+        y: spawnY,
+        homeX: spawnX,
+        homeY: spawnY,
+        hp: 30,
+        maxHp: 30,
+        mode: 'chase',
+        timer: 0.15 + i * 0.1,
+        targetX: this.player.x,
+        targetY: this.player.y,
+        facingLeft: this.player.x < spawnX,
+        hitFlash: 0.35,
+        deathAge: 0,
+        targetId: null,
+      };
+      this.enemies.push(minion);
+    }
+    this.showBanner(this.language === 'vi' ? 'QUỶ TÂM HỎA TRIỆU HỒI ĐÀN QUỶ LỬA!' : 'MAGMA DEMON SUMMONS FIERY SKULLS!', 2.2);
   }
 
   private handleVictory() {
@@ -2330,7 +2438,7 @@ export class GameEngine {
 
     this.renderer.stage.levelTime = this.elapsedLevelTime;
     this.renderer.stage.reducedMotion = this.reducedMotion;
-    this.renderer.stage.exitOpen = !this.boss && (this.devUnlocked || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed));
+    this.renderer.stage.exitOpen = !this.boss && (this.currentLevel.id<7||this.enemies.every(e=>e.hp<=0)) && ((this.devUnlocked && this.currentLevel.id<7) || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed));
     this.renderer.render(
       this.ctx,
       this.canvas.width,
@@ -2389,7 +2497,7 @@ export class GameEngine {
         lastReward: this.lastReward,
         lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
-        bossHp: this.boss?.hp ?? 0,
+        bossHp: this.boss?.hp ?? 0,bossMaxHp:this.boss?.maxHp??240,bossKind:this.boss?.kind,
         bossPhase: this.boss?.phase ?? 0,
         bossIntroduction:this.bossIntroduction,bossAction:this.boss?.attack,bossVulnerable:this.boss?.mode==='recover'&&this.boss.armor===0,
         attackCooldown: this.attackCooldown,
@@ -2428,7 +2536,7 @@ export class GameEngine {
         loadingFromMenu: this.loadingFromMenu,
         bossArmor: this.boss?.armor??0,
         pillarsRemaining: this.boss?.pillars.filter(p=>p.hp>0).length??0,
-        bossShieldAt: this.boss?bossShieldFloor(this.boss):0,
+        bossShieldAt: this.boss&&this.boss.kind!=='demon'?bossShieldFloor(this.boss):0,
         activeBuff: this.hasteTime>0?`${this.language==='vi'?'Tốc chém':'Haste'} ${this.hasteTime.toFixed(1)}s`:this.stoneShield>0?`${this.language==='vi'?'Khiên đá':'Stone shield'} ${this.stoneShield} HP`:this.armorShield>0?`${this.language==='vi'?'Giáp':'Armor'} ${this.armorShield} HP`:'',
         skillDrop: this.skillDrop?.kind??null,
       });

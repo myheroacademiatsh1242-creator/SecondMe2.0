@@ -10,7 +10,9 @@ const layers = new Map<string, HTMLCanvasElement>();
 const MAX_LAYERS = 3;
 /** Level 3's recoloured sheet: its colour filter applied once to the whole sheet, not per sprite. */
 const LEVEL3_FILTER = 'hue-rotate(100deg) saturate(.65) brightness(.8)';
+const LEVEL12_FILTER = 'sepia(1) saturate(3) hue-rotate(-50deg) brightness(.65)';
 let tinted: { source: HTMLImageElement; sheet: HTMLCanvasElement } | null = null;
+let tinted12: { source: HTMLImageElement; sheet: HTMLCanvasElement } | null = null;
 function level3Sheet(image: HTMLImageElement): CanvasImageSource {
   if (tinted?.source !== image) {
     const sheet = document.createElement('canvas'); sheet.width = image.width; sheet.height = image.height;
@@ -18,6 +20,14 @@ function level3Sheet(image: HTMLImageElement): CanvasImageSource {
     tinted = { source: image, sheet };
   }
   return tinted.sheet;
+}
+function level12Sheet(image: HTMLImageElement): CanvasImageSource {
+  if (tinted12?.source !== image) {
+    const sheet = document.createElement('canvas'); sheet.width = image.width; sheet.height = image.height;
+    const g = sheet.getContext('2d')!; g.filter = LEVEL12_FILTER; g.drawImage(image, 0, 0);
+    tinted12 = { source: image, sheet };
+  }
+  return tinted12.sheet;
 }
 export const forestBoundaryReady = () => !!livingImage('forest-edge-pixel.png');
 
@@ -33,7 +43,7 @@ export function drawForestBoundary(ctx: CanvasRenderingContext2D, level: LevelDa
     const g=layer.getContext('2d')!;g.imageSmoothingEnabled=false;
     const row=level.id>=5?2:level.id===4?1:0;
     const sw=image.width/4,sh=image.height/3;
-    const sheet=level.id===3?level3Sheet(image):image;
+    const sheet=level.id===12?level12Sheet(image):level.id===3?level3Sheet(image):image;
     const noise=(n:number)=>{const a=Math.sin(n*127.1+level.id*91.7)*43758.5453;return a-Math.floor(a);};
     const sprite=(col:number,x:number,y:number,size:number,angle=0,flip=false)=>{
       g.save();g.translate(Math.round(x),Math.round(y));g.rotate(angle);if(flip)g.scale(-1,1);
@@ -44,7 +54,7 @@ export function drawForestBoundary(ctx: CanvasRenderingContext2D, level: LevelDa
       const {x,y,width,height}=wall;
       const outer=x<=0||y<=0||x+width>=w||y+height>=h;
       if(outer) {
-        g.fillStyle=level.id>=5?'#172d36':'#10291e';g.fillRect(x,y,width,height);
+        g.fillStyle=level.id===12?'#180c0c':level.id===11?'#1a1c1e':level.id>=5?'#172d36':'#10291e';g.fillRect(x,y,width,height);
         continue;
       }
       if(width>=height*1.5&&Math.max(width,height)<=160) {

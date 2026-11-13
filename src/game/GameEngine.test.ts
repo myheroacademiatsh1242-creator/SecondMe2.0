@@ -221,17 +221,10 @@ test('restart from pause resumes the level rather than leaving the pause overlay
   assert.equal(document.body.dataset.state, 'playing');
 });
 
-test('advancing after the last level immediately starts a new run at level one', t => {
-  const document = mockDocument(t);
-  const { engine } = setup();
-  engine.currentLevelIdx = LEVELS.length - 1;
-  engine.screen = 'victory';
-  engine.nextLevel();
-  assert.equal(engine.currentLevelIdx, 0);
-  assert.equal(engine.currentLevel.id, LEVELS[0].id);
-  assert.equal(engine.screen, 'playing');
-  assert.equal(document.body.dataset.state, 'playing');
-  assert.equal(engine.player.x, LEVELS[0].playerSpawn.x);
+test('finishing the local chapter returns to camp and preserves progress', t => {
+  mockDocument(t);
+  const {engine}=setup();engine.currentLevelIdx=LEVELS.length-1;engine.campaign.award(12);engine.screen='victory';engine.nextLevel();
+  assert.equal(engine.currentLevelIdx,LEVELS.length-1);assert.equal(engine.screen,'lobby');assert.ok(engine.campaign.completed.includes(12));
 });
 
 test('an animation frame timestamp before startup cannot move the game clock backwards', t => {
@@ -300,27 +293,28 @@ test('pressing Y four times unlocks every trail for the current dev session', t 
   assert.equal(engine.campaign.limitRings,0);
   assert.equal(engine.campaign.chestKeys,0);
   for(const rune of ECHO_RUNES)assert.equal(engine.campaign.echoRunes[rune.id],9999);
-  assert.equal(engine.campaign.runeLoadout.length,5);
+  assert.equal(engine.campaign.runeLoadout.length,4);
   assert.deepEqual(engine.campaign.pendingRuneChoices,[]);
   engine.selectClass('mechanical');
   assert.equal(engine.characterClass,'mage');
   engine.campaign.coins=12;engine.campaign.timeItems=0;
   engine.campaign.limitRings=0;engine.campaign.chestKeys=0;engine.campaign.echoRunes.guard=0;
   engine.setInventoryOpen(true);engine.setRuneEditing(true);
-  engine.campaign.runeLoadout=['swap','regen'];engine.campaign.pendingRuneChoices=['call','guard','power'];
+  engine.campaign.runeLoadout=['guard','power'];engine.campaign.pendingRuneChoices=['call','guard','power'];
   for(let i=0;i<4;i++)controls.handleKeyDown(event);
   assert.equal(engine.campaign.coins,99999);
   assert.equal(engine.campaign.timeItems,0);
   assert.equal(engine.campaign.limitRings,0);assert.equal(engine.campaign.chestKeys,0);
   assert.equal(engine.campaign.echoRunes.guard,9999);
-  assert.deepEqual(engine.campaign.runeLoadout.slice(0,2),['swap','regen']);
-  assert.equal(engine.campaign.runeLoadout.length,5);assert.deepEqual(engine.campaign.pendingRuneChoices,[]);
+  assert.deepEqual(engine.campaign.runeLoadout.slice(0,2),['guard','power']);
+  assert.equal(engine.campaign.runeLoadout.length,4);assert.deepEqual(engine.campaign.pendingRuneChoices,[]);
   assert.deepEqual(engine.campaign.completed,[1,2,3,4,5]);
   assert.equal(engine.campaign.unlockedLevel,5);
   engine.setInventoryOpen(false);engine.setRuneEditing(false);
   engine.selectLevel(5);
   assert.equal(engine.currentLevelIdx,5);
   assert.equal(engine.screen,'playing');
+  for(let i=0;i<LEVELS.length;i++){engine.selectLevel(i);assert.equal(engine.currentLevelIdx,i);assert.equal(engine.currentLevel.id,LEVELS[i].id);}
 });
 
 test('completed campaign can replay any level from lobby',t=>{

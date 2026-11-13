@@ -20,9 +20,12 @@ const trailCopy = {
   recall: ['X', 'Thu Echo', 'Recall Echo', 'Thu Echo cũ để gọi thêm', 'Recall the oldest Echo to free a slot'],
   recharge: ['', '', '', 'Hết lượt Echo · chạm ấn mới hoặc hạ quái', 'Out of Echo charges · reach a new rune or defeat an enemy'],
   opening: ['', '', '', 'Cổng đang mở…', 'Gate opening…'],
-  release: ['X', 'Thu Echo', 'Recall Echo', 'Nhả ấn I để mở cổng cuối', 'Release rune I to open the final gate'],
+  release: ['X', 'Thu Echo', 'Recall Echo', 'Nhả ấn ghi cạnh cổng, rồi qua cổng', 'Release the rune marked beside the gate'],
   cross: ['', '', '', 'Qua cổng viền vàng', 'Cross the outlined gate'],
   exit: ['', '', '', 'Đi vào cổng thoát', 'Enter the exit portal'],
+  ward: ['', '', '', 'Hạ lính gác nối với ấn tím để phá phong ấn', 'Defeat the linked sentries to unseal the rune'],
+  rhythm: ['', '', '', 'Giữ rune · đợi đếm ngược xanh rồi qua cổng', 'Hold the runes and cross during the green countdown'],
+  fight: ['', '', '', 'Hạ hết quái để mở cổng thoát', 'Defeat the remaining enemies to unlock the exit'],
 } as const;
 
 export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | null; hud: HUDState; touch: boolean }) {

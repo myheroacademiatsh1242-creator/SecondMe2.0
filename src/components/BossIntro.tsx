@@ -24,6 +24,78 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
   useEffect(() => {
     if (hud.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches) playRoar();
   }, [hud.reducedMotion, playRoar]);
+
+  // Global key listener to start boss fight immediately with Enter, Space, or Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+        e.preventDefault();
+        engine?.beginBossFight();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [engine]);
+
+  if (hud.bossKind === 'demon') {
+    return (
+      <div
+        className="demon-intro"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="demon-intro-title"
+        ref={dialog}
+        tabIndex={0}
+      >
+        <div className="demon-intro-portrait" aria-hidden="true" />
+        <section className="demon-intro-content">
+          <small className="demon-intro-kicker">
+            {vi ? 'MÀN 13 · SÂU TRONG HANG' : 'TRAIL 13 · DEEP WITHIN THE CAVE'}
+          </small>
+          <h2 id="demon-intro-title">{vi ? 'QUỶ TÂM HỎA' : 'EMBER DEMON'}</h2>
+          <p className="demon-intro-desc">
+            {vi
+              ? 'Ngọn lửa cổ đại dưới lòng đất đã thức tỉnh.'
+              : 'The ancient flame beneath the earth has awakened.'}
+          </p>
+          <ol className="demon-intro-tips">
+            <li>
+              <b>{vi ? 'I. Phong ấn Lõi Nguyên Tố' : 'I. Seal Elemental Core'}</b>
+              <span>
+                {vi
+                  ? 'Đứng lên bệ ấn dập tắt 1 Lõi; Boss nuốt lõi còn lại để tiến hóa.'
+                  : 'Stand on core plate to seal it; Boss absorbs the other to evolve.'}
+              </span>
+            </li>
+            <li>
+              <b>{vi ? 'II. Ép Quá Tải & Nhử Bằng Echo' : 'II. Overheat & Echo Bait'}</b>
+              <span>
+                {vi
+                  ? 'Khi Boss bọc giáp nhiệt, dùng Echo đứng nhử tại Trụ Tản Nhiệt.'
+                  : 'When Boss heat-shields, place an Echo decoy at the Cooling Vent.'}
+              </span>
+            </li>
+            <li>
+              <b>{vi ? 'III. Sốc Nhiệt Phá Giáp x2.5 Sát Thương' : 'III. Thermal Shock x2.5 Dmg'}</b>
+              <span>
+                {vi
+                  ? 'Boss húc trúng Trụ sẽ bị nổ giáp, choáng 4.5s lộ điểm yếu chí mạng!'
+                  : 'Baiting charge into Vent shatters shield and stuns Boss for x2.5 crit!'}
+              </span>
+            </li>
+          </ol>
+          <button
+            className="demon-intro-start-btn"
+            onClick={() => engine?.beginBossFight()}
+            autoFocus
+          >
+            <span>{vi ? 'VÀO TRẬN · QUYẾT CHIẾN' : 'START BATTLE · FIGHT'}</span>
+            <ArrowRight size={22} />
+          </button>
+        </section>
+      </div>
+    );
+  }
   return <div ref={dialog} tabIndex={-1} className={`boss-cut${skipped || hud.reducedMotion ? ' is-skipped' : ''}`} role="dialog" aria-modal="true" aria-labelledby="boss-intro-name"
     onPointerDown={() => { setSkipped(true); playRoar(); }}>
     <div className="boss-cut-snow" aria-hidden="true">

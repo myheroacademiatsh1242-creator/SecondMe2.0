@@ -23,6 +23,12 @@ const encounters:Record<number,[EnemyKind,number,number][]>= {
  3:[['goblin',830,130],['bear',420,120],['skull',440,580]],
  4:[['goblin',1140,400],['bear',850,580],['shaman',510,235],['skull',230,500]],
  5:[['goblin',1130,95],['skull',935,580],['bear',760,440],['shaman',550,95],['minotaur',355,435]],
+ 7:[['goblin',350,520],['skull',680,130],['goblin',740,570],['bear',1080,520]],
+ 8:[['goblin',420,560],['bear',980,550],['skull',850,170],['shaman',1120,230],['goblin',220,220]],
+ 9:[['skull',1100,290],['goblin',770,140],['bear',400,180],['shaman',140,550],['skull',470,460],['bear',1020,570]],
+ 10:[['goblin',160,410],['skull',410,300],['shaman',450,580],['bear',670,360],['goblin',890,580],['shaman',940,180],['skull',1160,420]],
+ 11:[['skull',650,120],['shaman',1120,140],['bear',960,300],['goblin',400,280],['skull',140,540],['minotaur',540,550],['shaman',900,470],['bear',1160,600]],
+ 12:[['goblin',150,200],['skull',340,580],['bear',360,260],['shaman',540,130],['goblin',550,600],['minotaur',730,270],['skull',940,610],['shaman',940,200],['bear',1150,580]],
  // Training ground (TRAINING_LEVEL_ID): a group of three for sweeping hits, one far for range.
  0:[['dummy',700,290],['dummy',770,360],['dummy',700,430],['dummy',1040,360]],
 };

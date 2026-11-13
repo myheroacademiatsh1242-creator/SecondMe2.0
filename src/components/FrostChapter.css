@@ -1,0 +1,741 @@
+/* Frost Chapter: Frozen Frontier (Chương Băng Tuyết) Map & Camp Styling */
+
+/* Integrated Camp Sidebar - Frost Theme */
+.journey-lobby.journey-lobby .journey-camp.frost-camp {
+  background: linear-gradient(#081922c0, #081922c0), url('/assets/menu/stone-panel.png') 0 0/334px 434px repeat;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  border-right: 4px solid var(--px-ink);
+  box-shadow: inset -2px 0 0 #285161;
+}
+
+.frost-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #162f3c;
+  border: 3px solid var(--px-ink);
+  color: #c8edf6;
+  font: 600 13px Georgia, serif;
+  letter-spacing: 0.8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  clip-path: var(--px-notch);
+  box-shadow: inset 2px 2px 0 #4f8b9e, inset -2px -2px 0 #0d1b22, 0 3px 0 #050d08;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+
+.frost-back:hover {
+  background: #23485b;
+  color: #ffffff;
+  border-color: var(--px-ink);
+  transform: translateY(-1px);
+}
+
+.frost-back:active {
+  transform: translateY(2px);
+  box-shadow: inset 2px 2px 0 #0d1b22, inset -2px -2px 0 #4f8b9e;
+}
+
+.frost-back:focus-visible {
+  outline: 2px solid #7de3fa;
+  outline-offset: 3px;
+}
+
+.journey-lobby .frost-rest-heading {
+  background: #091a24;
+  border: 3px solid var(--px-ink);
+  clip-path: var(--px-notch);
+  box-shadow: inset 0 2px 0 #2f6577;
+  color: #9fe2f3;
+  padding: 6px 10px;
+}
+
+.journey-lobby.journey-lobby .frost-camp .rest-scene-frost {
+  background: url('/assets/ui/frost-campsite.png') center bottom/auto 100% no-repeat;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  border-block: 4px solid var(--px-ink);
+  box-shadow: 0 -2px 0 #285161, 0 2px 0 #285161;
+}
+
+.journey-lobby.journey-lobby .frost-camp .rest-scene-caption {
+  background: #091a24;
+}
+
+.frost-firelight {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 60%, #ffd06633 0%, #3ca0b822 50%, transparent 75%);
+  pointer-events: none;
+}
+
+.frost-snow-drift i {
+  background: #cbf3fc !important;
+  box-shadow: 0 0 6px #7fd6ea !important;
+}
+
+.journey-lobby .frost-kit,
+.journey-lobby .frost-departure {
+  margin-top: 10px;
+  padding: 12px;
+  background: #081822e0;
+  border: 3px solid var(--px-ink);
+  clip-path: var(--px-notch);
+  box-shadow: inset 3px 3px 0 #030b1099, inset -2px -2px 0 #1b3d4d;
+}
+
+.journey-lobby .frost-kit > div > span,
+.journey-lobby .frost-departure > span {
+  color: #79b7c8;
+}
+
+.journey-lobby .frost-prepare {
+  border: 3px solid var(--px-ink);
+  background: #1d3642;
+  color: #def6fc;
+  clip-path: var(--px-notch);
+  box-shadow: inset 3px 3px 0 #4d8294, inset -3px -3px 0 #0c181e;
+}
+
+.journey-lobby .frost-prepare:hover {
+  background: #274757;
+  color: #ffffff;
+}
+
+.journey-lobby .frost-prepare:active {
+  transform: translateY(2px);
+  box-shadow: inset 3px 3px 0 #0c181e, inset -3px -3px 0 #4d8294;
+}
+
+.journey-lobby .frost-stage-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a4c9d4;
+  margin: 6px 0 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 1px 1px 0 var(--px-ink);
+}
+
+/* Primary continue button */
+.journey-lobby.journey-lobby .frost-camp .camp-continue {
+  border: 3px solid var(--px-ink);
+  background: linear-gradient(#49bed7, #24758d);
+  color: #071922;
+  clip-path: var(--px-notch);
+  box-shadow: inset 3px 3px 0 #a9eaf7, inset -3px -7px 0 #134657;
+  padding-bottom: 13px;
+  transition: none;
+}
+
+.journey-lobby.journey-lobby .frost-camp .camp-continue > span {
+  text-shadow: 1px 1px 0 #9de3f2;
+}
+
+.journey-lobby.journey-lobby .frost-camp .camp-continue:hover {
+  background: linear-gradient(#60cce3, #2e88a3);
+  transform: none;
+}
+
+.journey-lobby.journey-lobby .frost-camp .camp-continue:active {
+  transform: translateY(4px);
+  box-shadow: inset 3px 3px 0 #134657, inset -3px -3px 0 #a9eaf7;
+  padding-bottom: 9px;
+}
+
+.journey-lobby.journey-lobby .frost-camp .camp-continue[disabled] {
+  background: #172730;
+  color: #55727f;
+  box-shadow: inset 3px 3px 0 #284452, inset -3px -7px 0 #0d1a22;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* Progress bar */
+.journey-lobby .frost-progress-bar [role=progressbar] {
+  gap: 4px;
+  padding: 3px;
+  background: var(--px-ink);
+}
+
+.journey-lobby .frost-progress-bar i {
+  width: 14px;
+  height: 10px;
+  background: #14242e;
+  box-shadow: inset -2px -2px 0 #081218;
+}
+
+.journey-lobby .frost-progress-bar i.explored {
+  background: #47b2cb;
+  box-shadow: inset 2px 2px 0 #94e7fa, inset -2px -2px 0 #1b6373;
+}
+
+.journey-lobby .frost-progress-bar i.next {
+  background: var(--px-gold);
+  animation: px-blink 1s steps(1) infinite;
+}
+
+/* Map Section & Canvas - Exact Native Proportions (1024 / 572) */
+.journey-lobby.journey-lobby .journey-chart.frost-chart {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 0;
+  min-width: 0;
+  background: #091720;
+  border: 0;
+  box-shadow: none;
+  overflow: hidden;
+  isolation: isolate;
+  position: relative;
+}
+
+.journey-lobby .frost-chart:before {
+  content: '';
+  position: absolute;
+  inset: -15px;
+  background: linear-gradient(#081720c0, #081720c0), url('/assets/ui/journey-frost-map.png') center/cover;
+  filter: blur(8px);
+  z-index: -1;
+}
+
+.journey-lobby .frost-chart:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 4px var(--px-ink), inset 0 0 0 6px #285466, inset 0 0 0 8px var(--px-ink);
+}
+
+/* Map World Container matching EXACT 3:2 proportion of Echo Forest map */
+.journey-lobby .journey-world.frost-world {
+  position: relative;
+  width: 100%;
+  max-width: calc((100dvh - 66px) * 1.5);
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  aspect-ratio: 3/2;
+  flex: none;
+  border: 0;
+  background: url('/assets/ui/journey-frost-map.png?v=sharp4') center/100% 100% no-repeat;
+  overflow: hidden;
+  isolation: isolate;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+@container (min-width: 0px) {
+  .journey-lobby .journey-world.frost-world {
+    width: min(100cqw, 220cqh);
+    max-width: none;
+    height: auto;
+    aspect-ratio: 3/2;
+    transform: translateY(max(0px, calc((min(66.667cqw, 146.667cqh) - 100cqh) * 0.23)));
+  }
+}
+
+@media (max-width: 760px) {
+  .journey-lobby .journey-world.frost-world {
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 3/2;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 540px) {
+  .journey-lobby .journey-world.frost-world {
+    max-width: calc((100dvh - 50px) * 1.5);
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) and (max-width: 760px) {
+  .journey-lobby .journey-world.frost-world {
+    max-width: calc((100dvh - 48px) * 1.5);
+  }
+}
+
+.frost-world:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 60px #04101880;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (min-width: 761px), (orientation: landscape) and (pointer: coarse) {
+  .journey-lobby .journey-chart.frost-chart {
+    container-type: size;
+  }
+  .journey-lobby .journey-world.frost-world {
+    width: min(100cqw, calc(100cqh * 1.5));
+    max-width: none;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    transform: none;
+  }
+}
+
+/* Frost SVG Trail - Clearly visible and lively across the snowy mountain */
+.frost-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.frost-path path {
+  fill: none;
+  stroke: #72b2c4;
+  stroke-width: 3.5;
+  stroke-dasharray: 4 8;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 2px #07151ecc);
+  opacity: 0.65;
+  transition: opacity 0.3s, stroke 0.3s;
+}
+
+.frost-path .trail-open {
+  stroke: #c8f5ff;
+  stroke-width: 4;
+  stroke-dasharray: 5 8;
+  filter: drop-shadow(0 0 5px #51c5e6) drop-shadow(0 2px 3px #07151e);
+  opacity: 0.95;
+}
+
+.frost-path .trail-done {
+  stroke: #dcf2b8;
+  stroke-width: 4;
+  stroke-dasharray: 5 8;
+  filter: drop-shadow(0 0 4px #a0d45d) drop-shadow(0 1px 2px #07151e);
+  opacity: 0.85;
+}
+
+.frost-path .trail-live {
+  stroke: #fff2b8;
+  stroke-width: 4.5;
+  stroke-dasharray: 6 8;
+  filter: drop-shadow(0 0 7px #ffd054) drop-shadow(0 0 14px #ffaa22);
+  animation: trail-pulse 1.4s ease-in-out infinite;
+  opacity: 1;
+}
+
+@keyframes trail-pulse {
+  0%, 100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 5px #ffd054);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 10px #ffe57a) drop-shadow(0 0 20px #ffb326);
+  }
+}
+
+/* Stop Medallions - Crisp, high-contrast ice stone badges */
+.frost-world .journey-stop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #e5f7fc;
+  transition: filter 0.15s;
+  z-index: 4;
+  cursor: pointer;
+}
+
+.frost-world .journey-stop:hover:not([aria-disabled=true]) {
+  filter: brightness(1.25);
+  z-index: 8;
+}
+
+.frost-world .journey-stop[aria-disabled=true] {
+  cursor: not-allowed;
+}
+
+.frost-world .stop-medallion {
+  width: 42px;
+  height: 42px;
+  border-radius: 0;
+  border: 3px solid #08151c;
+  background: #17323f;
+  box-shadow: inset 3px 3px 0 #4f8b9e, inset -3px -3px 0 #0d1b22, 0 4px 0 #050d08cc;
+  color: #a4e6f5;
+  font: 20px Georgia, serif;
+  display: grid;
+  place-items: center;
+  transition: none;
+}
+
+.frost-world .journey-stop:hover:not([aria-disabled=true]) .stop-medallion {
+  transform: translateY(-2px);
+}
+
+.frost-world .is-done .stop-medallion {
+  background: #235248;
+  box-shadow: inset 3px 3px 0 #68b8a5, inset -3px -3px 0 #112d27, 0 4px 0 #050d08cc;
+  color: #ffe694;
+}
+
+.frost-world .is-current .stop-medallion {
+  background: linear-gradient(#ffeaa3, #dcb054);
+  color: #1e2612;
+  box-shadow: inset 3px 3px 0 #fff7d1, inset -3px -3px 0 #9c7728, 0 5px 0 #050d08cc, 0 0 20px #eec85877;
+}
+
+.frost-world .is-current .stop-medallion:after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  width: 58px;
+  height: 58px;
+  border-radius: 0;
+  border: 2px dashed #ffe89e;
+  animation: px-blink 1.2s steps(1) infinite;
+}
+
+.frost-world .is-boss .stop-medallion {
+  background: #5a1e1e;
+  box-shadow: inset 3px 3px 0 #d96652, inset -3px -3px 0 #2a0b0b, 0 4px 0 #050d08cc, 0 0 16px #e2493488;
+  color: #ffdb9e;
+}
+
+.frost-world .journey-stop[aria-disabled=true] .stop-medallion {
+  background: #162c37;
+  border-color: #0a171e;
+  box-shadow: inset 2px 2px 0 #325868, inset -2px -2px 0 #0c161d, 0 3px 0 #050d08cc;
+  color: #79a6b8;
+}
+
+/* Tooltip Parchment Banner (stop-caption) */
+.frost-world .stop-caption {
+  position: absolute;
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
+  padding: 10px 12px;
+  border-radius: 0;
+  border: 3px solid var(--px-ink);
+  background: #e6dfc8;
+  box-shadow: inset 3px 3px 0 #fff8e8, inset -3px -3px 0 #a39778, 4px 4px 0 #050d08aa;
+  color: #2e3522;
+  pointer-events: none;
+  z-index: 10;
+  image-rendering: auto;
+}
+
+.frost-world .stop-caption[hidden] {
+  display: none;
+}
+
+.frost-world .stop-caption small {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #5d664a;
+}
+
+.frost-world .stop-caption strong {
+  display: block;
+  font: 600 12px/1.3 Georgia, serif;
+  color: #262c1a;
+  margin: 3px 0 4px;
+}
+
+.frost-world .stop-caption em {
+  display: block;
+  font: italic 10px/1.5 Georgia, serif;
+  color: #4b5238;
+}
+
+/* Tooltip orientation per stop to avoid clipping or covering adjacent nodes */
+.frost-world .frost-stop:nth-of-type(1) .stop-caption {
+  left: 50%;
+  right: auto;
+  top: calc(100% + 12px);
+  bottom: auto;
+  transform: translateX(-50%);
+}
+
+.frost-world .frost-stop:nth-of-type(2) .stop-caption,
+.frost-world .frost-stop:nth-of-type(3) .stop-caption,
+.frost-world .frost-stop:nth-of-type(4) .stop-caption {
+  left: calc(100% + 10px);
+  right: auto;
+  top: 0;
+  bottom: auto;
+  transform: none;
+}
+
+.frost-world .frost-stop:nth-of-type(5) .stop-caption,
+.frost-world .frost-stop:nth-of-type(6) .stop-caption,
+.frost-world .frost-stop:nth-of-type(7) .stop-caption {
+  left: auto;
+  right: calc(100% + 10px);
+  top: 0;
+  bottom: auto;
+  transform: none;
+}
+
+/* Lively Ambience on the Frost Map */
+.frost-ambience {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  contain: paint;
+}
+
+.frost-ambience i {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+/* Volcano Caldera Summit Glow & Rising Ash */
+.map-volcano-glow {
+  width: 140px;
+  height: 140px;
+  margin: -70px;
+  background: radial-gradient(circle, #fff176 0%, #ff6600cc 35%, #88000044 65%, transparent 80%);
+  animation: map-lamp-flicker 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px #ff4400);
+}
+
+.map-volcano-smoke {
+  width: 160px;
+  height: 100px;
+  margin: -50px -80px;
+  background: radial-gradient(ellipse at 50% 80%, #29100980 0%, #15060455 45%, transparent 75%);
+  filter: blur(10px);
+  animation: map-volcano-smoke-drift 6.5s ease-in-out infinite alternate;
+}
+
+@keyframes map-volcano-smoke-drift {
+  0% {
+    transform: translateY(0) scale(0.95);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-22px) scale(1.25);
+    opacity: 0.88;
+  }
+}
+
+/* Mystical Azure Portal - Pure Glowing Cyan Aura */
+.map-portal-cyan-glow {
+  width: 90px;
+  height: 110px;
+  margin: -55px -45px;
+  background: radial-gradient(ellipse at 50% 50%, #70f5ffdd 0%, #0099ff88 45%, #002b7a33 70%, transparent 85%);
+  border-radius: 50%;
+  animation: map-portal-pulse 3.0s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 18px #38d8ff);
+}
+
+@keyframes map-portal-pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.map-portal-spark {
+  width: 3.5px;
+  height: 3.5px;
+  background: #ffffff;
+  box-shadow: 0 0 5px #38e1ff, 0 0 12px #0077ff;
+  border-radius: 50%;
+  animation: map-portal-spark-float 2.4s ease-out infinite;
+}
+
+@keyframes map-portal-spark-float {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(6px, -32px) scale(1.2);
+  }
+}
+
+/* Canyon Torch Glow */
+.map-torch-glow {
+  width: 44px;
+  height: 44px;
+  margin: -22px;
+  background: radial-gradient(circle, #ffe285f0 0%, #ff6a0088 45%, transparent 75%);
+  animation: map-lamp-flicker 2.2s ease-in-out infinite;
+}
+
+/* Demon Cave Arch Menace Glow */
+.map-demon-cave-glow {
+  width: 90px;
+  height: 90px;
+  margin: -45px;
+  background: radial-gradient(circle, #ff2200bb 0%, #7a000066 50%, transparent 75%);
+  animation: map-lamp-flicker 3.2s ease-in-out infinite;
+}
+
+/* Ruby crystals vs Ice diamonds */
+.glint-ruby {
+  background: #ffdede !important;
+  box-shadow: 0 0 6px #ff3300, 0 0 12px #ff8800 !important;
+}
+
+.glint-ice {
+  background: #eefbff !important;
+  box-shadow: 0 0 6px #55d6f5, 0 0 12px #ffffff !important;
+}
+
+/* Volcanic rising embers */
+.ember-volcano {
+  background: #ff5500 !important;
+  box-shadow: 0 0 4px #ffbb00, 0 0 10px #ff2200 !important;
+}
+
+/* Volcanic heat haze */
+.map-volcano-haze {
+  width: 32%;
+  height: 16%;
+  background: radial-gradient(ellipse, #ff44001a, transparent 70%);
+  animation: map-mist-drift 14s ease-in-out infinite alternate;
+}
+
+/* Campfire & Embers */
+.map-campfire-glow {
+  width: 60px;
+  height: 60px;
+  margin: -30px;
+  background: radial-gradient(circle, #ffb833f0 0%, #ff5e0077 45%, transparent 75%);
+  animation: map-lamp-flicker 2.1s ease-in-out infinite;
+}
+
+.map-frost-camp-glow {
+  background: radial-gradient(circle, #ff8fe7f0 0%, #d82ab277 45%, transparent 75%);
+}
+
+/* Street Lanterns along the Pass */
+.map-frost-lantern {
+  width: 32px;
+  height: 32px;
+  margin: -16px;
+  background: radial-gradient(circle, #ffe38acc 0%, #ff9d2ebb 45%, transparent 75%);
+  animation: map-lamp-flicker 2.7s ease-in-out infinite;
+}
+
+/* Portal Swirl - Mystical Frost Blue */
+.map-frost-portal {
+  width: 54px;
+  height: 54px;
+  margin: -27px;
+  background: radial-gradient(circle, #67e8ffdd 0%, #1582e077 48%, transparent 75%);
+  animation: map-lamp-flicker 3.6s ease-in-out infinite;
+}
+
+/* Ice & Waterfall Sparkles */
+.map-ice-glint {
+  width: 3px;
+  height: 3px;
+  background: #f0fbff;
+  box-shadow: 0 0 6px #74daf2, 0 0 12px #ffffff;
+  animation: map-glint-fade 2.8s ease-in-out infinite;
+}
+
+/* Snowfall variations */
+.snow-large {
+  width: 3px;
+  height: 3px;
+  background: #ffffff;
+  box-shadow: 0 0 3px #d6f6ff;
+}
+
+.snow-med {
+  width: 2px;
+  height: 2px;
+  background: #e8f9ff;
+}
+
+.snow-small {
+  width: 1.5px;
+  height: 1.5px;
+  background: #d4f3ff;
+  opacity: 0.6;
+}
+
+/* Valley Mists */
+.map-frost-mist-river {
+  width: 35%;
+  height: 12%;
+  background: radial-gradient(ellipse, #7fc1d422, transparent 70%);
+  animation: map-mist-drift 18s ease-in-out infinite alternate;
+}
+
+.map-frost-mist-cliff {
+  width: 28%;
+  height: 10%;
+  background: radial-gradient(ellipse, #94d4e318, transparent 70%);
+  animation: map-mist-drift 22s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes map-glint-fade {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.4);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 760px) {
+  .journey-lobby .frost-world .stop-caption {
+    width: 130px;
+    min-width: 130px;
+    max-width: 130px;
+    padding: 6px 8px;
+  }
+  .journey-lobby .frost-world .stop-caption strong {
+    font-size: 10px;
+  }
+  .journey-lobby .frost-world .journey-stop {
+    width: 38px;
+    height: 37px;
+  }
+  .journey-lobby .frost-world .stop-medallion {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+}

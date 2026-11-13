@@ -2,6 +2,7 @@ import { drawTerrain } from './terrain.ts';
 import type { LevelData } from '../logic/types.ts';
 import { livingImage } from './livingAssets.ts';
 import { drawForestBoundary } from './forestBoundary.ts';
+import { drawVolcanoFloor, drawVolcanoWallDecor } from './demonArena.ts';
 
 // Original generated art: six floor paintings and eight isolated environment props.
 const palettes = [
@@ -33,6 +34,9 @@ export function drawBiomeProp(ctx: CanvasRenderingContext2D, index: number, x: n
 }
 
 export function drawBiomeFloor(ctx: CanvasRenderingContext2D, w: number, h: number, level: LevelData) {
+  if (level.id === 11 || level.id === 12) {
+    return drawVolcanoFloor(ctx, w, h, level, 0);
+  }
   const index = biomeIndex(level.id), img = load('forest-floors-pixel.png');
   if (!img) return false;
   const cw = img.width / 3, ch = img.height / 2;
@@ -49,6 +53,12 @@ export function drawBiomeFloor(ctx: CanvasRenderingContext2D, w: number, h: numb
 }
 
 export function drawBiomeWalls(ctx: CanvasRenderingContext2D, level: LevelData) {
+  if (level.id === 11 || level.id === 12) {
+    for (const wall of level.walls) {
+      drawVolcanoWallDecor(ctx, wall, level.id);
+    }
+    return;
+  }
   if(drawForestBoundary(ctx,level))return;
   const index = biomeIndex(level.id), [dark, stone, edge, glow] = palettes[index];
   for (const wall of level.walls) {
@@ -85,22 +95,27 @@ export function drawBiomeWalls(ctx: CanvasRenderingContext2D, level: LevelData) 
 }
 
 export function drawBiomeWeather(ctx: CanvasRenderingContext2D, level: LevelData, time: number, w: number, h: number) {
-  const ice = level.id >= 5;
+  const isVolcano = level.id === 12;
+  const isRock = level.id === 11;
+  const ice = level.id >= 5 && !isVolcano && !isRock;
   // Broad, very faint shafts connect the floating motes to the environment lighting.
   ctx.save(); ctx.globalCompositeOperation = 'screen';
   for (let i = 0; i < 3; i++) {
     const x = w * (.12 + i * .32), drift = Math.sin(time * .16 + i) * 14;
     const light = ctx.createLinearGradient(x, 0, x + 160, h);
-    light.addColorStop(0, ice ? '#b7eaff0c' : '#ffe9b515'); light.addColorStop(1, '#ffffff00');
+    light.addColorStop(0, isVolcano ? '#ff3b0020' : isRock ? '#ffd28e12' : ice ? '#b7eaff0c' : '#ffe9b515');
+    light.addColorStop(1, '#ffffff00');
     ctx.fillStyle = light; ctx.beginPath();ctx.moveTo(x + drift, 40);ctx.lineTo(x + 35 + drift, 40);ctx.lineTo(x + 280 + drift, h - 40);ctx.lineTo(x + 150 + drift, h - 40);ctx.closePath();ctx.fill();
   }
   ctx.restore();
-  ctx.save(); ctx.fillStyle = ice ? '#e1f7ff' : palettes[biomeIndex(level.id)][3];
-  for (let i = 0; i < (ice ? 42 : 15); i++) {
-    const x = ((i * 173.3 + Math.sin(time * .3 + i) * 22 + time * (ice ? 12 : 2)) % w + w) % w;
-    const y = (i * 97.7 + time * (ice ? 19 : -4) % h + h) % h;
-    ctx.globalAlpha = .18 + .22 * (.5 + .5 * Math.sin(i + time));
-    ctx.beginPath(); ctx.arc(x, y, ice ? 1.2 + i % 3 * .4 : 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.fillStyle = isVolcano ? '#ff6a11' : isRock ? '#d4c2b2' : ice ? '#e1f7ff' : palettes[biomeIndex(level.id)][3];
+  const count = isVolcano ? 36 : isRock ? 22 : ice ? 42 : 15;
+  for (let i = 0; i < count; i++) {
+    const x = ((i * 173.3 + Math.sin(time * .3 + i) * 22 + time * (isVolcano ? -10 : ice ? 12 : 2)) % w + w) % w;
+    const y = ((i * 97.7 + time * (isVolcano ? -24 : ice ? 19 : -4)) % h + h) % h;
+    ctx.globalAlpha = .22 + .35 * (.5 + .5 * Math.sin(i + time * (isVolcano ? 2.5 : 1)));
+    ctx.beginPath(); ctx.arc(x, y, isVolcano ? 1.6 + i % 2 * .6 : ice ? 1.2 + i % 3 * .4 : 1.5, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
   if (!ice) {

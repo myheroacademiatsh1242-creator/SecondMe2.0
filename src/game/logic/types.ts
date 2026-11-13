@@ -38,6 +38,8 @@ export interface PressurePlate {
   isPressed: boolean;
   color?: string;
   pressTimer?: number;
+  wardEnemyIds?: string[];
+  wardLocked?: boolean;
 }
 
 export interface SecurityDoor {
@@ -49,7 +51,8 @@ export interface SecurityDoor {
   isOpen: boolean;
   openProgress: number; // 0 (closed) to 1 (fully open)
   requiredPlates: string[]; // plate IDs that must all be pressed
-  releasedPlate?: string; // this plate must be unoccupied
+  releasedPlate?: string;
+  pulse?: {period:number;openSeconds:number;offset?:number}; // this plate must be unoccupied
   orientation: 'vertical' | 'horizontal';
 }
 

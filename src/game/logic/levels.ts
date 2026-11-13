@@ -1,3 +1,4 @@
+import {FROST_LEVELS} from './frostLevels.ts';
 import type { LevelData, Rect, Trap } from './types.ts';
 
 const perimeter:Rect[]=[{x:0,y:0,width:1280,height:40},{x:0,y:680,width:1280,height:40},{x:0,y:40,width:40,height:640},{x:1240,y:40,width:40,height:640}];
@@ -60,6 +61,13 @@ fifth.exit={x:110,y:190,width:60,height:60,radius:36};
 
 export const LEVELS:LevelData[]=[first,second,third,fourth,fifth];
 LEVELS.push({id:6,name:'LEVEL 06',subtitle:'FROST GUARDIAN',difficulty:6,description:'Use Echoes as decoys and replay attacks. Break four pillars before attacking the Guardian.',playerSpawn:{x:640,y:580,direction:'up'},walls:perimeter.map(w=>({...w})),plates:[],doors:[],exit:{x:610,y:140,width:60,height:60,radius:36}});
+
+LEVELS.push(...FROST_LEVELS);
+export const DEMON_LEVEL:LevelData={...base(13,'HANG TÂM HỎA',640,580),description:'Quỷ Tâm Hỏa thức tỉnh trong hang sâu. Né vùng bổ đao, lách qua quạt lửa; dụ boss đánh Echo rồi phản công lúc hồi sức.',difficulty:6,exit:{x:610,y:90,width:60,height:60,radius:36}};
+DEMON_LEVEL.name='LEVEL 13';
+DEMON_LEVEL.walls=[{x:0,y:0,width:1280,height:90},{x:0,y:650,width:1280,height:70},{x:0,y:90,width:85,height:560},{x:1195,y:90,width:85,height:560}];
+DEMON_LEVEL.walls.push({x:85,y:90,width:190,height:75},{x:1005,y:90,width:190,height:75},{x:85,y:570,width:190,height:80},{x:1005,y:570,width:190,height:80});
+LEVELS.push(DEMON_LEVEL);
 
 /**
  * Dev-only training ground (logic/training.ts): an open arena of dummies, never part of LEVELS,

@@ -11,5 +11,6 @@ coverage/
 .claude/
 __pycache__/
 tools/voice/audition/
+work/
 # Graphify knowledge graph output (/graphify)
 graphify-out/
