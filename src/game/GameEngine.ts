@@ -2288,9 +2288,33 @@ export class GameEngine {
       this.elapsedLevelTime
     );
     const finalGate = this.currentLevel.doors.at(-1);
-    if (!this.finalGateCrossed && finalGate && this.checkpointIndex >= this.currentLevel.plates.length &&
-        crossedGateTowardExit(finalGate, this.currentLevel.exit, beforeMove, this.player)) {
-      this.finalGateCrossed = true;
+    const atExit = checkExitReached(this.player.x, this.player.y, this.currentLevel.exit) ||
+      Math.hypot(this.player.x - (this.currentLevel.exit.x + this.currentLevel.exit.width / 2),
+                 this.player.y - (this.currentLevel.exit.y + this.currentLevel.exit.height / 2)) < 110;
+
+    let onExitSide = false;
+    if (finalGate) {
+      const horizontal = finalGate.orientation === 'horizontal';
+      const axis = horizontal ? 'y' : 'x';
+      const depth = horizontal ? 'height' : 'width';
+      const middle = finalGate[axis] + finalGate[depth] / 2;
+      const dir = Math.sign(this.currentLevel.exit[axis] + this.currentLevel.exit[depth] / 2 - middle);
+      onExitSide = dir !== 0 && (this.player[axis] - middle) * dir > 0;
+    }
+
+    const crossedRay = finalGate && crossedGateTowardExit(finalGate, this.currentLevel.exit, beforeMove, this.player);
+    const finalGateOpen = finalGate ? (finalGate.isOpen || finalGate.openProgress >= 0.5) : true;
+    const allDoorsOpen = this.currentLevel.doors.length > 0 && this.currentLevel.doors.every(d => d.isOpen || d.openProgress >= 0.5);
+
+    if (!this.finalGateCrossed) {
+      if (this.checkpointIndex >= this.currentLevel.plates.length) {
+        if (crossedRay || (onExitSide && finalGateOpen) || (atExit && finalGateOpen)) {
+          this.finalGateCrossed = true;
+        }
+      } else if (finalGateOpen && atExit && (this.currentLevel.doors.every(d => d.isOpen || d.openProgress >= 0.5) || allDoorsOpen)) {
+        this.finalGateCrossed = true;
+        this.checkpointIndex = this.currentLevel.plates.length;
+      }
     }
     if (doorUpdates.openedDoorIds.length > 0) {
       sounds.playDoorOpen();
@@ -2362,7 +2386,8 @@ export class GameEngine {
         this.takeDamage(bossDamage);
       }
       if(this.boss.phase!==previousPhase)this.echoCharges=Math.max(1,this.echoCharges);
-    } else if ((this.currentLevel.id<7 || this.enemies.every(e=>e.hp<=0)) && ((this.devUnlocked && this.currentLevel.id<7) || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed)) &&
+    } else if ((this.currentLevel.id < 7 || (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0)))) &&
+      ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed)) &&
       checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
       this.exitTravelRemaining = .7;
     }
@@ -2441,7 +2466,9 @@ export class GameEngine {
 
     this.renderer.stage.levelTime = this.elapsedLevelTime;
     this.renderer.stage.reducedMotion = this.reducedMotion;
-    this.renderer.stage.exitOpen = !this.boss && (this.currentLevel.id<7||this.enemies.every(e=>e.hp<=0)) && ((this.devUnlocked && this.currentLevel.id<7) || isPuzzleExitOpen(this.currentLevel,this.checkpointIndex,this.finalGateCrossed));
+    const enemiesCleared = this.currentLevel.id < 7 ||
+      (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0)));
+    this.renderer.stage.exitOpen = !this.boss && enemiesCleared && ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed));
     this.renderer.render(
       this.ctx,
       this.canvas.width,
