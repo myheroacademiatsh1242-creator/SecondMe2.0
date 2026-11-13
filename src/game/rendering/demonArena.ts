@@ -1,4 +1,21 @@
 import type { LevelData, Rect } from '../logic/types.ts';
+import {
+  drawVolcanoV2Floor,
+  drawVolcanoV2Wall,
+  drawVolcanoV2StageDecor,
+  drawVolcanoV2Door,
+  drawVolcanoV2Plate,
+  drawVolcanoV2ExitPortal,
+  drawVolcanoDynamicEffects,
+  preloadVolcanoV2Assets,
+} from './volcanoStages.ts';
+
+export {
+  drawVolcanoV2Door,
+  drawVolcanoV2Plate,
+  drawVolcanoV2ExitPortal,
+  drawVolcanoDynamicEffects,
+};
 
 // ============================================================================
 // VOLCANIC DUNGEON ASSET MANAGER
@@ -34,6 +51,7 @@ export function getVolcanoProp(name: string): HTMLImageElement | null {
 }
 
 export function preloadVolcanoAssets() {
+  preloadVolcanoV2Assets();
   if (assetsPreloaded || typeof Image === 'undefined') return;
   assetsPreloaded = true;
   for (let r = 0; r < 4; r++) {
@@ -518,105 +536,8 @@ export function drawVolcanoStageDecor(
   lvl: LevelData,
   clear: Rect[]
 ) {
-  preloadVolcanoAssets();
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-
-  let seed = lvl.id * 883 + 29;
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-
-  const hits = (a: Rect, b: Rect, pad = 0) =>
-    a.x < b.x + b.width + pad &&
-    a.x + a.width > b.x - pad &&
-    a.y < b.y + b.height + pad &&
-    a.y + a.height > b.y - pad;
-
-  const placed: Rect[] = [];
-
-  const pool11 = [
-    { name: 'pillar_intact', w: 45, h: 90 },
-    { name: 'pillar_broken', w: 48, h: 68 },
-    { name: 'monument_runic', w: 52, h: 72 },
-    { name: 'tree_dead_1', w: 75, h: 108 },
-    { name: 'tree_dead_2', w: 68, h: 115 },
-    { name: 'log_fungi_burnt', w: 80, h: 52 },
-    { name: 'shrub_burnt_1', w: 48, h: 42 }
-  ];
-
-  const pool12 = [
-    { name: 'crystal_cluster_red', w: 58, h: 58 },
-    { name: 'crystal_cluster_gold', w: 58, h: 58 },
-    { name: 'fumarole_smoke', w: 55, h: 60 },
-    { name: 'lava_rock_spring_1', w: 65, h: 56 },
-    { name: 'log_fungi_burnt', w: 80, h: 52 },
-    { name: 'shrub_burnt_2', w: 52, h: 44 }
-  ];
-
-  const pool = lvl.id === 12 ? pool12 : pool11;
-  const targetCount = lvl.id === 12 ? 14 : 16;
-
-  for (let attempt = 0; attempt < 400 && placed.length < targetCount; attempt++) {
-    const item = pool[Math.floor(rand() * pool.length)];
-    const flip = rand() > 0.5;
-
-    let x: number, y: number;
-    if (attempt % 2 === 0 && lvl.walls.length > 0) {
-      // Place near wall edges
-      const wall = lvl.walls[Math.floor(rand() * lvl.walls.length)];
-      const side = rand() > 0.5 ? 1 : -1;
-      x = side > 0 ? wall.x + wall.width + item.w * 0.6 : wall.x - item.w * 0.6;
-      y = wall.y + rand() * wall.height;
-    } else {
-      // Near perimeter edges
-      x = 85 + rand() * (w - 170);
-      y = rand() > 0.5 ? 85 + rand() * 80 : h - 85 - rand() * 80;
-    }
-
-    const rect: Rect = {
-      x: x - item.w / 2,
-      y: y - item.h * 0.7,
-      width: item.w,
-      height: item.h
-    };
-
-    if (
-      rect.x < 55 ||
-      rect.y < 55 ||
-      rect.x + rect.width > w - 55 ||
-      rect.y + rect.height > h - 55
-    ) {
-      continue;
-    }
-
-    if (
-      clear.some(c => hits(rect, c, 20)) ||
-      lvl.walls.some(wall => hits(rect, wall, 8)) ||
-      placed.some(p => hits(rect, p, 24))
-    ) {
-      continue;
-    }
-
-    placed.push(rect);
-    const img = getVolcanoProp(item.name);
-    if (img) {
-      ctx.save();
-      if (flip) {
-        ctx.translate(x, y);
-        ctx.scale(-1, 1);
-        ctx.drawImage(img, -item.w / 2, -item.h * 0.7, item.w, item.h);
-      } else {
-        ctx.drawImage(img, rect.x, rect.y, item.w, item.h);
-      }
-      ctx.restore();
-    }
-  }
-
-  ctx.restore();
+  return drawVolcanoV2StageDecor(ctx, w, h, lvl, clear);
 }
-
 
 export function drawVolcanoFloor(
   ctx: CanvasRenderingContext2D,
@@ -625,74 +546,7 @@ export function drawVolcanoFloor(
   level: LevelData,
   time: number
 ): boolean {
-  preloadVolcanoAssets();
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-
-  const tileSize = 128;
-  const cols = Math.ceil(w / tileSize);
-  const rows = Math.ceil(h / tileSize);
-
-  if (level.id === 11) {
-    // Level 11: Ancient basalt stone courtyard with cracked floor
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const isBorder = r === 0 || r === rows - 1 || c === 0 || c === cols - 1;
-        const tile = isBorder
-          ? getVolcanoTile(0, 5)
-          : (r + c) % 4 === 0
-          ? getVolcanoTile(0, 1)
-          : (r * 3 + c) % 5 === 0
-          ? getVolcanoTile(2, 0)
-          : getVolcanoTile(0, 0);
-
-        if (tile) {
-          ctx.drawImage(tile, c * tileSize, r * tileSize, tileSize, tileSize);
-        } else {
-          ctx.fillStyle = '#222329';
-          ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
-        }
-      }
-    }
-  } else if (level.id === 12) {
-    // Level 12: Molten canyon with ash pathways cutting through basalt
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const isLavaEdge = (r === 0 && (c < 3 || c > 6)) || (r === rows - 1 && (c < 3 || c > 6)) || c === 0 || c === cols - 1;
-        const isPath = (r === 2 || r === 3) && c >= 1 && c <= 8;
-
-        const tile = isLavaEdge
-          ? getVolcanoTile(0, 7)
-          : isPath
-          ? getVolcanoTile(2, 3)
-          : (r + c) % 3 === 0
-          ? getVolcanoTile(0, 2)
-          : getVolcanoTile(0, 0);
-
-        if (tile) {
-          ctx.drawImage(tile, c * tileSize, r * tileSize, tileSize, tileSize);
-        } else {
-          ctx.fillStyle = isLavaEdge ? '#801808' : '#2d2425';
-          ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
-        }
-      }
-    }
-    // Animated lava ripples on Level 12
-    drawAnimatedLava(ctx, time);
-  }
-
-  // Floating embers for both volcanic levels
-  drawFloatingEmbers(ctx, w, h, time, level.id === 12 ? 36 : 22);
-
-  // Vignette
-  const vignette = ctx.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, w * 0.65);
-  vignette.addColorStop(0, 'rgba(8, 4, 5, 0)');
-  vignette.addColorStop(1, 'rgba(12, 6, 7, 0.65)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.restore();
-  return true;
+  return drawVolcanoV2Floor(ctx, w, h, level, time);
 }
 
 export function drawVolcanoWallDecor(
@@ -700,55 +554,5 @@ export function drawVolcanoWallDecor(
   wall: Rect,
   levelId: number
 ) {
-  preloadVolcanoAssets();
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-
-  const { x, y, width: w, height: h } = wall;
-  const isOuter = x <= 0 || y <= 0 || x + w >= 1280 || y + h >= 720;
-
-  if (isOuter) {
-    // Fill impassable outer boundary with deep basalt/obsidian
-    ctx.fillStyle = levelId === 12 ? '#180c0d' : '#1b1c20';
-    ctx.fillRect(x, y, w, h);
-    ctx.restore();
-    return;
-  }
-
-  // Interior dividing obstacles: Carved volcanic basalt blocks & columns
-  ctx.fillStyle = '#2a2224';
-  ctx.shadowColor = '#0a0506';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 4;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 4);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-
-  // Ledge highlight
-  ctx.strokeStyle = levelId === 12 ? '#543b37' : '#454850';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Draw decor props on walls if size permits
-  if (w >= 32 && h >= 32) {
-    if (levelId === 11) {
-      // Place pillar or runic monument on small walls
-      const prop = h > w ? getVolcanoProp('pillar_broken') : getVolcanoProp('monument_runic');
-      if (prop) {
-        const size = Math.min(w, h);
-        ctx.drawImage(prop, x + w / 2 - size / 2, y + h / 2 - size * 0.7, size, size);
-      }
-    } else if (levelId === 12) {
-      // Place crystal or smoking vent on walls
-      const prop = (x + y) % 2 === 0 ? getVolcanoProp('crystal_cluster_red') : getVolcanoProp('crystal_cluster_gold');
-      if (prop) {
-        const size = Math.min(w, h);
-        ctx.drawImage(prop, x + w / 2 - size / 2, y + h / 2 - size * 0.7, size, size);
-      }
-    }
-  }
-
-  ctx.restore();
+  return drawVolcanoV2Wall(ctx, wall, levelId);
 }

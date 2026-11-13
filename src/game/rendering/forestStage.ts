@@ -1,4 +1,11 @@
-import {drawDemonArena, drawVolcanoStageDecor} from './demonArena.ts';
+import {
+  drawDemonArena,
+  drawVolcanoStageDecor,
+  drawVolcanoV2Door,
+  drawVolcanoV2Plate,
+  drawVolcanoV2ExitPortal,
+  drawVolcanoDynamicEffects,
+} from './demonArena.ts';
 /**
  * Dresses the recovered forest renderer (natureLegacy.js) with the hand-drawn art: ground,
  * scattered props, rune buttons, start and exit portals, stone doors and trap floors.
@@ -75,6 +82,9 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
       [ground, props] = layers;
     }
     if (ground) ctx.drawImage(ground, 0, 0);
+    if (lvl.id === 11 || lvl.id === 12) {
+      drawVolcanoDynamicEffects(ctx, w, h, lvl, state.reducedMotion ? 0 : state.levelTime);
+    }
     drawUnderstoryMotion(ctx,lvl.id,state.reducedMotion?0:state.levelTime);
     drawBiomeWeather(ctx, lvl, state.reducedMotion ? 0 : state.levelTime, w, h);
     drawStartPortal(ctx, lvl, state.levelTime, state.reducedMotion);
@@ -82,20 +92,38 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
 
   scene.drawRunes = (ctx, lvl, time) => {
     if (trapSpritesReady()) for (const trap of lvl.traps ?? []) drawTrap(ctx, trap, state.levelTime, 'floor', lvl.id);
+    if (lvl.id === 11 || lvl.id === 12) {
+      for (const plate of lvl.plates) drawLinks(ctx, lvl, plate, time);
+      for (const plate of lvl.plates) drawVolcanoV2Plate(ctx, plate, state.levelTime, time);
+      return;
+    }
     if (!forestReady('button')) return orig.drawRunes(ctx, lvl, time);
     for (const plate of lvl.plates) drawLinks(ctx, lvl, plate, time);
     for (const plate of lvl.plates) drawButton(ctx, plate, state.levelTime, time);
   };
 
   scene.drawPortal = (ctx, exit, time) => {
+    if (level && (level.id === 11 || level.id === 12)) {
+      if (state.exitOpen && exitOpenedAt === null) exitOpenedAt = state.levelTime;
+      if (!state.exitOpen) exitOpenedAt = null;
+      drawVolcanoV2ExitPortal(ctx, exit, state.exitOpen, time, level.id);
+      return;
+    }
     if (!forestReady('portalExit')) return orig.drawPortal(ctx, exit, time);
     if (state.exitOpen && exitOpenedAt === null) exitOpenedAt = state.levelTime;
     if (!state.exitOpen) exitOpenedAt = null;
     drawExitPortal(ctx, exit, exitOpenedAt === null ? null : state.levelTime - exitOpenedAt, time, state.reducedMotion);
   };
 
-  scene.drawGateThresholds = (ctx, lvl) => { if (!forestReady('door')) orig.drawGateThresholds(ctx, lvl); };
+  scene.drawGateThresholds = (ctx, lvl) => {
+    if (lvl.id === 11 || lvl.id === 12) return;
+    if (!forestReady('door')) orig.drawGateThresholds(ctx, lvl);
+  };
   scene.drawGates = (ctx, lvl) => {
+    if (lvl.id === 11 || lvl.id === 12) {
+      for (const door of lvl.doors) drawVolcanoV2Door(ctx, door, state.levelTime, lvl.id);
+      return;
+    }
     if (!forestReady('door')) return orig.drawGates(ctx, lvl);
     for(const door of lvl.doors) drawDoor(ctx,door);
   };
