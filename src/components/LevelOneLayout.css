@@ -1,0 +1,163 @@
+/* Full-stage framed HUD layout for all desktop levels: left sidebar (14%), top bar (7%), center arena (75%×93%), right sidebar (11%). */
+.level-one-runes{flex:1;min-height:0;margin-top:4px;pointer-events:auto;overflow:auto;scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227}
+.level-one-runes .quick-runes.echo-runes{position:static;transform:none;box-sizing:border-box;width:100%;max-width:none;height:100%;display:flex;flex-direction:column;padding:4px 3px;background:none;border:0;box-shadow:none}
+.level-one-runes .quick-runes>p{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px;margin:0 0 6px;padding:0 2px;text-align:left;font-size:11px!important;line-height:1.2!important;letter-spacing:.02em;color:#dfcc92}
+.level-one-runes .rune-edit-link{font-size:10px!important;line-height:1.1!important;padding:2px 5px;border:1px solid #7e825c;background:#243525;color:#e6d7a4;text-decoration:none}
+.level-one-runes .quick-runes .echo-rune-list{flex:1;min-height:0;overflow:visible;scroll-snap-type:none;padding-bottom:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(56px,1fr));gap:5px}
+.level-one-runes .quick-runes .echo-rune{position:relative;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 3px;overflow:hidden;border:3px solid #6f825f;border-radius:0;background:linear-gradient(#2d4530,#172d20);box-shadow:inset 0 0 0 2px #14291c,0 2px #101d12;text-align:center}
+.level-one-runes .quick-runes .echo-rune:disabled{opacity:.65}
+.level-one-runes .quick-runes .echo-rune.rune-active{opacity:1;border-color:#c9bc7d}
+.level-one-runes .quick-runes .echo-rune strong{display:block;width:100%;font-size:11px!important;line-height:1.1!important;color:#e6dcab;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.level-one-runes .quick-runes .echo-rune small{display:block;width:100%;font-size:10px!important;line-height:1.1!important;text-align:center}
+.level-one-runes .quick-runes .stock-rune-stone,.level-one-runes .quick-runes .stock-rune-stone .rune-stone{width:28px;height:30px;display:block;margin:0 auto}
+.level-one-runes .empty-rune>span{font-size:20px!important;line-height:1!important;color:#8a9b78}
+
+.adventure-app .game-stage[data-level=one][data-touch-controls=false]:is([data-screen=playing],[data-screen=paused],[data-screen=victory],[data-screen=defeat],[data-screen=ending]){--status-rail:0px;--control-footer:0px;--control-left:14%;--control-right:11%;width:min(calc(100vw / var(--desktop-scale,1)),calc(100dvh / var(--desktop-scale,1) * 16 / 9));height:min(calc(100dvh / var(--desktop-scale,1)),calc(100vw / var(--desktop-scale,1) * 9 / 16));aspect-ratio:16/9;background:#131e15;box-shadow:0 0 0 4px #171c13}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false]:is([data-screen=playing],[data-screen=paused],[data-screen=victory],[data-screen=defeat],[data-screen=ending])>canvas{left:14%;top:7%;bottom:0;width:75%;height:93%;box-sizing:border-box;border:4px solid #303b27;border-image:url('/assets/ui/stone-card-pixel.png') 86 / 5px stretch;object-fit:fill}
+
+.level-one-hud{z-index:20;display:grid;grid-template-columns:14% 75% 11%;grid-template-rows:7% 93%;pointer-events:none;color:#e9dda9;font-family:Georgia,serif;text-shadow:1px 2px #101810}
+.level-one-hud button{pointer-events:auto;cursor:pointer}.level-one-hud button:disabled{cursor:not-allowed}
+
+.level-one-left,.level-one-right{grid-row:1/3;min-width:0;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:10px;background:linear-gradient(#172417dd,#1a281be8),url('/assets/ui/stone-card-pixel.png') center/cover;border:10px solid transparent;border-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 10px stretch;box-shadow:inset 0 0 18px #0b140c}
+.level-one-left{grid-column:1}.level-one-right{grid-column:3}
+
+.level-one-stat{flex:none;min-height:52px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:6px 10px;background:linear-gradient(115deg,#293427,#1c281f);border:6px solid transparent;border-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 6px stretch}
+.level-one-stat small{display:block;color:#c5cba6;font-size:12px!important;line-height:1.1!important;letter-spacing:.4px}
+.level-one-stat strong{display:block;margin-top:2px;color:#e7cd8d;font-size:22px!important;line-height:1!important;white-space:nowrap}
+.level-one-stat strong.urgent{color:#f3a073}
+.level-one-stat em{font-size:14px;font-style:normal;color:#a9b38c}
+
+/* Missions box: slice outside the 153px stone walls + inner padding so text and [-] button never touch the frame. */
+.level-one-missions{min-height:0;margin-top:3px;padding:6px 8px;box-sizing:border-box;overflow:auto;scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227;background:#36382b;background-clip:padding-box;border:12px solid transparent;border-image:url('/assets/ui/forest-panel-pixel.png') 132 156 124 156 / 12px stretch;box-shadow:0 4px 7px #071008}
+.level-one-missions header{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:2px 2px 6px;border-bottom:2px groove #8e8960}
+.level-one-missions header strong{display:block;color:#efcf8c;font-size:clamp(13px,1.2vw,18px)!important;line-height:1.1!important;letter-spacing:.5px}
+.level-one-missions header button{width:22px;height:22px;flex:none;display:grid;place-items:center;padding:0;font-size:15px!important;line-height:1!important;color:#eadbb8;background:linear-gradient(#555b40,#2b3227);border:2px solid #91936b;box-shadow:inset 0 0 0 2px #23291d}
+.level-one-mission-list{display:grid;gap:8px;padding:8px 2px 2px}
+.level-one-mission-list>div{display:flex;align-items:center;gap:6px;font-size:clamp(11px,.95vw,14px);line-height:1.2}
+.level-one-mission-list i{flex:none;width:11px;height:11px;border:2px solid #9c9e7c;background:#111a12;box-shadow:inset 0 0 0 2px #394433}
+.level-one-mission-list .complete i{background:#9bbd84}
+.level-one-mission-list span{margin-left:auto;color:#b0d6cf}
+
+.level-one-note{margin:4px 1px 0;padding:10px 9px;color:#c8d0aa;background:#202b20;border:5px solid transparent;border-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 5px stretch;font:10px/1.35 ui-monospace,monospace;max-height:24%;overflow:auto;scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227}
+
+/* Top bar: buttons placed inside the left wooden plank (past the 0..11% stone cap & vine); heading centered inside the 36.6%..62% green stone plaque. */
+.level-one-top{position:relative;grid-column:2;grid-row:1;min-width:0;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 12px 0 13.5%;background:url('/assets/ui/hud-forest-top.png') center 48%/100% 250% no-repeat;border-bottom:4px solid #56684b;image-rendering:pixelated}
+.level-one-top button{flex:none;width:clamp(19px,2.1vw,24px);height:clamp(19px,2.1vw,24px);display:grid;place-items:center;padding:0;transform:translateY(1px);color:#f3e0a8;background:linear-gradient(#44573c,#26372a);border:2px solid #a69f70;box-shadow:inset 0 0 0 1px #1c2b21,1px 1px #0d1b13}
+.level-one-top button svg{width:clamp(11px,1.15vw,14px);height:clamp(11px,1.15vw,14px);display:block}
+.level-one-top button:hover{filter:brightness(1.25)}
+.level-one-heading{position:absolute;left:36.6%;width:25.4%;top:18%;bottom:22%;min-width:0;display:flex;align-items:center;justify-content:center;padding:0 10px;box-sizing:border-box;text-align:center;pointer-events:none}
+.level-one-heading strong,.level-one-heading small{display:block;width:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.level-one-heading strong{color:#f1d796;font-size:clamp(14px,1.35vw,20px)!important;line-height:1!important;letter-spacing:.7px;margin:0}
+.level-one-heading small{color:#c7ceaa;font-size:10px!important;line-height:1!important}
+
+/* Center arena overlay area (for boss bar, banners, buffs, and boss intro). */
+.level-one-arena-overlay{position:relative;grid-column:2;grid-row:2;min-width:0;min-height:0;pointer-events:none}
+.level-one-arena-overlay .boss-bar{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:min(380px,78%);padding:6px 12px;border:6px solid transparent;border-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 6px stretch;background:#233224e6;text-align:center}
+.level-one-arena-overlay .boss-bar>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px!important;line-height:1.1!important;color:#f3dfa4}
+.level-one-arena-overlay .boss-bar small{font-size:13px!important;line-height:1.1!important;color:#d6e5dc}
+.level-one-arena-overlay .boss-bar .health-track{height:6px;margin:4px 0}
+.level-one-arena-overlay .boss-bar .boss-armor{font-size:12px!important;line-height:1.15!important;margin:0!important;color:#d8efe8}
+.level-one-arena-overlay .hud-alerts{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(560px,88%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.level-one-arena-overlay .hud-banner,.level-one-arena-overlay .combat-buff{position:static!important;transform:none!important;max-width:100%}
+
+/* Right sidebar character box: sized so avatar + label + hero name sit centered inside the stone frame without overlapping borders. */
+.level-one-character{flex:none;height:90px;padding:4px 6px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;box-sizing:border-box;overflow:hidden;background:#233422;border:6px solid transparent;border-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 6px stretch;text-align:center}
+.level-one-character :is(.wizard-avatar,.selected-soldier-avatar,.mechanical-portrait){width:38px;height:38px;display:grid;place-items:center;margin:0 auto;transform:none;flex:none;overflow:visible}
+.level-one-character :is(canvas,svg){position:static!important;left:auto!important;top:auto!important;width:38px!important;height:38px!important;display:block;margin:0 auto}
+.level-one-character small{display:block;width:100%;font-size:11px!important;line-height:1.05!important;color:#c3c99f;text-align:center}
+.level-one-character strong{display:block;width:100%;font-size:15px!important;line-height:1.05!important;color:#f1d493;text-align:center}
+
+/* Right sidebar combat action column: clean 3-row cards so keybind, icon, label and MP cost never collide. */
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar{position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;box-sizing:border-box;display:flex;flex:1;min-width:0;min-height:0;width:100%!important;height:auto!important;flex-direction:column;gap:5px;padding:42px 4px 4px;background:linear-gradient(#213521,#14271a)!important;border:8px solid transparent;border-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 8px stretch;box-shadow:inset 0 0 0 2px #2b3d2c;image-rendering:pixelated}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar::before{display:none!important}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar :is(.combat-health,.combat-mana){position:absolute;left:5px;right:5px;width:auto;height:14px;border:2px solid #7b855e;background:#112319}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-health{top:5px}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-mana{top:22px}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar :is(.combat-health,.combat-mana)>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px!important;line-height:1!important;color:#f3efd3;text-align:center}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action{position:relative;box-sizing:border-box;flex:1;min-width:0;width:100%!important;height:auto!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;align-items:center;justify-items:center;gap:2px;padding:4px 4px 7px;border-radius:0;aspect-ratio:auto;overflow:hidden;background:linear-gradient(#2d4530,#172d20)!important;border:3px solid #6f825f!important;box-shadow:inset 0 0 0 2px #14291c,0 2px #101d12;color:#e6dcab}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action:hover:not(:disabled){background:#405c3a!important;border-color:#c9bc7d!important}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action:disabled{filter:brightness(.65)}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action kbd{position:static!important;justify-self:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#394f3c;border:1px solid #a8ac7b;color:#f2e5b6;font-size:9px!important;line-height:1.1!important;padding:1px 4px;text-align:center}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-icon{width:100%;height:100%;min-height:0;display:grid;place-items:center}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-icon :is(.combat-painted-icon,.combat-pixel-icon,svg){width:clamp(26px,4.2vh,44px);height:clamp(26px,4.2vh,44px);object-fit:contain;image-rendering:pixelated;filter:drop-shadow(1px 2px #09140d)}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action strong{display:block;width:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#eadca9;font-size:clamp(11px,.9vw,15px)!important;line-height:1.1!important;white-space:nowrap;text-align:center}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-track{left:3px;right:3px;bottom:1px;height:4px}
+.adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-mana-cost{position:absolute;right:3px;top:21px;background:#102218d9;padding:1px 3px;border:1px solid #4d788f;font-size:8px!important;line-height:1!important}
+.combat-painted-icon{display:block;object-fit:contain;image-rendering:pixelated}
+.level-one-hud .combat-buff{left:50%;top:15%}.level-one-hud .modal-backdrop{pointer-events:auto}.game-stage[data-level=one][data-touch-controls=false] :is(.trail-objective,.mechanic-hint){display:none}
+
+@media(max-height:600px){
+  .level-one-left,.level-one-right{padding:6px;gap:4px;border-width:7px}
+  .level-one-stat{min-height:40px;padding:3px 6px}
+  .level-one-stat small{font-size:10px!important}
+  .level-one-stat strong{font-size:17px!important}
+  .level-one-missions{border-width:8px;padding:4px 6px}
+  .level-one-missions header{padding:1px 1px 4px}
+  .level-one-missions header button{width:18px;height:18px;font-size:13px!important}
+  .level-one-mission-list{gap:5px;padding-top:5px}
+  .level-one-mission-list span{display:none}
+  .level-one-runes{margin-top:1px}
+  .level-one-runes .quick-runes.echo-runes{padding:1px}
+  .level-one-runes .quick-runes>p{font-size:9px!important;margin-bottom:3px}
+  .level-one-runes .rune-edit-link{font-size:8px!important;padding:1px 3px}
+  .level-one-runes .quick-runes .echo-rune-list{gap:3px;grid-template-rows:repeat(2,minmax(38px,1fr))}
+  .level-one-runes .quick-runes .echo-rune{min-height:35px;border-width:2px;padding:1px;gap:0}
+  .level-one-runes .quick-runes .stock-rune-stone,.level-one-runes .quick-runes .stock-rune-stone .rune-stone{width:18px;height:19px}
+  .level-one-runes .quick-runes .echo-rune strong{font-size:8px!important}
+  .level-one-runes .quick-runes .echo-rune small{font-size:8px!important}
+  .level-one-character{height:64px;padding:2px 4px}
+  .level-one-character :is(.wizard-avatar,.selected-soldier-avatar,.mechanical-portrait),
+  .level-one-character :is(canvas,svg){width:28px!important;height:28px!important}
+  .level-one-character small{font-size:9px!important}
+  .level-one-character strong{font-size:12px!important}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar{padding-top:31px;gap:3px;border-width:6px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar :is(.combat-health,.combat-mana){height:10px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-health{top:3px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-mana{top:16px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar :is(.combat-health,.combat-mana)>span{font-size:9px!important}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action{padding:2px 2px 4px;gap:1px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-icon :is(.combat-painted-icon,.combat-pixel-icon,svg){width:22px;height:22px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action strong{font-size:10px!important}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action kbd{font-size:7px!important;padding:0 2px}
+  .level-one-top button{width:18px;height:18px}
+  .level-one-heading small{display:none}
+}
+
+@media(max-width:820px){
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false]:is([data-screen=playing],[data-screen=paused],[data-screen=victory],[data-screen=defeat],[data-screen=ending]){--control-left:15%;--control-right:13%}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false]:is([data-screen=playing],[data-screen=paused],[data-screen=victory],[data-screen=defeat],[data-screen=ending])>canvas{left:15%;width:72%}
+  .level-one-hud{grid-template-columns:15% 72% 13%}
+  .level-one-left,.level-one-right{padding:5px;gap:3px;border-width:6px}
+  .level-one-stat{min-height:40px;padding:3px 5px}
+  .level-one-stat small{font-size:9px!important;white-space:nowrap}
+  .level-one-stat strong{font-size:16px!important}
+  .level-one-missions{flex:none;min-height:92px;border-width:7px;padding:4px 5px}
+  .level-one-missions header{padding:1px 1px 3px}
+  .level-one-missions header strong{font-size:11px!important}
+  .level-one-missions header button{width:17px;height:17px;font-size:12px!important}
+  .level-one-mission-list{gap:4px;padding:4px 0}
+  .level-one-mission-list>div{font-size:9px}
+  .level-one-mission-list span,.level-one-note{display:none}
+  .level-one-runes{margin-top:1px}
+  .level-one-runes .quick-runes.echo-runes{padding:1px}
+  .level-one-runes .quick-runes>p{font-size:8px!important;margin-bottom:3px}
+  .level-one-runes .rune-edit-link{font-size:7px!important;padding:1px 2px}
+  .level-one-runes .quick-runes .echo-rune-list{gap:3px;grid-template-rows:repeat(2,minmax(38px,1fr))}
+  .level-one-runes .quick-runes .echo-rune{min-height:35px;border-width:2px;padding:1px;gap:0}
+  .level-one-runes .quick-runes .stock-rune-stone,.level-one-runes .quick-runes .stock-rune-stone .rune-stone{width:18px;height:19px}
+  .level-one-runes .quick-runes .echo-rune strong{font-size:8px!important}
+  .level-one-runes .quick-runes .echo-rune small{font-size:8px!important}
+  .level-one-character{height:60px;padding:2px 4px}
+  .level-one-character :is(.wizard-avatar,.selected-soldier-avatar,.mechanical-portrait),
+  .level-one-character :is(canvas,svg){width:26px!important;height:26px!important}
+  .level-one-character small{font-size:8px!important}
+  .level-one-character strong{font-size:11px!important}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-bar{padding-top:31px;gap:2px;border-width:5px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action{padding:2px 2px 4px;gap:1px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action-icon :is(.combat-painted-icon,.combat-pixel-icon,svg){width:22px;height:22px}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action strong{font-size:9px!important}
+  .adventure-app .game-stage[data-level=one][data-touch-controls=false] .level-one-right .combat-action kbd{font-size:7px!important;padding:0 2px}
+  .level-one-top{padding:0 6px 0 13.5%;gap:4px}
+  .level-one-top button{width:18px;height:18px}
+  .level-one-top button svg{width:11px;height:11px}
+}

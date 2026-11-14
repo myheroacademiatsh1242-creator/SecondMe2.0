@@ -3,6 +3,7 @@ import {sounds} from './game/logic/sound.ts';
 
 import './components/PlayHudLayout.css';
 import './components/ResponsivePlayLayout.css';
+import './components/LevelOneLayout.css';
 import { PauseMenu } from './components/PauseMenu.tsx';
 import './components/ForestDialogs.css';
 import {LandscapeGate} from './components/LandscapeGate.tsx';
@@ -66,7 +67,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   useEffect(() => { if (ref.current) ref.current.suspendVisuals = filmPlaying; }, [filmPlaying]);
   const engine = ref.current;
   const lang = hud.language === 'vi' ? 'vi' : 'en';
-  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-touch-controls={touchControls} inert={portraitBlocked}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
+  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
     {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
     {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
     {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}
@@ -77,7 +78,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'lobby' && <Lobby engine={engine} hud={hud}/>}
     {hud.screen === 'shop' && <Shop engine={engine} hud={hud}/>}
     {hud.screen === 'characters' && <Characters engine={engine} hud={hud}/>}
-    {hud.screen === 'playing' && <AdventureHUD engine={engine} hud={hud}/>}
+    {(hud.screen === 'playing' || hud.screen === 'paused') && <AdventureHUD engine={engine} hud={hud}/>}
     {/* Combat hints appear only once the arena is playable. */}
     {hud.screen === 'playing' && !hud.bossIntroduction && <MechanicGuide engine={engine} hud={hud} touch={touchControls}/>}
     {hud.screen === 'victory' && <Completion engine={engine} hud={hud}/>}

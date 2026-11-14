@@ -15,7 +15,7 @@ import { isTouchDevice } from '../game/logic/orientation.ts';
 import { TrailInventory } from './TrailInventory.tsx';
 import { TanukiShop } from './TanukiShop.tsx';
 import { ECHO_RUNES } from '../game/logic/echoRunes.ts';
-import { RuneChoicePicker, RuneChoiceDialog } from './EchoRunes.tsx';
+import { EchoRuneStock, RuneChoicePicker, RuneChoiceDialog } from './EchoRunes.tsx';
 import { JourneyCamp } from './JourneyCamp.tsx';
 import { MechanicalPortrait } from './MechanicalPortrait.tsx';
 import { IntroEffects } from './IntroEffects.tsx';
@@ -178,10 +178,10 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
     <label className="setting-row"><span><Volume2 size={18}/><b>Giọng nói</b><small>Lồng tiếng nhân vật và người kể chuyện</small></span><input aria-label="Giọng nói" type="range" min="0" max="1" step="0.05" value={hud.voiceVolume} onChange={e=>engine?.setVoiceVolume(Number(e.target.value))}/><strong>{Math.round(hud.voiceVolume*100)}%</strong></label>
     <label className="setting-row switch-row"><span><VolumeX size={18}/><b>Tắt âm</b><small>Tắt toàn bộ âm thanh trò chơi</small></span><input type="checkbox" checked={hud.isMuted} onChange={()=>engine?.toggleAudio()}/><i/></label>
       </>:<>
-    <div className="setting-row"><span><Map size={18}/><b>{hud.language==='vi'?'Toàn màn hình':'Full screen'}</b><small>F</small></span><FullscreenButton vi={hud.language==='vi'}/></div>
+    <div className="setting-row"><span><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true"><rect x="2" y="5" width="20" height="14"/><path d="M15 8h4v4M9 16H5v-4"/></svg><b>{hud.language==='vi'?'Toàn màn hình':'Full screen'}</b><small>F</small></span><FullscreenButton vi={hud.language==='vi'}/></div>
     <label className="setting-row switch-row"><span><SlidersHorizontal size={18}/><b>Giảm chuyển động</b><small>Giảm sương, rung và hiệu ứng lặp</small></span><input type="checkbox" checked={hud.reducedMotion} onChange={e=>engine?.setReducedMotion(e.target.checked)}/><i/></label>
     <label className="setting-row switch-row"><span><Map size={18}/><b>Nhãn trong màn</b><small>Hiện gợi ý rune và nhãn mảnh thời gian</small></span><input type="checkbox" checked={hud.showHints} onChange={e=>engine?.setShowHints(e.target.checked)}/><i/></label>
-    <label className="setting-row"><span><Map size={18}/><b>Language</b><small>Choose the game language</small></span><select aria-label="Language" value={hud.language} onChange={e=>engine?.setLanguage(e.target.value as 'en' | 'vi')}><option value="en">English</option><option value="vi">Tiếng Việt</option></select></label>
+    <label className="setting-row"><span><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="5.6" ry="9"/><ellipse cx="12" cy="12" rx="2.3" ry="9"/></svg><b>Language</b><small>Choose the game language</small></span><select aria-label="Language" value={hud.language} onChange={e=>engine?.setLanguage(e.target.value as 'en' | 'vi')}><option value="en">English</option><option value="vi">Tiếng Việt</option></select></label>
     <details className="setting-controls"><summary>{hud.language==='vi'?'Xem điều khiển':'View controls'}</summary><p>{hud.language==='vi'?'WASD / phím mũi tên: di chuyển · E: ghi đường đi · Q: gọi Echo · 1–6: chọn Echo · C: tạm dừng / tiếp tục Echo · Shift + Q: hoán đổi · X: thu hồi Echo lâu nhất · R: dùng vật phẩm thời gian · F: bật/tắt toàn màn hình · Chuột trái: tấn công · Chuột phải / Space: kỹ năng · Shift: lướt né · Esc: tạm dừng':'WASD / arrow keys: move · E: record path · Q: summon Echo · 1–6: select Echo · C: pause / resume Echo · Shift + Q: swap · X: recall oldest Echo · R: use time item · F: full screen · Left click: attack · Right click / Space: skill · Shift: dodge · Esc: pause'}</p></details>
     {hud.devUnlocked&&<div className="dev-supplies"><button className="secondary" onClick={()=>engine?.unlockDevMode()}>{hud.language==='vi'?'DEV · NẠP ĐẦY ĐỒ':'DEV · REFILL ALL ITEMS'}</button><p role="status">{hud.language==='vi'?'Đang sở hữu':'Owned'}: {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/{ECHO_RUNES.length} rune · {hud.chestKeys.toLocaleString()} {hud.language==='vi'?'chìa khóa':'keys'} · {hud.limitRings.toLocaleString()} {hud.language==='vi'?'nhẫn':'rings'}</p></div>}
       </>}
@@ -305,6 +305,7 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
   const [bag, setBag] = useState(false);
   const [touch] = useState(isTouchDevice);
   const boss = hud.bossHp > 0;
+  if (!touch) return <LevelOneHUD engine={engine} hud={hud}/>;
   return localize(<div className="adventure-hud overlay">
     {hud.bossIntroduction&&<BossIntro engine={engine} hud={hud}/>}
 
@@ -326,6 +327,69 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
     {touch&&!bag&&!hud.bossIntroduction&&<TouchJoystick engine={engine} vi={hud.language==='vi'}/>}
     {/* Selected runes are managed and activated inside Inventory. */}
     {bag && <div className="modal-backdrop inventory-backdrop" onClick={()=>document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e=>e.stopPropagation()}><Inventory engine={engine} hud={hud} close={()=>setBag(false)}/></div></div>}
+  </div>);
+}
+
+function LevelOneHUD({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
+  const [bag, setBag] = useState(false);
+  const [missionsOpen, setMissionsOpen] = useState(true);
+  const vi = hud.language === 'vi';
+  const boss = hud.bossHp > 0;
+  const time = `${Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2, '0')}:${Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2, '0')}`;
+  const hero = hud.characterClass === 'swordsman' ? 'KAEL' : hud.characterClass === 'mechanical' ? 'RIVET-07' : 'AERIS';
+  const runesRequired = Math.max(1, hud.runesRequired ?? 1);
+  const tasks = boss
+    ? (hud.bossKind === 'demon'
+      ? [
+          { done: !hud.demonHeatShield, text: vi ? 'Phá giáp kháng hỏa' : 'Break heat shield' },
+          { done: !!hud.demonStunned || !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
+          { done: false, text: vi ? 'Hạ Quỷ Tâm Hỏa' : 'Defeat Flame Demon' },
+        ]
+      : [
+          { done: hud.pillarsRemaining === 0, text: vi ? `Phá trụ băng (${4 - hud.pillarsRemaining}/4)` : `Break pillars (${4 - hud.pillarsRemaining}/4)` },
+          { done: !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
+          { done: false, text: vi ? 'Hạ Thủ Vệ Băng' : 'Defeat Guardian' },
+        ])
+    : [
+        { done: hud.checkpointIndex > 0, text: vi ? 'Chạm ấn thạch' : 'Reach the rune' },
+        { done: (hud.runesHeld ?? 0) >= runesRequired || !!hud.finalGateCrossed, text: vi ? 'Echo giữ ấn' : 'Echo holds rune' },
+        ...((hud.enemiesRemaining ?? 0) > 0 ? [{ done: false, text: vi ? `Hạ quái (${hud.enemiesRemaining})` : `Clear enemies (${hud.enemiesRemaining})` }] : []),
+        { done: Boolean(engine?.renderer.stage.exitOpen), text: vi ? 'Đến cổng thoát' : 'Reach the exit' },
+      ];
+  return localize(<div className="level-one-hud overlay">
+    <aside className="level-one-left">
+      <div className="level-one-stat"><small>{vi ? 'MÀN CHƠI' : 'LEVEL'}</small><strong>{hud.training ? 'DEV' : <>{String(engine?.currentLevel.id ?? 1).padStart(2, '0')} <em>/ {String(LEVELS.length).padStart(2, '0')}</em></>}</strong></div>
+      <div className="level-one-stat"><small>{vi ? 'THỜI GIAN' : 'ELAPSED'}</small><strong>{time}</strong></div>
+      {boss ? (
+        <div className="level-one-stat"><small>{vi ? 'MÁU BOSS' : 'BOSS HP'}</small><strong>{hud.bossHp} <em>/ {hud.bossMaxHp ?? 240}</em></strong></div>
+      ) : (
+        <div className="level-one-stat"><small>{vi ? 'ĐẾM NGƯỢC' : 'COUNTDOWN'}</small><strong className={hud.legTimeRemaining !== null && hud.legTimeRemaining <= 2 ? 'urgent' : ''}>{hud.legTimeRemaining === null ? '—' : `${hud.legTimeRemaining.toFixed(1)}s`}</strong></div>
+      )}
+      <section className="level-one-missions">
+        <header><strong>{vi ? 'NHIỆM VỤ' : 'QUESTS'}</strong><button aria-label={missionsOpen ? 'Thu gọn nhiệm vụ' : 'Mở nhiệm vụ'} onClick={() => setMissionsOpen(!missionsOpen)}>{missionsOpen ? '−' : '+'}</button></header>
+        {missionsOpen && <div className="level-one-mission-list">{tasks.map(task => <div key={task.text} className={task.done ? 'complete' : ''}><i/>{task.text}</div>)}</div>}
+      </section>
+      <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
+    </aside>
+    <header className="level-one-top">
+      <button aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title="Esc" onClick={() => engine?.pauseGame()}><Settings size={18}/></button>
+      <button aria-label={vi ? 'Túi đồ' : 'Inventory'} onClick={() => setBag(true)}><Backpack size={18}/></button>
+      <div className="level-one-heading"><strong>{hud.levelSubtitle}</strong></div>
+    </header>
+    <div className="level-one-arena-overlay">
+      {hud.bossIntroduction && <BossIntro engine={engine} hud={hud}/>}
+      {boss && <div className="boss-bar"><div><span>{hud.bossKind === 'demon' ? 'QUỶ TÂM HỎA' : 'THỦ VỆ BĂNG'}</span><small>{hud.bossHp} / {hud.bossMaxHp ?? 240} · {translate('GIAI ĐOẠN', hud.language)} {hud.bossPhase} / 3</small></div><div className="health-track boss-segments" role="progressbar" aria-label="Máu boss" aria-valuenow={hud.bossHp} aria-valuemin={0} aria-valuemax={hud.bossMaxHp ?? 240}><i style={{ width: `${hud.bossHp / (hud.bossMaxHp ?? 240) * 100}%` }}/>{[1, 2, 3].map(k => <b key={k} className={hud.bossHp > k * (hud.bossMaxHp ?? 240) / 4 ? '' : 'spent'} style={{ left: `${k * 25}%` }}/>)}</div><p className="boss-armor">{hud.bossKind === 'demon' ? (hud.demonStunned ? (vi ? 'SƠ HỞ CHOÁNG · SÁT THƯƠNG ×2.5 · ĐÁNH NGAY!' : 'STUNNED · 2.5× DAMAGE · STRIKE NOW!') : hud.demonRitual ? (vi ? 'TẾ LỄ NGUYÊN TỐ · ĐỨNG LÊN TRỤ ĐỂ PHONG ẤN!' : 'RITUAL · STAND ON CORE TO SEAL!') : hud.demonHeatShield ? (vi ? 'GIÁP KHÁNG HỎA · DỤ BOSS HÚC VÀO TRỤ TẢN NHIỆT!' : 'HEAT SHIELD · BAIT BOSS INTO COOLING VENT!') : hud.bossVulnerable ? (vi ? 'SƠ HỞ · PHẢN CÔNG +35%' : 'OPENING · DAMAGE +35%') : (vi ? 'NÉ VÙNG CAM · DỤ BOSS ĐÁNH ECHO' : 'EVADE ORANGE ZONES · BAIT ATTACKS ON ECHO')) : hud.pillarsRemaining > 0 ? (vi ? `PHÁ ${hud.pillarsRemaining} TRỤ · GIÁP ${hud.bossArmor}` : `BREAK ${hud.pillarsRemaining} PILLARS · ARMOR ${hud.bossArmor}`) : hud.bossVulnerable ? (vi ? 'SƠ HỞ · SÁT THƯƠNG +35%' : 'OPENING · DAMAGE +35%') : (hud.bossShieldAt ?? 0) > 0 ? (vi ? `KHIÊN KẾ TIẾP · ${hud.bossShieldAt} HP` : `NEXT SHIELD · ${hud.bossShieldAt} HP`) : (vi ? 'ĐOẠN MÁU CUỐI' : 'FINAL HEALTH BAR')}</p></div>}
+      <div className="hud-alerts">
+        {hud.bannerMessage && <div className={'hud-banner ' + (boss ? 'boss-banner' : 'trail-banner')}>{hud.bannerMessage}</div>}
+        {hud.activeBuff && <div className="combat-buff">{hud.activeBuff}</div>}
+        {hud.dissonanceSeconds > 0 && <div className="combat-buff" role="status">RẠN VỠ {hud.dissonanceSeconds.toFixed(1)} / 5s · Gọi Echo để bảo hộ</div>}
+      </div>
+    </div>
+    <aside className="level-one-right">
+      <div className="level-one-character"><SelectedCharacterAvatar hud={hud}/><small>{vi ? 'NHÂN VẬT' : 'CHARACTER'}</small><strong>{hero}</strong></div>
+      {!bag && !hud.bossIntroduction && <CombatActionBar engine={engine} hud={hud}/>}
+    </aside>
+    {bag && <div className="modal-backdrop inventory-backdrop" onClick={() => document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e => e.stopPropagation()}><Inventory engine={engine} hud={hud} close={() => setBag(false)}/></div></div>}
   </div>);
 }
 

@@ -5,6 +5,8 @@
     box-sizing: border-box;
     user-select: none;
     -webkit-user-select: none;
+    scrollbar-width: thin;
+    scrollbar-color: #b3a26c #2d3227;
   }
 
   /* The page itself never scrolls, rubber-bands or double-tap zooms: only the game moves. */
@@ -48,3 +50,8 @@ canvas.pixel-canvas {
   pointer-events: none;
 }
 .echo-timeline{width:min(520px,90vw);margin:0 auto 8px;padding:6px 10px;background:#081b17d9;border:1px solid #9db58b55;border-radius:5px;color:#c8d4b8;font-size:10px;letter-spacing:.08em}.echo-timeline-track{height:17px;position:relative;margin-top:4px;background:#29443c;border-radius:3px}.echo-timeline-track i{position:absolute;top:0;height:100%;width:2px;background:#f3d395;z-index:2}.echo-timeline-track b{position:absolute;top:0;transform:translateX(-50%);font-size:12px;color:#7de4dc}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track{background:#2d3227;border:1px solid #536047}
+*::-webkit-scrollbar-thumb{background:#b3a26c;border:1px solid #2d3227;border-radius:6px}
+*::-webkit-scrollbar-thumb:hover{background:#d1be80}
+*::-webkit-scrollbar-corner{background:#2d3227}

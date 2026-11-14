@@ -13,9 +13,11 @@ export function FxCanvas({name,still,className,style}:{name:string;still?:boolea
  return s?<canvas ref={ref} className={className} width={s.w} height={s.h} style={style}/>:null;
 }
 /** The same, placed on the painted map at native 1536x1024 coordinates with its pivot on (x, y). */
-function MapFx({name,x,y,still}:{name:string;x:number;y:number;still?:boolean}){
+export function MapFx({name,x,y,scaleX=1,scaleY=1,still,className}:{name:string;x:number;y:number;scaleX?:number;scaleY?:number;still?:boolean;className?:string}){
  const s=(PFX as Record<string,PfxSheet|undefined>)[name];
- return s?<FxCanvas name={name} still={still} className="map-fx" style={{left:`${(x-s.pivot[0])/15.36}%`,top:`${(y-s.pivot[1])/10.24}%`,width:`${s.w/15.36}%`}}/>:null;
+ if(!s)return null;
+ const w=s.w*scaleX,h=s.h*scaleY,px=s.pivot[0]*scaleX,py=s.pivot[1]*scaleY;
+ return <FxCanvas name={name} still={still} className={`map-fx${className?` ${className}`:''}`} style={{left:`${(x-px)/15.36}%`,top:`${(y-py)/10.24}%`,width:`${w/15.36}%`,height:`${h/10.24}%`}}/>;
 }
 
 const at = (x:number,y:number,delay:number,duration=4):CSSProperties => ({
@@ -59,8 +61,11 @@ export function JourneyAmbience({still}:{still?:boolean}){
    {Array.from({length:18},(_,i)=><i key={`snow-${i}`} className="map-snow" style={at(1255+(i*43)%250,55+(i*37)%235,i*.71,5+i%4)}/>)}
    {Array.from({length:7},(_,i)=><i key={`ember-${i}`} className="map-ember" style={at(207+(i*7)%22,708+(i%3)*3,i*.47,2.7+i%3*.3)}/>)}
    {Array.from({length:7},(_,i)=><i key={`leaf-${i}`} className="map-leaf" style={at(820+(i*43)%255,190+(i*31)%180,i*1.13,7+i%3)}/>)}
-   <i className="map-portal-breath" style={at(1367,130,0,4)}/>
-   <MapFx name="portal" x={1367} y={150} still={still}/>
+   <i className="map-portal-cyan-glow map-portal-cyan-glow-forest" style={at(1367.5,128,0,3.2)}/>
+   <MapFx name="portal" x={1367.5} y={128} scaleX={1.52} scaleY={0.8} still={still}/>
+   <i className="map-portal-spark" style={at(1358,120,0,2.5)}/>
+   <i className="map-portal-spark" style={at(1376,128,0.8,2.8)}/>
+   <i className="map-portal-spark" style={at(1365,138,1.6,2.2)}/>
    <i className="map-cloud map-cloud-one"/><i className="map-cloud map-cloud-two"/><i className="map-cloud map-cloud-three"/>
    <i className="map-mist map-mist-one"/><i className="map-mist map-mist-two"/>
  </div>;

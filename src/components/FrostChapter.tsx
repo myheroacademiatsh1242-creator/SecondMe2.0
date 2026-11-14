@@ -37,7 +37,6 @@ const stops = [
   [1360, 765], // 13: Fiery Ember Demon Cavern Arch (Hang Quỷ Tâm Hỏa)
 ];
 
-const WALK_MS = 2400;
 const FROST_HERO_KEY = 'secondme.frostHeroAt';
 
 export function FrostChapter({
@@ -55,61 +54,140 @@ export function FrostChapter({
   const done = STAGES.filter((l) => hud.completed.includes(l.id)).length;
   const next = STAGES.find((l) => !hud.completed.includes(l.id)) ?? STAGES[0];
   const nextIdx = STAGES.findIndex((l) => l.id === next.id);
+  const hereIdx = Math.max(0, Math.min(nextIdx, stops.length - 1));
 
-  const [selected, setSelected] = useState(next.id);
+  const unlocked = (id: number) =>
+    hud.devUnlocked || id === 7 || hud.completed.includes(id - 1) || hud.completed.includes(id);
+
+  const readSavedStop = () => {
+    try {
+      const saved = Number(localStorage.getItem(FROST_HERO_KEY) ?? -1);
+      if (Number.isInteger(saved) && saved >= 0 && saved < stops.length && unlocked(STAGES[saved].id)) {
+        return saved;
+      }
+    } catch {}
+    return hereIdx;
+  };
+
+  const [heroStop, setHeroStop] = useState<number>(readSavedStop);
+  const [selected, setSelected] = useState<number>(() => STAGES[readSavedStop()]?.id ?? next.id);
   const [inspect, setInspect] = useState<number | null>(null);
   const [touchInspect, setTouchInspect] = useState<number | null>(null);
   const [runeEditor, setRuneEditor] = useState(false);
 
   const level = STAGES.find((l) => l.id === selected) ?? STAGES[0];
-  const unlocked = (id: number) =>
-    hud.devUnlocked || id === 7 || hud.completed.includes(id - 1) || hud.completed.includes(id);
+  const selectedIdx = Math.max(0, STAGES.findIndex((l) => l.id === selected));
 
   const trailRefs = useRef<(SVGPathElement | null)[]>([]);
   const walker = useRef<HTMLDivElement>(null);
-  const hereIdx = Math.max(0, Math.min(nextIdx, stops.length - 1));
+  const posRef = useRef<number>(heroStop);
+  const walkRafRef = useRef<number>(0);
+  const walkTimerRef = useRef<number>(0);
+
+  const putAtParam = (u: number) => {
+    const el = walker.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(stops.length - 1, u));
+    const segIdx = Math.min(stops.length - 2, Math.max(0, Math.floor(clamped)));
+    const localT = clamped - segIdx;
+    const trail = trailRefs.current[segIdx];
+    let x = stops[segIdx][0] + (stops[segIdx + 1][0] - stops[segIdx][0]) * localT;
+    let y = stops[segIdx][1] + (stops[segIdx + 1][1] - stops[segIdx][1]) * localT;
+    if (trail) {
+      try {
+        const len = trail.getTotalLength();
+        if (len > 0) {
+          const pt = trail.getPointAtLength(localT * len);
+          x = pt.x;
+          y = pt.y;
+        }
+      } catch {}
+    }
+    el.style.left = `${(x / 1536) * 100}%`;
+    el.style.top = `${(y / 1024) * 100}%`;
+  };
+
+  const walkToStop = (targetIdx: number, enterOnArrive: boolean) => {
+    const clampedTarget = Math.max(0, Math.min(stops.length - 1, targetIdx));
+    const targetStage = STAGES[clampedTarget] ?? STAGES[0];
+    setSelected(targetStage.id);
+    cancelAnimationFrame(walkRafRef.current);
+    window.clearTimeout(walkTimerRef.current);
+
+    const el = walker.current;
+    const startU = posRef.current;
+    const dist = Math.abs(clampedTarget - startU);
+
+    if (!el || hud.reducedMotion || dist < 0.02) {
+      posRef.current = clampedTarget;
+      setHeroStop(clampedTarget);
+      if (el) {
+        el.classList.remove('is-walking');
+        el.style.left = `${(stops[clampedTarget][0] / 1536) * 100}%`;
+        el.style.top = `${(stops[clampedTarget][1] / 1024) * 100}%`;
+      }
+      try {
+        localStorage.setItem(FROST_HERO_KEY, String(clampedTarget));
+      } catch {}
+      if (enterOnArrive) engine?.selectLevel(targetStage.id - 1);
+      return;
+    }
+
+    const duration = Math.min(1800, Math.max(520, dist * 520));
+    const t0 = performance.now();
+    el.classList.add('is-walking');
+
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / duration);
+      const eased = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const u = startU + (clampedTarget - startU) * eased;
+      posRef.current = u;
+      putAtParam(u);
+      if (k < 1) {
+        walkRafRef.current = requestAnimationFrame(step);
+      } else {
+        posRef.current = clampedTarget;
+        setHeroStop(clampedTarget);
+        el.classList.remove('is-walking');
+        el.style.left = `${(stops[clampedTarget][0] / 1536) * 100}%`;
+        el.style.top = `${(stops[clampedTarget][1] / 1024) * 100}%`;
+        try {
+          localStorage.setItem(FROST_HERO_KEY, String(clampedTarget));
+        } catch {}
+        if (enterOnArrive) {
+          walkTimerRef.current = window.setTimeout(() => {
+            engine?.selectLevel(targetStage.id - 1);
+          }, 140);
+        }
+      }
+    };
+    walkRafRef.current = requestAnimationFrame(step);
+  };
 
   useEffect(() => {
     const el = walker.current;
-    const put = (x: number, y: number) => {
-      if (el) {
-        el.style.left = `${(x / 1536) * 100}%`;
-        el.style.top = `${(y / 1024) * 100}%`;
-      }
+    if (el) {
+      const idx = Math.round(posRef.current);
+      el.style.left = `${(stops[idx][0] / 1536) * 100}%`;
+      el.style.top = `${(stops[idx][1] / 1024) * 100}%`;
+    }
+    return () => {
+      cancelAnimationFrame(walkRafRef.current);
+      window.clearTimeout(walkTimerRef.current);
     };
-    put(stops[hereIdx][0], stops[hereIdx][1]);
+  }, []);
 
-    let seen = -1;
-    try {
-      seen = Number(localStorage.getItem(FROST_HERO_KEY) ?? -1);
-      localStorage.setItem(FROST_HERO_KEY, String(hereIdx));
-    } catch {}
-
-    const trail = hereIdx > 0 ? trailRefs.current[hereIdx - 1] : null;
-    if (!el || !trail || hereIdx === 0 || hud.reducedMotion || seen < 0 || seen >= hereIdx) return;
-
-    const len = trail.getTotalLength();
-    let raf = 0;
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / WALK_MS);
-      const pt = trail.getPointAtLength(len * (1 - (1 - k) * (1 - k)));
-      put(pt.x, pt.y);
-      el.classList.toggle('is-walking', k < 1);
-      if (k < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [hereIdx, hud.reducedMotion]);
+  const minLive = Math.min(heroStop, selectedIdx);
+  const maxLive = Math.max(heroStop, selectedIdx);
 
   return (
     <div className="journey-layout frost-chapter">
       {runeEditor && <RuneLoadoutEditor hud={hud} engine={engine} close={() => setRuneEditor(false)} />}
 
       <aside className="journey-camp integrated-camp frost-camp">
-        <button className="frost-back" onClick={back} aria-label={vi ? 'Về Rừng Vọng Âm' : 'Back to Echo Forest'}>
+        <button className="frost-back" onClick={back} aria-label={vi ? 'Về Chương I · Rừng Vọng Âm' : 'Back to Chapter I · Echo Forest'}>
           <ChevronLeft size={18} />
-          {vi ? '← RỪNG VỌNG ÂM' : '← ECHO FOREST'}
+          {vi ? 'CHƯƠNG I · RỪNG VỌNG ÂM' : 'CHAPTER I · ECHO FOREST'}
         </button>
 
         <header className="rest-heading frost-rest-heading">
@@ -176,7 +254,9 @@ export function FrostChapter({
           <button
             className="camp-continue frost-continue"
             disabled={!unlocked(level.id)}
-            onClick={() => engine?.selectLevel(level.id - 1)}
+            onClick={() => {
+              if (unlocked(level.id)) walkToStop(selectedIdx, true);
+            }}
           >
             <Play size={19} fill="currentColor" />
             <span>
@@ -221,7 +301,7 @@ export function FrostChapter({
               const nextStageId = STAGES[i + 1]?.id ?? 13;
               const isUnlocked = unlocked(nextStageId);
               const isDone = hud.completed.includes(nextStageId);
-              const isLive = selected === nextStageId;
+              const isLive = minLive !== maxLive ? i >= minLive && i < maxLive : selected === nextStageId;
               return (
                 <path
                   key={i}
@@ -265,14 +345,12 @@ export function FrostChapter({
                 aria-disabled={!ready}
                 onMouseEnter={() => {
                   setInspect(i);
-                  setSelected(item.id);
                 }}
                 onMouseLeave={() => {
                   if (touchInspect === null) setInspect(null);
                 }}
                 onFocus={() => {
                   setInspect(i);
-                  setSelected(item.id);
                 }}
                 onBlur={() => {
                   setInspect(null);
@@ -282,11 +360,9 @@ export function FrostChapter({
                   if (window.matchMedia('(hover: none)').matches && touchInspect !== i) {
                     setTouchInspect(i);
                     setInspect(i);
-                    setSelected(item.id);
                     return;
                   }
-                  setSelected(item.id);
-                  if (ready) engine?.selectLevel(item.id - 1);
+                  if (ready) walkToStop(i, true);
                 }}
                 aria-label={`${String(item.id).padStart(2, '0')} · ${translate(item.subtitle, hud.language)} · ${
                   isDone ? (vi ? 'Đã hoàn thành' : 'Cleared') : ready ? (vi ? 'Sẵn sàng' : 'Ready') : (vi ? 'Chưa mở' : 'Locked')

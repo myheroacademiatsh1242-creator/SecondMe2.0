@@ -13,7 +13,7 @@
  background:url('/assets/ui/pause-pixel-prototype.png') center/100% 100% no-repeat;
  image-rendering:pixelated;
 }
-#root .pause-menu--pixel .pause-menu-content{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#9a8b59 #34372c;padding:4px;flex:1;display:flex;flex-direction:column}
+#root .pause-menu--pixel .pause-menu-content{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227;padding:4px;flex:1;display:flex;flex-direction:column}
 #root .pause-menu--pixel header>span{color:#b5aa80;font-size:12px}
 #root .pause-menu--pixel h2{font-size:36px!important;margin:14px 0 5px;color:#f0d68d!important;text-shadow:2px 2px #272a20}
 #root .pause-menu--pixel .pause-menu-level{color:#c2b88e!important;font-size:14px}

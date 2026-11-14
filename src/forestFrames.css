@@ -56,7 +56,7 @@ html body :is(.inventory-modal,.settings-panel,.mechanic-guide,.rune-loadout-edi
 }
 html body .adventure-app .inventory-modal .inventory-footer .inventory-done{
  background:linear-gradient(#dfc985,#b2934e)!important;border:2px solid #dcc282!important;border-image:none!important;
- box-shadow:inset 2px 2px #f0dca0,inset -2px -2px #8c733b!important;color:#493c20!important;
+ box-shadow:inset 2px 2px #f0dca0,inset -2px -2px #8c733b!important;color:#241d0f!important;text-shadow:none!important;
 }
 .settings-panel .setting-row>.fullscreen-toggle{width:44px!important;min-width:44px!important;height:36px!important;min-height:36px!important;padding:7px!important;justify-self:end;display:grid;place-items:center}
 @media(max-height:480px),(max-width:600px){

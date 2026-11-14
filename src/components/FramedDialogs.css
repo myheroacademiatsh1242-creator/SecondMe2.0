@@ -78,5 +78,6 @@ html body .rune-loadout-editor .loadout-close{right:2px;top:2px;width:28px;heigh
 }
 html body .modal-backdrop.modal-backdrop .settings-panel.panel.panel.panel>.primary{
  background:linear-gradient(#dfc985,#b2934e)!important;border:2px solid #dcc282!important;border-image:none!important;
- box-shadow:inset 2px 2px #f0dca0,inset -2px -2px #8c733b!important;color:#493c20!important;
+ box-shadow:inset 2px 2px #f0dca0,inset -2px -2px #8c733b!important;color:#241d0f!important;text-shadow:none!important;
+ font-size:22px!important;letter-spacing:.04em;
 }

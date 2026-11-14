@@ -27,6 +27,15 @@
   transition: transform 0.1s, background 0.15s;
 }
 
+.frost-back.frost-forward {
+  justify-content: space-between;
+}
+
+.frost-back.frost-forward > svg {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .frost-back:hover {
   background: #23485b;
   color: #ffffff;
@@ -513,114 +522,43 @@
   pointer-events: none;
 }
 
-.frost-map-flow {
-  width: clamp(3px, .65vw, 10px);
-  height: 2px;
-  background: #c7f5ff;
-  box-shadow: 0 0 4px #87d9f3;
-  rotate: -37deg;
-  animation: frost-map-flow linear infinite;
+/* Volcano Caldera Live Canvas Layers (1080..1440, 0..340 on 1536x1024 map) */
+.map-volcano-canvas {
+  position: absolute;
+  left: 70.3125%;
+  top: 0;
+  width: 23.4375%;
+  height: 33.203125%;
+  pointer-events: none;
 }
 
-.frost-map-waterfall,
-.frost-map-lavafall {
-  width: 2px;
-  height: clamp(5px, 1.25vw, 18px);
-  rotate: 13deg;
+.map-volcano-smoke-canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  z-index: 2;
 }
 
-.frost-map-lava,
-.frost-map-lavafall {
-  background: #ffc267;
-  box-shadow: 0 0 6px #ff5b16;
-}
-
-.frost-map-spray {
-  width: 13%;
-  height: 8%;
-  margin: -4% 0 0 -6.5%;
-  background: radial-gradient(ellipse, #defaff75, transparent 68%);
-  animation: frost-map-spray ease-out infinite;
-}
-
-.frost-map-portal-ring {
-  width: 5%;
-  height: 11%;
-  border: 2px solid #a7efff;
-  border-radius: 50%;
-  box-shadow: 0 0 9px #7adbff;
-  animation: frost-map-portal ease-out infinite;
-}
-
-@keyframes frost-map-flow {
-  from { left: var(--from-x); top: var(--from-y); opacity: 0; }
-  18%, 72% { opacity: .84; }
-  to { left: var(--to-x); top: var(--to-y); opacity: 0; }
-}
-
-@keyframes frost-map-spray {
-  from { transform: translate(8%, 12%) scale(.65); opacity: 0; }
-  35% { opacity: .7; }
-  to { transform: translate(-15%, -15%) scale(1.4); opacity: 0; }
-}
-
-@keyframes frost-map-portal {
-  from { transform: translate(-50%, -50%) scale(.4); opacity: 0; }
-  28% { opacity: .48; }
-  to { transform: translate(-50%, -50%) scale(1.12); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .frost-ambience { display: none; }
-}
-
-/* Volcano Caldera Summit Glow & Rising Ash */
-.map-volcano-glow {
-  width: 140px;
-  height: 140px;
-  margin: -70px;
-  background: radial-gradient(circle, #fff176 0%, #ff6600cc 35%, #88000044 65%, transparent 80%);
-  animation: map-lamp-flicker 2.2s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px #ff4400);
-}
-
-.map-volcano-smoke {
-  width: 9%;
-  height: 9%;
-  clip-path: polygon(0 53%, 8% 53%, 8% 36%, 20% 36%, 20% 22%, 33% 22%, 33% 10%, 52% 10%, 52% 17%, 66% 17%, 66% 29%, 81% 29%, 81% 42%, 93% 42%, 93% 57%, 100% 57%, 100% 72%, 86% 72%, 86% 86%, 68% 86%, 68% 95%, 45% 95%, 45% 88%, 25% 88%, 25% 78%, 10% 78%, 10% 68%, 0 68%);
-  background:
-    radial-gradient(ellipse at 32% 27%, #6a554a 0 18%, transparent 46%),
-    radial-gradient(ellipse at 67% 36%, #50413b 0 21%, transparent 54%),
-    radial-gradient(ellipse at 48% 100%, #85442e 0 10%, transparent 56%),
-    #302725;
-  animation: map-volcano-smoke-drift ease-out infinite;
-}
-
-.map-volcano-smoke.smoke-alt {
-  width: 7.5%;
-  height: 7%;
-  scale: -1 1;
-}
-
-@keyframes map-volcano-smoke-drift {
-  from { transform: translate(-50%, -42%) scale(.22); opacity: 0; }
-  20% { transform: translate(-53%, -77%) rotate(3deg) scale(.55); opacity: .63; }
-  53% { opacity: .48; }
-  to {
-    transform: translate(calc(-50% + var(--smoke-drift)), -185%) rotate(var(--smoke-turn)) scale(1.55);
-    opacity: 0;
-  }
+.map-volcano-light-canvas {
+  mix-blend-mode: screen;
+  z-index: 3;
 }
 
 /* Mystical Azure Portal - Pure Glowing Cyan Aura */
 .map-portal-cyan-glow {
-  width: 90px;
-  height: 110px;
-  margin: -55px -45px;
-  background: radial-gradient(ellipse at 50% 50%, #70f5ffdd 0%, #0099ff88 45%, #002b7a33 70%, transparent 85%);
+  width: 78px;
+  height: 98px;
+  margin: -49px -39px;
+  background: radial-gradient(ellipse at 50% 50%, #70f5ffcc 0%, #0099ff80 45%, #002b7a33 70%, transparent 85%);
   border-radius: 50%;
   animation: map-portal-pulse 3.0s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 18px #38d8ff);
+  filter: drop-shadow(0 0 16px #38d8ff);
+}
+
+.map-portal-cyan-glow-forest {
+  width: 68px;
+  height: 62px;
+  margin: -31px -34px;
 }
 
 @keyframes map-portal-pulse {
@@ -688,8 +626,11 @@
 
 /* Volcanic rising embers */
 .ember-volcano {
-  background: #ff5500 !important;
-  box-shadow: 0 0 4px #ffbb00, 0 0 10px #ff2200 !important;
+  width: 2.5px !important;
+  height: 2.5px !important;
+  border-radius: 50%;
+  background: #fff2b2 !important;
+  box-shadow: 0 0 4px #ff7700, 0 0 9px #ff2200 !important;
 }
 
 /* Volcanic heat haze */

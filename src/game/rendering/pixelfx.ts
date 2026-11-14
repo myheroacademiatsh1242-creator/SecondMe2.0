@@ -12,7 +12,7 @@ const images: Partial<Record<PfxName, HTMLImageElement>> = {};
 function sheet(name: PfxName) {
   if (typeof Image === 'undefined') return null;
   let img = images[name];
-  if (!img) { img = new Image(); img.src = `${import.meta.env?.BASE_URL ?? '/'}assets/effects/fx/${name}.png`; images[name] = img; }
+  if (!img) { img = new Image(); img.src = `${import.meta.env?.BASE_URL ?? '/'}assets/effects/fx/${name}.png?v=blue2`; images[name] = img; }
   return img.complete && img.naturalWidth ? img : null;
 }
 

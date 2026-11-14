@@ -13,7 +13,7 @@ export function drawKnightOutfit(ctx:CanvasRenderingContext2D,x:number,y:number,
  const row=(id==='void-knight'?4:0)+(attacking?3:direction==='up'?1:direction==='down'?0:2);
  const frame=attacking?Math.min(7,Math.max(0,Math.floor(progress*8))):moving?Math.floor(time*10)%8:0;
  ctx.save();ctx.translate(Math.round(x),Math.round(y));if(direction==='left')ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
- ctx.drawImage(atlas,frame*cellW,row*cellH,cellW,cellH,-42,-74,84,84);ctx.restore();return true;
+ ctx.drawImage(atlas,frame*cellW,row*cellH,cellW,cellH,-33,-64,66,73);ctx.restore();return true;
 }
 const effects=new WeakMap<object,Map<string,HTMLCanvasElement>>();
 /** Cache palette variants once; retain the sheet's original alpha and luminance. */

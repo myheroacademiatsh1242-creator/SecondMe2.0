@@ -1,6 +1,8 @@
 import type {ReactNode} from 'react';
 type Kind='cast'|'sword'|'ice'|'shield'|'dodge'|'recall'|'echo'|'overdrive';
 export function CombatPixelIcon({kind}:{kind:Kind}){
+ const painted:Partial<Record<Kind,string>>={cast:'ability-cast-v2.png',ice:'ability-ice-v2.png',dodge:'ability-dodge-v2.png',recall:'ability-recall-v2.png',echo:'ability-echo-v2.png'};
+ if(painted[kind])return <img className="combat-pixel-icon combat-painted-icon" src={`${import.meta.env.BASE_URL}assets/ui/${painted[kind]}`} alt="" aria-hidden="true" draggable={false}/>;
  const art:Record<Kind,ReactNode>={
  cast:<><path d="M3 25h5v-5h5v-5h5v-5h5V6h4v8h-5v5h-5v5h-5v5H3Z" fill="#23434e"/><path d="M5 25h4v-5h5v-5h5v-5h6v3h-5v5h-5v5h-5v4H5Z" fill="#b6f5ed"/><path d="M21 3h3v5h5v3h-5v5h-3v-5h-5V8h5Z" fill="#6cd8e0"/><path d="M5 10h3V7h2v3h3v2h-3v3H8v-3H5Z" fill="#e1fff1"/></>,
  sword:<><path d="M5 27h5l5-6 3 3 3-3-4-4L28 6V2h-5L12 14l-3-3-3 3 4 4-6 6Z" fill="#263b3b"/><path d="M13 16L25 4h2v3L16 19Z" fill="#d8f0da"/><path d="M14 16L25 5v3L16 18Z" fill="#87b6ae"/><path d="M8 12l12 11 2-2L10 10Z" fill="#d2b66d"/><path d="M4 26l3 3 6-8-3-2Z" fill="#9f7943"/></>,
