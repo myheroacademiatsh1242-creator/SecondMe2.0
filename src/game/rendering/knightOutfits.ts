@@ -9,11 +9,26 @@ export function knightAtlasReady(){
 export function drawKnightOutfit(ctx:CanvasRenderingContext2D,x:number,y:number,direction:Direction,moving:boolean,time:number,attacking=false,progress=0,id:OutfitId=getOutfit('swordsman')){
  if(!isShopOutfit(id))return false;
  if(!knightAtlasReady()||!atlas)return false;
- const cellW=atlas.naturalWidth/8,cellH=atlas.naturalHeight/8;
- const row=(id==='void-knight'?4:0)+(attacking?3:direction==='up'?1:direction==='down'?0:2);
+ const pose=attacking?3:direction==='up'?1:direction==='down'?0:2;
+ const voidKnight=id==='void-knight';
+ const row=pose+(voidKnight?4:0);
  const frame=attacking?Math.min(7,Math.max(0,Math.floor(progress*8))):moving?Math.floor(time*10)%8:0;
- ctx.save();ctx.translate(Math.round(x),Math.round(y));if(direction==='left')ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
- ctx.drawImage(atlas,frame*cellW,row*cellH,cellW,cellH,-33,-64,66,73);ctx.restore();return true;
+ const cellX=Math.round(frame*atlas.naturalWidth/8),cellY=Math.round(row*atlas.naturalHeight/8);
+ const cellW=Math.round((frame+1)*atlas.naturalWidth/8)-cellX;
+ const cellH=Math.round((row+1)*atlas.naturalHeight/8)-cellY;
+
+ // Match Kael's ~54 px body height with uniform scaling. The slash row
+ // has extra space for the blade, so anchor it by the body and planted foot.
+ const scale=.445;
+ const bodyX=pose===3?79:84;
+ const feet=(voidKnight?[153,150,147,145]:[153,151,148,144])[pose];
+ ctx.save();
+ ctx.translate(Math.round(x),Math.round(y));
+ if(direction==='left')ctx.scale(-1,1);
+ ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(atlas,cellX,cellY,cellW,cellH,-Math.round(bodyX*scale),7-Math.round(feet*scale),Math.round(cellW*scale),Math.round(cellH*scale));
+ ctx.restore();
+ return true;
 }
 const effects=new WeakMap<object,Map<string,HTMLCanvasElement>>();
 /** Cache palette variants once; retain the sheet's original alpha and luminance. */
