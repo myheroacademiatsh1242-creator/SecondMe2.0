@@ -11,7 +11,7 @@ export function trailObjective(game: GameEngine): { action: TrailAction; target:
       game.guides.blocking || game.exitTravelRemaining > 0 || !level.plates.length) return null;
 
   if (game.finalGateCrossed) {
-    const enemy=level.id>=7?game.enemies.find(e=>e.hp>0):undefined;
+    const enemy=game.exitBlockingEnemies[0];
     if(enemy)return {action:'fight',target:{x:enemy.x-18,y:enemy.y-18,width:36,height:36}};
     return { action: 'exit', target: level.exit };
   }

@@ -137,6 +137,8 @@ export interface HUDState {
   runesHeld?: number;
   runesRequired?: number;
   finalGateCrossed?: boolean;
+  exitOpen?: boolean;
+  exitBlockingEnemiesRemaining?: number;
   finalGateNeedsRelease?: boolean;
   slowed: boolean;
   frostSlow?:number;
@@ -298,6 +300,15 @@ export class GameEngine {
   private startVfx(kind: VfxKind, follow = false) { this.vfx.push({ kind, x: this.player.x, y: this.player.y, age: 0, follow }); }
   public exitTravelRemaining = 0;
   public finalGateCrossed = false;
+  public get exitBlockingEnemies() {
+    const level = this.currentLevel;
+    return this.enemies.filter(enemy => enemy.hp > 0 && (level.id === 7 ||
+      level.id >= 8 && level.id <= 12 && level.plates.some(plate => plate.wardEnemyIds?.includes(enemy.id))));
+  }
+  public get exitOpen(): boolean {
+    return !this.boss && this.currentLevel.id !== 13 && this.exitBlockingEnemies.length === 0 &&
+      ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed));
+  }
   private exitOpenedAt: number | null = null;
   public combatHits: { x: number; y: number; damage: number; life: number; broken: boolean }[] = [];
   public dodgeCooldown = 0;
@@ -1773,6 +1784,8 @@ export class GameEngine {
     }
     const x=this.player.x,y=this.player.y;
     this.player.x=this.echo.x;this.player.y=this.echo.y;
+    const finalGate = this.currentLevel.doors.at(-1);
+    if (finalGate && crossedGateTowardExit(finalGate, this.currentLevel.exit, { x, y }, this.player)) this.finalGateCrossed = true;
     this.echo.x=x;this.echo.y=y;
     this.echo.samples=this.echo.samples.map(sample=>({...sample,x:sample.x-dx,y:sample.y-dy}));
     this.echo.combatAnchor=undefined; this.echo.returnBlockedFor=0;
@@ -2324,18 +2337,6 @@ export class GameEngine {
     // Rune wards must be cleared before they count as a checkpoint or a held switch.
     for(const plate of this.currentLevel.plates)plate.wardLocked=!!plate.wardEnemyIds?.some(id=>this.enemies.some(e=>e.id===id&&e.hp>0));
     // 5. Update Pressure Plates
-    const targetPlate = this.currentLevel.plates[this.checkpointIndex];
-    if ((this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) && (this.legTimeRemaining !== null || this.devUnlocked) && targetPlate && !targetPlate.wardLocked &&
-        rectIntersects(getCharacterBoundingBox(this.player.x, this.player.y, 24, 24), targetPlate)) {
-      this.checkpointIndex++;
-      this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);
-      this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
-      this.shardClaimedThisLeg = false; this.timePickup = null;
-      this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
-      this.showBanner(this.checkpointIndex < this.currentLevel.plates.length
-        ? (this.language==='vi'?`Chặng mới ${puzzleBalance(this.currentLevel.id).legSeconds}s · Đến rune ${this.checkpointIndex+1}!`:`New leg · ${puzzleBalance(this.currentLevel.id).legSeconds}s · Reach rune ${this.checkpointIndex + 1}!`)
-        : (this.language==='vi'?'Kiểm tra các ấn ở cổng cuối rồi đi qua!':'Check the final gate’s runes, then cross!'));
-    }
     const plateUpdates = updatePressurePlates(
       this.currentLevel.plates,
       this.player,
@@ -2364,7 +2365,26 @@ export class GameEngine {
       sounds.playPlateDeactivate();
     }
 
+    // Remember every valid activation, including Echoes and runes reached out
+    // of order. Releasing a relay rune must not erase its completed checkpoint.
+    const previousCheckpoint = this.checkpointIndex;
+    while (this.checkpointIndex < this.currentLevel.plates.length &&
+      this.discoveredRunes.has(this.currentLevel.plates[this.checkpointIndex].id)) this.checkpointIndex++;
+    if (this.checkpointIndex > previousCheckpoint) {
+      this.echoCharges = Math.min(this.echoLimit - (this.echoFreeSummon ? 1 : 0), this.echoCharges + this.checkpointIndex - previousCheckpoint);
+      this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
+      this.shardClaimedThisLeg = false; this.timePickup = null;
+      this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
+      this.showBanner(this.checkpointIndex < this.currentLevel.plates.length
+        ? (this.language==='vi'?`Chặng mới ${puzzleBalance(this.currentLevel.id).legSeconds}s · Đến rune ${this.checkpointIndex+1}!`:`New leg · ${puzzleBalance(this.currentLevel.id).legSeconds}s · Reach rune ${this.checkpointIndex + 1}!`)
+        : (this.language==='vi'?'Kiểm tra các ấn ở cổng cuối rồi đi qua!':'Check the final gate’s runes, then cross!'));
+    }
+
     // 6. Update Security Doors
+    // Movement used the previous panel positions. Record the crossing before
+    // releasing runes or a pulse can close the gate during this update.
+    const finalGate = this.currentLevel.doors.at(-1);
+    if (finalGate && crossedGateTowardExit(finalGate, this.currentLevel.exit, beforeMove, this.player)) this.finalGateCrossed = true;
     const doorUpdates = updateSecurityDoors(
       this.currentLevel.doors,
       this.currentLevel.plates,
@@ -2374,35 +2394,6 @@ export class GameEngine {
       3.5,
       this.elapsedLevelTime
     );
-    const finalGate = this.currentLevel.doors.at(-1);
-    const atExit = checkExitReached(this.player.x, this.player.y, this.currentLevel.exit) ||
-      Math.hypot(this.player.x - (this.currentLevel.exit.x + this.currentLevel.exit.width / 2),
-                 this.player.y - (this.currentLevel.exit.y + this.currentLevel.exit.height / 2)) < 110;
-
-    let onExitSide = false;
-    if (finalGate) {
-      const horizontal = finalGate.orientation === 'horizontal';
-      const axis = horizontal ? 'y' : 'x';
-      const depth = horizontal ? 'height' : 'width';
-      const middle = finalGate[axis] + finalGate[depth] / 2;
-      const dir = Math.sign(this.currentLevel.exit[axis] + this.currentLevel.exit[depth] / 2 - middle);
-      onExitSide = dir !== 0 && (this.player[axis] - middle) * dir > 0;
-    }
-
-    const crossedRay = finalGate && crossedGateTowardExit(finalGate, this.currentLevel.exit, beforeMove, this.player);
-    const finalGateOpen = finalGate ? (finalGate.isOpen || finalGate.openProgress >= 0.5) : true;
-    const allDoorsOpen = this.currentLevel.doors.length > 0 && this.currentLevel.doors.every(d => d.isOpen || d.openProgress >= 0.5);
-
-    if (!this.finalGateCrossed) {
-      if (this.checkpointIndex >= this.currentLevel.plates.length) {
-        if (crossedRay || (onExitSide && finalGateOpen) || (atExit && finalGateOpen)) {
-          this.finalGateCrossed = true;
-        }
-      } else if (finalGateOpen && atExit && (this.currentLevel.doors.every(d => d.isOpen || d.openProgress >= 0.5) || allDoorsOpen)) {
-        this.finalGateCrossed = true;
-        this.checkpointIndex = this.currentLevel.plates.length;
-      }
-    }
     if (doorUpdates.openedDoorIds.length > 0) {
       sounds.playDoorOpen();
     }
@@ -2476,9 +2467,7 @@ export class GameEngine {
       if(this.boss.phase!==previousPhase)this.echoCharges=Math.max(1,this.echoCharges);
     } else if (this.currentLevel.id === 13) {
       if (!this.boss) this.updateDemonPrelude(dt);
-    } else if ((this.currentLevel.id < 7 || (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0)))) &&
-      ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed)) &&
-      checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
+    } else if (this.exitOpen && checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
       this.exitTravelRemaining = .7;
     }
   }
@@ -2592,9 +2581,7 @@ export class GameEngine {
 
     this.renderer.stage.levelTime = this.elapsedLevelTime;
     this.renderer.stage.reducedMotion = this.reducedMotion;
-    const enemiesCleared = this.currentLevel.id !== 13 && (this.currentLevel.id < 7 ||
-      (this.currentLevel.id === 7 ? this.enemies.every(e => e.hp <= 0) : (this.currentLevel.plates.every(p => !p.wardLocked) || this.enemies.every(e => e.hp <= 0))));
-    this.renderer.stage.exitOpen = !this.boss && enemiesCleared && ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed));
+    this.renderer.stage.exitOpen = this.exitOpen;
     this.renderer.render(
       this.ctx,
       this.canvas.width,
@@ -2669,6 +2656,8 @@ export class GameEngine {
         runesHeld: this.currentLevel.plates.filter(p => p.isPressed && finalGate?.requiredPlates.includes(p.id)).length,
         runesRequired: finalGate?.requiredPlates.length ?? 0,
         finalGateCrossed: this.finalGateCrossed,
+        exitOpen: this.exitOpen,
+        exitBlockingEnemiesRemaining: this.exitBlockingEnemies.length,
         finalGateNeedsRelease: this.checkpointIndex >= this.currentLevel.plates.length && this.currentLevel.plates.some(p => p.id === finalGate?.releasedPlate && p.isPressed),
         slowed: this.slowed,frostSlow:this.frostSlow,
         defeatReason: this.defeatReason,

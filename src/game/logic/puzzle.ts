@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { pointInRect, rectIntersects, getCharacterBoundingBox, GATE_PASSABLE_PROGRESS } from './collision.ts';
+import { pointInRect, rectIntersects, getCharacterBoundingBox, getActiveObstacles } from './collision.ts';
 import { PressurePlate, SecurityDoor, ExitPortal, Rect } from './types.ts';
 import type { LevelData } from './types.ts';
 
@@ -14,7 +14,6 @@ export function isPuzzleExitOpen(level: LevelData, checkpoint: number, finalGate
 export function crossedGateTowardExit(
   gate: SecurityDoor, exit: ExitPortal, before: CharacterPosition, after: CharacterPosition,
 ): boolean {
-  if (gate.openProgress < GATE_PASSABLE_PROGRESS) return false;
   const horizontal = gate.orientation === 'horizontal';
   const axis = horizontal ? 'y' : 'x';
   const across = horizontal ? 'x' : 'y';
@@ -27,7 +26,12 @@ export function crossedGateTowardExit(
   if ((before[axis] - farEdge) * direction >= 0 || (after[axis] - farEdge) * direction < 0) return false;
   const t = (farEdge - before[axis]) / (after[axis] - before[axis]);
   const crossing = before[across] + (after[across] - before[across]) * t;
-  return crossing > gate[across] && crossing < gate[across] + gate[span];
+  if (crossing <= gate[across] || crossing >= gate[across] + gate[span]) return false;
+  // Partially retracted gates can already have a walkable gap. Use the same
+  // panels as movement collision, including the fully raised bridge rule.
+  const position = { [axis]: farEdge, [across]: crossing } as { x: number; y: number };
+  const box = getCharacterBoundingBox(position.x, position.y, after.width ?? 24, after.height ?? 24);
+  return !getActiveObstacles([], [gate]).some(panel => rectIntersects(box, panel));
 }
 
 export interface CharacterPosition {

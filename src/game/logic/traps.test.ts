@@ -29,16 +29,33 @@ test('per-level timeout shows defeat and retry resets every stage of the attempt
   assert.equal(game.screen,'playing'); assert.equal(game.echo,null);
 });
 
-test('only the player reaching the next new checkpoint replenishes the level budget', t => {
+test('out-of-order checkpoints are remembered and revisiting them cannot farm time', t => {
   const { game, advance, checkpoint } = setup(t,1);
   checkpoint(1); assert.equal(game.checkpointIndex,0); // Out of order.
-  advance(1); checkpoint(0); assert.equal(game.checkpointIndex,1); assert.equal(game.legTimeRemaining,puzzleBalance(2).legSeconds);
+  advance(1); checkpoint(0); assert.equal(game.checkpointIndex,2); assert.equal(game.legTimeRemaining,puzzleBalance(2).legSeconds);
   advance(1); assert.ok(game.legTimeRemaining! < puzzleBalance(2).legSeconds-.99); // Staying cannot farm time.
   game.toggleRecording();game.toggleRecording();game.spawnEcho();
   const next=game.currentLevel.plates[1]; game.echo!.x=next.x+25;game.echo!.y=next.y+25;game.echo!.status='finished';
-  advance(.5);assert.equal(game.checkpointIndex,1);assert.ok(game.legTimeRemaining!<puzzleBalance(2).legSeconds-1.49);
-  checkpoint(1);assert.equal(game.checkpointIndex,2);assert.equal(game.legTimeRemaining,puzzleBalance(2).legSeconds);
+  advance(.5);assert.equal(game.checkpointIndex,2);assert.ok(game.legTimeRemaining!<puzzleBalance(2).legSeconds-1.49);
+  checkpoint(1);assert.equal(game.checkpointIndex,2);assert.ok(game.legTimeRemaining!<puzzleBalance(2).legSeconds-1.49);
   advance(puzzleBalance(2).legSeconds);assert.equal(game.screen,'defeat'); // Final portal leg is timed too.
+});
+
+test('an Echo completing a new checkpoint refills time only on its first activation', t => {
+  const { game, advance, checkpoint } = setup(t,1);
+  checkpoint(0);
+  const next = game.currentLevel.plates[1];
+  game.recorder.startRecording(next.x + 25, next.y + 25, 'right');
+  game.recorder.stopRecording(next.x + 25, next.y + 25, 'right', false);
+  game.spawnEcho();
+  advance(.01);
+  assert.equal(game.checkpointIndex, 2);
+  assert.equal(game.legTimeRemaining, puzzleBalance(2).legSeconds);
+  advance(1);
+  assert.ok(game.legTimeRemaining! < puzzleBalance(2).legSeconds - .99);
+  game.dismissEcho();
+  checkpoint(1);
+  assert.ok(game.legTimeRemaining! < puzzleBalance(2).legSeconds - .99, 'player stepping on the same rune cannot refill it again');
 });
 
 test('pause freezes the checkpoint clock and boss arena has no checkpoint deadline',t=>{

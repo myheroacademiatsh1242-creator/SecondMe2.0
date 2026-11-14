@@ -9,8 +9,24 @@ import {
   updatePressurePlates,
   updateSecurityDoors,
   checkExitReached,
+  crossedGateTowardExit,
 } from './puzzle.ts';
 import { PressurePlate, SecurityDoor, ExitPortal } from './types.ts';
+
+test('gate crossing follows the actual opening and rejects blocked or reverse crossings', () => {
+  const gate: SecurityDoor = { id: 'gate', x: 400, y: 200, width: 40, height: 120, requiredPlates: [], orientation: 'vertical', isOpen: false, openProgress: .4 };
+  const exit = { x: 800, y: 230, width: 60, height: 60, radius: 36 };
+  assert.equal(crossedGateTowardExit(gate, exit, { x: 439, y: 260 }, { x: 443, y: 260 }), true);
+  assert.equal(crossedGateTowardExit(gate, exit, { x: 443, y: 260 }, { x: 439, y: 260 }), false, 'moving away from exit');
+  assert.equal(crossedGateTowardExit(gate, exit, { x: 439, y: 210 }, { x: 443, y: 210 }), false, 'closed panel');
+  gate.openProgress = 0;
+  assert.equal(crossedGateTowardExit(gate, exit, { x: 439, y: 260 }, { x: 443, y: 260 }), false);
+  gate.liftBridge = true;
+  gate.openProgress = .9;
+  assert.equal(crossedGateTowardExit(gate, exit, { x: 439, y: 260 }, { x: 443, y: 260 }), false, 'bridge not fully raised');
+  gate.openProgress = 1;
+  assert.equal(crossedGateTowardExit(gate, exit, { x: 439, y: 260 }, { x: 443, y: 260 }), true);
+});
 
 test('updatePressurePlates triggers when player or echo steps on plate', () => {
   const plates: PressurePlate[] = [
