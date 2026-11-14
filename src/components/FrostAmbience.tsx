@@ -9,6 +9,87 @@ const at = (x: number, y: number, delay: number, duration = 4): CSSProperties =>
   animationDuration: `${duration}s`,
 });
 
+const fraction = (value: number) => value - Math.floor(value);
+const driftingSnow = Array.from({ length: 112 }, (_, index) => ({
+  x: .015 + fraction(index * .754878) * .33,
+  y: fraction(index * .56984) * .8,
+  duration: 7 + fraction(index * .414214) * 9,
+  phase: fraction(index * .618034),
+  endX: .61 + fraction(index * .8832) * .17,
+  drop: .045 + fraction(index * .381966) * .15,
+  size: index % 6 === 0 ? 8 : index % 3 === 0 ? 5 : 2 + index % 3,
+}));
+
+function DriftingMapSnow() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const start = performance.now();
+    let frame = 0;
+    let width = 0;
+    let height = 0;
+    const resize = new ResizeObserver(([entry]) => {
+      width = Math.round(entry.contentRect.width);
+      height = Math.round(entry.contentRect.height);
+      canvas.width = width;
+      canvas.height = height;
+    });
+    resize.observe(canvas);
+    const render = (now: number) => {
+      ctx.clearRect(0, 0, width, height);
+      const seconds = (now - start) / 1000;
+      for (const flake of driftingSnow) {
+        const t = fraction(seconds / flake.duration + flake.phase);
+        const x = flake.x + (flake.endX - flake.x) * t;
+        const y = flake.y + flake.drop * t + Math.sin(t * 12 + flake.phase * 6) * .017;
+        const heat = Math.min(1, Math.max(0, (x - .49) / (flake.endX - .49)));
+        const size = flake.size * (1 - heat * .8);
+        ctx.globalAlpha = Math.min(1, t * 12) * (1 - heat) ** 1.7 * (flake.size === 8 ? .96 : .74);
+        ctx.save();
+        ctx.translate(Math.round(x * width), Math.round(y * height));
+        const radius = size / 2;
+        if (flake.size < 5) {
+          ctx.fillStyle = '#f0faff';
+          ctx.fillRect(-radius, -radius, size, size);
+        } else {
+          ctx.rotate(t * 1.6 + flake.phase * 6);
+          ctx.beginPath();
+          for (let arm = 0; arm < 3; arm++) {
+            const angle = arm * Math.PI / 3;
+            const dx = Math.cos(angle) * radius, dy = Math.sin(angle) * radius;
+            ctx.moveTo(-dx, -dy);
+            ctx.lineTo(dx, dy);
+          }
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#426579';
+          ctx.stroke();
+          ctx.lineWidth = 1.15;
+          ctx.strokeStyle = '#f4fcff';
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      frame = requestAnimationFrame(render);
+    };
+    const syncMotion = () => {
+      cancelAnimationFrame(frame);
+      if (!preference.matches) frame = requestAnimationFrame(render);
+      else ctx.clearRect(0, 0, width, height);
+    };
+    syncMotion();
+    preference.addEventListener('change', syncMotion);
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      preference.removeEventListener('change', syncMotion);
+    };
+  }, []);
+  return <canvas ref={ref} className="map-snow-drift"/>;
+}
+
 const LAVA_VEINS: [number, number][] = [
   [146, 178], [168, 184], [196, 184], [220, 176],
   [128, 212], [162, 220], [198, 222], [238, 210],
@@ -297,14 +378,7 @@ export function FrostAmbience({ still }: { still?: boolean }) {
         />
       ))}
 
-      {/* 8. Dual Climate: Snowflakes on Left Half, Volcanic Cinders on Right Half */}
-      {Array.from({ length: 24 }, (_, i) => (
-        <i
-          key={`frost-snow-${i}`}
-          className={`map-snow ${i % 3 === 0 ? 'snow-large' : i % 2 === 0 ? 'snow-med' : 'snow-small'}`}
-          style={at((i * 31) % 680 + 25, (i * 43) % 960 + 20, i * 0.53, 4.6 + (i % 5) * 0.5)}
-        />
-      ))}
+      <DriftingMapSnow />
 
       {Array.from({ length: 16 }, (_, i) => (
         <i

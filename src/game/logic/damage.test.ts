@@ -17,11 +17,11 @@ test('damage consumes points, shields absorb partial hits, overkill reports only
 });
 test('hero receives different damage amounts and feedback, invulnerability prevents repeated damage',t=>{
  const g=setup(t),hit=(n:number)=>(g as unknown as {takeDamage(n:number):void}).takeDamage(n);
- hit(12);assert.equal(g.health,88);assert.equal(g.incomingHits.at(-1)?.damage,12);assert.ok(g.hurtFlash>0);
- hit(28);assert.equal(g.health,88);assert.equal(g.incomingHits.length,1);
- g.invulnerability=0;hit(28);assert.equal(g.health,60);assert.equal(g.incomingHits.at(-1)?.damage,28);
- g.invulnerability=0;g.stoneShield=10;hit(16);assert.equal(g.health,54);assert.equal(g.stoneShield,0);assert.equal(g.incomingHits.at(-1)?.absorbed,10);assert.equal(g.incomingHits.at(-1)?.damage,6);
- g.invulnerability=0;g.armorShield=20;hit(12);assert.equal(g.health,54);assert.equal(g.armorShield,8);assert.equal(g.incomingHits.at(-1)?.damage,0);
+ hit(12);assert.equal(g.health,HERO_MAX_HP.mage-12);assert.equal(g.incomingHits.at(-1)?.damage,12);assert.ok(g.hurtFlash>0);
+ hit(28);assert.equal(g.health,HERO_MAX_HP.mage-12);assert.equal(g.incomingHits.length,1);
+ g.invulnerability=0;hit(28);assert.equal(g.health,HERO_MAX_HP.mage-40);assert.equal(g.incomingHits.at(-1)?.damage,28);
+ g.invulnerability=0;g.stoneShield=10;hit(16);assert.equal(g.health,HERO_MAX_HP.mage-46);assert.equal(g.stoneShield,0);assert.equal(g.incomingHits.at(-1)?.absorbed,10);assert.equal(g.incomingHits.at(-1)?.damage,6);
+ g.invulnerability=0;g.armorShield=20;hit(12);assert.equal(g.health,HERO_MAX_HP.mage-46);assert.equal(g.armorShield,8);assert.equal(g.incomingHits.at(-1)?.damage,0);
 });
 test('each enemy attack delivers its configured damage to either hero or Echo and has an impact animation',()=>{
  const level=structuredClone(LEVELS[4]);level.walls=[];level.doors=[];

@@ -1,5 +1,5 @@
 import {DEFEAT_ART,PANEL_ART,usePanelArt} from './panelArt.ts';
-import { GUARDIAN_HP, HERO_MAX_HP, SHARD_BONUS } from '../game/logic/balance.ts';
+import { GUARDIAN_HP, SHARD_BONUS } from '../game/logic/balance.ts';
 import './ForestDefeat.css';
 import {RuneRewardFlow} from './RuneRewardFlow.tsx';
 import {OUTFITS,canWearOutfit,characterOutfitRarity,orderedCharacterOutfits,type OutfitId,type OutfitHero} from '../game/logic/outfits.ts';
@@ -23,17 +23,18 @@ import { MenuVines } from './MenuVines.tsx';
 import credits from '../game/data/credits.json';
 import { ComboPreview } from './ComboShowcase.tsx';
 import { WeaponPreview } from './WeaponPreview.tsx';
+import { HeroUpgrades } from './HeroUpgrades.tsx';
+import { cleanHeroRanks, heroStats, isUpgradeHero } from '../game/logic/heroUpgrades.ts';
 import React, { useEffect, useRef, useState } from 'react';
 import { drawWizardSprite } from '../game/rendering/wizardSprite.ts';
 import { sounds } from '../game/logic/sound.ts';
 import { drawSoldierSprite } from '../game/rendering/soldierSprite.ts';
 import { localize } from '../localize.tsx';
 import { translate } from '../i18n.ts';
-import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Check, Shield, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap } from 'lucide-react';
+import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Check, Shield, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap, ChevronsUp } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { MECHANICAL_ENABLED } from '../game/logic/campaign.ts';
 import { LEVELS } from '../game/logic/levels.ts';
-import { FROST_PRELUDE_KILLS } from '../game/logic/pillarSummon.ts';
 
 function CoinIcon() { return <img className="raccoon-coin" src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt="" aria-hidden="true"/>; }
 
@@ -215,7 +216,7 @@ export function Notifications({ close }: { close: () => void }) {
 }
 
 export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
-  const [panel, setPanel] = useState<'none'|'news'|'settings'>('none');
+  const [panel, setPanel] = useState<'none'|'news'|'settings'|'heroUpgrades'>('none');
   const [bag, setBag] = useState(false);
   const complete = engine?.campaign.bossDefeated === true;
   const next = Math.min(hud.completed.filter(id=>id<=5).length, 5);
@@ -227,7 +228,8 @@ export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     return () => window.removeEventListener('keydown', onKey);
   }, [panel, bag, engine, hud.screen]);
   return localize(<div className="lobby-screen overlay journey-lobby"><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
-    <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} traveler={<SelectedCharacterAvatar hud={hud}/>} onNews={()=>setPanel('news')}/>
+    <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} traveler={<SelectedCharacterAvatar hud={hud}/>} onNews={()=>setPanel('news')} onUpgradeHero={()=>setPanel('heroUpgrades')}/>
+    {panel==='heroUpgrades' && isUpgradeHero(hud.characterClass) && <HeroUpgrades engine={engine} hud={hud} hero={hud.characterClass} close={()=>setPanel('none')}/>}
     {bag&&<div className="modal-backdrop inventory-backdrop" onClick={()=>document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e=>e.stopPropagation()}><Inventory engine={engine} hud={hud} close={()=>setBag(false)}/></div></div>}
     <RuneChoiceDialog engine={engine} hud={hud}/>{panel==='news'&&<Notifications close={()=>setPanel('none')}/>} {panel==='settings'&&<SettingsPanel engine={engine} hud={hud} close={()=>setPanel('none')}/>}</div>);
 }
@@ -247,6 +249,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const [draftOutfits,setDraftOutfits]=useState<Record<OutfitHero,OutfitId>>(hud.outfits??{mage:'default',swordsman:'default'});
   const [draftWeapons,setDraftWeapons]=useState<Record<WeaponHero,WeaponId>>(hud.weapons??{...DEFAULT_WEAPON});
   const [tab,setTab]=useState<'outfit'|'weapon'>('outfit');
+  const [upgradeOpen,setUpgradeOpen]=useState(false);
   // Start keyboard focus on the current hero, so focus and selection agree on open.
   useEffect(() => { grid.current?.querySelector<HTMLButtonElement>('.is-selected')?.focus({preventScroll: true}); }, []);
   const roster: {id: SelectableCharacter; name: string; roleVi: string; roleEn: string}[] = [
@@ -262,10 +265,11 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const weapon=hero?weaponById(draftWeapons[hero]):undefined;
   const ownedWeapons=hud.ownedWeapons??[];
   const outfitColor=RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,outfit)];
+  const {maxHealth} = heroStats(choice.id, hud.heroRanks ?? cleanHeroRanks());
   const detail = choice.id === 'mage'
-    ? (vi ? `${HERO_MAX_HP.mage} HP. Đánh xa và phủ nhiều mục tiêu, sát thương mỗi đòn thấp. Chuột phải thi triển Gai Băng diện rộng.` : `${HERO_MAX_HP.mage} HP. Ranged attacks cover several targets with lower damage per hit. Right-click to cast area Ice Spike.`)
+    ? (vi ? `${maxHealth} HP. Đánh xa và phủ nhiều mục tiêu, sát thương mỗi đòn thấp. Chuột phải thi triển Gai Băng diện rộng.` : `${maxHealth} HP. Ranged attacks cover several targets with lower damage per hit. Right-click to cast area Ice Spike.`)
     : choice.id === 'swordsman'
-    ? (vi ? `${HERO_MAX_HP.swordsman} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${HERO_MAX_HP.swordsman} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
+    ? (vi ? `${maxHealth} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${maxHealth} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
   const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);engine.setCharacterWeapon(choice.id,draftWeapons[choice.id]);}engine.selectClass(choice.id); engine.goToLobby(); };
   return <div className="characters-screen overlay hero-select-screen">
@@ -274,7 +278,15 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
       <button className="hero-select-back" onClick={() => engine?.goToLobby()} aria-label={vi ? 'Về sảnh' : 'Back to lobby'}>{vi ? 'VỀ SẢNH' : 'BACK'}</button>
       <div className="hero-outfit-workspace">
        <div className="hero-roster" ref={grid} role="group" aria-label={vi?'Chọn nhân vật':'Choose character'}>{roster.map(c=><button key={c.id} className={`hero-slot${choice.id===c.id?' is-selected':''}`} aria-pressed={choice.id===c.id} aria-label={c.name} onClick={()=>setSelected(c.id)}><span className="roster-portrait">{portrait(c.id,c.id==='mechanical'?undefined:draftOutfits[c.id])}</span><strong>{c.name}</strong></button>)}</div>
-       <div className="outfit-large-preview"><span>{choice.name}</span><div>{portrait(choice.id,outfit)}</div>{tab==='weapon'&&choice.id==='mage'&&weapon&&<WeaponPreview id={weapon.id} reducedMotion={hud.reducedMotion}/>}<strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong></div>
+       <div className="outfit-large-preview">
+         <span>{choice.name}</span>
+         {hero && <button type="button" className="hero-upgrade-trigger" onClick={()=>setUpgradeOpen(true)} disabled={!engine}>
+           <ChevronsUp size={16} aria-hidden="true"/>{vi?'Nâng cấp':'Upgrades'}
+         </button>}
+         <div>{portrait(choice.id,outfit)}</div>
+         {tab==='weapon'&&choice.id==='mage'&&weapon&&<WeaponPreview id={weapon.id} reducedMotion={hud.reducedMotion}/>}
+         <strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong>
+       </div>
        <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header>{choice.id==='mechanical'?<strong>{vi?'TRANG PHỤC':'OUTFITS'}</strong>:<div role="tablist" className="collection-tabs">{(['outfit','weapon'] as const).map(t=><button key={t} role="tab" aria-selected={tab===t} className={tab===t?'outfit-selected':''} onClick={()=>setTab(t)}>{t==='outfit'?(vi?'TRANG PHỤC':'OUTFITS'):(vi?'VŨ KHÍ':'WEAPONS')}</button>)}</div>}<small>{tab==='weapon'&&choice.id!=='mechanical'?(vi?'Cùng sát thương · Khác hiệu ứng':'Same damage · Different effects'):(vi?'Đổi ngoại hình · Giữ nguyên chỉ số':'Appearance only · Same stats')}</small></header>{tab==='weapon'&&hero?<div className="outfit-options" role="group" aria-label={vi?'Chọn vũ khí':'Choose weapon'}>{weaponsOf(hero).map(w=><button key={w.id} className={draftWeapons[hero]===w.id?'outfit-selected':''} aria-pressed={draftWeapons[hero]===w.id} aria-label={(vi?w.vi:w.en)+(canUseWeapon(hero,w.id,ownedWeapons)?'':(vi?' · Chưa sở hữu':' · Not owned'))} disabled={!canUseWeapon(hero,w.id,ownedWeapons)} style={{'--outfit-color':RARITY_COLORS[w.rarity]} as React.CSSProperties} onClick={()=>setDraftWeapons(old=>({...old,[hero]:w.id}))}><span><small>{rarityName(w.rarity,vi)}</small></span><strong>{vi?w.vi:w.en}</strong>{draftWeapons[hero]===w.id&&<Check size={16}/>}</button>)}</div>:<div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div>}</section>
       </div>
       <section className="hero-select-info" aria-live="polite">
@@ -283,6 +295,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
         <div className="hero-info-action"><span>{choice.id === hud.characterClass ? (vi ? 'ĐANG CHỌN' : 'CURRENT HERO') : (vi ? 'NHÂN VẬT SẴN SÀNG' : 'HERO READY')}</span><button type="button" onClick={confirm} disabled={!engine}>{vi ? 'TRANG BỊ & CHỌN' : 'EQUIP & CONFIRM'}</button></div>
       </section>
     </div>
+    {upgradeOpen && hero && <HeroUpgrades engine={engine} hud={hud} hero={hero} close={()=>setUpgradeOpen(false)}/>}
   </div>;
 }
 
@@ -335,36 +348,10 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
 
 function LevelOneHUD({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   const [bag, setBag] = useState(false);
-  const [missionsOpen, setMissionsOpen] = useState(true);
   const vi = hud.language === 'vi';
   const boss = hud.bossHp > 0;
   const time = `${Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2, '0')}:${Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2, '0')}`;
   const hero = hud.characterClass === 'swordsman' ? 'KAEL' : hud.characterClass === 'mechanical' ? 'RIVET-07' : 'AERIS';
-  const runesRequired = Math.max(1, hud.runesRequired ?? 1);
-  const tasks = boss
-    ? (hud.bossKind === 'demon'
-      ? [
-          { done: !hud.demonHeatShield, text: vi ? 'Phá giáp kháng hỏa' : 'Break heat shield' },
-          { done: !!hud.demonStunned || !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
-          { done: false, text: vi ? 'Hạ Quỷ Tâm Hỏa' : 'Defeat Flame Demon' },
-        ]
-      : [
-          { done: hud.pillarsRemaining === 0, text: vi ? `Phá trụ băng (${4 - hud.pillarsRemaining}/4)` : `Break pillars (${4 - hud.pillarsRemaining}/4)` },
-          { done: !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
-          { done: false, text: vi ? 'Hạ Thủ Vệ Băng' : 'Defeat Guardian' },
-        ])
-    : hud.crystalsShattered !== undefined ? [
-        { done: hud.crystalsShattered >= FROST_PRELUDE_KILLS, text: vi ? `Đập vỡ Pha Lê Băng (${Math.min(hud.crystalsShattered, FROST_PRELUDE_KILLS)}/${FROST_PRELUDE_KILLS})` : `Shatter Frost Crystals (${Math.min(hud.crystalsShattered, FROST_PRELUDE_KILLS)}/${FROST_PRELUDE_KILLS})` },
-        { done: false, text: vi ? 'Hạ Thủ Vệ Băng' : 'Defeat Guardian' },
-      ]
-    : [
-        { done: hud.checkpointIndex >= hud.checkpointCount, text: vi ? `Kích hoạt ấn (${hud.checkpointIndex}/${hud.checkpointCount})` : `Activate runes (${hud.checkpointIndex}/${hud.checkpointCount})` },
-        { done: (hud.runesHeld ?? 0) >= runesRequired || !!hud.finalGateCrossed, text: hud.finalGateCrossed ? (vi ? 'Đã qua cổng cuối' : 'Final gate crossed') : (vi ? `Giữ ấn cổng cuối (${hud.runesHeld ?? 0}/${runesRequired})` : `Hold final seals (${hud.runesHeld ?? 0}/${runesRequired})`) },
-        ...(hud.finalGateNeedsRelease && !hud.finalGateCrossed ? [{ done: false, text: vi ? 'Thu Echo ở ấn cần nhả' : 'Recall Echo on release rune' }] : []),
-        ...(hud.trailAction === 'rhythm' ? [{ done: false, text: vi ? 'Chờ nhịp mở của cổng' : 'Wait for the gate window' }] : []),
-        ...((hud.exitBlockingEnemiesRemaining ?? 0) > 0 ? [{ done: false, text: vi ? `Hạ lính giữ cổng (${hud.exitBlockingEnemiesRemaining})` : `Defeat exit guards (${hud.exitBlockingEnemiesRemaining})` }] : []),
-        { done: !!hud.exitOpen, text: hud.exitOpen ? (vi ? 'Cổng thoát đã mở' : 'Exit portal open') : hud.finalGateCrossed ? (vi ? 'Hoàn tất nhiệm vụ để mở cổng thoát' : 'Finish objectives to open exit') : (vi ? 'Qua cổng cuối để mở lối thoát' : 'Cross the final gate to open exit') },
-      ];
   return localize(<div className="level-one-hud overlay">
     <aside className="level-one-left">
       <div className="level-one-sidebar-content">
@@ -373,10 +360,6 @@ function LevelOneHUD({ engine, hud }: { engine: GameEngine | null; hud: HUDState
         {boss && (
           <div className="level-one-stat"><small>{vi ? 'MÁU BOSS' : 'BOSS HP'}</small><strong>{hud.bossHp} <em>/ {hud.bossMaxHp ?? 240}</em></strong></div>
         )}
-        <section className="level-one-missions">
-          <header><strong>{vi ? 'NHIỆM VỤ' : 'QUESTS'}</strong><button aria-label={missionsOpen ? 'Thu gọn nhiệm vụ' : 'Mở nhiệm vụ'} onClick={() => setMissionsOpen(!missionsOpen)}>{missionsOpen ? '−' : '+'}</button></header>
-          {missionsOpen && <div className="level-one-mission-list">{tasks.map(task => <div key={task.text} className={task.done ? 'complete' : ''}><i/>{task.text}</div>)}</div>}
-        </section>
         <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
       </div>
       <div className="level-one-utilities" role="group" aria-label={vi ? 'Tiện ích' : 'Game utilities'}>

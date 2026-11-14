@@ -4,9 +4,9 @@ import { createEnemies, updateEnemies, ENEMY_STATS, LURE_MEMORY } from './enemie
 import { reachableWaypoint } from './enemyNavigation.ts';
 import { LEVELS } from './levels.ts';
 import { rectIntersects, getCharacterBoundingBox } from './collision.ts';
-test('trails 2–5 introduce progressively more enemies without blocking gates or switches; tutorial and boss have none',()=>{
- assert.equal(createEnemies(LEVELS[0]).length,0);assert.equal(createEnemies(LEVELS[5]).length,0);
- for(let i=1;i<5;i++){
+test('trails 1–5 introduce progressively more enemies without blocking gates or switches',()=>{
+ assert.equal(createEnemies(LEVELS[5]).length,0);
+ for(let i=0;i<5;i++){
   const enemies=createEnemies(LEVELS[i]);assert.equal(enemies.length,i+1);
   for(const e of enemies){const box=getCharacterBoundingBox(e.x,e.y,30,30);assert.ok(LEVELS[i].walls.every(w=>!rectIntersects(box,w)),`${e.id} inside wall`);assert.ok(LEVELS[i].doors.every(w=>!rectIntersects(box,w)));assert.ok(LEVELS[i].plates.every(w=>!rectIntersects(box,w)));assert.ok((LEVELS[i].traps??[]).every(w=>!rectIntersects(box,w)),`${e.id} inside trap`);assert.ok(Math.hypot(e.x-LEVELS[i].playerSpawn.x,e.y-LEVELS[i].playerSpawn.y)>120);}
  }

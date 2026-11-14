@@ -1,4 +1,5 @@
 import {FrostChapter} from './FrostChapter.tsx';
+import {CampHeroCaption, CampHeroUpgrade} from './CampHeroCaption.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ChevronRight, Flame, Lock, Play, Snowflake, Users, Backpack } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
@@ -22,7 +23,7 @@ const trailSegments = [
 // Centre of each clearing in the same native coordinates (= the trail ends above).
 const stops = [[215,725],[440,350],[690,630],[920,310],[1200,515],[1355,205]];
 const HERO_KEY = 'secondme.journeyHeroAt';
-export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;traveler?:React.ReactNode;onNews?:()=>void}) {
+export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void}) {
   const vi=hud.language==='vi';
   const [frost,setFrost]=useState((engine?.currentLevel.id??1)>=7);
   const [runeEditor,setRuneEditor]=useState(false);
@@ -137,7 +138,7 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
   },[frost]);
 
   const frostUnlocked=engine?.canSelectLevel(6)??false;
-  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler}/>;
+  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler} onUpgradeHero={onUpgradeHero}/>;
   const minLive=Math.min(heroStop,selected);
   const maxLive=Math.max(heroStop,selected);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
@@ -146,8 +147,9 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
         <div className="rest-firelight" aria-hidden="true"/><FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx"/><div className="rest-embers" aria-hidden="true"><i/><i/><i/></div>
         <button className="rest-hero" onClick={()=>engine?.openCharacters()} aria-label={vi?'Đổi nhân vật':'Change character'}><span>{traveler??<Users size={50}/>}</span></button>
-        <div className="rest-scene-caption"><strong>{hud.characterClass==='swordsman'?'Kael':hud.characterClass==='mechanical'?'Rivet':'Aeris'}</strong><button onClick={()=>engine?.openCharacters()}>{vi?'Đổi nhân vật':'Change hero'} <ArrowRight size={14}/></button></div>
+        <CampHeroCaption engine={engine} hud={hud}/>
       </div>
+      <CampHeroUpgrade hud={hud} onOpen={onUpgradeHero}/>
       <div className="rest-kit"><div><span>{vi?'BỘ RUNE':'RUNE LOADOUT'}</span><p>{hud.runeLoadout?.length??0} / 4 {vi?'ấn đã chọn':'equipped'}</p></div><button className="rest-prepare" onClick={()=>setRuneEditor(true)}><Backpack size={18}/>{vi?'Đổi rune':'Edit runes'}</button></div>
       <div className="rest-departure"><span>{complete?(vi?'HÀNH TRÌNH MỚI':'ANOTHER JOURNEY'):(vi?'ĐIỂM ĐẾN ĐÃ CHỌN':'SELECTED DESTINATION')}</span><div className="rest-destination"><b>{String(selected+1).padStart(2,'0')}</b><strong>{translate(LEVELS[selected].subtitle,hud.language)}</strong></div>
         <button className="camp-continue" disabled={!unlocked(selected)} onClick={()=>{if(unlocked(selected))walkToStop(selected,true);}}><Play size={19} fill="currentColor"/><span>{complete?(vi?'KHÁM PHÁ LẠI':'EXPLORE AGAIN'):hud.completed.includes(selected+1)?(vi?'CHƠI LẠI MÀN':'REPLAY TRAIL'):hud.completed.length?(vi?'TIẾP TỤC HÀNH TRÌNH':'CONTINUE JOURNEY'):(vi?'LÊN ĐƯỜNG':'BEGIN JOURNEY')}</span><ArrowRight size={18}/></button>

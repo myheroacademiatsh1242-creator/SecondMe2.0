@@ -1,20 +1,92 @@
-.shop-reward-chest{position:absolute;left:3%;top:65%;width:16%;padding:0;border:0;background:none;color:#ffdf9d;font-weight:bold;cursor:pointer;z-index:2;image-rendering:pixelated}.shop-reward-chest>span:last-child{display:block;text-shadow:2px 2px #210b08}.chest-backdrop{position:fixed;inset:0;z-index:90;background:#090709eF;display:grid;place-items:center;padding:18px}.chest-panel{width:min(580px,100%);max-height:94dvh;overflow:auto;background:#321b13;border:5px solid #a76939;box-shadow:inset 0 0 0 3px #1d100a;padding:20px;color:#ffe1ad;text-align:center;font-family:system-ui}.chest-panel header{display:flex;align-items:center;justify-content:space-between}.chest-panel h2{margin:0;font-size:24px}.chest-panel button{background:#6d3c20;border:3px solid #a87344;color:#ffe6b9;padding:9px 16px;font-weight:bold;cursor:pointer}.chest-panel button:disabled{opacity:.4;cursor:not-allowed}.chest-display{width:220px;margin:-10px auto -15px;image-rendering:pixelated}.chest-results{min-height:72px}.chest-results ul{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;list-style:none;padding:0}.chest-results li{padding:7px;border:1px solid #ad8141;background:#4a291a}.chest-results .chest-tier-fire{border-color:#ff8436;color:#ffbd79}.chest-draw-buttons{display:flex;justify-content:center;gap:10px}.chest-panel details{margin-top:18px;text-align:left;font-size:13px;color:#d9c09e}.chest-key-balance{color:#f4d776}.chest-panel p{font-size:13px;line-height:1.5}@media(max-width:760px){.shop-reward-chest{top:185px;left:6%;width:100px}.chest-panel{padding:14px}.chest-display{width:180px}.chest-draw-buttons button{padding:9px;font-size:12px}}
-.chest-key-balance{display:flex;align-items:center;justify-content:center;gap:6px}
-.chest-panel header{justify-content:flex-end}
-/* Keep action and key cost on separate lines with room around the pixel lettering. */
-.chest-draw-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;width:min(420px,100%);margin:12px auto 18px}
-.chest-draw-buttons button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:84px;padding:14px 20px;line-height:1.35}
-.chest-draw-title{font-size:17px;letter-spacing:.04em;white-space:nowrap}
-.chest-draw-cost{display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:400;white-space:nowrap}
-.chest-draw-buttons button:disabled{opacity:.6}
-.chest-results{min-height:60px}
-@media(max-width:480px){.chest-draw-buttons{gap:12px}.chest-draw-buttons button{padding:12px 8px;min-height:78px}.chest-draw-title{font-size:15px}.chest-draw-cost{font-size:11px;gap:5px}}
-.chest-panel{position:relative;padding-bottom:62px}
-.chest-panel .chest-rate-toggle{position:absolute;left:24px;bottom:16px;padding:6px 11px;font-size:15px;line-height:1.2;white-space:nowrap}
-.chest-backdrop .chest-rates{position:absolute;left:calc(50% - 545px);top:50%;transform:translateY(-50%);width:210px;box-sizing:border-box;padding:14px;background:#211f19;border:2px solid #857651;box-shadow:inset 0 0 0 2px #353b2b;text-align:left;color:#e6d49c;overflow-wrap:anywhere}
-.chest-rates>strong{display:block;font-size:16px;line-height:1.2;margin-bottom:10px}
-.chest-rates ul{list-style:none;padding:0;margin:0 0 9px;display:grid;gap:8px}
-.chest-rates li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:6px;font-size:14px;line-height:1.25}
-.chest-rates li b{font-size:16px;color:#f3cf82}
-.chest-rates small{display:block;border-top:1px solid #6a684c;padding-top:8px;font-size:12px;line-height:1.35;color:#c5c6a9}
-@media(max-width:1100px),(max-height:540px){.chest-backdrop .chest-rates{position:fixed;left:12px;top:auto;bottom:12px;transform:none;width:min(220px,calc(100vw - 24px));max-height:45dvh;overflow:auto}}
+.shop-reward-chest {
+  position: absolute;
+  left: 3%;
+  top: 65%;
+  width: 16%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #ffdf9d;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 2;
+  image-rendering: pixelated;
+}
+.shop-reward-chest > span:last-child { display: block; text-shadow: 2px 2px #210b08; }
+.chest-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: #090709ef;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+}
+.chest-panel {
+  --frame-scale: .34px;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(620px, 100%);
+  height: min(560px, calc(100dvh / var(--desktop-scale, 1) - 24px));
+  padding: 54px clamp(42px, 9vw, 78px) 58px;
+  background: transparent;
+  color: #e5d4a0;
+  text-align: center;
+}
+.chest-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-image: var(--forest-stone) 182 410 300 222 fill /
+    calc(182 * var(--frame-scale)) calc(410 * var(--frame-scale))
+    calc(300 * var(--frame-scale)) calc(222 * var(--frame-scale)) stretch;
+  image-rendering: pixelated;
+}
+.chest-panel[data-panel-art='fallback']::before {
+  border: 3px solid #948364;
+  border-image: none;
+  background: #34372b;
+}
+.chest-content { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-gutter: stable both-edges; padding: 4px; }
+.chest-content header { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; gap: 6px; }
+.chest-content h2 { grid-column: 2; margin: 0; font-size: 24px; }
+.chest-content header button { padding: 0; width: 34px; height: 34px; }
+.chest-key-balance { display: flex; align-items: center; justify-content: center; gap: 6px; color: #f4d776; margin: 6px 0; }
+.chest-display { width: min(176px, 56%); margin: 0 auto; image-rendering: pixelated; }
+.chest-results p { margin: 0 0 8px; }
+.chest-results ul { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; list-style: none; padding: 0; }
+.chest-results li { padding: 7px; border: 1px solid #ad8141; background: #4a291a; }
+.chest-results .chest-tier-fire { border-color: #ff8436; color: #ffbd79; }
+.chest-draw-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 8px; }
+.chest-panel button { background: #454735; border: 1px solid #a28b58; color: #ffe6b9; cursor: pointer; }
+.chest-panel button:disabled { opacity: .6; cursor: not-allowed; }
+.chest-draw-buttons button { display: grid; place-items: center; gap: 4px; min-height: 62px; padding: 6px 4px; }
+.chest-draw-title { font-size: 17px; white-space: nowrap; }
+.chest-draw-cost { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font-size: 12px; }
+.chest-panel .chest-rate-toggle { padding: 4px 10px; min-height: 32px; }
+.chest-backdrop .chest-rates { position: absolute; left: calc(50% - 535px); top: 50%; transform: translateY(-50%); width: 210px; box-sizing: border-box; padding: 14px; background: #211f19; border: 2px solid #857651; box-shadow: inset 0 0 0 2px #353b2b; text-align: left; color: #e6d49c; overflow-wrap: anywhere; }
+.chest-rates > strong { display: block; font-size: 16px; line-height: 1.2; margin-bottom: 10px; }
+.chest-rates ul { list-style: none; padding: 0; margin: 0 0 9px; display: grid; gap: 8px; }
+.chest-rates li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px; font-size: 14px; line-height: 1.25; }
+.chest-rates li b { font-size: 16px; color: #f3cf82; }
+.chest-rates small { display: block; border-top: 1px solid #6a684c; padding-top: 8px; font-size: 12px; line-height: 1.35; color: #c5c6a9; }
+@media (max-width: 1100px), (max-height: 540px) {
+  .chest-backdrop .chest-rates { position: fixed; left: 12px; top: auto; bottom: 12px; transform: none; width: min(220px, calc(100vw - 24px)); max-height: 45dvh; overflow: auto; }
+}
+@media (max-width: 760px) {
+  .shop-reward-chest { top: 185px; left: 6%; width: 100px; }
+}
+@media (max-width: 600px), (max-height: 520px) {
+  .chest-panel { --frame-scale: .23px; height: min(410px, calc(100dvh / var(--desktop-scale, 1) - 24px)); padding: 34px clamp(34px, 8vw, 62px) 35px; }
+  .chest-display { width: min(88px, 50%); }
+  .chest-results ul { margin: 4px 0; gap: 4px; }
+  .chest-results li { padding: 4px 6px; }
+  .chest-draw-buttons { margin: 6px 0; }
+  .chest-draw-buttons button { min-height: 42px; }
+  .chest-content h2 { font-size: 20px; }
+}

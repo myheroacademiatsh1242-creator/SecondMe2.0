@@ -15,7 +15,7 @@ import { PortalTwist, type TwistParams } from './portalTwist.ts';
 import { sounds } from '../logic/sound.ts';
 import { loadSfxIndex } from '../logic/sfx.ts';
 import { paintForest, forestFrame, FOREST_W } from './pixelForest.ts';
-import { vietnameseTitle, type TitleLanguage } from './loadingTitle.ts';
+import { loadingTitle, type TitleLanguage } from './loadingTitle.ts';
 import { getWarpSheet, prepareWarpSheet, WARP_FRAMES, WARP_CELL, WARP_COLS, WARP_SCALE, WARP_PIVOT } from './warpSheet.ts';
 
 const ART_W = layout.width, ART_H = layout.height;
@@ -69,7 +69,7 @@ const PULL_LIFT = 0.25;                   // …the first part of it: lifted up,
 const MOVE_S = .8;
 const ROTATE_S = .65;
 const SINK_S = .7;                       // the bar group is gone before the portal arrives
-const TITLE_S = .6;                      // the painted title sinks first: the portal passes through its place
+const TITLE_S = .6;                      // the title sinks first: the portal passes through its place
 const ACTIVATE_S = .8;
 const DIVE_S = 1.05;
 const ZOOM_MAX = 6;                       // camera zoom at the end of the dive
@@ -106,8 +106,8 @@ const OPEN_TAIL = 1.6;                    // s: portalOpen fades out after the d
 const STONE_LEVEL = 0.35;
 const OPEN_LEVEL = 0.3;
 
-type Art = 'wizard' | 'swirl' | 'vortex' | 'arch' | 'barFrame' | 'title' | 'front';
-const images: Record<Art, HTMLImageElement | null> = { wizard: null, swirl: null, vortex: null, arch: null, barFrame: null, title: null, front: null };
+type Art = 'wizard' | 'swirl' | 'vortex' | 'arch' | 'barFrame' | 'front';
+const images: Record<Art, HTMLImageElement | null> = { wizard: null, swirl: null, vortex: null, arch: null, barFrame: null, front: null };
 /** Starts loading the screen's own art in parallel with its preload. */
 export function preloadLoadingArt() {
   if (typeof Image === 'undefined' || images.wizard) return;
@@ -115,16 +115,15 @@ export function preloadLoadingArt() {
   images.wizard = load(wizard.file);
   images.swirl = load('portal-swirl.png');
   images.vortex = load('portal-vortex.png');
-  // The arch, bar channel and title, cut from the painting (tools/assets/prepare_portal_transition.py):
+  // The arch and bar channel, cut from the painting (tools/assets/prepare_portal_transition.py):
   // on the forest while loading, then carried by the portal transition.
   images.arch = load('portal-arch.png');
   images.barFrame = load('bar-frame.png');
-  images.title = load('title.png');
   images.front = load('portal-front.png');
 }
 const ready = (i: HTMLImageElement | null): i is HTMLImageElement => !!i && i.complete && i.naturalWidth > 0;
 /** The portal transition needs its sprites; without them (a very slow connection) the screen just fades. */
-const transitionArtReady = () => ready(images.arch) && ready(images.barFrame) && ready(images.title) && ready(images.swirl) && ready(images.front);
+const transitionArtReady = () => ready(images.arch) && ready(images.barFrame) && ready(images.swirl) && ready(images.front);
 
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; color: number; phase: number }
 const pool = (n: number): Particle[] => Array.from({ length: n }, () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: 0, phase: 0 }));
@@ -149,7 +148,7 @@ export interface SceneOptions {
   onReveal?: () => void;
   /** Dev only: stay on the loading screen after 100% (for profiling). */
   hold?: boolean;
-  /** The title's language (English: the painted title.png; Vietnamese: drawn, loadingTitle.ts). */
+  /** Language for the dynamically drawn title. */
   language?: TitleLanguage;
   /**
    * End with the portal transition (loads started from the main menu). Otherwise, and with
@@ -328,8 +327,7 @@ export class LoadingScene {
 
   /** The title in the screen's language (null until it is ready). */
   private titleArt(): CanvasImageSource | null {
-    if (this.opts.language === 'vi') return vietnameseTitle();
-    return ready(images.title) ? images.title : null;
+    return loadingTitle(this.opts.language ?? 'en');
   }
 
   /** Where the frame sits on the forest's canvas: its top-left (device px) and device px per forest px. */
@@ -346,11 +344,11 @@ export class LoadingScene {
     const el = this.ui.forest;
     if (!el) return;
     const title = this.titleArt();
-    const props = !TRANSITION.includes(this.phase) && this.phase !== 'done' && ready(images.arch) && ready(images.barFrame) && !!title;
+    const props = !TRANSITION.includes(this.phase) && this.phase !== 'done' && ready(images.arch) && ready(images.barFrame);
     const [ox, oy, s] = this.forestAt;
     // Hidden or not laid out yet (no size, so no scale): nothing to paint until it is.
     if (!el.width || !el.height || !(s > 0) || !Number.isFinite(ox) || !Number.isFinite(oy)) return;
-    const key = `${el.width}x${el.height}:${props}`;
+    const key = `${el.width}x${el.height}:${props}:${props && !!title}`;
     if (key === this.forestFor) return;
     this.forestFor = key;
     const x0 = Math.floor(-ox / s), y0 = Math.floor(-oy / s);
@@ -366,8 +364,8 @@ export class LoadingScene {
       ctx.imageSmoothingEnabled = true;
       if (this.opts.portal) ctx.drawImage(images.arch!, layout.arch.x, layout.arch.y);   // no portal for lobby level loads
       ctx.drawImage(images.barFrame!, layout.barFrame.x, layout.barFrame.y);
-      ctx.imageSmoothingEnabled = this.opts.language !== 'vi';
-      ctx.drawImage(title!, layout.title.x, layout.title.y);
+      ctx.imageSmoothingEnabled = false;
+      if (title) ctx.drawImage(title, layout.title.x, layout.title.y);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
   }
@@ -771,12 +769,12 @@ export class LoadingScene {
 
     this.drawLeaves();
     if (a === 0) this.drawFlies(t);
-    // The painted title sinks and fades before the portal crosses its place.
+    // The title sinks and fades before the portal crosses its place.
     const tk = this.phase === 'move' ? clamp01(this.phaseTime / TITLE_S) : 1;
     const title = this.titleArt();
     if (tk < 1 && title) {
       ctx.globalAlpha = 1 - smooth(0.15, 1, tk);
-      ctx.imageSmoothingEnabled = this.opts.language !== 'vi';
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(title, layout.title.x, layout.title.y + 170 * tk * tk);
       ctx.globalAlpha = 1;
     }

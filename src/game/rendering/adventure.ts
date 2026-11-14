@@ -159,6 +159,25 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   if (game.characterClass === 'mage' && !comboFrame && !game.exitTravelRemaining) {
     drawMageStaff(ctx, game.player.x, game.player.y, game.player.direction, getWeapon('mage').id, time);
   }
+  const aim = game.mouseAimAngle;
+  if (aim !== null) {
+    ctx.save();
+    ctx.translate(game.player.x, game.player.y + 15);
+    ctx.rotate(aim);
+    ctx.fillStyle = '#ffe5a1';
+    ctx.strokeStyle = '#15211d';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(34, 0);
+    ctx.lineTo(22, -6);
+    ctx.lineTo(25, 0);
+    ctx.lineTo(22, 6);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+  }
   drawComboEffects(ctx, game, time);
   drawPfxShots(ctx, game.pfx, false);
   for (const shot of game.magicShots) {

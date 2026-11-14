@@ -92,7 +92,7 @@ export function levelUses(path: string, spec: LevelLoadSpec): boolean {
   if (folder === 'forest' || folder === 'nature' || folder === 'magic-effects' || folder === 'biomes') return true;
   if (folder === HERO_FOLDER[spec.character]) return !rest.startsWith('Kael_');
   if (folder === 'aeris') return spec.character === 'mage';
-  if (folder === 'enemies') return spec.levelId >= 2 && spec.levelId !== 6;
+  if (folder === 'enemies') return spec.levelId === 1 ? rest.startsWith('goblin_') : spec.levelId >= 2 && spec.levelId !== 6;
   if (folder === 'frost-guardian') return spec.levelId === 6;
   if (folder === 'demon-boss') return spec.levelId === 13 && ['sheet-fire.png', 'cave-arena.png', 'slime-idle.png', 'slime-transform-strip-fire.png'].includes(rest);
   if (folder === 'volcano') {

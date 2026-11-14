@@ -17,16 +17,16 @@ export function drawKnightOutfit(ctx:CanvasRenderingContext2D,x:number,y:number,
  const cellW=Math.round((frame+1)*atlas.naturalWidth/8)-cellX;
  const cellH=Math.round((row+1)*atlas.naturalHeight/8)-cellY;
 
- // Match Kael's ~54 px body height with uniform scaling. The slash row
- // has extra space for the blade, so anchor it by the body and planted foot.
- const scale=.445;
+ // Preserve Hắc Diệm's source proportions and keep the same foot anchor.
+ const scaleX=voidKnight?.46:.41;
+ const scaleY=.46;
  const bodyX=pose===3?79:84;
  const feet=(voidKnight?[153,150,147,145]:[153,151,148,144])[pose];
  ctx.save();
  ctx.translate(Math.round(x),Math.round(y));
  if(direction==='left')ctx.scale(-1,1);
  ctx.imageSmoothingEnabled=false;
- ctx.drawImage(atlas,cellX,cellY,cellW,cellH,-Math.round(bodyX*scale),7-Math.round(feet*scale),Math.round(cellW*scale),Math.round(cellH*scale));
+ ctx.drawImage(atlas,cellX,cellY,cellW,cellH,-Math.round(bodyX*scaleX),7-Math.round(feet*scaleY),Math.round(cellW*scaleX),Math.round(cellH*scaleY));
  ctx.restore();
  return true;
 }

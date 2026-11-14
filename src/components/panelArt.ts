@@ -15,7 +15,7 @@ export const PANEL_ART = {
   timeout: [ui('defeat-forest-frame.png'), DEFEAT_ART.timeout],
  },
  reward: [ui('rune-reward-frame.png'), material[1]],
- pause: [ui('pause-pixel-prototype.png')],
+ pause: [ui('pause-pixel-prototype.png'), ui('pause-forest-frame.png')],
  inventory,
  material,
  shop: [ui('trading-forest-frame.png'), ...material],

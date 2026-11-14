@@ -3,7 +3,6 @@
 .pause-menu header{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#acb58d}
 .pause-menu header>span{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:1px}
 .adventure-app .pause-menu button{display:flex;align-items:center;justify-content:center;gap:9px;background:#203727!important;background-image:none!important;border:1px solid #687952!important;box-shadow:none!important;color:#e7dfbd!important;border-radius:2px!important;cursor:pointer;min-height:42px;padding:9px 12px;font:inherit;font-size:17px!important;line-height:1.3}
-.adventure-app .pause-menu header>button{min-height:30px;width:30px;padding:4px;background:transparent!important;border:0!important}
 .adventure-app .pause-menu h2{font-size:38px!important;line-height:1.2;margin:18px 0 5px;color:#f3e2b6}
 .pause-menu-level{font-size:15px;color:#abb895;margin:0;line-height:1.4}
 .pause-menu dl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0;padding:16px 0;border-block:1px solid #536447}
@@ -25,3 +24,16 @@
 .adventure-app .adventure-hud .hud-top .hud-tools{border:0!important;background:transparent!important;box-shadow:none!important;padding:4px 0 4px 6px}
 .adventure-app .adventure-hud .hud-top .hud-tools button{width:34px;min-width:34px;height:36px;min-height:36px}
 @media(max-height:480px){.adventure-app .adventure-hud .hud-top{grid-template-columns:minmax(100px,1fr) minmax(160px,1.2fr) auto}.adventure-app .adventure-hud .hud-top .hud-tools button{width:28px;min-width:28px;height:30px;min-height:30px}}
+
+.pause-quests {
+  flex: none;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid #83754e;
+  background: #252e22;
+}
+.pause-quests h3 { margin: 0 0 6px; color: #f0d68d; font-size: 16px; }
+.pause-quests ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.pause-quests li { display: flex; align-items: baseline; gap: 7px; font-size: 13px; line-height: 1.3; }
+.pause-quest-mark { flex: none; width: 1em; text-align: center; }
+.pause-quests li[data-complete='true'] .pause-quest-mark { color: #badd9a; }

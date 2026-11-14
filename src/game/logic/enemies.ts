@@ -25,6 +25,7 @@ export const LURE_MEMORY = 2;
 /** How far from home an Echo can lead an enemy: its lure range plus this (px). */
 export const LURE_LEASH = 120;
 const encounters:Record<number,[EnemyKind,number,number][]>= {
+ 1:[['goblin',1090,570]],
  2:[['goblin',450,580],['shaman',1040,220]],
  3:[['goblin',830,130],['bear',420,120],['shaman',440,580]],
  4:[['goblin',1140,400],['bear',850,580],['shaman',510,235],['skull',230,500]],
@@ -41,7 +42,7 @@ const encounters:Record<number,[EnemyKind,number,number][]>= {
 };
 export function createEnemies(level:LevelData):Enemy[]{
  const obstacles=getActiveObstacles(level.walls,level.doors);
- const healthMultiplier=encounterBalance(level.id).health;
+ const healthMultiplier=level.id===0 ? 1 : encounterBalance(level.id).health;
  return (encounters[level.id]??[]).map(([kind,x,y],i)=>{
   const safe=resolveMovement(x,y,x,y,30,30,obstacles);
   const maxHp=Math.round(ENEMY_STATS[kind].hp*healthMultiplier);
@@ -64,7 +65,7 @@ export function createCaveSlimes(): Enemy[] {
   {id:'slime-violet',x:605,y:220,hue:245},
  ];
  return spawns.map(({id,x,y,hue})=>({
-  id,kind:'skull',x,y,homeX:x,homeY:y,hp:hue===0?56:68,maxHp:hue===0?56:68,mode:'idle',timer:0,
+  id,kind:'skull',x,y,homeX:x,homeY:y,hp:hue===0?84:145,maxHp:hue===0?84:145,mode:'idle',timer:0,
   targetX:x,targetY:y,facingLeft:false,hitFlash:0,deathAge:0,targetId:null,slimeHue:hue,
  }));
 }
@@ -91,7 +92,7 @@ function advanceBolt(e:Enemy, obstacles:ReturnType<typeof getActiveObstacles>, p
 /** Leashed, wall-aware enemies telegraph a locked impact point before attacking. */
 export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y:number},echoes:{x:number;y:number;aggroTime?:number}[],dt:number,onHit:(target:EnemyTarget,damage:number,source:Enemy)=>void,onAttack?:(enemy:Enemy,stage:'warning'|'release')=>void){
  const obstacles=getActiveObstacles(level.walls,level.doors);
- const damageMultiplier=encounterBalance(level.id).damage;
+ const balance=encounterBalance(level.id);
  const sight=(a:{x:number;y:number},b:{x:number;y:number})=>!obstacles.some(w=>segmentWall(a,b,w,0)!==null);
  for(const e of enemies){
   advanceBolt(e,obstacles,player,echoes,dt,onHit);
@@ -119,12 +120,12 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
     const index=e.targetEcho?echoes.indexOf(e.targetEcho):-1;
     const target=e.targetId===null?player:index>=0?echoes[index]:undefined;
     const hitX=slime?e.x:e.targetX,hitY=slime?e.y:e.targetY;
-    const damage=Math.round(stat.damage*damageMultiplier);
+    const damage=Math.round(stat.damage*balance.damage);
     if(ranged){
      const angle=Math.atan2(e.targetY-e.y,e.targetX-e.x);
      e.bolt={x:e.x,y:e.y,vx:Math.cos(angle)*SHAMAN_BOLT_SPEED,vy:Math.sin(angle)*SHAMAN_BOLT_SPEED,life:1.3,damage};
     }else if(target&&Math.hypot(target.x-hitX,target.y-hitY)<(slime?28:44)&&sight(e,target))onHit({...target,echoIndex:e.targetId===null?null:index},damage,e);
-    e.mode='recover';e.timer=ranged?.85:slime?.95:e.kind==='minotaur'?1.1:.82;
+    e.mode='recover';e.timer=(ranged?.85:slime?.95:e.kind==='minotaur'?1.1:.82)*balance.recovery;
    }continue;
   }
   if(e.mode==='recover'){if(e.timer<=0)e.mode='idle';continue;}
@@ -173,7 +174,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   const length=Math.hypot(dx,dy);
   e.mode=length>5?'chase':'idle';e.facingLeft=ranged&&engaged?target.x<e.x:dx<0;
   if(length>5){
-   const speed=stat.speed*(canRetreat?.9:caveAmbush?1.2:engaged?1:.45);
+   const speed=stat.speed*balance.speed*(canRetreat?.9:caveAmbush?1.2:engaged?1:.45);
    const amount=Math.min(length,speed*dt);
    const pos=resolveMovement(e.x,e.y,e.x+dx/length*amount,e.y+dy/length*amount,30,30,obstacles);
    const nextDistance=Math.hypot(pos.x-player.x,pos.y-player.y);

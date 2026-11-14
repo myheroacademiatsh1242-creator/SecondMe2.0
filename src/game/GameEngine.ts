@@ -14,7 +14,8 @@ import { createCaveSlimes, createEnemies, ENEMY_STATS, EMBER_SLIME_ID, updateEne
 import { ECHO_RUNES, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
 import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
 import {ICE_MAGIC,FROST_STRIKE,insideIceRay,type FrostZone} from './logic/iceMagic.ts';
-import { puzzleBalance, SHARD_BONUS, ENEMY_TIME_BONUS, PUZZLE_HINTS, HERO_MAX_HP, GUARDIAN_HP, BOSS_PLAYER_DAMAGE, SWORD_WAVE_RANGE, encounterBalance } from './logic/balance.ts';
+import { puzzleBalance, SHARD_BONUS, ENEMY_TIME_BONUS, PUZZLE_HINTS, GUARDIAN_HP, BOSS_PLAYER_DAMAGE, SWORD_WAVE_RANGE, encounterBalance } from './logic/balance.ts';
+import { heroStats, type HeroRanks, type HeroUpgradeStat } from './logic/heroUpgrades.ts';
 import { TutorialDirector, type GuideTopic } from './logic/tutorials.ts';
 import { crossedGateTowardExit, isPuzzleExitOpen } from './logic/puzzle.ts';
 /**
@@ -154,6 +155,8 @@ export interface HUDState {
   characterClass: CharacterClass;
   weapon: 'staff' | 'sword';
   coins: number;
+  heroRanks?: HeroRanks;
+  heroUpgradeSpent?: Record<keyof HeroRanks, number>;
   timeItems: number;
   limitRings: number;
   chestKeys: number;
@@ -345,6 +348,15 @@ export class GameEngine {
   public frostZones:FrostZone[]=[];
   public frostSlow=0;
   private cursorTarget:{x:number;y:number}|null=null;
+  private mouseOverArena = false;
+  public get mouseAimAngle(): number | null {
+    if (!this.mouseOverArena || !this.cursorTarget || this.screen !== 'playing' || this.bossIntroduction ||
+        this.inventoryOpen || this.runeEditing || this.guides.blocking || this.orientationBlocked ||
+        this.exitTravelRemaining > 0 || this.bossDeathPending) return null;
+    const dx = this.cursorTarget.x - this.player.x;
+    const dy = this.cursorTarget.y - (this.player.y - 18);
+    return Math.hypot(dx, dy) < 4 ? null : Math.atan2(dy, dx);
+  }
   public lightCircle: { x:number; y:number; life:number; heal:number } | null = null;
   public overdrive = 0;
   public get insideLightCircle() { return !!this.lightCircle && Math.hypot(this.player.x-this.lightCircle.x,this.player.y-this.lightCircle.y)<=58; }
@@ -590,6 +602,22 @@ export class GameEngine {
   public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
   public selectClass(value: CharacterClass) { if (this.screen !== 'lobby' && this.screen !== 'characters') return; if(value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return; this.characterClass = value; this.saveSettings(); this.notifyHUD(); }
   public get weapon(): 'staff' | 'sword' { return this.characterClass === 'mage' ? 'staff' : 'sword'; }
+  private get heroStats() { return heroStats(this.characterClass, this.campaign.heroRanks); }
+  private get personalSkillManaCost() { return skillManaCost(this.characterClass) - this.heroStats.skillManaDiscount; }
+  private canManageHeroUpgrades(hero: CharacterClass) {
+    return !this.campaign.pendingRuneChoices.length && (this.screen === 'characters' || (this.screen === 'lobby' && hero === this.characterClass));
+  }
+  public buyHeroUpgrade(hero: CharacterClass, stat: HeroUpgradeStat, expectedRank: number) {
+    if (!this.canManageHeroUpgrades(hero)) return false;
+    if (!this.campaign.buyHeroUpgrade(hero, stat, expectedRank)) return false;
+    this.notifyHUD();
+    return true;
+  }
+  public resetHeroUpgrades(hero: CharacterClass, expectedSpent: number) {
+    if (!this.canManageHeroUpgrades(hero) || !this.campaign.resetHeroUpgrades(hero, expectedSpent)) return false;
+    this.notifyHUD();
+    return true;
+  }
   public canUseTimeItem() {return !this.orientationBlocked&&this.screen==='playing'&&this.legTimeRemaining!==null&&this.timeItemsUsedThisLevel<5&&this.campaign.timeItems>0&&!this.runeEditing;}
   public useTimeItem() { if (!this.canUseTimeItem() || !this.campaign.useTimeItem()) return false; this.timeItemsUsedThisLevel++; this.legTimeRemaining = (this.legTimeRemaining??0)+2; this.startVfx('clock',true); this.showBanner(this.language==='vi'?`+2 giây · Thêm một chút (${this.timeItemsUsedThisLevel}/5)`:`+2s · A Little More (${this.timeItemsUsedThisLevel}/5)`); this.notifyHUD(); return true; }
 
@@ -675,7 +703,7 @@ export class GameEngine {
     this.guides.reset();
     this.slowed = false;
     this.defeatReason = 'damage';
-    this.maxHealth=HERO_MAX_HP[this.characterClass];this.usedSupplies.clear();this.supportAlly=null;
+    this.maxHealth=this.heroStats.maxHealth;this.usedSupplies.clear();this.supportAlly=null;
     this.health = this.maxHealth;
     this.hurtFlash=0;this.incomingHits=[];this.burn=newBurn();
     this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
@@ -854,7 +882,7 @@ export class GameEngine {
   private autoRevive(){
     if(this.usedSupplies.has('chances'))return false;
     if(this.campaign.chanceCharges===0){if(this.campaign.supplies.chances<=0)return false;this.campaign.supplies.chances--;this.campaign.chanceCharges=3;}
-    this.maxHealth=HERO_MAX_HP[this.characterClass]-(3-this.campaign.chanceCharges)*10;
+    this.maxHealth=this.heroStats.maxHealth-(3-this.campaign.chanceCharges)*10;
     this.campaign.chanceCharges--;this.usedSupplies.add('chances');
     this.reviveAt(this.player.x,this.player.y);this.campaign.save();
     this.showBanner(this.language==='vi'?`3 cơ hội · Đã hồi sinh · ${this.campaign.chanceCharges} lượt còn lại`:`Three chances · Revived · ${this.campaign.chanceCharges} charges left`);
@@ -930,6 +958,7 @@ export class GameEngine {
    * takes the damage, the boss takes it only once every pillar is down. Shows the damage number.
    */
   private strike(target: CombatTarget, amount: number, heavy = false, source:{x:number;y:number}=this.player): boolean {
+    if (source === this.player) amount *= 1 + this.heroStats.attackBonus / 100;
     if (this.enemies.includes(target as Enemy)) {
       const enemy = target as Enemy;
       if (enemy.hp <= 0) return false;
@@ -1256,7 +1285,13 @@ export class GameEngine {
     if (!hero) return;
     const hit = COMBO_HITS[hero][step];
     const empowered = hero === 'swordsman' && this.currentLevel.plates.some(p => p.isPressed);
-    const amount = comboDamage(hero, step, empowered);
+    const baseDamage = comboDamage(hero, step, empowered);
+    const stats = this.heroStats;
+    // Mastery clears the early trails in one hit. Later encounters use the ordinary damage bonus.
+    const earlyTrail = this.currentLevel.id === 1 || this.currentLevel.id === 2;
+    const amount = stats.defeatsEarlyEnemies && earlyTrail
+      ? Math.max(baseDamage, Math.max(0, ...this.enemies.map(enemy => enemy.maxHp)) / (1 + stats.attackBonus / 100))
+      : baseDamage;
     const px = this.player.x, py = this.player.y - 18;             // body centre
     const angle = Math.atan2(this.comboAim.y - py, this.comboAim.x - px);
     const ux = Math.cos(angle), uy = Math.sin(angle);
@@ -1412,17 +1447,17 @@ export class GameEngine {
     if(this.orientationBlocked)return;
     if (this.screen !== 'playing' || (this.bossDeathPending && this.boss?.kind !== 'demon') || this.exitTravelRemaining > 0 || this.skillCooldown > 0) return;
     if(this.bossIntroduction||this.inventoryOpen||this.runeEditing||this.guides.blocking)return;
-    if(!this.spendMana(skillManaCost(this.characterClass)))return;
+    if(!this.spendMana(this.personalSkillManaCost))return;
     if (this.characterClass === 'mage') {
       const enemy=this.enemies.filter(e=>e.hp>0).sort((a,b)=>Math.hypot(a.x-this.player.x,a.y-this.player.y)-Math.hypot(b.x-this.player.x,b.y-this.player.y))[0];
       const aim=this.boss&&this.boss.hp>0?this.boss:enemy??_target??this.cursorTarget??this.player;
       this.recorder.recordEvent({kind:'skill',x:this.player.x,y:this.player.y,targetX:aim.x,targetY:aim.y});
-      this.frostZones.push({x:aim.x,y:aim.y,radius:ICE_MAGIC.RADIUS,timer:ICE_MAGIC.WARNING,struck:false});
+      this.frostZones.push({x:aim.x,y:aim.y,radius:ICE_MAGIC.RADIUS+this.heroStats.iceRadiusBonus,timer:ICE_MAGIC.WARNING,struck:false});
       sounds.playFrostCharge();
       this.skillCooldown=ICE_MAGIC.COOLDOWN;
     } else if(this.characterClass === 'swordsman') {
       this.recorder.recordEvent({kind:'skill',x:this.player.x,y:this.player.y,targetX:this.player.x,targetY:this.player.y});
-      this.lightCircle = {x:this.player.x,y:this.player.y,life:5,heal:0};
+      this.lightCircle = {x:this.player.x,y:this.player.y,life:5+this.heroStats.sanctuaryBonus,heal:0};
       this.startVfx('healRing');
       sounds.playSanctuary();
       voice.say('kael', 'skill', { id: 'sanctuary' });
@@ -1473,7 +1508,7 @@ export class GameEngine {
 
   private takeDamage(amount:number = DAMAGE.trap) {
     if (this.invulnerability > 0 || damagePoints(amount)<=0 || this.health<=0) return;
-    const result=applyDamage(this.health,amount,this.stoneShield+this.armorShield);
+    const result=applyDamage(this.health,amount*(1-this.heroStats.damageReduction/100),this.stoneShield+this.armorShield);
     const stoneAbsorbed=Math.min(this.stoneShield,result.absorbed);
     this.stoneShield=damagePoints(this.stoneShield-stoneAbsorbed);
     this.armorShield=damagePoints(this.armorShield-(result.absorbed-stoneAbsorbed));
@@ -1923,16 +1958,19 @@ export class GameEngine {
   };
 
   private handleWindowBlur = () => {
+    this.mouseOverArena = false;
     this.heldKeys.clear();
     this.touchMove = { x: 0, y: 0 };
     this.pauseGame();
   };
 
-  private handleCanvasMouseMove=(e:MouseEvent)=>{
-    if(!this.canvas)return;
+  private handleCanvasPointerMove = (e: PointerEvent) => {
+    this.mouseOverArena = e.pointerType === 'mouse';
+    if (!this.canvas || e.pointerType === 'touch') return;
     const bounds=this.canvas.getBoundingClientRect();
     if(bounds.width&&bounds.height)this.cursorTarget={x:(e.clientX-bounds.left)*this.canvas.width/bounds.width,y:(e.clientY-bounds.top)*this.canvas.height/bounds.height};
   };
+  private handleCanvasPointerLeave = () => { this.mouseOverArena = false; };
   private handleCanvasMouseDown = (e: MouseEvent) => {
     if ((e.button !== 0 && e.button !== 1 && e.button !== 2) || !this.canvas || this.screen !== 'playing') return;
     const bounds = this.canvas.getBoundingClientRect();
@@ -1949,7 +1987,8 @@ export class GameEngine {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('blur', this.handleWindowBlur);
-    this.canvas?.addEventListener('mousemove',this.handleCanvasMouseMove);
+    this.canvas?.addEventListener('pointermove', this.handleCanvasPointerMove);
+    this.canvas?.addEventListener('pointerleave', this.handleCanvasPointerLeave);
     this.canvas?.addEventListener('mousedown', this.handleCanvasMouseDown);
     this.canvas?.addEventListener('contextmenu', this.handleCanvasContextMenu);
   }
@@ -1958,7 +1997,8 @@ export class GameEngine {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('blur', this.handleWindowBlur);
-    this.canvas?.removeEventListener('mousemove',this.handleCanvasMouseMove);
+    this.canvas?.removeEventListener('pointermove', this.handleCanvasPointerMove);
+    this.canvas?.removeEventListener('pointerleave', this.handleCanvasPointerLeave);
     this.canvas?.removeEventListener('mousedown', this.handleCanvasMouseDown);
     this.canvas?.removeEventListener('contextmenu', this.handleCanvasContextMenu);
   }
@@ -2525,8 +2565,9 @@ export class GameEngine {
     const x = pillar.x + Math.cos(a) * 62, y = pillar.y + Math.sin(a) * 48;
     this.spawnPfx('snowflake-burst', x, y + 6, { scale: .6 });
     if (audible) sounds.playFrostBurst();
+    const hp = Math.round(PILLAR_SUMMON.HP * encounterBalance(6).health);
     return {
-      id: `frost-crystal-${++this.frostSlimes}`, kind: 'skull', seesAll: true, x, y, homeX: x, homeY: y, hp: PILLAR_SUMMON.HP, maxHp: PILLAR_SUMMON.HP,
+      id: `frost-crystal-${++this.frostSlimes}`, kind: 'skull', seesAll: true, x, y, homeX: x, homeY: y, hp, maxHp: hp,
       mode: 'chase', timer: .6, targetX: this.player.x, targetY: this.player.y, facingLeft: this.player.x < x, hitFlash: .35,
       deathAge: 0, targetId: null, slimeHue: PILLAR_SUMMON.HUE,
     };
@@ -2715,6 +2756,8 @@ export class GameEngine {
         characterClass: this.characterClass,outfits:getOutfits(),ownedOutfits:[...this.campaign.ownedOutfits],weapons:getWeapons(),ownedWeapons:[...this.campaign.ownedWeapons],
         weapon: this.weapon,
         coins: this.campaign.coins,
+        heroRanks: {...this.campaign.heroRanks},
+        heroUpgradeSpent: {...this.campaign.heroUpgradeSpent},
         timeItems: this.campaign.timeItems,
         limitRings: this.campaign.limitRings,
         chestKeys: this.campaign.chestKeys,
@@ -2722,7 +2765,7 @@ export class GameEngine {
         limitRingActive: this.limitRingActive,
         bestStars: { ...this.campaign.bestStars },
         lastRating: this.lastRating,
-        skillCooldown: this.skillCooldown,mana:this.mana.value,maxMana:MAX_MP,skillManaCost:skillManaCost(this.characterClass),rage:this.rage.value,maxRage:RAGE.MAX,hasUltimate:this.hasUltimate,
+        skillCooldown: this.skillCooldown,mana:this.mana.value,maxMana:MAX_MP,skillManaCost:this.personalSkillManaCost,rage:this.rage.value,maxRage:RAGE.MAX,hasUltimate:this.hasUltimate,
         mechanicalOwned: this.campaign.mechanicalOwned,
         loadingLevel: this.pendingLevel ? levelAt(this.pendingLevel.idx).id : null,
         loadingFromMenu: this.loadingFromMenu,
