@@ -32,8 +32,9 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
   const demon = hud.bossKind === 'demon';
   const still = hud.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const transforming = demon && !still && phase === 'merge';
-  // Frost Guardian: the last two Frost Crystals fuse into it first (FrostCrystalFusion); its entrance mounts at the flash.
-  const [fusion, setFusion] = useState<'play' | 'flash' | 'done'>(demon || still ? 'done' : 'play');
+  // Frost Guardian: the last two Frost Crystals do the fusion dance first (FrostCrystalFusion); its card mounts at the hand-off.
+  const [fusion, setFusion] = useState<'play' | 'handoff' | 'done'>(demon || still ? 'done' : 'play');
+  const fused = useRef(false);
   const enterFight = useCallback(() => {
     if (entering.current) return;
     entering.current = true;
@@ -169,13 +170,14 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
       </>}
     </>);
   }
-  const fusing = fusion !== 'done' && <div className={`frost-fusion${fusion === 'flash' ? ' is-flashed' : ''}`} role="dialog" aria-modal="true"
-    aria-label={vi ? 'Pha Lê Băng hợp thể' : 'Frost Crystals fusing'} aria-hidden={fusion === 'flash'}>
-    <FrostCrystalFusion onFlash={() => setFusion('flash')} onDone={() => setFusion('done')} />
+  const fusing = fusion !== 'done' && <div className={`frost-fusion${fusion === 'handoff' ? ' is-handing-off' : ''}`} role="dialog" aria-modal="true"
+    aria-label={vi ? 'Pha Lê Băng hợp thể' : 'Frost Crystals fusing'} aria-hidden={fusion === 'handoff'}>
+    <FrostCrystalFusion onHandoff={() => { fused.current = true; setFusion('handoff'); }} onDone={() => setFusion('done')} />
     {fusion === 'play' && <button type="button" className="demon-intro-skip" onClick={() => setFusion('done')}>{vi ? 'Bỏ qua hoạt ảnh' : 'Skip animation'}</button>}
   </div>;
   if (fusion === 'play') return fusing;
-  return <>{fusing}<div ref={dialog} tabIndex={-1} className={`boss-cut${skipped || still ? ' is-skipped' : ''}`} role="dialog" aria-modal="true" aria-labelledby="boss-intro-name"
+  // After the fusion the Guardian is already standing (it glided into place): the card skips its drop from the sky.
+  return <>{fusing}<div ref={dialog} tabIndex={-1} className={`boss-cut${skipped || still ? ' is-skipped' : ''}${fused.current ? ' from-fusion' : ''}`} role="dialog" aria-modal="true" aria-labelledby="boss-intro-name"
     onPointerDown={() => { setSkipped(true); playRoar(); }}>
     <div className="boss-cut-snow" aria-hidden="true">
       {SNOW.map((f, i) => <i key={i} style={{ left: `${f.left}%`, width: f.size, height: f.size, animationDelay: `${f.delay}s`, animationDuration: `${f.duration}s`, '--drift': `${f.drift}px` } as CSSProperties}/>)}
