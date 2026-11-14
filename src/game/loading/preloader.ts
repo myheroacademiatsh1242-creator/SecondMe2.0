@@ -28,7 +28,7 @@ const TIMEOUT_MS = 6000;
 type FileEntry = { path: string; bytes: number };
 /** Decoded images by path, kept so the browser keeps them ready for the game's own images. */
 const decoded = new Map<string, HTMLImageElement>();
-let current: Preload | null = null;
+const lobbyPreloads = new Map<LobbyTheme, Preload>();
 let index: Promise<FileEntry[]> | null = null;
 
 function assetIndex(): Promise<FileEntry[]> {
@@ -65,10 +65,21 @@ function imageTask(path: string, bytes: number): Task {
   };
 }
 
-/** Starts (once) and returns the shared first load; later calls get the same, possibly finished, one. */
-export function startPreload(opts: { delayMs?: number } = {}): Preload {
-  current ??= begin(async () => (await assetIndex()).filter(f => f.path === 'assets/ui/journey-forest-map.png' && !decoded.has(f.path)), opts.delayMs ?? 0);
-  return current;
+export type LobbyTheme = 'forest' | 'frost';
+const LOBBY_ART: Record<LobbyTheme, readonly string[]> = {
+  forest: ['assets/ui/journey-forest-map.png', 'assets/ui/echo-campsite.png'],
+  frost: ['assets/ui/journey-frost-map.png', 'assets/ui/frost-campsite.png', 'assets/menu/stone-panel.png'],
+};
+
+export function startPreload({ theme = 'forest', delayMs = 0 }: { theme?: LobbyTheme; delayMs?: number } = {}): Preload {
+  const existing = lobbyPreloads.get(theme);
+  if (existing && (!existing.done || !existing.failed.length)) return existing;
+  const load = begin(async () => {
+    const files = new Map((await assetIndex()).map(file => [file.path, file.bytes]));
+    return LOBBY_ART[theme].filter(path => !decoded.has(path)).map(path => ({ path, bytes: files.get(path) ?? 1 }));
+  }, delayMs);
+  lobbyPreloads.set(theme, load);
+  return load;
 }
 
 /** What entering a level needs. */
@@ -160,4 +171,4 @@ async function run(state: Preload, plan: Plan, delayMs: number) {
 }
 
 /** For tests: forget the shared preload. */
-export function resetPreloadForTests() { current = null; index = null; decoded.clear(); }
+export function resetPreloadForTests() { lobbyPreloads.clear(); index = null; decoded.clear(); }

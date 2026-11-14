@@ -50,24 +50,28 @@ const STRIPE = 26;                        // spacing of the light bands in the b
  *             arch and vortex), chips break off, motes and fireflies spiral in, the forest
  *             darkens;
  *   dive      the camera zooms in on the centre while the twist winds tighter and faster and
- *             the stone is drawn into the eye; the tunnel opens behind it, turquoise floods
- *             the screen, a white flash hands over to the next screen (AdventureApp fades it).
+ *             the stone is drawn into the eye; the tunnel opens behind it;
+ *   fade      the last portal frame fades over the prepared destination.
  *
  * Sound (public/assets/sfx, matched by file name in sfx.ts; silent without the files):
  *   portalMove  stone grinding from the start of `move` through `rotate`, cut off the moment
  *               the arch faces the camera (end of `rotate`);
  *   portalOpen  from the start of `activate` (its burst lands on the rumble) through the dive;
- *               its decaying tail runs on past the flash and fades over the next screen.
+ *               its decaying tail runs on past the dive and fades over the next screen.
  */
 const FADE_S = 0.28;                      // matches the loading overlay's CSS fade
-const PULL_S = 1.8;                       // the wizard is lifted off the bar and pulled into the portal
+const MIN_MENU_LOADING_S = 1.15;
+const MIN_LOBBY_LOADING_S = 1.35;
+const MIN_LEVEL_LOADING_S = 0.8;
+const PORTAL_ART_GRACE_S = 1;
+const PULL_S = 0.85;                       // the wizard is lifted off the bar and pulled into the portal
 const PULL_LIFT = 0.25;                   // …the first part of it: lifted up, hanging in the pull
-const MOVE_S = 1.5;
-const ROTATE_S = 1.5;
-const SINK_S = 1.3;                       // the bar group is gone before the portal arrives
-const TITLE_S = 1.0;                      // the painted title sinks first: the portal passes through its place
-const ACTIVATE_S = 1.3;
-const DIVE_S = 2.1;
+const MOVE_S = .8;
+const ROTATE_S = .65;
+const SINK_S = .7;                       // the bar group is gone before the portal arrives
+const TITLE_S = .6;                      // the painted title sinks first: the portal passes through its place
+const ACTIVATE_S = .8;
+const DIVE_S = 1.05;
 const ZOOM_MAX = 6;                       // camera zoom at the end of the dive
 const LAYER = 560;                        // portal layer (painting px, square) the twist warps
 const TWIST_RADIUS = 520;                 // painting px from the centre where the twist fades out
@@ -75,7 +79,6 @@ const CHIPS = 24;
 const TUNNEL_LAYERS = 7;
 const RINGS = 4;
 const DIM_MAX = 0.62;                     // forest darkness around the active portal
-const FLASH = '#effffa';
 // Hand-drawn portal animation (tools/assets/prepare_portal_anim.py): the vortex frames play in
 // the painted arch; the streak frames play slowly forward and back (1→15→1, a seamless loop),
 // each cross-fading into the next, so the band of light rises and falls without a jump.
@@ -97,7 +100,7 @@ const SLICE = 3;                          // painting px per drawn column
 const SWIRL_COVER = 1.1 + Math.hypot((layout.portal.cx - layout.portal.eyeX) * layout.portal.ry / layout.portal.rx, layout.portal.cy - layout.portal.eyeY) / layout.portal.ry;
 const STONE_FADE_IN = 0.15;               // s: portalMove fades in at the start of `move`
 const STONE_FADE_OUT = 0.03;              // s: …and cut the moment the arch faces the camera (no click)
-const OPEN_TAIL = 1.6;                    // s: portalOpen fades out after the flash
+const OPEN_TAIL = 1.6;                    // s: portalOpen fades out after the dive
 // Cue levels: both files are mastered very hot (rock-sliding stays loud for seconds, the
 // portal opens with a burst), so they play well under the other effects (~-9 / -10.5 dB).
 const STONE_LEVEL = 0.35;
@@ -105,7 +108,7 @@ const OPEN_LEVEL = 0.3;
 
 type Art = 'wizard' | 'swirl' | 'vortex' | 'arch' | 'barFrame' | 'title' | 'front';
 const images: Record<Art, HTMLImageElement | null> = { wizard: null, swirl: null, vortex: null, arch: null, barFrame: null, title: null, front: null };
-/** Starts loading the screen's own art; called at import so it is ready before the screen opens. */
+/** Starts loading the screen's own art in parallel with its preload. */
 export function preloadLoadingArt() {
   if (typeof Image === 'undefined' || images.wizard) return;
   const load = (file: string) => { const i = new Image(); i.decoding = 'async'; i.src = ASSET + file; return i; };
@@ -141,9 +144,8 @@ export interface SceneUI {
   vignette?: HTMLElement | null;
 }
 export interface SceneOptions {
-  /** `flash`: the screen ended on the portal's white flash (false after the plain fade). */
-  reducedMotion: boolean; stress: number; onFinished: (flash: boolean) => void;
-  /** Called once just before onFinished (what the screen hands over to should be ready). */
+  reducedMotion: boolean; stress: number; onFinished: () => void;
+  /** Mount or build the destination before the fade. */
   onReveal?: () => void;
   /** Dev only: stay on the loading screen after 100% (for profiling). */
   hold?: boolean;
@@ -155,10 +157,11 @@ export interface SceneOptions {
    * called as the fade starts so the level is already drawn underneath).
    */
   portal?: boolean;
+  lobby?: boolean;
 }
 
 /** `fade` replaces the portal transition when reduced motion is on. */
-export type Phase = 'loading' | 'finishing' | 'pull' | 'move' | 'rotate' | 'activate' | 'dive' | 'fade' | 'done';
+export type Phase = 'loading' | 'finishing' | 'pull' | 'move' | 'rotate' | 'activate' | 'dive' | 'reveal' | 'fade' | 'done';
 const TRANSITION: Phase[] = ['move', 'rotate', 'activate', 'dive'];
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -177,6 +180,7 @@ export class LoadingScene {
   private kx = 1; private ky = 1;
   phase: Phase = 'loading';
   private phaseTime = 0;
+  private frozeDive = false;
   /** Displayed progress: eases toward the real value, never ahead of it. */
   shown = 0;
   private shownPct = -1;
@@ -296,7 +300,7 @@ export class LoadingScene {
   }
   stop() {
     cancelAnimationFrame(this.raf); this.raf = 0;
-    // Torn down mid-transition (screen unmounted): cut the cues short. At the flash ('done')
+    // Torn down mid-transition (screen unmounted): cut the cues short. At completion ('done')
     // the portal's tail is left to fade over the next screen.
     if (this.phase !== 'done') { this.openCue?.(0.2); this.openCue = null; }
     this.stoneCue?.(0.2); this.stoneCue = null;
@@ -305,6 +309,7 @@ export class LoadingScene {
 
   /** Matches the canvas to its on-screen size in device pixels. */
   resize() {
+    if (this.frozeDive) return;
     const r = this.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
@@ -401,7 +406,9 @@ export class LoadingScene {
     const dv = WIZARD_ACCEL * dt;
     this.wizSpeed = want > this.wizSpeed ? Math.min(want, this.wizSpeed + dv) : Math.max(want, this.wizSpeed - dv * 1.5);
     this.shown = Math.min(real, this.shown + (this.wizSpeed * dt) / b.w);
-    if (this.load.done) this.shown = 1;
+    const minLoading = this.opts.portal ? MIN_MENU_LOADING_S : this.opts.lobby ? MIN_LOBBY_LOADING_S : MIN_LEVEL_LOADING_S;
+    if (real - this.shown < .002) this.shown = real;
+    const readyToLeave = this.load.done && this.shown === 1 && this.time >= minLoading;
     this.wizX = b.x + this.shown * b.w - FOOT_LEAD;
     // Stride rate follows speed: 120 ms per frame standing in, 80 ms at a full sprint.
     const stride = Math.min(1, this.wizSpeed / (WIZARD_MAX_SPEED * 0.8));
@@ -416,28 +423,31 @@ export class LoadingScene {
     // Phases: loading → (real 100%) finishing: let the wizard complete his stride → pull: the
     // portal lifts him off the bar and draws him in → the portal transition (move → activate →
     // dive) → done. Reduced motion: a short fade.
-    if (this.phase === 'loading' && this.load.done && !this.opts.hold) {
-      if (this.opts.portal && import.meta.env.DEV && new URLSearchParams(location.search).has('portalPreview')) {
-        this.setPhase('finishing');
-      } else {
-        this.setPhase('fade');
-        this.opts.onReveal?.();
-      }
+    if (this.phase === 'loading' && readyToLeave && !this.opts.hold) {
+      if (this.opts.portal) this.setPhase('finishing');
+      else this.beginFade();
     }
-    else if (this.phase === 'finishing' && this.frame === 0 && this.phaseTime > 0.05) {
-      // (A load too quick for the warp sheet to be drawn meanwhile finishes it now.)
-      if (this.opts.portal && !this.opts.reducedMotion && transitionArtReady()) this.setPhase(prepareWarpSheet(WARP_FRAMES) ? 'pull' : 'move');
-      else { this.setPhase('fade'); this.opts.onReveal?.(); }   // the level is set up under the fading screen
+    else if (this.phase === 'finishing') {
+      if (!this.opts.reducedMotion && transitionArtReady() && (this.frame === 0 || this.phaseTime >= .35)) {
+        this.setPhase(prepareWarpSheet(WARP_FRAMES) ? 'pull' : 'move');
+      } else if ((this.opts.reducedMotion && this.phaseTime >= .35) || this.phaseTime >= PORTAL_ART_GRACE_S) {
+        this.beginFade();
+      }
     }
     else if (this.phase === 'pull' && this.phaseTime >= PULL_S) { this.flown = true; this.setPhase('move'); }
     else if (this.phase === 'move' && this.phaseTime >= MOVE_S) this.setPhase('rotate');
     else if (this.phase === 'rotate' && this.phaseTime >= ROTATE_S) this.setPhase('activate');
     else if (this.phase === 'activate' && this.phaseTime >= ACTIVATE_S) this.setPhase('dive');
-    else if ((this.phase === 'dive' && this.phaseTime >= DIVE_S) || (this.phase === 'fade' && this.phaseTime > FADE_S)) {
-      const flash = this.phase === 'dive';
+    else if (this.phase === 'dive' && this.phaseTime >= DIVE_S) {
+      this.frozeDive = true;
+      this.ui.root.dataset.portalExit = 'true';
       this.openCue?.(OPEN_TAIL); this.openCue = null;
+      this.beginFade();
+    }
+    else if (this.phase === 'reveal' && this.phaseTime >= .05) this.setPhase('fade');
+    else if (this.phase === 'fade' && this.phaseTime > FADE_S) {
       this.setPhase('done'); this.stop();
-      this.opts.onReveal?.(); this.opts.onFinished(flash);
+      this.opts.onFinished();
       return;
     }
     if (TRANSITION.includes(this.phase)) this.updateTransition(dt);
@@ -456,6 +466,12 @@ export class LoadingScene {
 
     this.updateParticles(dt);
     this.updateUI();
+  }
+
+  private beginFade() {
+    this.opts.onReveal?.();
+    // Give the mounted destination a frame to paint while the loading screen is opaque.
+    this.setPhase('reveal');
   }
 
   private setPhase(p: Phase) {
@@ -653,6 +669,7 @@ export class LoadingScene {
     if (pct !== this.shownPct) {
       this.shownPct = pct;
       this.ui.percent.textContent = String(pct);
+      this.ui.root.setAttribute('aria-valuenow', String(pct));
     }
     for (let i = 0; i < 3; i++) {
       const stages = LINE_STAGES[i];
@@ -666,14 +683,14 @@ export class LoadingScene {
   // ---------------------------------------------------------------- draw
 
   private draw() {
-    if (this.phase === 'done') return;   // keep the last (flash) frame until the screen goes
+    if (this.phase === 'done' || this.frozeDive) return;
     const ctx = this.ctx, kx = this.kx, ky = this.ky;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(kx, 0, 0, ky, 0, 0);
     const t = this.time;
     if (TRANSITION.includes(this.phase)) { this.drawTransitionFrame(t); return; }
-    const surge = 0;   // the portal's extra brightness (pull adds to it below)
+    const surge = this.phase === 'finishing' && this.opts.reducedMotion ? .6 * smooth(0, .35, this.phaseTime) : 0;
 
     const skip = this.skip;
     // Light shafts, rune glows, fog and the portal's reflected light are CSS layers
@@ -741,7 +758,6 @@ export class LoadingScene {
       this.drawTwistedPortal(t, 1);
       this.drawChips();
       this.drawMotes();
-      this.drawFlood(z);
       return;
     }
 
@@ -828,7 +844,6 @@ export class LoadingScene {
       ctx.restore();
     }
 
-    this.drawFlood(z);
   }
 
   /**
@@ -869,15 +884,6 @@ export class LoadingScene {
       ctx.fillStyle = colours[c];
       for (const ch of this.chips) if (ch.life > 0 && ch.color === c) ctx.fillRect(Math.round(ch.x), Math.round(ch.y), ch.size, ch.size);
     }
-  }
-
-  /** Turquoise floods the screen, then the flash the next screen fades in from. */
-  private drawFlood(z: number) {
-    const ctx = this.ctx, flood = smooth(0.74, 0.94, z), flash = smooth(0.88, 1, z);
-    if (flood <= 0) return;
-    ctx.fillStyle = '#2fd6b4'; ctx.globalAlpha = 0.85 * flood; ctx.fillRect(0, 0, ART_W, ART_H);
-    ctx.fillStyle = FLASH; ctx.globalAlpha = flash; ctx.fillRect(0, 0, ART_W, ART_H);
-    ctx.globalAlpha = 1;
   }
 
   /** The tunnel opening's radii (painting px) at this point of the dive. */

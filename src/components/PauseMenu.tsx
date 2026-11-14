@@ -1,3 +1,4 @@
+import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {useEffect, useRef, useState} from 'react';
 import {BookOpen, Home, Pause, Play, RotateCcw, Settings, X} from 'lucide-react';
 import type {GameEngine, HUDState} from '../game/GameEngine';
@@ -9,7 +10,8 @@ export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
   const [settings,setSettings]=useState(false);
   const resume=useRef<HTMLButtonElement>(null);
   const vi=hud.language==='vi';
-  useEffect(()=>{resume.current?.focus();},[]);
+  const panelArt=usePanelArt(PANEL_ART.pause);
+  useEffect(()=>{if(panelArt!=='loading'&&!settings)resume.current?.focus();},[panelArt,settings]);
   // Keep Escape inside Settings; closing it returns to the paused game.
   useEffect(()=>{
     if(!settings)return;
@@ -19,7 +21,7 @@ export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
   },[settings]);
   return <div className="pause-menu-backdrop">
     {settings ? <SettingsPanel engine={engine} hud={hud} close={()=>{setSettings(false);requestAnimationFrame(()=>resume.current?.focus());}}/> :
-    <section className="pause-menu pause-menu--pixel" role="dialog" aria-modal="true" aria-labelledby="pause-menu-title" onKeyDown={e=>{
+    <section className="pause-menu pause-menu--pixel" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="pause-menu-title" onKeyDown={e=>{
       if(e.key!=='Tab')return;
       const buttons=Array.from(e.currentTarget.querySelectorAll('button'));
       const first=buttons[0],last=buttons[buttons.length-1];

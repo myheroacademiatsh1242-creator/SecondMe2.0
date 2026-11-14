@@ -492,10 +492,12 @@ export class GameEngine {
     this.notifyHUD();
   }
 
-  public start(autostart: boolean = false) {
+  public start(autostart: boolean = false, restoreCamp = false) {
     this.bindInputs();
     if (autostart) {
       this.startGame();
+    } else if (restoreCamp) {
+      this.continueGame();
     } else {
       this.screen = 'intro';
       document.body.dataset.state = 'intro';
@@ -603,12 +605,7 @@ export class GameEngine {
   }
 
   public continueGame() {
-    if (this.campaign.pendingRuneChoices.length) {
-      this.goToLobby();
-      return;
-    }
-    const frostCompleted = this.campaign.completed.filter(id => id >= 7);
-    if (this.campaign.completed.length >= 5 || frostCompleted.length > 0) {
+    if (this.canSelectLevel(6)) {
       const nextFrostId = [7, 8, 9, 10, 11, 12, 13].find(id => !this.campaign.completed.includes(id)) ?? 7;
       const idx = Math.min(LEVELS.length - 1, Math.max(0, nextFrostId - 1));
       this.currentLevelIdx = idx;
@@ -730,8 +727,9 @@ export class GameEngine {
 
   public nextLevel() {
     if(this.campaign.pendingRuneChoices.length)return;
-    if (this.currentLevelIdx + 1 < LEVELS.length) {
-      this.enterLevel(this.currentLevelIdx + 1, () => {
+    const next = this.currentLevelIdx + 1;
+    if (this.canSelectLevel(next)) {
+      this.enterLevel(next, () => {
         this.showBanner(`${this.currentLevel.name}: ${translate(this.currentLevel.subtitle,this.language)}`);
         this.notifyHUD();
       });
@@ -741,12 +739,16 @@ export class GameEngine {
     }
   }
 
+  public canSelectLevel(idx: number) {
+    if (!Number.isInteger(idx) || idx < 0 || idx >= LEVELS.length) return false;
+    if (this.devUnlocked) return true;
+    if (idx < 6) return this.campaign.bossDefeated || idx <= this.campaign.unlockedLevel;
+    return this.campaign.bossDefeated && (idx === 6 || this.campaign.completed.includes(idx));
+  }
+
   public selectLevel(idx: number) {
     if(this.campaign.pendingRuneChoices.length){this.goToLobby();return;}
-    if(idx>=6){if(!this.devUnlocked&&idx>6&&!this.campaign.completed.includes(idx))return;if(idx<LEVELS.length)this.enterLevel(idx);return;}
-    const campaignComplete = this.campaign.bossDefeated;
-    if (!this.devUnlocked && !campaignComplete && idx > this.campaign.unlockedLevel) return;
-    if (idx >= 0 && idx < LEVELS.length) this.enterLevel(idx);
+    if (this.canSelectLevel(idx)) this.enterLevel(idx);
   }
 
   /** The dev-only training ground (logic/training.ts). Does nothing outside dev mode. */

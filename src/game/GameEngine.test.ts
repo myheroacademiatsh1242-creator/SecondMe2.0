@@ -268,6 +268,7 @@ test('with the loading screen on, picking a level and the next level go through 
   engine.finishLoading();
   assert.equal(engine.screen,'playing');
   assert.equal(engine.currentLevel.id,2);
+  engine.campaign.award(2);
   engine.screen = 'victory';
   engine.nextLevel();
   assert.equal(engine.screen,'loading');

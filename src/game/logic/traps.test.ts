@@ -142,3 +142,21 @@ test('time items stack up to five per level, including across checkpoints, and r
   assert.equal(game.useTimeItem(),false);assert.equal(game.campaign.timeItems,2);
   game.restartLevel();assert.equal(game.useTimeItem(),true);assert.equal(game.campaign.timeItems,1);
 });
+
+test('levels 7 through 12 start a countdown, refill it at a checkpoint, and time out', t => {
+  const { game, advance, checkpoint } = setup(t, 6);
+  for (let id = 7; id <= 12; id++) {
+    game.currentLevelIdx = id - 1;
+    game.restartLevel();
+    game.enemies = [];
+    const budget = puzzleBalance(id).legSeconds;
+    assert.equal(game.legTimeRemaining, budget);
+    advance(1);
+    assert.ok(game.legTimeRemaining! < budget);
+    checkpoint(0);
+    assert.equal(game.legTimeRemaining, budget);
+    advance(budget);
+    assert.equal(game.screen, 'defeat');
+    assert.equal(game.defeatReason, 'timeout');
+  }
+});

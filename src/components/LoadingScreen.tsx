@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { startPreload, startLevelPreload, type LevelLoadSpec } from '../game/loading/preloader.ts';
+import { startPreload, startLevelPreload, type LobbyTheme, type LevelLoadSpec } from '../game/loading/preloader.ts';
 import { LoadingScene, fogTile } from '../game/loading/loadingScene.ts';
 import { layout } from '../game/loading/placement.ts';
 
@@ -22,10 +22,10 @@ const TEXT = {
  * (src/game/loading/loadingScene.ts), and the progress of real asset loading
  * (src/game/loading/preloader.ts). Once the critical images are ready, fade into the next screen.
  */
-export function LoadingScreen({ language, reducedMotion, level = null, portal = false, onReveal, onDone }: {
+export function LoadingScreen({ language, reducedMotion, level = null, portal = false, lobbyTheme = 'forest', onReveal, onDone }: {
   language: 'en' | 'vi'; reducedMotion: boolean; level?: Omit<LevelLoadSpec, 'delayMs'> | null;
   /** End with the portal transition (loads started from the main menu); otherwise fade into the level. */
-  portal?: boolean; onReveal?: () => void; onDone: (flash: boolean) => void;
+  portal?: boolean; lobbyTheme?: LobbyTheme; onReveal?: () => void; onDone: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -51,13 +51,13 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
     // by that many ms (a slow-network stand-in to watch progress). Both ignored in builds.
     const hold = dev && params.get('holdLoading') === '1';
     const delay = dev ? Math.min(2000, Number(params.get('loadDelay')) || 0) : 0;
-    const load = spec.current ? startLevelPreload({ ...spec.current, delayMs: delay }) : startPreload({ delayMs: delay });
+    const load = spec.current ? startLevelPreload({ ...spec.current, delayMs: delay }) : startPreload({ theme: lobbyTheme, delayMs: delay });
     const scene = new LoadingScene(canvas.current, load, {
       root: root.current, percent: percent.current,
       lines: lines.current.filter((l): l is HTMLLIElement => !!l),
       perf: dev ? perf.current : undefined,
       forest: forest.current, dim: dim.current, vignette: vignette.current,
-    }, { reducedMotion, stress, hold, portal, language, onReveal: () => reveal.current?.(), onFinished: flash => done.current(flash) });
+    }, { reducedMotion, stress, hold, portal, lobby: !spec.current, language, onReveal: () => reveal.current?.(), onFinished: () => done.current() });
     if (dev) (window as unknown as { __loadingScene?: LoadingScene }).__loadingScene = scene;
     // How much the 1376:768 frame must grow to cover the whole screen; the portal dive zooms it to that
     // (adventure.css), so screens wider or taller than the frame show no dark bars once the forest fades.

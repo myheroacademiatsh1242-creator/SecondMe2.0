@@ -78,7 +78,7 @@
 @media(prefers-reduced-motion:reduce){.trading-items>button,.trading-items>button>.shop-item-icon,.trading-tabs>button,.trading-actions>button{transition:none!important;transform:none!important}}
 /* Illustrated forest frame: tabs, rune rails, purchase socket and description share one asset. */
 .trading-catalogue{left:788px;top:16px;width:478px;height:670px;filter:drop-shadow(4px 6px 0 #08171066)}
-.trading-catalogue:before{background-image:url('../../public/assets/ui/trading-forest-frame.png');z-index:-1}
+.trading-catalogue:before{background-image:url('/assets/ui/trading-forest-frame.png');z-index:-1}
 .trading-catalogue:after{left:65px;right:65px;top:124px;bottom:233px;border:0;background:#142628;box-shadow:none;z-index:-2}
 .trading-tabs{left:53px;right:48px;top:18px;height:47px;gap:23px;z-index:1}
 .trading-tabs>button,.trading-tabs>button[aria-selected=true]{border:0;background:none;box-shadow:none;padding:0;color:#a3a897;font-size:23px;text-shadow:2px 2px #172222;transition:color .12s,filter .12s}
@@ -98,7 +98,7 @@
 .trading-actions>.trading-buy:disabled{color:#95a69d;font-size:14px}
 .trading-actions>.trading-buy:not(:disabled):hover,.trading-actions>.trading-buy:focus-visible{outline:0;color:#fff0ac;filter:drop-shadow(0 0 4px #a9f6dd)}
 /* Reuse the illustrated stone tab for navigation; match the socket's cyan lettering. */
-.trading-actions>.trading-leave{left:30px;top:29px;width:178px;height:48px;min-height:48px;padding:5px 12px;border:0;background-image:url('../../public/assets/ui/trading-forest-frame.png');background-size:478px 670px;background-position:-52px -18px;background-repeat:no-repeat;box-shadow:none;color:#d3eee3;text-shadow:2px 2px #162522;filter:drop-shadow(2px 4px #10231c99);font-size:22px;letter-spacing:.3px}
+.trading-actions>.trading-leave{left:30px;top:29px;width:178px;height:48px;min-height:48px;padding:5px 12px;border:0;background-image:url('/assets/ui/trading-forest-frame.png');background-size:478px 670px;background-position:-52px -18px;background-repeat:no-repeat;box-shadow:none;color:#d3eee3;text-shadow:2px 2px #162522;filter:drop-shadow(2px 4px #10231c99);font-size:22px;letter-spacing:.3px}
 .trading-actions>.trading-leave:hover,.trading-actions>.trading-leave:focus-visible{color:#e3fff8;filter:brightness(1.15) drop-shadow(0 0 5px #64d6c455);transform:translateY(-1px)}
 .trading-actions>.trading-buy{align-items:center;font-size:21px;color:#d5f3eb;text-shadow:0 0 5px #5bbda677,1px 2px #112621}
 .trading-actions>.trading-buy:not(:disabled):hover{color:#eafff9;filter:drop-shadow(0 0 5px #62e9e0);transform:translateY(-1px)}

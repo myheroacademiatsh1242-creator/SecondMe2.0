@@ -1,0 +1,11 @@
+[data-panel-art='loading'],
+.inventory-modal:has(> [data-panel-art='loading']) {
+  visibility: hidden;
+  animation: none !important;
+}
+
+:is(.forest-defeat, .reward-flow, .pause-menu--pixel, .trading-catalogue)[data-panel-art='fallback']::before {
+  background: #232d22 !important;
+  border: 3px solid #948364;
+  box-shadow: inset 0 0 0 2px #423c2b;
+}

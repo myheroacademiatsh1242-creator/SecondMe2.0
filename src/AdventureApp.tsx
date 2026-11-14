@@ -1,3 +1,4 @@
+import {PANEL_ART,warmPanelArt} from './components/panelArt.ts';
 
 import {sounds} from './game/logic/sound.ts';
 
@@ -15,12 +16,21 @@ import { Intro, Lobby, Shop, Characters, AdventureHUD, Completion, EndScreen } f
 import { CinematicIntro } from './components/CinematicIntro.tsx';
 import { StudioSplash } from './components/StudioSplash.tsx';
 import { LoadingScreen } from './components/LoadingScreen.tsx';
+import { flushSync } from 'react-dom';
 import { localize } from './localize.tsx';
+import { BossIntro } from './components/BossIntro.tsx';
 import { MechanicGuide } from './components/MechanicGuide.tsx';
 
 const initial: HUDState = { screen:'intro', levelName:'LEVEL 01', levelSubtitle:'ECHO GROVE', recordingStatus:'idle', echoCharges:2, echoStability:0, echoElapsedMs:0, echoDurationMs:0, echoEvents:[], dissonanceSeconds:0,
   recordingTimeRemaining:8000, echoStatus:'none', echoCount:0, isMuted:false, bannerMessage:'', elapsedLevelTime:0,
   completed:[], lastReward:null, health:100, bossHp:0, bossPhase:0, attackCooldown:0, dodgeCooldown:0, legTimeRemaining:null, checkpointIndex:0, checkpointCount:0, slowed:false, defeatReason:'damage', volume:.25, effectsVolume:1, musicVolume:1, voiceVolume:1, reducedMotion:false, showHints:true, devUnlocked:false, language:'vi', characterClass:'mage', weapon:'staff', coins:0, timeItems:0, limitRings:0, chestKeys:0, echoLimit:4, limitRingActive:false, bestStars:{}, lastRating:null, skillCooldown:0, bossArmor:0, pillarsRemaining:0, activeBuff:'', skillDrop:null, mechanicalOwned:false };
+const SESSION_DESTINATION = 'secondme.sessionDestination';
+
+function shouldRestoreCamp() {
+  try { return sessionStorage.getItem(SESSION_DESTINATION) === 'camp'; }
+  catch { return false; }
+}
+
 export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngine) => void } = {}) {
   const [touchControls]=useState(isTouchDevice);
   // Keep the 1280×720 arena and its 78/142px HUD rails in one coordinate system.
@@ -43,18 +53,28 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   useEffect(() => installScreenControls(), []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const ref = useRef<GameEngine | null>(null);
-  // The saved language (and motion setting) from the first frame: the intro plays before the engine reports in.
-  const [hud, setHud] = useState<HUDState>(() => ({ ...initial, ...readSavedSettings() }));
-  const [introRun, setIntroRun] = useState(1);
-  const [splash, setSplash] = useState(true);   // the studio card, once per page load, before the intro film
-  const [portalFlash, setPortalFlash] = useState(0);   // the loading portal's closing flash, fading over the next screen // 0 = not playing; bump to (re)play the cinematic
+  const [restoreCamp] = useState(shouldRestoreCamp);
+  const [hud, setHud] = useState<HUDState>(() => ({ ...initial, ...readSavedSettings(), screen: restoreCamp ? 'loading' : 'intro' }));
+  const [introRun, setIntroRun] = useState(restoreCamp ? 0 : 1);
+  const [splash, setSplash] = useState(!restoreCamp);
+  const [revealLobby, setRevealLobby] = useState(false);
   useEffect(() => {
     const engine = new GameEngine(); ref.current = engine;
     engine.tutorialEnabled = true;
     engine.levelLoading = true;   // levels open through the loading screen
     if (import.meta.env.DEV) (window as unknown as { __engine?: GameEngine }).__engine = engine;   // console checks
     engine.setOrientationBlocked(readLandscapeRequirement());
-    engine.setCanvas(canvas.current); engine.onHUDChange = state => setHud({ ...state }); engine.start();
+    engine.setCanvas(canvas.current);
+    let previousScreen: HUDState['screen'] | undefined;
+    engine.onHUDChange = state => {
+      if (state.screen !== previousScreen) {
+        previousScreen = state.screen;
+        try { sessionStorage.setItem(SESSION_DESTINATION, state.screen === 'intro' ? 'menu' : 'camp'); }
+        catch { /* The game can run when browser storage is unavailable. */ }
+      }
+      setHud({ ...state });
+    };
+    engine.start(false, restoreCamp);
     prepare?.(engine);
     return () => engine.stop();
   }, []);
@@ -65,17 +85,27 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   },[]);
   const filmPlaying = hud.screen === 'intro' && (splash || introRun > 0);
   useEffect(() => { if (ref.current) ref.current.suspendVisuals = filmPlaying; }, [filmPlaying]);
+  const timedLevel=hud.legTimeRemaining!==null;
+  useEffect(()=>{
+    if(hud.screen!=='playing')return;
+    warmPanelArt(PANEL_ART.defeat[hud.characterClass==='swordsman'?'swordsman':'mage']);
+    if(timedLevel)warmPanelArt(PANEL_ART.defeat.timeout);
+    warmPanelArt(PANEL_ART.reward);
+    warmPanelArt(PANEL_ART.pause);
+  },[hud.screen,hud.characterClass,timedLevel]);
   const engine = ref.current;
   const lang = hud.language === 'vi' ? 'vi' : 'en';
-  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
+  const bossIntroVisible = hud.screen === 'playing' && hud.bossIntroduction;
+  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
     {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
     {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
     {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}
-    {hud.screen === 'loading' && <LoadingScreen key={hud.loadingLevel ?? 'lobby'} language={lang} reducedMotion={hud.reducedMotion}
-      level={hud.loadingLevel == null ? null : { levelId: hud.loadingLevel, character: hud.characterClass, lang }} portal={!!hud.loadingFromMenu}
-      onReveal={() => ref.current?.revealLoadedLevel()} onDone={flash => { if (flash) setPortalFlash(n => n + 1); ref.current?.finishLoading(); }}/>}
-    {portalFlash > 0 && <div key={portalFlash} className="portal-flash" aria-hidden="true" onAnimationEnd={() => setPortalFlash(0)}/>}
-    {hud.screen === 'lobby' && <Lobby engine={engine} hud={hud}/>}
+    {(hud.screen === 'lobby' || (hud.screen === 'loading' && revealLobby)) &&
+      <div className="lobby-handoff overlay" inert={hud.screen === 'loading'}><Lobby engine={engine} hud={hud}/></div>}
+    {hud.screen === 'loading' && engine && <LoadingScreen key={hud.loadingLevel ?? 'lobby'} language={lang} reducedMotion={hud.reducedMotion}
+      level={hud.loadingLevel == null ? null : { levelId: hud.loadingLevel, character: hud.characterClass, lang }} portal={!!hud.loadingFromMenu} lobbyTheme={(engine?.currentLevel.id ?? 1) >= 7 && engine?.canSelectLevel(6) ? 'frost' : 'forest'}
+      onReveal={() => { if (hud.loadingLevel == null) flushSync(() => setRevealLobby(true)); else engine?.revealLoadedLevel(); }}
+      onDone={() => { engine?.finishLoading(); setRevealLobby(false); }}/>}
     {hud.screen === 'shop' && <Shop engine={engine} hud={hud}/>}
     {hud.screen === 'characters' && <Characters engine={engine} hud={hud}/>}
     {(hud.screen === 'playing' || hud.screen === 'paused') && <AdventureHUD engine={engine} hud={hud}/>}
@@ -86,5 +116,9 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {!['lobby', 'playing', 'paused', 'loading', 'shop'].includes(hud.screen) && <FullscreenButton floating vi={hud.language === 'vi'}/>}
     {hud.screen === 'paused' && <PauseMenu engine={engine} hud={hud}/>}
 
-  </div></main>);
+  </div>
+    {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
+      <BossIntro engine={engine} hud={hud}/>
+    </div>}
+  </main>);
 }

@@ -1,3 +1,4 @@
+import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {SHOP_ITEMS} from '../game/logic/shopItems.ts';
 import {ShopItemIcon} from './ShopItemIcon.tsx';
 import {useDialogClose} from './useDialogClose.ts';
@@ -10,19 +11,21 @@ import {RuneLoadoutEditor,RuneStone} from './EchoRunes.tsx';
 import './TrailInventory.css';
 import './ForestInventory.css';
 export function TrailInventory({engine,hud,close:onClose}:{engine:GameEngine|null;hud:HUDState;close:()=>void}){
+ const panelArt=usePanelArt(PANEL_ART.inventory);
  const {closing,close}=useDialogClose(onClose);
  const vi=hud.language==='vi',[inspect,setInspect]=useState(0),[editing,setEditing]=useState(false),root=useRef<HTMLDivElement>(null),closeRef=useRef(close);closeRef.current=close;
  const ids=hud.runeLoadout??[],rune=ECHO_RUNES.find(r=>r.id===ids[inspect]),active=rune&&hud.activeEchoRunes?.includes(rune.id),playing=hud.screen==='playing';
  const number=(n:number)=>n.toLocaleString(vi?'vi-VN':'en-US');
  useEffect(()=>{
-  engine?.setInventoryOpen(true);const before=document.activeElement as HTMLElement|null;root.current?.querySelector<HTMLButtonElement>('.inventory-footer button')?.focus();
+  engine?.setInventoryOpen(true);const before=document.activeElement as HTMLElement|null;
   const key=(e:KeyboardEvent)=>{if(document.querySelector('.rune-loadout-editor'))return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeRef.current();}else if(e.key==='Tab'){
    const buttons=Array.from(root.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]);const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
   }};
   const requestClose=()=>closeRef.current();document.addEventListener('close-trail-inventory',requestClose);
   window.addEventListener('keydown',key,true);return()=>{document.removeEventListener('close-trail-inventory',requestClose);engine?.setInventoryOpen(false);window.removeEventListener('keydown',key,true);if(before?.isConnected)before.focus();};
  },[engine]);
- return <div className={`trail-inventory ${closing?'is-leaving':''}`} ref={root} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="inventory-heading">
+ useEffect(()=>{if(panelArt!=='loading')root.current?.querySelector<HTMLButtonElement>('.inventory-footer button')?.focus();},[panelArt]);
+ return <div className={`trail-inventory ${closing?'is-leaving':''}`} ref={root} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="inventory-heading">
   {editing&&<RuneLoadoutEditor engine={engine} hud={hud} close={()=>setEditing(false)}/>}
   <header className="inventory-heading"><span className="inventory-emblem"><Backpack size={25}/></span><div><small>{vi?'HÀNH TRANG ECHO':'ECHO TRAVEL KIT'}</small><h2 id="inventory-heading">{vi?'KHO ĐỒ':'INVENTORY'}</h2></div><div className="inventory-wallet"><img src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt=""/><b>{number(hud.coins)}</b><small>{vi?'XU':'COINS'}</small></div></header>
   <p className="inventory-subtitle">{vi?'Quản lý vật phẩm và bộ rune mang theo':'Manage your supplies and equipped Echo runes'}</p><div className="inventory-scroll"><section className="inventory-supply-column">

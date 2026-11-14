@@ -11,14 +11,14 @@ export function encounterBalance(levelId: number) {
 }
 
 export const PUZZLE_BALANCE = [
-  { legSeconds:14, shardInterval:5, threeStars:16 },
-  { legSeconds:20, shardInterval:8, threeStars:38 },
-  { legSeconds:24, shardInterval:10, threeStars:55 },
+  { legSeconds:12, shardInterval:5, threeStars:16 },
+  { legSeconds:17, shardInterval:7, threeStars:38 },
+  { legSeconds:21, shardInterval:9, threeStars:55 },
   { legSeconds:26, shardInterval:11, threeStars:65 },
   { legSeconds:25, shardInterval:10, threeStars:80 },
   {legSeconds:0, shardInterval:0,threeStars:120},
   {legSeconds:44, shardInterval:18,threeStars:140},
-  {legSeconds:46, shardInterval:19,threeStars:160},
+  {legSeconds:39, shardInterval:16,threeStars:160},
   {legSeconds:48, shardInterval:20,threeStars:200},
   {legSeconds:52, shardInterval:22,threeStars:230},
   {legSeconds:55, shardInterval:23,threeStars:250},

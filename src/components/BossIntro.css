@@ -1,3 +1,6 @@
+.boss-intro-viewport{position:fixed;inset:0;z-index:120;overflow:hidden;background:#06141d}
+.boss-intro-viewport[data-boss=demon]{background:#0a0305}
+
 /* Frost Guardian cutscene (BossIntro.tsx). Every element's own style is its final pose; the entrance animations
    play from their first keyframe into it (fill: both), so skipping simply turns them off.
    Timeline: the Guardian drops from high above to the centre, both arms raised, and slams them down as it lands
@@ -8,7 +11,6 @@
      band and the Guardian stand on, so they always line up whatever the screen size. */
   --cell-h:78dvh;--band-x:66%;
   position:absolute;inset:0;z-index:80;overflow:hidden;pointer-events:auto;color:#e9f7fa;background:var(--deep);
-  box-shadow:0 0 0 48px var(--deep);   /* the shake moves this layer: its edges show more night, not the arena behind */
   animation:boss-shake .45s steps(1) .55s}   /* no fill: still until the slam */
 /* The slam's flash: a pale frost blink over everything, gone in a quarter second. */
 .boss-cut::before{content:'';position:absolute;inset:0;z-index:5;pointer-events:none;background:#dff8ff;opacity:0;animation:boss-flash .25s ease-out .55s}
@@ -207,7 +209,7 @@ body.reduced-motion .boss-cut-snow{display:none}
   to { visibility: visible; opacity: 1; transform: translateX(0); }
 }
 .demon-intro {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
   display: flex;
@@ -653,9 +655,9 @@ body.reduced-motion .boss-cut-snow{display:none}
    sparks, red vignette) as the name slams in · the briefing follows (3.0s). --ch is the sprite cell's height on screen
    (288 x 160 cells, 9:5); the feet sit on its bottom edge at x = --fx. */
 .demon-cut{--ch:84dvh;--cw:calc(var(--ch) * 1.8);--fx:76%;--floor:13dvh;--ix:calc(var(--fx) - var(--ch) * .3);
-  position:fixed;inset:0;z-index:100;overflow:hidden;pointer-events:auto!important;color:#f7e6ca;box-sizing:border-box;
+  position:absolute;inset:0;z-index:100;overflow:hidden;pointer-events:auto!important;color:#f7e6ca;box-sizing:border-box;
   background:radial-gradient(ellipse at var(--fx) 72%,#5a1608 0%,#2a0a0b 40%,#0a0305 86%);
-  box-shadow:0 0 0 48px #0a0305;animation:boss-shake .5s steps(1) 2.28s}
+  animation:boss-shake .5s steps(1) 2.28s}
 .demon-cut::before{content:'';position:absolute;inset:0;z-index:5;pointer-events:none;background:#ffb55a;opacity:0;animation:demon-flash .3s ease-out 2.28s}
 
 .demon-cut-cave{position:absolute;inset:-4%;background:url('/assets/demon-boss/cave-arena.png') center/cover no-repeat;opacity:.3;transform:scale(1.1);
@@ -785,7 +787,7 @@ body.reduced-motion .boss-cut-snow{display:none}
 .demon-cut.is-leaving{animation:demon-exit 300ms ease-in both;pointer-events:none!important}
 
 /* The demon has already risen in DemonSlimeMerge: the cinematic opens on it with a hot flash instead of the rise. */
-.demon-merge{position:fixed;inset:0;z-index:101;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+.demon-merge{position:absolute;inset:0;z-index:101;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
 /* Camera hand-off: the merge's cave dissolves over the cinematic, whose demon stays hidden until the gliding one lands on it. */
 .demon-intro.is-handing-off{animation:demon-handoff-out .9s ease-in-out both;pointer-events:none!important}
 .demon-cut.is-handoff .demon-cut-figure{visibility:hidden}

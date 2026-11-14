@@ -136,11 +136,12 @@ export function JourneyCamp({engine,hud,complete,next,traveler}:{engine:GameEngi
     };
   },[frost]);
 
-  if(frost)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler}/>;
+  const frostUnlocked=engine?.canSelectLevel(6)??false;
+  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler}/>;
   const minLive=Math.min(heroStop,selected);
   const maxLive=Math.max(heroStop,selected);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
-    <aside className="journey-camp integrated-camp"><button className="frost-back frost-forward" onClick={()=>setFrost(true)}><span>{vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'}</span><ChevronRight size={18}/></button>
+    <aside className="journey-camp integrated-camp"><button className="frost-back frost-forward" disabled={!frostUnlocked} onClick={()=>setFrost(true)}><span>{frostUnlocked?(vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'):(vi?'HẠ THỦ VỆ BĂNG ĐỂ MỞ CHƯƠNG 2':'DEFEAT THE FROST GUARDIAN TO UNLOCK CHAPTER 2')}</span>{frostUnlocked?<ChevronRight size={18}/>:<Lock size={16}/>}</button>
       <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><span>{count} / 6</span></header>
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
         <div className="rest-firelight" aria-hidden="true"/><FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx"/><div className="rest-embers" aria-hidden="true"><i/><i/><i/></div>

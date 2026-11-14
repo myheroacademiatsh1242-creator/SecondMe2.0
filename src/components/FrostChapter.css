@@ -36,14 +36,14 @@
   flex-shrink: 0;
 }
 
-.frost-back:hover {
+.frost-back:hover:not(:disabled) {
   background: #23485b;
   color: #ffffff;
   border-color: var(--px-ink);
   transform: translateY(-1px);
 }
 
-.frost-back:active {
+.frost-back:active:not(:disabled) {
   transform: translateY(2px);
   box-shadow: inset 2px 2px 0 #0d1b22, inset -2px -2px 0 #4f8b9e;
 }
@@ -237,7 +237,7 @@
   aspect-ratio: 3/2;
   flex: none;
   border: 0;
-  background: url('/assets/ui/journey-frost-map.png?v=sharp4') center/100% 100% no-repeat;
+  background: url('/assets/ui/journey-frost-map.png') center/100% 100% no-repeat;
   overflow: hidden;
   isolation: isolate;
   image-rendering: -webkit-optimize-contrast;
@@ -748,4 +748,13 @@
     height: 32px;
     font-size: 15px;
   }
+}
+
+.map-flow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
