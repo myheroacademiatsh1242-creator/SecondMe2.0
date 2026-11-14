@@ -5,6 +5,7 @@ import {ECHO_RUNES} from '../game/logic/echoRunes.ts';
 import {RuneStone,RUNE_SHORT} from './EchoRunes.tsx';
 import {VictoryStars} from './CampaignUI.tsx';
 import {TrailInventory} from './TrailInventory.tsx';
+import {translate} from '../i18n.ts';
 import './RuneRewardFlow.css';
 export function RuneRewardFlow({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  const vi=hud.language==='vi',pending=!!hud.pendingRuneChoices?.length;
@@ -17,7 +18,7 @@ export function RuneRewardFlow({engine,hud}:{engine:GameEngine|null;hud:HUDState
    <div className="reward-three">{hud.pendingRuneChoices!.map(id=>{const rune=ECHO_RUNES.find(r=>r.id===id)!;return <button key={id} onClick={()=>engine?.chooseRune(id)} aria-label={`${vi?'Chọn':'Choose'} ${vi?rune.vi:rune.en}`} style={{'--rune-glow':rune.color} as React.CSSProperties}><div className="reward-pedestal"><RuneStone id={id}/></div><strong>{vi?rune.vi:rune.en}</strong><p>{RUNE_SHORT[id][vi?0:1]}</p><span>{vi?'CHỌN':'CHOOSE'} <ArrowRight size={16}/></span></button>;})}</div>
    <small className="reward-rule">{vi?'Nhận 1 ấn · Dùng cho Echo ở màn 2–12 · Kích hoạt trong túi đồ':'Keep 1 rune · Use for Echoes in levels 2–12 · Activate from inventory'}</small>
   </>:<>
-   <p className="reward-intro">{hud.levelName} · {hud.levelSubtitle}</p>
+   <p className="reward-intro">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>
    <VictoryStars count={hud.lastRating?.stars??0} vi={vi}/>
    {claimed&&<div className="reward-chosen" role="status" style={{'--rune-glow':claimed.color} as React.CSSProperties}><div className="reward-pedestal"><RuneStone id={claimed.id}/></div><small>{vi?'ẤN ĐÃ NHẬN':'RUNE RECEIVED'}</small><h3>{vi?claimed.vi:claimed.en}</h3><p>{RUNE_SHORT[claimed.id][vi?0:1]}</p></div>}
    <div className="reward-totals"><span>+{hud.lastRating?.keys??0} {vi?'CHÌA KHÓA':'KEYS'}</span><span>+{hud.lastRating?.coins??0} {vi?'XU':'COINS'}</span><span>{hud.elapsedLevelTime.toFixed(1)}s</span></div>

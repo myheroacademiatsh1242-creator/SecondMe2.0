@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { translate } from './i18n.ts';
+import { LEVELS } from './game/logic/levels.ts';
 
 test('intro, lobby, gameplay and ending labels translate in both directions', () => {
   const phrases = [
@@ -15,5 +16,13 @@ test('intro, lobby, gameplay and ending labels translate in both directions', ()
   for (const [english, vietnamese] of phrases) {
     assert.equal(translate(vietnamese, 'en'), english);
     assert.equal(translate(english, 'vi'), vietnamese);
+  }
+});
+
+test('every trail from 7 to 13 has an English name and objective', () => {
+  const vietnamese = /[ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴàáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/;
+  for (const level of LEVELS.filter(l => l.id >= 7)) {
+    assert.doesNotMatch(translate(level.subtitle, 'en'), vietnamese, `level ${level.id} subtitle`);
+    assert.doesNotMatch(translate(level.description, 'en'), vietnamese, `level ${level.id} description`);
   }
 });

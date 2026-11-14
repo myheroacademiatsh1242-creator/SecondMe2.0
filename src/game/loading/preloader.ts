@@ -83,7 +83,7 @@ export function levelUses(path: string, spec: LevelLoadSpec): boolean {
   if (folder === 'aeris') return spec.character === 'mage';
   if (folder === 'enemies') return spec.levelId >= 2 && spec.levelId !== 6;
   if (folder === 'frost-guardian') return spec.levelId === 6;
-  if (folder === 'demon-boss') return spec.levelId === 13 && ['sheet.png', 'cave-arena.png', 'slime-idle.png', 'slime-transform-strip.png', 'slime-transform-final.png'].includes(rest);
+  if (folder === 'demon-boss') return spec.levelId === 13 && ['sheet-fire.png', 'cave-arena.png', 'slime-idle.png', 'slime-transform-strip-fire.png'].includes(rest);
   if (folder === 'volcano') {
     return spec.levelId >= 10 && spec.levelId <= 12 && (
       path === 'assets/volcano/v2/basalt-atlas.png' ||

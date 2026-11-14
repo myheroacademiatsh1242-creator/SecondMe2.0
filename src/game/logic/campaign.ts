@@ -1,6 +1,7 @@
 import { GUARDIAN_HP } from './balance.ts';
 import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
 import {SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
+import {cleanOwnedWeapons,type WeaponId} from './weapons.ts';
 import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from './bossBehavior.ts';
 import {ICE_BARRAGE} from './iceBarrage.ts';
 import {FROST_STRIKE,makeIceRays,insideIceRay,type IceRay} from './iceMagic.ts';
@@ -29,6 +30,7 @@ export function levelRating(seconds: number, levelId?: number): { stars: number;
 
 export class Campaign {
   ownedOutfits:ShopOutfitId[]=[];
+  ownedWeapons:WeaponId[]=[];
   completed: number[] = [];
   bossDefeated = false;
   mechanicalOwned = false;
@@ -52,6 +54,7 @@ export class Campaign {
       if (typeof localStorage === 'undefined') return;
       const value = JSON.parse(localStorage.getItem('second-me-campaign-v3') ?? '{}');
       this.ownedOutfits=cleanOwnedOutfits(value.ownedOutfits);
+      this.ownedWeapons=cleanOwnedWeapons(value.ownedWeapons);
       this.supplies=cleanSupplies(value.supplies);
       this.chanceCharges=Number.isInteger(value.chanceCharges)?Math.max(0,Math.min(3,value.chanceCharges)):0;
       // The former schema kept an opened three-chance item in stock until all charges were spent.
@@ -84,11 +87,11 @@ export class Campaign {
         this.devShopStockMigrated=true;
       }
       if(migrateRunes||legacyDevStock)this.save();
-    } catch { this.ownedOutfits=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+    } catch { this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
   }
   save() {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
-      ownedOutfits:this.ownedOutfits,devShopStockMigrated:this.devShopStockMigrated,
+      ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
       supplies:this.supplies,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       completed: this.completed, bossDefeated: this.bossDefeated,
       echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,

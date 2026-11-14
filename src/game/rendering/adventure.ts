@@ -10,7 +10,8 @@ import { drawRuneHints } from './runeLabels.ts';
 import { trailObjective } from '../logic/trailObjective.ts';
 import { drawBossFrostZone } from './bossFrostZone.ts';
 import { drawEnemies, drawEnemyAttacks } from './enemies.ts';
-import { drawMageStaff, drawLightningOrb } from './mageMagic.ts';
+import { drawMageStaff, drawLightningOrb, orbColors } from './mageMagic.ts';
+import { getWeapon } from '../logic/weapons.ts';
 import { drawMechanicalSprite } from './mechanicalSprite.ts';
 import type { GameEngine } from '../GameEngine.ts';
 import { drawTrap, trapSpritesReady } from './traps.ts';
@@ -55,7 +56,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
       if (echo.characterClass === 'mage' && (echo.attackFlash ?? 0) > 0 && echo.attackTarget) {
         const t = 1 - (echo.attackFlash ?? 0) / .22;
         const dx = echo.attackTarget.x - echo.x, dy = echo.attackTarget.y - echo.y;
-        drawLightningOrb(ctx, echo.x + dx * t, echo.y - 12 + dy * t, Math.atan2(dy, dx), 5, time);
+        drawLightningOrb(ctx, echo.x + dx * t, echo.y - 12 + dy * t, Math.atan2(dy, dx), 5, time, orbColors(getWeapon('mage').id));
       }
       ctx.strokeStyle=ECHO_COLORS[slot];ctx.lineWidth=game.echo===echo?3:1.5;ctx.beginPath();ctx.ellipse(echo.x,echo.y+12,17,7,0,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle=ECHO_COLORS[slot];ctx.font='bold 12px "Second Me Pixel", monospace';ctx.textAlign='center';ctx.fillText(`E${slot+1}`,echo.x,echo.y-48);
@@ -156,14 +157,14 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.restore();
   }
   if (game.characterClass === 'mage' && !comboFrame && !game.exitTravelRemaining) {
-    drawMageStaff(ctx, game.player.x, game.player.y, game.player.direction);
+    drawMageStaff(ctx, game.player.x, game.player.y, game.player.direction, getWeapon('mage').id, time);
   }
   drawComboEffects(ctx, game, time);
   drawPfxShots(ctx, game.pfx, false);
   for (const shot of game.magicShots) {
     const t = Math.min(1, shot.age / (shot.duration ?? .3));
     const x = shot.x + (shot.targetX - shot.x) * t, y = shot.y + (shot.targetY - shot.y) * t;
-    drawLightningOrb(ctx, x, y, Math.atan2(shot.targetY - shot.y, shot.targetX - shot.x), shot.skill ? 14 : 10, time);
+    drawLightningOrb(ctx, x, y, Math.atan2(shot.targetY - shot.y, shot.targetX - shot.x), shot.skill ? 14 : 10, time, orbColors(getWeapon('mage').id));
   }
   if(game.skillDrop)drawSkillPickup(ctx,game.skillDrop,time,game.language==='vi',Math.hypot(game.player.x-game.skillDrop.x,game.player.y-game.skillDrop.y)<180,game.reducedMotion);
   if(game.combatFlash) {const f=game.combatFlash;ctx.save();ctx.globalAlpha=Math.min(1,f.time*2);ctx.strokeStyle=tone?.color??(f.kind==='fire'?'#ff8b4b':f.kind==='lightning'?'#d9f8ff':'#dfd29c');ctx.lineWidth=7;ctx.beginPath();ctx.arc(f.x,f.y,65*(1-f.time)+18,0,Math.PI*2);ctx.stroke();ctx.restore();}
@@ -185,6 +186,12 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.restore();
   }
   if(game.hurtFlash>0){ctx.save();ctx.globalAlpha=game.hurtFlash/.28*.24;ctx.fillStyle='#e85c43';ctx.beginPath();ctx.ellipse(game.player.x,game.player.y-15,21,31,0,0,Math.PI*2);ctx.fill();ctx.restore();}
+  if(game.burn.remaining>0){ // alight (logic/burn.ts): an orange glow and a few flickering pixel flames over the head
+    const t=game.reducedMotion?0:performance.now()/1000;
+    ctx.save();ctx.globalAlpha=.2+.08*Math.sin(t*22);ctx.fillStyle='#ff7a22';ctx.beginPath();ctx.ellipse(game.player.x,game.player.y-15,22,33,0,0,Math.PI*2);ctx.fill();
+    for(let i=0;i<4;i++){const h=Math.round(8+6*Math.abs(Math.sin(t*14+i*1.7)));ctx.globalAlpha=.85;ctx.fillStyle=i%2?'#ffb347':'#ff6a1a';ctx.fillRect(Math.round(game.player.x+(i-1.5)*8)-2,Math.round(game.player.y-42-h),4,h);}
+    ctx.restore();
+  }
   drawCombatHits(ctx, game.combatHits, game.reducedMotion);
   const objective = trailObjective(game);
   if (objective) {

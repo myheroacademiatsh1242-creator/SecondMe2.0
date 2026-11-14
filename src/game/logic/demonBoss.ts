@@ -224,7 +224,7 @@ export function updateDemonBoss(
     z.age += dt;
     z.tick -= dt;
     if (z.age >= z.delay && z.tick <= 0) {
-      hurt(z.x, z.y, z.radius, 20);
+      hurt(z.x, z.y, z.radius, 24);
       z.tick = 0.8;
     }
   }
@@ -238,12 +238,12 @@ export function updateDemonBoss(
     let connected = false;
     if (!evading && Math.hypot(player.x - p.x, player.y - p.y) < 23) {
       hit = true;
-      hitPlayer?.(14);
+      hitPlayer?.(17);
       connected = true;
     }
     echoes.forEach((e, i) => {
       if (!connected && Math.hypot(e.x - p.x, e.y - p.y) < 23) {
-        hitEcho?.(i, 14);
+        hitEcho?.(i, 17);
         connected = true;
       }
     });
@@ -396,7 +396,7 @@ export function updateDemonBoss(
     d.facingRight = dx > 0;
 
     // Movement speed varies by element
-    const baseSpeed = b.phase === 3 ? 105 : 80;
+    const baseSpeed = b.phase === 3 ? 135 : 100;
     const elemSpeed = d.activeElement === 'frostfire' ? baseSpeed * 1.35 : baseSpeed;
 
     // Dynamic tactical Short Hop / Pounce when stalking from a distance (> 270px)
@@ -464,7 +464,7 @@ export function updateDemonBoss(
       b.attackFacingRight = target.x > b.x;
       d.facingRight = target.x > b.x;
       b.attackIndex = index + 1;
-      mode('warning', 0.9);
+      mode('warning', b.phase === 3 ? 0.6 : b.phase === 2 ? 0.72 : 0.85);
 
       // Pre-attack dynamic repositioning:
       if (b.attack === 'volley' && dist < 210) {
@@ -537,10 +537,10 @@ export function updateDemonBoss(
 
         if (!evading && within(player)) {
           hit = true;
-          hitPlayer?.(24);
+          hitPlayer?.(30);
         }
         echoes.forEach((e, i) => {
-          if (within(e)) hitEcho?.(i, 24);
+          if (within(e)) hitEcho?.(i, 30);
         });
 
         // Magma leaves lingering lava on melee
@@ -559,7 +559,7 @@ export function updateDemonBoss(
       } else if (b.attack === 'volley') {
         const origin = demonVolleyOrigin(b);
         const count = demonVolleyCount(b);
-        const speed = d.activeElement === 'frostfire' ? 260 : b.phase === 3 ? 230 : 190;
+        const speed = d.activeElement === 'frostfire' ? 300 : b.phase === 3 ? 270 : 225;
         for (let i = 0; i < count; i++) {
           const a = origin.angle + (i - (count - 1) / 2) * DEMON_VOLLEY_SPREAD;
           b.projectiles.push({
@@ -596,12 +596,12 @@ export function updateDemonBoss(
       echoes.forEach((echo,index)=>{if(reached(echo))hitEcho?.(index,16);});
     }
     if (b.timer <= 0) {
-      mode('recover', b.phase === 3 ? 0.85 : 1.25);
+      mode('recover', b.phase === 3 ? 0.6 : 1.0);
     }
   } else if (b.mode === 'recover') {
     d.facingRight = target.x > b.x;
     if (b.timer <= 0) {
-      mode('stalking', b.phase === 3 ? 0.5 : 0.9);
+      mode('stalking', b.phase === 3 ? 0.3 : 0.6);
     }
   }
 

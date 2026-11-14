@@ -158,6 +158,17 @@ const pairs: [string, string][] = [
   ['VINES', 'DÂY LEO'], ['WATCH OUT!', 'CẨN THẬN!'], ['CRUSHER', 'BẪY DẬP'], ['SPIKES', 'BẪY GAI'], ['FALLING ROCKS', 'ĐÁ RƠI'], ['SLOW 45%', 'CHẬM 45%'], ['DODGE!', 'NÉ!'],
   ['ANCIENT GATE', 'CỔNG CỔ'], ['TRAINING', 'LUYỆN TẬP'], ['TRAINING DUMMY', 'HÌNH NỘM LUYỆN TẬP'],
   ['ECHO GROVE', 'RỪNG VỌNG ÂM'], ['ROOTBOUND PASSAGE', 'LỐI RỄ CHẰNG CHỊT'], ['WHISPERING RUINS', 'PHẾ TÍCH THÌ THẦM'], ['THORNBOUND LABYRINTH', 'MÊ CUNG GAI'], ['THE LAST EMBER', 'ĐỐM LỬA CUỐI'],
+  // Trails 7-13: names (frostLevels.ts, levels.ts DEMON_LEVEL) and the objective text shown in the stage banner / chapter card.
+  ['EARLY SNOW PASS', 'ĐÈO TUYẾT ĐẦU MÙA'], ['CLIFFSIDE CAMP', 'BẢN TRẠI VÁCH ĐÁ'], ['CLIFF STAIRS', 'BẬC THANG VÁCH ĐÁ'],
+  ['WATERFALL SUSPENSION BRIDGE', 'CẦU TREO VỰC THÁC'], ['ANCIENT STONE WATCHTOWER', 'THÁP CANH CỔ THẠCH'], ['MOLTEN ROCK VALLEY', 'THUNG LŨNG NHAM THẠCH'],
+  ['HEARTFIRE CAVE', 'HANG TÂM HỎA'],
+  ['Seal II is locked: defeat the guard tied to it to activate it. Hold I + II and clear every enemy to leave the snow pass.', 'Ấn II bị phong ấn: hạ lính gác nối với ấn để kích hoạt. Giữ I + II và hạ hết quái để rời đèo tuyết.'],
+  ['The camp gate opens on a rhythm: 4 seconds open every 8-second cycle. Hold I, wait for the green beat, then cross. Defeat the guard to unlock seal II.', 'Cổng trại mở theo nhịp 4 giây mỗi chu kỳ 8 giây. Giữ I, đợi nhịp xanh rồi qua. Hạ lính gác để mở khóa ấn II.'],
+  ['Each of the three runes on the rocky slope has its own guards. Defeat the right group, let an Echo hold the seal, then time the final gate; do not abandon an Echo that is holding a path you still need.', 'Ba rune trên dốc đá có lính canh riêng. Hạ đúng nhóm gác, để Echo giữ ấn rồi canh nhịp cổng cuối; không bỏ Echo đang giữ lối cần dùng.'],
+  ['Hold seal I on the snowy shore until the bridge rises. Hold I + II to pass gate II on the beat, then recall Echo I once you have Echo III. On the volcanic shore, hold II + III + IV to open the last gate.', 'Giữ ấn I ở bờ tuyết đến khi cầu nâng lên. Giữ I + II để qua cổng II theo nhịp, rồi thu Echo I khi đã có Echo III. Trên bờ núi lửa, giữ II + III + IV để mở cổng cuối.'],
+  ['Go round the stone yard to the east, then back to the tower store in the north-west. Hold II + III and recall Echo I to pass gate III. Once you have IV, recall Echo II to open the store with III + IV.', 'Đi vòng qua sân đá phía đông rồi quay về kho tháp ở phía tây bắc. Giữ II + III và thu Echo I để qua cổng III. Khi có IV, thu Echo II để mở kho bằng III + IV.'],
+  ['Cross three bridges over the lava river. Defeat the guards to free the seals, and time gates II and IV. After the middle bridge, recall Echo I, hold II–V, then time your crossing of the last bridge.', 'Vượt ba cầu qua sông dung nham. Hạ lính gác để mở các ấn, canh nhịp cổng II và IV. Sau cầu giữa, thu Echo I, giữ II–V rồi canh nhịp qua cầu cuối.'],
+  ['The Heartfire Demon awakens in the deep cave. Dodge the slash zone, slip past the fire fans; lure the boss into hitting your Echo, then counter while it recovers.', 'Quỷ Tâm Hỏa thức tỉnh trong hang sâu. Né vùng bổ đao, lách qua quạt lửa; dụ boss đánh Echo rồi phản công lúc hồi sức.'],
 ];
 
 const en = new Map(pairs.map(([english, vietnamese]) => [vietnamese, english]));

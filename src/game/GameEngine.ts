@@ -1,12 +1,15 @@
 import {loadDemonSprites} from './rendering/demonBoss.ts';
 import {createDemonBoss} from './logic/demonBoss.ts';
 import { trailObjective, type TrailAction } from './logic/trailObjective.ts';
+import {restoreWeapons,getWeapons,equipWeapon,cleanOwnedWeapons,canUseWeapon,WEAPONS,DEFAULT_WEAPON,type WeaponHero,type WeaponId} from './logic/weapons.ts';
 import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
 import { SKILL_PICKUPS } from './logic/skillPickups.ts';
 import { ManaPool, MAX_MP, comboManaCost, skillManaCost } from './logic/mana.ts';
 import {SHOP_ITEMS,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
 import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logic/damage.ts';
+import { ignite, newBurn, stepBurn } from './logic/burn.ts';
+import { PILLAR_SUMMON, newPillarClocks, stepPillarSummons } from './logic/pillarSummon.ts';
 import { createCaveSlimes, createEnemies, ENEMY_STATS, EMBER_SLIME_ID, updateEnemies, type Enemy } from './logic/enemies.ts';
 import { ECHO_RUNES, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
 import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
@@ -83,6 +86,8 @@ export interface HUDState {
   trailAction?: TrailAction;
   outfits?:Record<OutfitHero,OutfitId>;
   ownedOutfits?:ShopOutfitId[];
+  weapons?:Record<WeaponHero,WeaponId>;
+  ownedWeapons?:WeaponId[];
   guideTopic?: GuideTopic|null;
   guideLibrary?: boolean;
   screen: GameScreen;
@@ -278,6 +283,10 @@ export class GameEngine {
   public usedSupplies=new Set<SupplyId>();
   public supportAlly:{x:number;y:number;hp:number;hero:'mage'|'swordsman';direction:'up'|'down'|'left'|'right';isMoving:boolean;cooldown:number;attackFlash:number;target?:{x:number;y:number}}|null=null;
   public hurtFlash = 0;
+  /** Set alight by any hit in the Ember Demon fight (logic/burn.ts); drawn by rendering/adventure.ts. */
+  public burn = newBurn();
+  private pillarClocks = newPillarClocks();
+  private frostSlimes = 0;
   public incomingHits: {x:number;y:number;damage:number;absorbed:number;life:number}[] = [];
   public invulnerability = 0;
   public attackCooldown = 0;
@@ -396,6 +405,8 @@ export class GameEngine {
   constructor() {
     this.campaign.load();restoreOutfits();
     for(const hero of ['mage','swordsman'] as const)if(!canWearOutfit(hero,getOutfits()[hero],this.campaign.ownedOutfits))equipOutfit(hero,'default');
+    restoreWeapons();
+    for(const hero of ['mage','swordsman'] as const)if(!canUseWeapon(hero,getWeapons()[hero],this.campaign.ownedWeapons))equipWeapon(hero,DEFAULT_WEAPON[hero],[]);
     this.loadSettings();
     setCurrentLanguage(this.language);
     if (typeof document !== 'undefined') document.title = 'SECOND ME — Vọng Ảnh';
@@ -556,6 +567,7 @@ export class GameEngine {
     this.showBanner(this.language==='vi'?'Nhẫn đã dùng · Giới hạn 6 Echo trong màn này.':'Ring used · Echo limit is 6 for this level.');
     this.notifyHUD(); return true;
   }
+  public setCharacterWeapon(hero:WeaponHero,id:WeaponId){if(!['characters','shop'].includes(this.screen))return false;const ok=equipWeapon(hero,id,this.campaign.ownedWeapons);if(ok)this.notifyHUD();return ok;}
   public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
   public selectClass(value: CharacterClass) { if (this.screen !== 'lobby' && this.screen !== 'characters') return; if(value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return; this.characterClass = value; this.saveSettings(); this.notifyHUD(); }
   public get weapon(): 'staff' | 'sword' { return this.characterClass === 'mage' ? 'staff' : 'sword'; }
@@ -651,11 +663,12 @@ export class GameEngine {
     this.defeatReason = 'damage';
     this.maxHealth=HERO_MAX_HP[this.characterClass];this.usedSupplies.clear();this.supportAlly=null;
     this.health = this.maxHealth;
-    this.hurtFlash=0;this.incomingHits=[];
+    this.hurtFlash=0;this.incomingHits=[];this.burn=newBurn();
     this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
     this.combatHits = [];
     this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.finalGateCrossed = false; this.exitOpenedAt = null;
     this.boss = this.currentLevel.id === 6 ? createBoss() : null;
+    this.pillarClocks = newPillarClocks(); this.frostSlimes = 0;
     this.demonPreludeWait = 0;
     this.demonRevealed = false;
     if(this.currentLevel.id===13)loadDemonSprites();
@@ -683,7 +696,7 @@ export class GameEngine {
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
     if(this.isTraining){this.showBanner(this.language==='vi'?'Bãi tập (dev) · Hình nộm không chết, không đánh trả · Cổng ra để về trại':'Training ground (dev) · Dummies never die or fight back · Exit portal returns to camp',6);this.voiceLevelStart();this.notifyHUD();return;}
     if(this.currentLevel.id===13)this.showBanner(this.language==='vi'?'Hang Tâm Hỏa':'Ember Cave',3);
-    else if(this.currentLevel.id>=7)this.showBanner(this.currentLevel.description,8);
+    else if(this.currentLevel.id>=7)this.showBanner(translate(this.currentLevel.description,this.language),8);
     else if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
     this.voiceLevelStart();
     this.notifyHUD();
@@ -708,7 +721,7 @@ export class GameEngine {
     if(this.campaign.pendingRuneChoices.length)return;
     if (this.currentLevelIdx + 1 < LEVELS.length) {
       this.enterLevel(this.currentLevelIdx + 1, () => {
-        this.showBanner(`${this.currentLevel.name}: ${this.currentLevel.subtitle}`);
+        this.showBanner(`${this.currentLevel.name}: ${translate(this.currentLevel.subtitle,this.language)}`);
         this.notifyHUD();
       });
     } else {
@@ -762,6 +775,7 @@ export class GameEngine {
       else if(item.id!=='aid')this.campaign.supplies[item.id]=0;
     }
     this.campaign.aidUnlocked=true;
+    this.campaign.ownedWeapons=cleanOwnedWeapons(WEAPONS.map(w=>w.id));
     for(const rune of ECHO_RUNES)this.campaign.echoRunes[rune.id]=9999;
     // Keep the developer's selected build, filling only unused slots.
     for(const rune of ECHO_RUNES){
@@ -1446,14 +1460,37 @@ export class GameEngine {
     this.invulnerability = 1.3;
     this.combo?.cancel(); this.lunge.time = 0;           // staggered: the combo is lost
     this.renderer.particles.emit(this.player.x, this.player.y, 18, '#fb7185', 75, 4, 0.6);
-    if (this.health === 0) {
-      if(this.autoRevive()){this.notifyHUD();return;}
-      this.defeatReason = 'damage';
-      this.screen = 'defeat'; this.heldKeys.clear(); document.body.dataset.state = 'gameover';
-      voice.say(this.voiceRole, 'defeat');
-      if (this.boss) voice.say('guardian', 'victory', { delay: 2.2 });
-    } else if (this.health <= 40) voice.say(this.voiceRole, 'lowHealth'); // breathless, not just another grunt
+    if (this.boss?.kind === 'demon' && this.health > 0 && ignite(this.burn)) this.showBanner(this.language === 'vi' ? 'Đang cháy!' : 'You are burning!', 1.4);
+    if (this.health === 0) this.onHealthZero();
+    else if (this.health <= 40) voice.say(this.voiceRole, 'lowHealth'); // breathless, not just another grunt
     else voice.say(this.voiceRole, 'damage');
+    this.notifyHUD();
+  }
+
+  private onHealthZero() {
+    this.burn = newBurn();
+    if (this.autoRevive()) return;
+    this.defeatReason = 'damage';
+    this.screen = 'defeat'; this.heldKeys.clear(); document.body.dataset.state = 'gameover';
+    voice.say(this.voiceRole, 'defeat');
+    if (this.boss) voice.say('guardian', 'victory', { delay: 2.2 });
+  }
+
+  /**
+   * The fire's damage over time. It ignores the dodge's and the hit's invulnerability and the shields (flames
+   * don't care about armour), but never flinches the player: no stagger, no new invulnerability.
+   */
+  private updateBurn(dt: number) {
+    if (this.burn.remaining <= 0) return;
+    if (this.screen !== 'playing' || this.health <= 0 || this.bossDeathPending || (this.boss && this.boss.hp <= 0)) { this.burn = newBurn(); return; }
+    if (Math.random() < dt * 16) this.renderer.particles.emit(this.player.x + (Math.random() - .5) * 16, this.player.y - 18, 1, Math.random() < .5 ? '#ffb347' : '#ff6a1a', 38, 3, .5);
+    const damage = stepBurn(this.burn, dt);
+    if (damage <= 0) return;
+    this.health = Math.max(0, this.health - damage);
+    this.incomingHits.push({ x: this.player.x, y: this.player.y - 45, damage, absorbed: 0, life: .7 });
+    this.incomingHits = this.incomingHits.slice(-12);
+    this.renderer.particles.emit(this.player.x, this.player.y - 10, 6, '#ff8a2a', 55, 3, .45);
+    if (this.health === 0) this.onHealthZero();
     this.notifyHUD();
   }
 
@@ -2086,6 +2123,7 @@ export class GameEngine {
     }
     this.invulnerability = Math.max(0, this.invulnerability - dt);
     this.hurtFlash=Math.max(0,this.hurtFlash-dt);
+    this.updateBurn(dt);
     for(const hit of this.incomingHits)hit.life-=dt;
     this.incomingHits=this.incomingHits.filter(hit=>hit.life>0);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
@@ -2396,6 +2434,7 @@ export class GameEngine {
       const bossHit = this.timeStop > 0 ? false : updateBoss(boss, echoTarget??this.player, dt, this.currentLevel.plates.some(p => p.isPressed), this.player, bossEchoes, (index,damage) => {
         if(index>=normalBossEchoes.length)this.hitSupport(damage);else{const echo=normalBossEchoes[index];if(echo)this.hitEcho(echo,damage);}
       }, damage=>{bossDamage=Math.max(bossDamage,damage);},()=>{this.frostSlow=FROST_STRIKE.SLOW_TIME;},this.dodgeTime>0);
+      if (boss.kind !== 'demon' && this.timeStop <= 0) this.summonFromPillars(dt);
       if (boss.kind!=='demon'&&this.boss.phase > this.lastBossPhase) voice.say('guardian', 'event', { id: `phase${this.boss.phase}` });
       this.lastBossPhase = this.boss.phase;
       this.bossStepDistance += Math.hypot(boss.x - bossX, boss.y - bossY);
@@ -2457,6 +2496,26 @@ export class GameEngine {
     this.bossIntroduction = true;
     this.heldKeys.clear();
     this.notifyHUD();
+  }
+
+  /** Standing ice pillars summon frost slimes (logic/pillarSummon.ts); each one steps out toward the middle of the arena. */
+  private summonFromPillars(dt: number) {
+    if (!this.boss) return;
+    const alive = this.enemies.filter(e => e.hp > 0 && e.id.startsWith('frost-slime-')).length;
+    for (const i of stepPillarSummons(this.pillarClocks, this.boss.pillars, this.boss.phase, alive, dt)) {
+      const pillar = this.boss.pillars[i], a = Math.atan2(360 - pillar.y, 640 - pillar.x);
+      const x = pillar.x + Math.cos(a) * 62, y = pillar.y + Math.sin(a) * 48;
+      this.enemies.push({
+        id: `frost-slime-${++this.frostSlimes}`, kind: 'skull', x, y, homeX: x, homeY: y, hp: PILLAR_SUMMON.HP, maxHp: PILLAR_SUMMON.HP,
+        mode: 'chase', timer: .6, targetX: this.player.x, targetY: this.player.y, facingLeft: this.player.x < x, hitFlash: .35,
+        deathAge: 0, targetId: null, slimeHue: PILLAR_SUMMON.HUE,
+      });
+      pillar.hitFlash = .3;
+      this.renderer.emitMagic('sparkle', pillar.x, pillar.y - 20, 55);
+      this.spawnPfx('ice-shatter', x, y + 8, { scale: .55 });
+      sounds.playFrostBurst();
+      if (this.frostSlimes === 1) this.showBanner(this.language === 'vi' ? 'Trụ băng triệu hồi slime băng · Phá trụ để chặn lại!' : 'The ice pillars summon frost slimes · Break them to stop it!', 2.6);
+    }
   }
 
   public spawnMagmaMinions(count: number) {
@@ -2621,7 +2680,7 @@ export class GameEngine {
         showHints: this.showHints,
         devUnlocked: this.devUnlocked,
         language: this.language,
-        characterClass: this.characterClass,outfits:getOutfits(),ownedOutfits:[...this.campaign.ownedOutfits],
+        characterClass: this.characterClass,outfits:getOutfits(),ownedOutfits:[...this.campaign.ownedOutfits],weapons:getWeapons(),ownedWeapons:[...this.campaign.ownedWeapons],
         weapon: this.weapon,
         coins: this.campaign.coins,
         timeItems: this.campaign.timeItems,

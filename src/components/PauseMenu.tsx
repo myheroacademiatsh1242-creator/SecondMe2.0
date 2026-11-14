@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {BookOpen, Home, Pause, Play, RotateCcw, Settings, X} from 'lucide-react';
 import type {GameEngine, HUDState} from '../game/GameEngine';
 import {SettingsPanel} from './CampaignUI';
+import {translate} from '../i18n.ts';
 import './PauseMenu.css';
 
 export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
@@ -28,7 +29,7 @@ export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
       <div className="pause-menu-content">
       <header><span><Pause size={18}/>{vi?'NGHỈ CHÂN':'TAKE A BREATHER'}</span><button aria-label={vi?'Tiếp tục':'Resume'} onClick={()=>engine?.resumeGame()}><X size={20}/></button></header>
       <h2 id="pause-menu-title">{vi?'Tạm dừng':'Paused'}</h2>
-      <p className="pause-menu-level">{hud.levelName} · {hud.levelSubtitle}</p>
+      <p className="pause-menu-level">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>
       <dl><div><dt>HP</dt><dd>{Math.ceil(hud.health)}<small> / {hud.maxHealth??100}</small></dd></div><div><dt>MP</dt><dd>{Math.floor(hud.mana??100)}<small> / {hud.maxMana??100}</small></dd></div><div><dt>ECHO</dt><dd>{hud.echoCount}<small> / {hud.echoLimit}</small></dd></div></dl>
       <button ref={resume} className="pause-menu-resume" onClick={()=>engine?.resumeGame()}><Play size={19}/>{vi?'Tiếp tục hành trình':'Resume journey'}<kbd>Esc</kbd></button>
       <div className="pause-menu-options">

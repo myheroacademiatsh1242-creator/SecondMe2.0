@@ -2,7 +2,8 @@ import { GUARDIAN_HP, HERO_MAX_HP, SHARD_BONUS } from '../game/logic/balance.ts'
 import './ForestDefeat.css';
 import {RuneRewardFlow} from './RuneRewardFlow.tsx';
 import {OUTFITS,canWearOutfit,characterOutfitRarity,orderedCharacterOutfits,type OutfitId,type OutfitHero} from '../game/logic/outfits.ts';
-import {RARITY_COLORS} from '../game/logic/rarity.ts';
+import {RARITY_COLORS,rarityName} from '../game/logic/rarity.ts';
+import {DEFAULT_WEAPON,TRAIT_TEXT,canUseWeapon,weaponById,weaponsOf,type WeaponHero,type WeaponId} from '../game/logic/weapons.ts';
 import './CharacterOutfits.css';
 import './JourneyFinale.css';
 import './CombatActionBar.css';
@@ -21,6 +22,7 @@ import { IntroEffects } from './IntroEffects.tsx';
 import { MenuVines } from './MenuVines.tsx';
 import credits from '../game/data/credits.json';
 import { ComboPreview } from './ComboShowcase.tsx';
+import { WeaponPreview } from './WeaponPreview.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { drawWizardSprite } from '../game/rendering/wizardSprite.ts';
 import { sounds } from '../game/logic/sound.ts';
@@ -239,6 +241,8 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const [selected, setSelected] = useState<SelectableCharacter>(hud.characterClass);
   const grid = useRef<HTMLDivElement>(null);
   const [draftOutfits,setDraftOutfits]=useState<Record<OutfitHero,OutfitId>>(hud.outfits??{mage:'default',swordsman:'default'});
+  const [draftWeapons,setDraftWeapons]=useState<Record<WeaponHero,WeaponId>>(hud.weapons??{...DEFAULT_WEAPON});
+  const [tab,setTab]=useState<'outfit'|'weapon'>('outfit');
   // Start keyboard focus on the current hero, so focus and selection agree on open.
   useEffect(() => { grid.current?.querySelector<HTMLButtonElement>('.is-selected')?.focus({preventScroll: true}); }, []);
   const roster: {id: SelectableCharacter; name: string; roleVi: string; roleEn: string}[] = [
@@ -250,25 +254,28 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const portrait = (id: SelectableCharacter,outfit?:OutfitId) => id === 'mage' ? <AerisPortrait outfit={outfit}/> : id === 'swordsman' ? <KaelPortrait outfit={outfit}/> : <MechanicalPortrait/>;
   const outfit=choice.id==='mechanical'?'default':draftOutfits[choice.id];
   const outfitInfo=OUTFITS.find(o=>o.id===outfit)!;
+  const hero=choice.id==='mechanical'?null:choice.id;
+  const weapon=hero?weaponById(draftWeapons[hero]):undefined;
+  const ownedWeapons=hud.ownedWeapons??[];
   const outfitColor=RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,outfit)];
   const detail = choice.id === 'mage'
     ? (vi ? `${HERO_MAX_HP.mage} HP. Đánh xa và phủ nhiều mục tiêu, sát thương mỗi đòn thấp. Chuột phải thi triển Gai Băng diện rộng.` : `${HERO_MAX_HP.mage} HP. Ranged attacks cover several targets with lower damage per hit. Right-click to cast area Ice Spike.`)
     : choice.id === 'swordsman'
     ? (vi ? `${HERO_MAX_HP.swordsman} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${HERO_MAX_HP.swordsman} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
-  const confirm = () => { if (!engine) return; if(choice.id!=='mechanical')engine.setCharacterOutfit(choice.id,outfit);engine.selectClass(choice.id); engine.goToLobby(); };
+  const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);engine.setCharacterWeapon(choice.id,draftWeapons[choice.id]);}engine.selectClass(choice.id); engine.goToLobby(); };
   return <div className="characters-screen overlay hero-select-screen">
     <div className="hero-select-scene has-outfit-selector" role="dialog" aria-modal="true" aria-labelledby="hero-select-title">
       <h1 id="hero-select-title" className="hero-select-title">{vi ? 'CHỌN NHÂN VẬT' : 'CHOOSE YOUR HERO'}</h1>
       <button className="hero-select-back" onClick={() => engine?.goToLobby()} aria-label={vi ? 'Về sảnh' : 'Back to lobby'}>{vi ? 'VỀ SẢNH' : 'BACK'}</button>
       <div className="hero-outfit-workspace">
        <div className="hero-roster" ref={grid} role="group" aria-label={vi?'Chọn nhân vật':'Choose character'}>{roster.map(c=><button key={c.id} className={`hero-slot${choice.id===c.id?' is-selected':''}`} aria-pressed={choice.id===c.id} aria-label={c.name} onClick={()=>setSelected(c.id)}><span className="roster-portrait">{portrait(c.id,c.id==='mechanical'?undefined:draftOutfits[c.id])}</span><strong>{c.name}</strong></button>)}</div>
-       <div className="outfit-large-preview"><span>{choice.name}</span><div>{portrait(choice.id,outfit)}</div><strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong></div>
-       <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header><strong>{vi?'TRANG PHỤC':'OUTFITS'}</strong><small>{vi?'Đổi ngoại hình · Giữ nguyên chỉ số':'Appearance only · Same stats'}</small></header><div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div></section>
+       <div className="outfit-large-preview"><span>{choice.name}</span><div>{portrait(choice.id,outfit)}</div>{choice.id==='mage'&&weapon&&<WeaponPreview id={weapon.id} reducedMotion={hud.reducedMotion}/>}<strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong></div>
+       <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header>{choice.id==='mechanical'?<strong>{vi?'TRANG PHỤC':'OUTFITS'}</strong>:<div role="tablist" className="collection-tabs">{(['outfit','weapon'] as const).map(t=><button key={t} role="tab" aria-selected={tab===t} className={tab===t?'outfit-selected':''} onClick={()=>setTab(t)}>{t==='outfit'?(vi?'TRANG PHỤC':'OUTFITS'):(vi?'VŨ KHÍ':'WEAPONS')}</button>)}</div>}<small>{tab==='weapon'&&choice.id!=='mechanical'?(vi?'Cùng sát thương · Khác hiệu ứng':'Same damage · Different effects'):(vi?'Đổi ngoại hình · Giữ nguyên chỉ số':'Appearance only · Same stats')}</small></header>{tab==='weapon'&&hero?<div className="outfit-options" role="group" aria-label={vi?'Chọn vũ khí':'Choose weapon'}>{weaponsOf(hero).map(w=><button key={w.id} className={draftWeapons[hero]===w.id?'outfit-selected':''} aria-pressed={draftWeapons[hero]===w.id} aria-label={(vi?w.vi:w.en)+(canUseWeapon(hero,w.id,ownedWeapons)?'':(vi?' · Chưa sở hữu':' · Not owned'))} disabled={!canUseWeapon(hero,w.id,ownedWeapons)} style={{'--outfit-color':RARITY_COLORS[w.rarity]} as React.CSSProperties} onClick={()=>setDraftWeapons(old=>({...old,[hero]:w.id}))}><span><small>{rarityName(w.rarity,vi)}</small></span><strong>{vi?w.vi:w.en}</strong>{draftWeapons[hero]===w.id&&<Check size={16}/>}</button>)}</div>:<div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div>}</section>
       </div>
       <section className="hero-select-info" aria-live="polite">
         <div className="hero-info-portrait">{choice.id === 'mage' || choice.id === 'swordsman' ? <ComboPreview key={choice.id} hero={choice.id} outfit={outfit}/> : portrait(choice.id)}</div>
-        <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small>{vi ? 'VŨ KHÍ' : 'WEAPON'} · {choice.id === 'mage' ? (vi ? 'Trượng phép' : 'Magic staff') : choice.id === 'swordsman' ? (vi ? 'Kiếm' : 'Sword') : (vi ? 'Cưa máy' : 'Chainblade')} · <span style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
+        <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small>{vi ? 'VŨ KHÍ' : 'WEAPON'} · {weapon?(vi?weapon.vi:weapon.en)+' · '+(vi?TRAIT_TEXT[weapon.trait].vi:TRAIT_TEXT[weapon.trait].en):(vi ? 'Cưa máy' : 'Chainblade')} · <span style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
         <div className="hero-info-action"><span>{choice.id === hud.characterClass ? (vi ? 'ĐANG CHỌN' : 'CURRENT HERO') : (vi ? 'NHÂN VẬT SẴN SÀNG' : 'HERO READY')}</span><button type="button" onClick={confirm} disabled={!engine}>{vi ? 'TRANG BỊ & CHỌN' : 'EQUIP & CONFIRM'}</button></div>
       </section>
     </div>
@@ -288,7 +295,7 @@ export function Title({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     {tab !== 'none' && <div className="modal-backdrop"><div className="panel trail-panel"><div className="panel-top"><span className="eyebrow gold">{tab === 'trails' ? 'HÀNH TRÌNH CỦA BẠN' : 'DẤU VẾT CỦA QUÁ KHỨ'}</span><button className="text-button" onClick={() => setTab('none')}>ĐÓNG ×</button></div>
       {tab === 'trails' ? <><h2>Những lối mòn</h2><div className="trail-list">{LEVELS.map((level, index) => {
         const unlocked = hud.devUnlocked || (index>=6?(index===6||hud.completed.includes(index)):index<=hud.completed.filter(id=>id<=5).length);
-        return <button key={level.id} disabled={!unlocked} onClick={() => engine?.selectLevel(index)} className="trail-item"><span className="trail-number">0{level.id}</span><span><strong>{level.subtitle}</strong><small>{level.description}</small></span>{!unlocked ? <Lock size={17}/> : hud.completed.includes(level.id) ? <Check size={18}/> : <ArrowRight size={18}/>}</button>;
+        return <button key={level.id} disabled={!unlocked} onClick={() => engine?.selectLevel(index)} className="trail-item"><span className="trail-number">0{level.id}</span><span><strong>{translate(level.subtitle, hud.language)}</strong><small>{translate(level.description, hud.language)}</small></span>{!unlocked ? <Lock size={17}/> : hud.completed.includes(level.id) ? <Check size={18}/> : <ArrowRight size={18}/>}</button>;
       })}</div></> : <><h2>Hợp tác với chính mình</h2><div className="help-grid"><p><kbd>W A S D</kbd> / phím mũi tên: di chuyển.</p><p><kbd>E</kbd> bắt đầu ghi; nhấn lần nữa để lưu. Echo đứng ở điểm cuối.</p><p><kbd>1–6</kbd> chọn Echo; <kbd>C</kbd> tạm dừng; <kbd>Shift + Q</kbd> hoán đổi khi đường thẳng không bị chặn.</p><p><kbd>Q</kbd> gọi Echo. Để Echo giữ nút trong khi bạn vượt cổng. <kbd>X</kbd> xóa Echo.</p><p>5 màn đầu: thời gian mỗi chặng thay đổi theo màn. Đặt Echo giữ các rune được ghi bên cổng cuối; màn 5 có 5 rune nhưng chỉ cần giữ đúng 4 rune cuối. Mỗi chặng có tối đa một mảnh +{SHARD_BONUS} giây và dùng một bình +2 giây; không thể farm vô hạn. Chỉ nhân vật chạm rune kế tiếp mới được nạp giờ.</p><p>Bẫy dập và đá rơi có viền vàng báo trước, gây 20 sát thương và giữ chân 0,25 giây khi trúng. Dây leo làm chậm 45% trên cả dải; có thể đi vòng.</p><p>Sau mỗi màn 1–5, chọn một trong ba ấn Echo ngẫu nhiên. Hoàn thành năm màn để mở trạm chuẩn bị; không tiêu hao ấn để mở boss.</p><p>Chuột trái tấn công; chuột phải hoặc <kbd>Space</kbd> dùng kỹ năng class; <kbd>R</kbd> dùng vật phẩm +2 giây; <kbd>F</kbd> bật/tắt toàn màn hình. <kbd>Shift</kbd> lướt né; <kbd>Esc</kbd> tạm dừng.</p><p>Boss báo trước đòn đánh bằng vòng băng xanh. Né ra ngoài; Echo giữ ấn sẽ tăng sức mạnh.</p></div></>}
     </div></div>}
   </div>);
@@ -301,7 +308,7 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
   return localize(<div className="adventure-hud overlay">
     {hud.bossIntroduction&&<BossIntro engine={engine} hud={hud}/>}
 
-    <div className="hud-top"><div className="level-card"><small>{hud.levelName}{hud.training?' · DEV':' / 13'}</small><strong>{hud.levelSubtitle}</strong><span>{Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2,'0')}:{Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2,'0')} <i/> <span className="player-health" role="meter" aria-label={hud.language==='vi'?'Máu nhân vật':'Player health'} aria-valuenow={hud.health} aria-valuemin={0} aria-valuemax={hud.maxHealth??100}><b style={{width:`${hud.health/(hud.maxHealth??100)*100}%`}}/><strong>{hud.health} / {hud.maxHealth??100} HP</strong></span></span>
+    <div className="hud-top"><div className="level-card"><small>{hud.levelName}{hud.training?' · DEV':' / 13'}</small><strong>{translate(hud.levelSubtitle, hud.language)}</strong><span>{Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2,'0')}:{Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2,'0')} <i/> <span className="player-health" role="meter" aria-label={hud.language==='vi'?'Máu nhân vật':'Player health'} aria-valuenow={hud.health} aria-valuemin={0} aria-valuemax={hud.maxHealth??100}><b style={{width:`${hud.health/(hud.maxHealth??100)*100}%`}}/><strong>{hud.health} / {hud.maxHealth??100} HP</strong></span></span>
       {(hud.enemiesRemaining??0)>0&&<small>{boss?(hud.language==='vi'?`QUỶ LỬA · ${hud.enemiesRemaining}`:`MINIONS · ${hud.enemiesRemaining}`):(hud.language==='vi'?`QUÁI CANH ĐƯỜNG · ${hud.enemiesRemaining}`:`TRAIL ENEMIES · ${hud.enemiesRemaining}`)}</small>}
       {(hud.echoCount>0 || hud.echoDurationMs>0) && <div className="echo-timeline" aria-label="Echo timeline"><span>ECHO {hud.echoCount}/{hud.echoLimit} · {hud.echoCharges} {hud.language==='vi'?'lượt':'charges'} · {Math.ceil(hud.echoStability)} {hud.language==='vi'?'ổn định':'stability'}</span>{hud.echoDurationMs>0 && <div className="echo-timeline-track"><i style={{left:`${Math.min(100,hud.echoElapsedMs/hud.echoDurationMs*100)}%`}}/>{hud.echoEvents.map((event,index)=><b key={index} style={{left:`${Math.min(100,event.time/hud.echoDurationMs*100)}%`}} title={`${event.kind} · ${(event.time/1000).toFixed(1)}s`}>{event.kind==='attack'?'✦':'◆'}</b>)}</div>}</div>}
     </div>

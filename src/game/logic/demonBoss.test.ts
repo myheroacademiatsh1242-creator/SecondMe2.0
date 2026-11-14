@@ -57,19 +57,19 @@ test('final boss is a separate cave level with no puzzle timer or ice pillars',t
 test('cleave locks its telegraph and can be dodged or redirected into Echoes',()=>{
  const b=createDemonBoss();b.mode='warning';b.attack='melee';b.timer=.01;b.targetX=b.x+100;b.targetY=b.y;
  let damage=0,echoDamage=0;const player={x:b.x+100,y:b.y};
- updateDemonBoss(b,player,.02,player,[],undefined,n=>damage+=n,false);assert.equal(damage,24);assert.equal(b.mode,'strike');
- b.mode='warning';b.timer=.01;updateDemonBoss(b,player,.02,player,[],undefined,n=>damage+=n,true);assert.equal(damage,24);
- b.mode='warning';b.timer=.01;updateDemonBoss(b,player,.02,{x:200,y:500},[player],(_,n)=>echoDamage+=n,n=>damage+=n,false);assert.equal(echoDamage,24);assert.equal(damage,24);
+ updateDemonBoss(b,player,.02,player,[],undefined,n=>damage+=n,false);assert.equal(damage,30);assert.equal(b.mode,'strike');
+ b.mode='warning';b.timer=.01;updateDemonBoss(b,player,.02,player,[],undefined,n=>damage+=n,true);assert.equal(damage,30);
+ b.mode='warning';b.timer=.01;updateDemonBoss(b,player,.02,{x:200,y:500},[player],(_,n)=>echoDamage+=n,n=>damage+=n,false);assert.equal(echoDamage,30);assert.equal(damage,30);
  b.mode='warning';b.timer=.01;
  const outsideWarning={x:b.x+170,y:b.y};
  updateDemonBoss(b,player,.02,outsideWarning,[],undefined,n=>damage+=n,false);
- assert.equal(damage,24,'The cleave cannot hit beyond the marked sector');
+ assert.equal(damage,30,'The cleave cannot hit beyond the marked sector');
 });
 test('later phases add real firebolts and eruptions with at least a second of warning',()=>{
  const b=createDemonBoss();b.hp=180;b.mode='stalking';b.timer=-2;b.attackIndex=2;const player={x:600,y:450};
  updateDemonBoss(b,player,.02,player,[],undefined,undefined,false);assert.equal(b.phase,3);assert.equal(b.attack,'triple');assert.equal(b.demon!.zones.length,5);assert.ok(b.demon!.zones.every(z=>z.delay>=1));
  b.demon!.zones=[];b.mode='warning';b.attack='volley';b.timer=.01;updateDemonBoss(b,player,.02,player,[],undefined,undefined,false);assert.equal(b.projectiles.length,7);
- const p=b.projectiles[3];let hits=0;updateDemonBoss(b,player,.01,{x:p.x+p.vx*.01,y:p.y+p.vy*.01},[],undefined,n=>hits=Math.max(hits,n),false);assert.equal(hits,14);
+ const p=b.projectiles[3];let hits=0;updateDemonBoss(b,player,.01,{x:p.x+p.vx*.01,y:p.y+p.vy*.01},[],undefined,n=>hits=Math.max(hits,n),false);assert.equal(hits,17);
 });
 test('all uploaded animation rows keep their frame counts and death finishes without looping',()=>{
  assert.deepEqual(Object.values(DEMON_ANIMATIONS).map(a=>a.count),[6,12,15,5,22]);const b=createDemonBoss();b.hp=0;assert.deepEqual(demonFrame(b,1),{animation:'death',frame:10});assert.deepEqual(demonFrame(b,20),{animation:'death',frame:21});

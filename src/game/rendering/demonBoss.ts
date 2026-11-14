@@ -7,7 +7,7 @@ function image() {
   if (typeof Image === 'undefined') return null;
   if (!sheet) {
     sheet = new Image();
-    sheet.src = `${import.meta.env.BASE_URL}assets/demon-boss/sheet.png`;
+    sheet.src = `${import.meta.env.BASE_URL}assets/demon-boss/sheet-fire.png?v=6`;
   }
   return sheet.complete && sheet.naturalWidth ? sheet : null;
 }

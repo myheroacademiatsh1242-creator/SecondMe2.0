@@ -3,25 +3,34 @@ import { ArrowRight, Gem, Link, Move, Snowflake, Swords, Zap } from 'lucide-reac
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { sounds } from '../game/logic/sound.ts';
 import './BossIntro.css';
+import { DemonSlimeMerge } from './DemonSlimeMerge.tsx';
 
 // Snowflakes: fixed spread (no randomness, so every showing looks the same and nothing re-rolls on render).
 const SNOW = Array.from({ length: 22 }, (_, i) => ({
   left: (i * 37) % 100, size: 2 + (i % 3) * 2, delay: -((i * 0.61) % 6), duration: 5 + (i % 5) * 1.3, drift: (i % 2 ? 1 : -1) * (8 + (i % 4) * 6),
 }));
 
-/** Reveals the Guardian's name before the combat briefing. */
+// Embers rising off the lava: fixed spread like the snow, so every showing looks the same.
+const EMBERS = Array.from({ length: 30 }, (_, i) => ({
+  left: (i * 41) % 100, size: 2 + (i % 3) * 2, delay: -((i * 0.53) % 5), duration: 3.6 + (i % 5) * 1.1, drift: (i % 2 ? 1 : -1) * (10 + (i % 4) * 9),
+}));
+
+/**
+ * Reveals the boss before the combat briefing. Ember Demon: many slimes merge and the demon rises from their lava first
+ * (DemonSlimeMerge over .demon-intro.is-transforming), then the camera hands off (both scenes on screen: the merge's cave fades
+ * out over the cinematic while the demon glides to its place) and the cinematic (.demon-cut) runs: it swings its burning blade,
+ * the name slams in, the briefing follows. Skipping jumps straight to the cinematic.
+ */
 export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   const vi = hud.language === 'vi';
   const [skipped, setSkipped] = useState(false);
-  const [transformed, setTransformed] = useState(false);
-  const transformCanvas = useRef<HTMLCanvasElement>(null);
-  const idleCanvas = useRef<HTMLCanvasElement>(null);
+  const [phase, setPhase] = useState<'merge' | 'handoff' | 'cut'>('merge');
+  const handedOff = useRef(false);
   const entering = useRef(false);
   const [leaving, setLeaving] = useState(false);
-  const [idleReady, setIdleReady] = useState(false);
   const demon = hud.bossKind === 'demon';
   const still = hud.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const transforming = demon && !still && !transformed;
+  const transforming = demon && !still && phase === 'merge';
   const enterFight = useCallback(() => {
     if (entering.current) return;
     entering.current = true;
@@ -36,50 +45,8 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
     return () => window.clearTimeout(timer);
   }, [leaving, engine]);
   useEffect(() => {
-    if (!demon || transforming) return;
-    engine?.revealDemon();
-    if (still) return;
-    const ctx = idleCanvas.current?.getContext('2d');
-    if (!ctx) return;
-    const sheet = new Image();
-    let raf = 0;
-    sheet.onload = () => {
-      const start = performance.now();
-      const draw = (now: number) => {
-        const frame = Math.floor((now - start) / 118) % 6;
-        ctx.clearRect(0, 0, 214, 200);
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(sheet, frame * 288 + 98, 50, 96, 110, 21, 0, 180, 200);
-        raf = requestAnimationFrame(draw);
-      };
-      draw(start);
-      setIdleReady(true);
-    };
-    sheet.src = `${import.meta.env.BASE_URL}assets/demon-boss/sheet.png`;
-    return () => { sheet.onload = null; cancelAnimationFrame(raf); };
-  }, [demon, transforming, still, engine]);
-  useEffect(() => {
-    if (!transforming) return;
-    const ctx = transformCanvas.current?.getContext('2d');
-    if (!ctx) { setTransformed(true); return; }
-    const strip = new Image();
-    let raf = 0;
-    strip.onload = () => {
-      const start = performance.now();
-      const draw = (now: number) => {
-        const elapsed = now - start;
-        const frame = Math.min(31, Math.floor(elapsed / 100));
-        ctx.clearRect(0, 0, 214, 200);
-        ctx.drawImage(strip, frame * 214, 0, 214, 200, 0, 0, 214, 200);
-        if (elapsed < 3300) raf = requestAnimationFrame(draw);
-        else setTransformed(true);
-      };
-      draw(start);
-    };
-    strip.onerror = () => setTransformed(true);
-    strip.src = `${import.meta.env.BASE_URL}assets/demon-boss/slime-transform-strip.png`;
-    return () => { strip.onload = null; strip.onerror = null; cancelAnimationFrame(raf); };
-  }, [transforming]);
+    if (demon && !transforming) engine?.revealDemon();
+  }, [demon, transforming, engine]);
   const dialog = useRef<HTMLDivElement>(null);
   const introRumblePlayed = useRef(false);
   useEffect(() => {
@@ -93,17 +60,18 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
     roarPlayed.current = true;
     sounds.playGuardianReveal();
   }, []);
-  useEffect(() => { dialog.current?.focus(); }, []);
+  // The dialog element changes when the transformation hands over to the cinematic, so focus follows it.
+  useEffect(() => { dialog.current?.focus(); }, [phase]);
   useEffect(() => {
-    if (hud.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches) playRoar();
-  }, [hud.reducedMotion, playRoar]);
+    if (still) playRoar();
+  }, [still, playRoar]);
 
-  // Global key listener to start boss fight immediately with Enter, Space, or Escape
+  // Enter, Space or Escape: skip the transformation, or start the fight.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!e.repeat && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) {
         e.preventDefault();
-        if (transforming) setTransformed(true);
+        if (transforming) setPhase('cut');
         else enterFight();
       }
     };
@@ -111,57 +79,51 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
     return () => window.removeEventListener('keydown', onKey);
   }, [enterFight, transforming]);
 
-  if (hud.bossKind === 'demon') {
-    return (
-      <div
-        className={`demon-intro${transforming ? ' is-transforming' : ' is-revealed'}${still ? ' is-still' : ''}${idleReady && !still ? ' is-idle-ready' : ''}${leaving ? ' is-leaving' : ''}`}
+  if (demon) {
+    const merging = !still && phase !== 'cut';
+    return (<>
+      {phase !== 'merge' || still ? <div
+        className={`demon-cut${skipped || still ? ' is-skipped' : ''}${still ? ' is-reduced' : ''}${phase === 'handoff' ? ' is-handoff' : ''}${leaving ? ' is-leaving' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label={vi ? 'Quỷ Tâm Hỏa' : 'Ember Demon'}
-        ref={dialog}
+        aria-labelledby="demon-intro-title"
+        ref={phase === 'merge' && !still ? undefined : dialog}
         tabIndex={0}
+        onPointerDown={() => { setSkipped(true); setPhase('cut'); playRoar(); }}
       >
-        <div className="demon-intro-smoke" aria-hidden="true" />
-        <div className="demon-intro-band" aria-hidden="true" />
-        <div className="demon-intro-flash" aria-hidden="true" />
-        <div className="demon-intro-portrait" aria-hidden="true">
-          <div className="demon-intro-shockwave" />
-          <div className="demon-intro-embers">
-            {Array.from({length: 18}, (_, i) => <i key={i} style={{
-              '--ember-x': `${(i % 9 - 4) * 27 + (i >= 9 ? 11 : 0)}px`,
-              '--ember-y': `${-45 - (i * 29 % 120)}px`,
-              animationDelay: `${(i % 5) * .028}s`,
-            } as CSSProperties}/>)}
-          </div>
-          <div className="demon-intro-impact" onAnimationStart={event => {
-            if (event.animationName === 'demon-impact') {
-              sounds.playGuardianLanding();
-              playRoar();
-            }
-          }} />
-          <img className="demon-intro-animation demon-intro-final" alt="" src={`${import.meta.env.BASE_URL}assets/demon-boss/slime-transform-final.png`}/>
-          {transforming && <canvas ref={transformCanvas} className="demon-intro-animation demon-intro-animated"
-            width={214} height={200} />}
-          {!transforming && !still && <canvas ref={idleCanvas} className="demon-intro-animation demon-intro-idle"
-            width={214} height={200} />}
+        <div className="demon-cut-cave" aria-hidden="true" />
+        {!handedOff.current && <div className="demon-cut-open" aria-hidden="true" />}
+        <div className="demon-cut-embers" aria-hidden="true">
+          {EMBERS.map((e, i) => <i key={i} style={{ left: `${e.left}%`, width: e.size, height: e.size, animationDelay: `${e.delay}s`, animationDuration: `${e.duration}s`, '--drift': `${e.drift}px` } as CSSProperties} />)}
         </div>
-        {transforming && <button type="button" className="demon-intro-skip" onClick={() => setTransformed(true)}>
-          {vi ? 'Bỏ qua hoạt ảnh' : 'Skip animation'}
-        </button>}
-        <section className="demon-intro-content" inert={transforming} aria-hidden={transforming}>
-          <small className="demon-intro-kicker">
+        <div className="demon-cut-glow" aria-hidden="true" />
+        <div className="demon-cut-fissure" aria-hidden="true" />
+        <div className="demon-cut-figure" aria-hidden="true">
+          <div className="demon-cut-sprite" />
+        </div>
+        <div className="demon-cut-shockwave" aria-hidden="true" />
+        <div className="demon-cut-burst" aria-hidden="true" onAnimationStart={event => {
+          if (event.animationName === 'demon-burst') sounds.playGuardianLanding();
+        }} />
+        <div className="demon-cut-danger" aria-hidden="true" />
+        <div className="demon-cut-bar demon-cut-bar-top" aria-hidden="true" />
+        <div className="demon-cut-bar demon-cut-bar-bottom" aria-hidden="true" />
+        <section className="demon-cut-content">
+          <small className="demon-cut-kicker">
             {vi ? 'MÀN 13 · SÂU TRONG HANG' : 'TRAIL 13 · DEEP WITHIN THE CAVE'}
           </small>
-          <span className="demon-intro-awakened">{vi ? 'QUÁI VẬT ĐÃ THỨC TỈNH' : 'THE BEAST AWAKENS'}</span>
-          <h2>{vi ? <>QUỶ<br/>TÂM HỎA</> : <>EMBER<br/>DEMON</>}</h2>
-          <p className="demon-intro-desc">
+          <span className="demon-cut-awakened">{vi ? 'QUÁI VẬT ĐÃ THỨC TỈNH' : 'THE BEAST AWAKENS'}</span>
+          <h2 id="demon-intro-title" onAnimationStart={event => {
+            if (event.animationName === 'demon-name-slam') playRoar();
+          }}>{vi ? <>QUỶ<br />TÂM HỎA</> : <>EMBER<br />DEMON</>}</h2>
+          <p className="demon-cut-desc">
             {vi
               ? 'Slime hút lửa từ lòng hang, rồi hóa thành Quỷ Tâm Hỏa.'
               : 'The slime draws fire from the cave and transforms into the Ember Demon.'}
           </p>
-          <ol className="demon-intro-tips">
+          <ol className="demon-cut-tips">
             <li>
-              <Gem aria-hidden="true"/><b>{vi ? 'Phong ấn Lõi Nguyên Tố' : 'Seal Elemental Core'}</b>
+              <Gem aria-hidden="true" /><b>{vi ? 'Phong ấn Lõi Nguyên Tố' : 'Seal Elemental Core'}</b>
               <span>
                 {vi
                   ? 'Đứng lên bệ ấn dập tắt 1 Lõi; Boss nuốt lõi còn lại để tiến hóa.'
@@ -169,7 +131,7 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
               </span>
             </li>
             <li>
-              <Link aria-hidden="true"/><b>{vi ? 'Ép quá tải và nhử bằng Echo' : 'Overheat and bait with Echo'}</b>
+              <Link aria-hidden="true" /><b>{vi ? 'Ép quá tải và nhử bằng Echo' : 'Overheat and bait with Echo'}</b>
               <span>
                 {vi
                   ? 'Khi Boss bọc giáp nhiệt, dùng Echo đứng nhử tại Trụ Tản Nhiệt.'
@@ -177,7 +139,7 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
               </span>
             </li>
             <li>
-              <Zap aria-hidden="true"/><b>{vi ? 'Sốc nhiệt phá giáp · ×2,5 sát thương' : 'Thermal shock · 2.5× damage'}</b>
+              <Zap aria-hidden="true" /><b>{vi ? 'Sốc nhiệt phá giáp · ×2,5 sát thương' : 'Thermal shock · 2.5× damage'}</b>
               <span>
                 {vi
                   ? 'Boss húc trúng Trụ sẽ bị nổ giáp, choáng 4.5s lộ điểm yếu chí mạng!'
@@ -185,17 +147,24 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
               </span>
             </li>
           </ol>
-          <button
-            className="demon-intro-start-btn"
-            onClick={enterFight}
-            disabled={leaving}
-          >
+          <button className="demon-cut-start-btn" onClick={enterFight} disabled={leaving}>
             <span>{vi ? 'VÀO TRẬN' : 'START BATTLE'}</span>
             <ArrowRight size={22} />
           </button>
         </section>
-      </div>
-    );
+      </div> : null}
+      {merging && <>
+        <div className={`demon-intro is-transforming${phase === 'handoff' ? ' is-handing-off' : ''}`} role="dialog" aria-modal="true"
+          aria-label={vi ? 'Quỷ Tâm Hỏa' : 'Ember Demon'} aria-hidden={phase === 'handoff'} ref={phase === 'merge' ? dialog : undefined} tabIndex={0}>
+          <div className="demon-intro-smoke" aria-hidden="true" />
+          <div className="demon-intro-band" aria-hidden="true" />
+          {phase === 'merge' && <button type="button" className="demon-intro-skip" onClick={() => setPhase('cut')}>
+            {vi ? 'Bỏ qua hoạt ảnh' : 'Skip animation'}
+          </button>}
+        </div>
+        <DemonSlimeMerge onHandoff={() => { handedOff.current = true; setPhase('handoff'); }} onDone={() => setPhase('cut')} />
+      </>}
+    </>);
   }
   return <div ref={dialog} tabIndex={-1} className={`boss-cut${skipped || hud.reducedMotion ? ' is-skipped' : ''}`} role="dialog" aria-modal="true" aria-labelledby="boss-intro-name"
     onPointerDown={() => { setSkipped(true); playRoar(); }}>

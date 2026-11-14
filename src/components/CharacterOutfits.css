@@ -28,3 +28,6 @@ html body .adventure-app .outfit-options>button.outfit-selected{outline:2px soli
 .outfit-collection{box-sizing:border-box;padding:36px 18px 22px}
 .outfit-collection>header{gap:4px;margin-bottom:9px}
 @media(max-height:480px){.outfit-collection{padding:26px 12px 15px}.outfit-collection>header{gap:2px;margin-bottom:6px}.outfit-collection>header small{display:block;font-size:10px!important}}
+.collection-tabs{display:flex;gap:6px}.collection-tabs>button{padding:2px 10px;font:inherit;font-size:16px;color:#aebca3;background:#102a23;border:2px solid #506254;cursor:pointer}.collection-tabs>button.outfit-selected{color:#dbdebd;border-color:#dbdebd}
+.outfit-options>button>span>small{font-size:11px;color:var(--outfit-color)}
+.outfit-large-preview>canvas.weapon-preview{position:absolute;right:3%;bottom:11%;height:91%;width:auto;image-rendering:pixelated;pointer-events:none}

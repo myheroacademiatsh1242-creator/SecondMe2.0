@@ -172,7 +172,7 @@ export function FrostChapter({
             <b>{String(level.id).padStart(2, '0')}</b>
             <strong>{translate(level.subtitle, hud.language)}</strong>
           </div>
-          <p className="frost-stage-desc">{level.description}</p>
+          <p className="frost-stage-desc">{translate(level.description, hud.language)}</p>
           <button
             className="camp-continue frost-continue"
             disabled={!unlocked(level.id)}
