@@ -62,13 +62,10 @@ export function DemonSlimeMerge({ onHandoff, onDone }: { onHandoff: () => void; 
         const shake = afterBurst >= 0 && afterBurst < .5 ? 6 * (1 - afterBurst / .5) : charge * 3;
         if (shake) ctx.translate(Math.round((hash(Math.floor(t * 40)) - .5) * shake * 2), Math.round((hash(Math.floor(t * 40) + 7) - .5) * shake * 2));
 
-        // The lava seam on the floor, brighter as the heap grows and as it charges.
+        // Floor glow, brighter as the heap grows and as it charges.
         const absorbed = SLIMES.filter(s => t >= s.t0 + s.travel).length;
         const heat = Math.min(1, .25 + absorbed * .06 + charge * .5 + (afterBurst > 0 ? .3 : 0));
-        const seam = ctx.createLinearGradient(cx - LW * .45, 0, cx + LW * .45, 0);
-        seam.addColorStop(0, 'rgba(200,52,12,0)'); seam.addColorStop(.5, `rgba(255,${150 + heat * 80},70,${.5 + heat * .5})`); seam.addColorStop(1, 'rgba(200,52,12,0)');
         ctx.globalAlpha = fade;
-        ctx.fillStyle = seam; ctx.fillRect(cx - LW * .45, GY - 1, LW * .9, 2);
         const pool = ctx.createRadialGradient(cx, GY, 2, cx, GY, 70 + heat * 60);
         pool.addColorStop(0, `rgba(255,120,40,${.25 + heat * .35})`); pool.addColorStop(1, 'rgba(255,60,10,0)');
         ctx.fillStyle = pool; ctx.fillRect(cx - 140, GY - 120, 280, 160);

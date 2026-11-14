@@ -326,7 +326,8 @@ test('completed campaign can replay any level from lobby',t=>{
   engine.goToLobby();engine.selectLevel(1);
   assert.equal(engine.currentLevelIdx,1);assert.equal(engine.screen,'playing');
   engine.goToLobby();engine.selectLevel(5);
-  assert.equal(engine.currentLevelIdx,5);assert.ok(engine.boss);
+  assert.equal(engine.currentLevelIdx,5);assert.equal(engine.boss,null);   // the Guardian forms from the crystals first
+  assert.equal(engine.enemies.filter(e=>e.id.startsWith('frost-crystal-')).length,4);
 });
 
 test('the lobby and its sub-screens can return to the main menu, but a level in play cannot', t => {
@@ -411,11 +412,19 @@ test('moving during combat keeps the movement-facing sprite while attacks remain
 test('boss introduction freezes combat and the clock until explicitly started', t=>{
  mockDocument(t);
  const {engine,advance}=setup();engine.currentLevelIdx=5;engine.restartLevel();
- assert.equal(engine.bossIntroduction,true);
- const x=engine.boss!.x,y=engine.boss!.y;
+ // Level 6 opens with four Frost Crystals and no Guardian; shattering two wakes it and the other two fuse into it.
+ const guardian=()=>engine.boss!;   // a call, so the null checks above do not narrow it for good
+ const clock=()=>(engine as unknown as {elapsedLevelTime:number}).elapsedLevelTime;
+ assert.ok(!engine.boss);assert.equal(engine.bossIntroduction,false);
+ const crystals=engine.enemies.filter(e=>e.id.startsWith('frost-crystal-'));assert.equal(crystals.length,4);
+ crystals[0].hp=0;advance(1);assert.ok(!engine.boss,'one is not enough');
+ crystals[1].hp=0;advance(1);
+ assert.ok(engine.boss);assert.equal(engine.bossIntroduction,true);
+ assert.equal(engine.enemies.filter(e=>e.id.startsWith('frost-crystal-')).length,0,'the survivors became the Guardian');
+ const x=guardian().x,y=guardian().y,before=clock();
  engine.attack();engine.useSkill();advance(1);
- assert.equal((engine as unknown as {elapsedLevelTime:number}).elapsedLevelTime,0);assert.equal(engine.boss!.x,x);assert.equal(engine.boss!.y,y);assert.equal(engine.mana.value,100);
- engine.beginBossFight();advance(.1);assert.equal(engine.bossIntroduction,false);assert.ok((engine as unknown as {elapsedLevelTime:number}).elapsedLevelTime>0);
+ assert.equal(clock(),before);assert.equal(guardian().x,x);assert.equal(guardian().y,y);assert.equal(engine.mana.value,100);
+ engine.beginBossFight();advance(.1);assert.equal(engine.bossIntroduction,false);assert.ok(clock()>before);
 });
 
 test('touch stick moves exactly like the keys, at any stick deflection, and keys win when both are used', () => {

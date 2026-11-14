@@ -9,7 +9,7 @@ import {SHOP_ITEMS,type ShopItemId,type SupplyId,type Supplies} from './logic/sh
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
 import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logic/damage.ts';
 import { ignite, newBurn, stepBurn } from './logic/burn.ts';
-import { PILLAR_SUMMON, newPillarClocks, stepPillarSummons } from './logic/pillarSummon.ts';
+import { FROST_PRELUDE_KILLS, PILLAR_SUMMON, newPillarClocks, stepPillarSummons } from './logic/pillarSummon.ts';
 import { createCaveSlimes, createEnemies, ENEMY_STATS, EMBER_SLIME_ID, updateEnemies, type Enemy } from './logic/enemies.ts';
 import { ECHO_RUNES, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
 import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
@@ -164,6 +164,8 @@ export interface HUDState {
   skillCooldown: number;
   bossArmor: number;
   pillarsRemaining: number;
+  /** Level 6 before the Guardian wakes: Frost Crystals shattered so far (of FROST_PRELUDE_KILLS). */
+  crystalsShattered?: number;
   /** The boss HP at which its shield comes back and the pillars rise again (0: the last quarter). */
   bossShieldAt?: number;
   activeBuff: string;
@@ -306,7 +308,8 @@ export class GameEngine {
       level.id >= 8 && level.id <= 12 && level.plates.some(plate => plate.wardEnemyIds?.includes(enemy.id))));
   }
   public get exitOpen(): boolean {
-    return !this.boss && this.currentLevel.id !== 13 && this.exitBlockingEnemies.length === 0 &&
+    // Boss arenas (6, 13) have no boss yet while their prelude runs, but they are never left by the exit.
+    return !this.boss && this.currentLevel.id !== 6 && this.currentLevel.id !== 13 && this.exitBlockingEnemies.length === 0 &&
       ((this.devUnlocked && this.currentLevel.id < 7) || isPuzzleExitOpen(this.currentLevel, this.checkpointIndex, this.finalGateCrossed));
   }
   private exitOpenedAt: number | null = null;
@@ -361,9 +364,12 @@ export class GameEngine {
   public stoneShield = 0;
   public bossIntroduction = false;
   private demonPreludeWait = 0;
+  private frostPreludeWait = 0;
+  private pillarsSummoned = false;
   private demonRevealed = false;
   public revealDemon() { if (this.bossIntroduction && this.boss?.kind === 'demon') this.demonRevealed = true; }
   public beginBossFight() {
+    if (!this.boss && this.currentLevel.id === 6) this.awakenGuardian();   // called before the crystals fell (tests, dev): skip them
     if (!this.bossIntroduction) return;
     this.revealDemon();
     this.bossIntroduction=false;this.heldKeys.clear();this.notifyHUD();
@@ -675,8 +681,8 @@ export class GameEngine {
     this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
     this.combatHits = [];
     this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.finalGateCrossed = false; this.exitOpenedAt = null;
-    this.boss = this.currentLevel.id === 6 ? createBoss() : null;
-    this.pillarClocks = newPillarClocks(); this.frostSlimes = 0;
+    this.boss = null;   // level 6: the Guardian forms from the crystals (updateFrostPrelude); level 13: from the slimes
+    this.pillarClocks = newPillarClocks(); this.frostSlimes = 0; this.frostPreludeWait = 0; this.pillarsSummoned = false;
     this.demonPreludeWait = 0;
     this.demonRevealed = false;
     if(this.currentLevel.id===13)loadDemonSprites();
@@ -686,6 +692,10 @@ export class GameEngine {
     this.magicShots = [];
     this.combo?.cancel(); this.comboShots = []; this.comboFx = []; this.damageTexts = []; this.lunge.time = 0; this.hitFeel.reset(); this.pfx = []; this.rage.reset(); this.delayedHits = []; this.ultBeam = null; this.timeStop = 0;
     preloadComboSprites(); preloadPfx(['hit-spark', 'crit-hit', 'shield-block', ...(this.characterClass === 'mage' ? ['icicle-fall', 'spell-charge', 'arcane-beam', 'time-stop'] as const : [])]);
+    if(this.currentLevel.id===6){   // after this.pfx is cleared, so their snowflake bursts play as the level opens
+      preloadPfx(['ice-crystal','snowflake-burst','ice-shatter']);
+      for(const pillar of createBoss().pillars)this.enemies.push(this.newFrostCrystal(pillar,false));
+    }
     this.frostZones=[];this.frostSlow=0;this.cursorTarget=null; this.lightCircle = null; this.overdrive = 0;
     this.skillDrop = null; this.skillDropTimer = 5;
     this.stoneShield = this.armorShield = this.hasteTime = this.fireBurnTime = this.fireBurnTick = 0;
@@ -704,6 +714,7 @@ export class GameEngine {
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
     if(this.isTraining){this.showBanner(this.language==='vi'?'Bãi tập (dev) · Hình nộm không chết, không đánh trả · Cổng ra để về trại':'Training ground (dev) · Dummies never die or fight back · Exit portal returns to camp',6);this.voiceLevelStart();this.notifyHUD();return;}
     if(this.currentLevel.id===13)this.showBanner(this.language==='vi'?'Hang Tâm Hỏa':'Ember Cave',3);
+    else if(this.currentLevel.id===6)this.showBanner(this.language==='vi'?`Pha Lê Băng thấy bạn khắp bản đồ · Đập vỡ ${FROST_PRELUDE_KILLS} con!`:`Frost Crystals see you anywhere · Shatter ${FROST_PRELUDE_KILLS} of them!`,5);
     else if(this.currentLevel.id>=7)this.showBanner(translate(this.currentLevel.description,this.language),8);
     else if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
     this.voiceLevelStart();
@@ -938,6 +949,7 @@ export class GameEngine {
       this.renderer.emitMagic('sparkle',enemy.x,enemy.y,heavy?48:24);sounds.playIceHit(false);
       if(enemy.hp===0){
         enemy.deathAge=0;
+        if(enemy.id.startsWith('frost-crystal-'))this.spawnPfx('ice-shatter',enemy.x-20,enemy.y+4,{scale:.5,mirror:this.player.x>enemy.x});
         const budget=puzzleBalance(this.currentLevel.id).legSeconds;
         const timeBonus=this.legTimeRemaining===null?0:Math.min(ENEMY_TIME_BONUS,Math.max(0,budget-this.legTimeRemaining));
         if(this.legTimeRemaining!==null)this.legTimeRemaining+=timeBonus;
@@ -2467,6 +2479,8 @@ export class GameEngine {
         this.takeDamage(Math.round(bossDamage * BOSS_PLAYER_DAMAGE[boss.kind==='demon'?'demon':'guardian']));
       }
       if(this.boss.phase!==previousPhase)this.echoCharges=Math.max(1,this.echoCharges);
+    } else if (this.currentLevel.id === 6 && !this.boss) {
+      this.updateFrostPrelude(dt);
     } else if (this.currentLevel.id === 13) {
       if (!this.boss) this.updateDemonPrelude(dt);
     } else if (this.exitOpen && checkExitReached(this.player.x, this.player.y, this.currentLevel.exit)) {
@@ -2489,24 +2503,51 @@ export class GameEngine {
     this.notifyHUD();
   }
 
-  /** Standing ice pillars summon frost slimes (logic/pillarSummon.ts); each one steps out toward the middle of the arena. */
+  /** Standing ice pillars summon Frost Crystals (logic/pillarSummon.ts, rendering/frostCrystal.ts): they see the hero anywhere on the map. */
   private summonFromPillars(dt: number) {
     if (!this.boss) return;
-    const alive = this.enemies.filter(e => e.hp > 0 && e.id.startsWith('frost-slime-')).length;
+    const alive = this.enemies.filter(e => e.hp > 0 && e.id.startsWith('frost-crystal-')).length;
     for (const i of stepPillarSummons(this.pillarClocks, this.boss.pillars, this.boss.phase, alive, dt)) {
-      const pillar = this.boss.pillars[i], a = Math.atan2(360 - pillar.y, 640 - pillar.x);
-      const x = pillar.x + Math.cos(a) * 62, y = pillar.y + Math.sin(a) * 48;
-      this.enemies.push({
-        id: `frost-slime-${++this.frostSlimes}`, kind: 'skull', x, y, homeX: x, homeY: y, hp: PILLAR_SUMMON.HP, maxHp: PILLAR_SUMMON.HP,
-        mode: 'chase', timer: .6, targetX: this.player.x, targetY: this.player.y, facingLeft: this.player.x < x, hitFlash: .35,
-        deathAge: 0, targetId: null, slimeHue: PILLAR_SUMMON.HUE,
-      });
+      const pillar = this.boss.pillars[i];
+      this.enemies.push(this.newFrostCrystal(pillar));
       pillar.hitFlash = .3;
       this.renderer.emitMagic('sparkle', pillar.x, pillar.y - 20, 55);
-      this.spawnPfx('ice-shatter', x, y + 8, { scale: .55 });
-      sounds.playFrostBurst();
-      if (this.frostSlimes === 1) this.showBanner(this.language === 'vi' ? 'Trụ băng triệu hồi slime băng · Phá trụ để chặn lại!' : 'The ice pillars summon frost slimes · Break them to stop it!', 2.6);
+      if (!this.pillarsSummoned) {
+        this.pillarsSummoned = true;
+        this.showBanner(this.language === 'vi' ? 'Trụ băng triệu hồi Pha Lê Băng · Phá trụ để chặn lại!' : 'The ice pillars summon Frost Crystals · Break the pillars!', 2.6);
+      }
     }
+  }
+
+  /** A Frost Crystal stepping out of a pillar toward the middle of the arena, in a burst of snowflakes (pixelfx ice/snowflake-burst). */
+  private newFrostCrystal(pillar: { x: number; y: number }, audible = true): Enemy {
+    const a = Math.atan2(360 - pillar.y, 640 - pillar.x);
+    const x = pillar.x + Math.cos(a) * 62, y = pillar.y + Math.sin(a) * 48;
+    this.spawnPfx('snowflake-burst', x, y + 6, { scale: .6 });
+    if (audible) sounds.playFrostBurst();
+    return {
+      id: `frost-crystal-${++this.frostSlimes}`, kind: 'skull', seesAll: true, x, y, homeX: x, homeY: y, hp: PILLAR_SUMMON.HP, maxHp: PILLAR_SUMMON.HP,
+      mode: 'chase', timer: .6, targetX: this.player.x, targetY: this.player.y, facingLeft: this.player.x < x, hitFlash: .35,
+      deathAge: 0, targetId: null, slimeHue: PILLAR_SUMMON.HUE,
+    };
+  }
+
+  /** Level 6 opens with Frost Crystals only. Once FROST_PRELUDE_KILLS are shattered (and have finished breaking), the two left fuse
+   *  into the Guardian: BossIntro plays the fusion (FrostCrystalFusion), then the Guardian's own entrance. */
+  private updateFrostPrelude(dt: number) {
+    const shattered = this.enemies.filter(e => e.id.startsWith('frost-crystal-') && e.hp <= 0).length;
+    if (shattered < FROST_PRELUDE_KILLS) return;
+    this.frostPreludeWait += dt;
+    if (this.frostPreludeWait >= .7) this.awakenGuardian();
+  }
+
+  private awakenGuardian() {
+    this.boss = createBoss();
+    this.enemies = this.enemies.filter(e => !e.id.startsWith('frost-crystal-'));   // the survivors became the Guardian
+    this.pillarClocks = newPillarClocks();
+    this.bossIntroduction = true;
+    this.heldKeys.clear();
+    this.notifyHUD();
   }
 
   public spawnMagmaMinions(count: number) {
@@ -2687,6 +2728,7 @@ export class GameEngine {
         loadingFromMenu: this.loadingFromMenu,
         bossArmor: this.boss?.armor??0,
         pillarsRemaining: this.boss?.pillars.filter(p=>p.hp>0).length??0,
+        crystalsShattered: this.currentLevel.id===6&&!this.boss?this.enemies.filter(e=>e.id.startsWith('frost-crystal-')&&e.hp<=0).length:undefined,
         bossShieldAt: this.boss&&this.boss.kind!=='demon'?bossShieldFloor(this.boss):0,
         activeBuff: this.hasteTime>0?`${this.language==='vi'?'Tốc chém':'Haste'} ${this.hasteTime.toFixed(1)}s`:this.stoneShield>0?`${this.language==='vi'?'Khiên đá':'Stone shield'} ${this.stoneShield} HP`:this.armorShield>0?`${this.language==='vi'?'Giáp':'Armor'} ${this.armorShield} HP`:'',
         skillDrop: this.skillDrop?.kind??null,

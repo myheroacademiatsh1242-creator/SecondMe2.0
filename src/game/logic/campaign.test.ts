@@ -94,7 +94,7 @@ test('all five wins unlock the boss directly, and the boss gates the ending', t 
     game.chooseRune(game.campaign.pendingRuneChoices[0]);
     game.nextLevel();
   }
-  assert.equal(game.bossIntroduction, true);
+  assert.equal(game.boss, null);   // Frost Crystals first; beginBossFight skips them
   game.beginBossFight();
   assert.equal(game.currentLevelIdx, 5);
   assert.equal(game.screen, 'playing');
@@ -330,6 +330,7 @@ test('losing and retrying a boss fight keeps sword and restores health and boss'
   for(let i=0;i<5;i++){game.invulnerability=0;internal.takeDamage();}
   assert.equal(game.screen,'defeat');game.restartLevel();
   assert.equal(game.screen,'playing');assert.equal(game.health,100);
+  assert.equal(game.boss,null);game.beginBossFight();   // the retry starts again from the Frost Crystals
   assert.equal(game.boss!.hp,GUARDIAN_HP);assert.equal(game.campaign.unlockedLevel,5);
   assert.equal(game.campaign.completed.length,5);
 });

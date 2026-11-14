@@ -33,6 +33,7 @@ import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, S
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { MECHANICAL_ENABLED } from '../game/logic/campaign.ts';
 import { LEVELS } from '../game/logic/levels.ts';
+import { FROST_PRELUDE_KILLS } from '../game/logic/pillarSummon.ts';
 
 function CoinIcon() { return <img className="raccoon-coin" src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt="" aria-hidden="true"/>; }
 
@@ -352,6 +353,10 @@ function LevelOneHUD({ engine, hud }: { engine: GameEngine | null; hud: HUDState
           { done: !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
           { done: false, text: vi ? 'Hạ Thủ Vệ Băng' : 'Defeat Guardian' },
         ])
+    : hud.crystalsShattered !== undefined ? [
+        { done: hud.crystalsShattered >= FROST_PRELUDE_KILLS, text: vi ? `Đập vỡ Pha Lê Băng (${Math.min(hud.crystalsShattered, FROST_PRELUDE_KILLS)}/${FROST_PRELUDE_KILLS})` : `Shatter Frost Crystals (${Math.min(hud.crystalsShattered, FROST_PRELUDE_KILLS)}/${FROST_PRELUDE_KILLS})` },
+        { done: false, text: vi ? 'Hạ Thủ Vệ Băng' : 'Defeat Guardian' },
+      ]
     : [
         { done: hud.checkpointIndex >= hud.checkpointCount, text: vi ? `Kích hoạt ấn (${hud.checkpointIndex}/${hud.checkpointCount})` : `Activate runes (${hud.checkpointIndex}/${hud.checkpointCount})` },
         { done: (hud.runesHeld ?? 0) >= runesRequired || !!hud.finalGateCrossed, text: hud.finalGateCrossed ? (vi ? 'Đã qua cổng cuối' : 'Final gate crossed') : (vi ? `Giữ ấn cổng cuối (${hud.runesHeld ?? 0}/${runesRequired})` : `Hold final seals (${hud.runesHeld ?? 0}/${runesRequired})`) },

@@ -7,7 +7,7 @@ import { DUMMY_RESET } from './training.ts';
 /** 'dummy': the dev training ground's target (logic/training.ts): never moves, attacks or dies. */
 export type EnemyKind='goblin'|'bear'|'skull'|'shaman'|'minotaur'|'dummy';
 export const EMBER_SLIME_ID = 'ember-slime';
-export interface Enemy {id:string;kind:EnemyKind;x:number;y:number;homeX:number;homeY:number;hp:number;maxHp:number;mode:'idle'|'chase'|'warning'|'recover';timer:number;targetX:number;targetY:number;facingLeft:boolean;hitFlash:number;deathAge:number;targetId:number|null;attackFx?:number;slimeHue?:number;/** Push-back still to slide (logic/hitFeel.ts). */push?:{x:number;y:number};targetEcho?:{x:number;y:number;aggroTime?:number};
+export interface Enemy {id:string;kind:EnemyKind;x:number;y:number;homeX:number;homeY:number;hp:number;maxHp:number;mode:'idle'|'chase'|'warning'|'recover';timer:number;targetX:number;targetY:number;facingLeft:boolean;hitFlash:number;deathAge:number;targetId:number|null;attackFx?:number;slimeHue?:number;/** Sees the hero anywhere on the map: no notice range, no leash home, routes round walls (Frost Crystals). */seesAll?:boolean;/** Push-back still to slide (logic/hitFeel.ts). */push?:{x:number;y:number};targetEcho?:{x:number;y:number;aggroTime?:number};
  /** The Echo this enemy was drawn to, and how long it keeps after it once out of sight (s). */
  lureEcho?:{x:number;y:number};lureTime?:number; bolt?:EnemyBolt}
 interface EnemyBolt {x:number;y:number;vx:number;vy:number;life:number;damage:number}
@@ -140,7 +140,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
    e.lureTime=(e.lureTime??0)-dt;decoy={...e.lureEcho,echoIndex:echoes.indexOf(e.lureEcho)};
   }else{e.lureEcho=undefined;e.lureTime=0;}
   const target:EnemyTarget=decoy??{...player,echoIndex:null};const distance=Math.hypot(target.x-e.x,target.y-e.y);
-  const engaged=caveAmbush||!!decoy||(distance<stat.notice&&fromHome<235&&sight(e,target));
+  const engaged=caveAmbush||!!e.seesAll||!!decoy||(distance<stat.notice&&fromHome<235&&sight(e,target));
   // Even ranged enemies close in on an Echo, allowing it to defend itself inside 3m.
   const attackReach=decoy?Math.min(stat.reach,90):stat.reach;
   const retreat=engaged&&!decoy&&ranged&&distance<SHAMAN_KEEP_DISTANCE;
@@ -154,7 +154,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
    continue;
   }
   // No way through to the Echo (a gate closed between them): give it up instead of walking into the wall.
-  let way=decoy||(caveAmbush&&!sight(e,target))?reachableWaypoint(e,target,obstacles,dt):target;
+  let way=decoy||((caveAmbush||e.seesAll)&&!sight(e,target))?reachableWaypoint(e,target,obstacles,dt):target;
   if(!way){e.lureEcho=undefined;e.lureTime=0;way={x:e.homeX,y:e.homeY};}
   const patrolAngle=e.timer*.65+e.homeX;
   const patrol=level.id===13?{x:e.homeX+Math.cos(patrolAngle)*28,y:e.homeY+Math.sin(patrolAngle)*22}:{x:e.homeX,y:e.homeY};

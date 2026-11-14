@@ -116,3 +116,13 @@ test('shamans shoot a dodgeable projectile from range and walls block it',()=>{
  assert.equal(hits,1);
  assert.equal(shaman.bolt,undefined);
 });
+test('a Frost Crystal (seesAll) chases the hero from across the map and far from home; a plain slime ignores them',()=>{
+ const level={...LEVELS[5],walls:[],doors:[]};
+ const make=(seesAll:boolean)=>({id:'frost-crystal-1',kind:'skull' as const,seesAll,x:150,y:150,homeX:900,homeY:600,hp:40,maxHp:40,mode:'idle' as const,timer:0,targetX:150,targetY:150,facingLeft:false,hitFlash:0,deathAge:0,targetId:null,slimeHue:165});
+ const player={x:1150,y:620};   // ~1100 px away, far beyond any notice range
+ const crystal=make(true),slime=make(false);
+ for(let i=0;i<20;i++)updateEnemies([crystal,slime],level,player,[],.05,()=>{});
+ assert.ok(Math.hypot(player.x-crystal.x,player.y-crystal.y)<Math.hypot(player.x-150,player.y-150)-30,'crystal closes in');
+ assert.equal(crystal.mode,'chase');
+ assert.ok(Math.hypot(player.x-slime.x,player.y-slime.y)>=Math.hypot(player.x-150,player.y-150)-60,'slime does not hunt the hero');
+});
