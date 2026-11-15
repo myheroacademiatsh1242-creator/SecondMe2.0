@@ -51,7 +51,6 @@ Dựa trên hệ thống trang phục đã có (`logic/outfits.ts`: đã sở h�
 | Nhân vật | Cách đổi vũ khí | Vì sao |
 |---|---|---|
 | **Aeris** (gậy) | Đổi dáng gậy: gậy vẽ bằng code (`drawMageStaff`, `mageMagic.ts`) nên đổi hình được; tô màu đạn bí thuật; hiệu ứng phụ (đốt, làm chậm) | Gậy không nằm trong ảnh |
-| **Kael** (kiếm) | Chỉ đổi màu lưỡi và sắc hiệu ứng (đã có `outfitPixel` và `outfitTone` cho Băng Lam, Hắc Diệm); đổi sóng kiếm và hiệu ứng trúng | Kiếm nằm trong `kael-combo.png` |
 | **Nhặt trong màn** | Thêm vài loại vào `SKILL_PICKUPS` (hiện 6 loại, mỗi loại là một chiêu dùng ngay) | Cấu trúc sẵn có, ít rủi ro nhất |
 | **Boss** | Mượn cơ chế đòn từ nhóm súng, pháo, búa làm chiêu mới (mục 4) | Đúng việc UPGRADE_PLAN bước 6 đang cần |
 | **Rương** | Có thể thêm phần thưởng vũ khí vào `CHEST_POOL` (hiện chỉ xu và bình) | Làm sau cùng |
@@ -79,8 +78,6 @@ Hiệu ứng ghi theo sheet pixelfx **đã có trong repo** (✅) hay **phải x
 |---|---|---|---|
 | 101 | Kiếm sắt gỉ (mặc định) | Đại Trà | `sword-slash` ✅ |
 | 110 | Đại kiếm hiệp sĩ | Thượng Hạng | `heavy-cleave` ✅ |
-| 111 | Katana Hàn Băng | Độc Bản | `ice-shatter` ✅ (có sẵn trang phục Băng Lam) |
-| 109 | Katana Bóng Đêm | Thượng Hạng | tím, có sẵn Hắc Diệm |
 | 114 | Đại đao hỏa ngục | Độc Bản | `fireball` ✅, `burning` ✅ |
 | 116 | Đại kiếm thần thánh | Tối Thượng | `holy-pillar` ✅, `smite` ✅ |
 | 118 | Ma kiếm Quỷ Vương | Tối Thượng | hợp với boss Quỷ Tâm Hỏa |

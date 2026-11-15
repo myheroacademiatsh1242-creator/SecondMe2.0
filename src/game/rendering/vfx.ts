@@ -1,4 +1,3 @@
-import {knightEffectSheet} from './knightOutfits.ts';
 import type {OutfitId} from '../logic/outfits.ts';
 // Sprite-sheet effects from the supplied GIFs (tools/assets/prepare_vfx_sheets.py): one row per sheet, frames
 // left to right. The numbers below are the script's output; vfx.test.ts checks them against the files.
@@ -63,7 +62,7 @@ function drawCell(ctx: CanvasRenderingContext2D, key: VfxSheet, frame: number, x
   ctx.save();
   ctx.globalAlpha *= alpha;
   ctx.imageSmoothingEnabled = s.smooth;
-  ctx.drawImage(knightEffectSheet(img,outfit), frame * s.w, 0, s.w, s.h, Math.round(x - width / 2), Math.round(y - height / 2), width, height);
+  ctx.drawImage(img, frame * s.w, 0, s.w, s.h, Math.round(x - width / 2), Math.round(y - height / 2), width, height);
   ctx.restore();
   return true;
 }
@@ -98,7 +97,7 @@ export function drawSlash(ctx: CanvasRenderingContext2D, x: number, y: number, a
   ctx.imageSmoothingEnabled = false;
   ctx.translate(x, y); ctx.rotate(angle);
   if (flip) ctx.scale(1, -1);          // the return swing mirrors the first
-  ctx.drawImage(knightEffectSheet(img,outfit), frame * s.w, 0, s.w, s.h, -size / 2, -size / 2, size, size);
+  ctx.drawImage(img, frame * s.w, 0, s.w, s.h, -size / 2, -size / 2, size, size);
   ctx.restore();
   return true;
 }

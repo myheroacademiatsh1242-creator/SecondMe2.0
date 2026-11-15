@@ -1,5 +1,3 @@
-import {isShopOutfit} from '../game/logic/outfits.ts';
-import {drawKnightOutfit,knightAtlasReady} from '../game/rendering/knightOutfits.ts';
 import {outfitSheet} from '../game/rendering/outfitSprites.ts';
 import type {OutfitId} from '../game/logic/outfits.ts';
 import React, { useEffect, useRef } from 'react';
@@ -54,13 +52,11 @@ export function ComboPreview({ hero, outfit, reducedMotion=false }: { hero: Comb
     let raf = 0, current = -1, previous = -1, changedAt = 0, ghostDone = true;
     const draw = (f: number, alpha: number) => {
       ctx.globalAlpha = alpha;
-      if(hero==='swordsman'){ctx.save();ctx.scale(scale,scale);const progress=f===0?0:((f-1)%8)/8;const custom=drawKnightOutfit(ctx,s.frameW/2,s.frameH-10,'right',false,0,f!==0,progress,outfit);ctx.restore();if(custom)return;}
       ctx.drawImage(outfitSheet(img,hero,outfit), f * s.frameW, 0, s.frameW, s.frameH, 0, 0, s.frameW * scale, s.frameH * scale);
     };
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       if (!img.complete || !img.naturalWidth) return;
-      if(hero==='swordsman'&&isShopOutfit(outfit)&&!knightAtlasReady())return;
       let t = reducedMotion?0:((now - t0) / 1000) % total, i = 0;
       while (t >= steps[i].dur) { t -= steps[i].dur; i++; }
       const st = steps[i];
