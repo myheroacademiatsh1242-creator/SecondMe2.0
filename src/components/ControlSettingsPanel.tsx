@@ -7,7 +7,7 @@ export function ControlSettingsPanel({engine}:{engine:GameEngine|null}){
  useEffect(()=>{const timer=window.setInterval(()=>{try{const pad=Array.from(navigator.getGamepads?.()??[]).find(p=>p?.connected);setPadName(pad?pad.mapping==='standard'?pad.id:'Tay cầm chưa có chuẩn Standard mapping':'Chưa kết nối tay cầm · bấm một nút trên tay cầm để trình duyệt nhận');}catch{}},500);return()=>clearInterval(timer);},[]);
  useEffect(()=>{
   if(!capture)return;controls.capturing=true;engine?.clearControlInput();setNotice('');
-  const finish=(error:string|null)=>{if(error){setNotice(error);return;}setCapture(null);button.current?.focus();};
+  const finish=(error:string|null)=>{if(error){setNotice(error);return;}setNotice('');setCapture(null);button.current?.focus();};
   let pendingShift:string|null=null;
   const key=(e:KeyboardEvent)=>{e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;if(e.code==='Escape'){setCapture(null);return;}if(mode==='keys'){if(e.ctrlKey||e.metaKey||e.altKey){pendingShift=null;setNotice('Không dùng tổ hợp Ctrl / Alt / Win của trình duyệt.');return;}if(e.code==='ShiftLeft'||e.code==='ShiftRight'){pendingShift=e.code;setNotice('Nhấn thêm phím để gán tổ hợp, hoặc thả Shift để gán riêng Shift.');return;}pendingShift=null;finish(controls.bind(capture.action,inputToken(e.code,e.shiftKey),capture.slot));}};
   const keyUp=(e:KeyboardEvent)=>{if(mode==='keys'&&pendingShift===e.code){e.preventDefault();e.stopImmediatePropagation();pendingShift=null;finish(controls.bind(capture.action,e.code,capture.slot));}};
