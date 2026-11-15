@@ -31,7 +31,7 @@
 #root .adventure-app .inventory-modal .inventory-supplies{display:flex;flex-direction:column;gap:8px}
 #root .adventure-app .inventory-modal .inventory-supplies article{flex:none;min-height:100px;padding:12px;gap:10px}
 #root .adventure-app .inventory-modal :is(.inventory-supplies article,.inventory-rune-slots>button,.inventory-rune-description){border-image-slice:100 fill!important;border-image-repeat:round!important}
-#root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 #root .adventure-app .inventory-modal .inventory-rune-slots>button{min-height:116px;padding:14px 5px 8px}
 #root .adventure-app .inventory-modal .inventory-rune-slots strong{font-size:14px!important}
 #root .adventure-app .inventory-modal .inventory-rune-description{padding:16px;margin-top:12px;min-height:0}
@@ -47,6 +47,9 @@
  #root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(2,minmax(0,1fr))}
  #root .adventure-app .inventory-modal .inventory-rune-slots strong{font-size:12px!important}
 }
+@media (min-width:601px) and (max-width:900px) {
+ #root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-height:480px){
  #root .adventure-app .inventory-modal .trail-inventory{height:calc(100dvh - 64px);max-height:calc(100dvh - 64px)}
  #root .adventure-app .inventory-modal .inventory-heading{padding-top:8px;padding-bottom:4px}
@@ -61,7 +64,14 @@
 }
 /* Corner-only foliage; the middle edge strips contain repeatable stone, not stretched vines. */
 #root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel{
+ background:transparent!important;
+ box-shadow:none!important;
  border-image-source:url('/assets/ui/inventory-nine-slice-pixel.png')!important;
  border-image-slice:25% fill!important;
  border-image-repeat:round!important;
+}
+#root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel:has(> [data-panel-art='fallback']){
+ background:#34372b!important;
+ border-color:#948364!important;
+ border-image:none!important;
 }

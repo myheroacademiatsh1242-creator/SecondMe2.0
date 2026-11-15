@@ -1,5 +1,5 @@
 export const HERO_MAX_HP = { mage: 85, swordsman: 115, mechanical: 100 } as const;
-export const HERO_COMBO_ATTACK = { mage: 9, swordsman: 16 } as const;
+export const HERO_COMBO_ATTACK = { mage: 12, swordsman: 16 } as const;
 export const GUARDIAN_HP = 440;
 export const EMBER_DEMON_HP = 1440;
 export const BOSS_PLAYER_DAMAGE = { guardian: 1.25, demon: 1.4 } as const;

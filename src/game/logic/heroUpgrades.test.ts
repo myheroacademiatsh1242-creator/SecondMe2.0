@@ -80,7 +80,7 @@ test('upgrades affect hero health, attacks, skill MP and revival', t => {
   game['strike'](enemy, 25, false, {x: enemy.x, y: enemy.y});
   assert.equal(enemy.maxHp - enemy.hp, 52);
   game.useSkill(enemy);
-  assert.equal(game.mana.value, 62);
+  assert.equal(game.mana.value, 66);
 
   game.goToLobby();
   game.openCharacters();

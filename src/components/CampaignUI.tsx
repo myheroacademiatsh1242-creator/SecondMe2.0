@@ -274,7 +274,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const outfitColor=RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,outfit)];
   const {maxHealth} = heroStats(choice.id, hud.heroRanks ?? cleanHeroRanks());
   const detail = choice.id === 'mage'
-    ? (vi ? `${maxHealth} HP. Đánh xa và phủ nhiều mục tiêu, sát thương mỗi đòn thấp. Chuột phải thi triển Gai Băng diện rộng.` : `${maxHealth} HP. Ranged attacks cover several targets with lower damage per hit. Right-click to cast area Ice Spike.`)
+    ? (vi ? `${maxHealth} HP. Đánh xa, phủ nhiều mục tiêu. Gai Băng làm quái chậm 40% trong 2 giây.` : `${maxHealth} HP. Ranged attacks cover multiple targets. Ice Spike slows regular enemies by 40% for 2 seconds.`)
     : choice.id === 'swordsman'
     ? (vi ? `${maxHealth} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${maxHealth} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');

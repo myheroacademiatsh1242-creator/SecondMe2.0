@@ -1,4 +1,5 @@
 import { encounterBalance } from './balance.ts';
+import { ENEMY_CHILL } from './iceMagic.ts';
 import { reachableWaypoint } from './enemyNavigation.ts';
 import { getActiveObstacles, resolveMovement } from './collision.ts';
 import { segmentCircle, segmentWall } from './combatGeometry.ts';
@@ -7,7 +8,7 @@ import { DUMMY_RESET } from './training.ts';
 /** 'dummy': the dev training ground's target (logic/training.ts): never moves, attacks or dies. */
 export type EnemyKind='goblin'|'bear'|'skull'|'shaman'|'minotaur'|'dummy';
 export const EMBER_SLIME_ID = 'ember-slime';
-export interface Enemy {id:string;kind:EnemyKind;x:number;y:number;homeX:number;homeY:number;hp:number;maxHp:number;mode:'idle'|'chase'|'warning'|'recover';timer:number;targetX:number;targetY:number;facingLeft:boolean;hitFlash:number;deathAge:number;targetId:number|null;attackFx?:number;slimeHue?:number;/** Sees the hero anywhere on the map: no notice range, no leash home, routes round walls (Frost Crystals). */seesAll?:boolean;/** Push-back still to slide (logic/hitFeel.ts). */push?:{x:number;y:number};targetEcho?:{x:number;y:number;aggroTime?:number};
+export interface Enemy {id:string;kind:EnemyKind;x:number;y:number;homeX:number;homeY:number;hp:number;maxHp:number;mode:'idle'|'chase'|'warning'|'recover';timer:number;targetX:number;targetY:number;facingLeft:boolean;hitFlash:number;deathAge:number;targetId:number|null;attackFx?:number;slimeHue?:number;chillTime?:number;/** Sees the hero anywhere on the map: no notice range, no leash home, routes round walls (Frost Crystals). */seesAll?:boolean;/** Push-back still to slide (logic/hitFeel.ts). */push?:{x:number;y:number};targetEcho?:{x:number;y:number;aggroTime?:number};
  /** The Echo this enemy was drawn to, and how long it keeps after it once out of sight (s). */
  lureEcho?:{x:number;y:number};lureTime?:number; bolt?:EnemyBolt}
 interface EnemyBolt {x:number;y:number;vx:number;vy:number;life:number;damage:number}
@@ -101,6 +102,9 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   // A dummy only counts the time since its last hit (strike() zeroes it) and refills when left alone.
   if(e.kind==='dummy'){e.timer+=dt;if(e.timer>DUMMY_RESET)e.hp=e.maxHp;continue;}
   if(e.hp<=0){e.deathAge+=dt;continue;}
+  const chilledTime = Math.min(dt, e.chillTime ?? 0);
+  e.chillTime = Math.max(0, (e.chillTime ?? 0) - dt);
+  const movementTime = dt - chilledTime * (1 - ENEMY_CHILL.SPEED);
   const slime=e.slimeHue!==undefined;
   const stat=slime?{...SLIME_STATS,...slimeTraits[e.slimeHue!]}:ENEMY_STATS[e.kind];e.timer-=dt;
   const ranged=e.kind==='shaman';
@@ -108,7 +112,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   if(e.mode==='warning'){
    if(slime&&e.timer<.18){
     const remaining=Math.max(dt,e.timer+dt);
-    const advance=Math.min(1,dt/remaining);
+    const advance=Math.min(1,movementTime/remaining);
     const dx=e.targetX-e.x,dy=e.targetY-e.y,length=Math.hypot(dx,dy)||1;
     const step=Math.max(0,length-16)*advance;
     const landing=resolveMovement(e.x,e.y,e.x+dx/length*step,e.y+dy/length*step,30,30,obstacles);
@@ -175,7 +179,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   e.mode=length>5?'chase':'idle';e.facingLeft=ranged&&engaged?target.x<e.x:dx<0;
   if(length>5){
    const speed=stat.speed*balance.speed*(canRetreat?.9:caveAmbush?1.2:engaged?1:.45);
-   const amount=Math.min(length,speed*dt);
+   const amount=Math.min(length,speed*movementTime);
    const pos=resolveMovement(e.x,e.y,e.x+dx/length*amount,e.y+dy/length*amount,30,30,obstacles);
    const nextDistance=Math.hypot(pos.x-player.x,pos.y-player.y);
    if(level.id!==13||nextDistance>=18||nextDistance>=Math.hypot(e.x-player.x,e.y-player.y)){

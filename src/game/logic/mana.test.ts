@@ -17,11 +17,12 @@ test('spending again restarts the regen delay, while free attacks let mana recov
  mana.update(1);assert.equal(mana.value,10);
  mana.update(2);assert.equal(mana.value,20);
 });
-test('Aeris pays more than Kael: two full combos empty her pool, Kael keeps his old costs',()=>{
+test('Aeris can cast two complete ranged combos and still has 28 MP',()=>{
  const sum=(h:'mage'|'swordsman')=>COMBO_MP[h].reduce((a:number,b:number)=>a+b,0);
- assert.equal(sum('mage'),50);assert.equal(sum('swordsman'),31);
- assert.deepEqual([skillManaCost('mage'),skillManaCost('swordsman')],[40,30]);
+ assert.equal(sum('mage'),36);assert.equal(sum('swordsman'),31);
+ assert.deepEqual([skillManaCost('mage'),skillManaCost('swordsman')],[36,30]);
  const m=new ManaPool();for(let c=0;c<2;c++)for(let s=0;s<4;s++)assert.equal(m.spend(comboManaCost('mage',s)),true);
- assert.equal(m.value,0);assert.equal(m.spend(comboManaCost('mage',1)),false,'the third combo stalls at its second hit');
+ assert.equal(m.value,28);assert.ok(m.spend(comboManaCost('mage',1)));assert.ok(m.spend(comboManaCost('mage',2)));
+ assert.equal(m.spend(comboManaCost('mage',3)),false);
  assert.equal(comboManaCost('mage',9),0,'past the last hit: free, never NaN');
 });

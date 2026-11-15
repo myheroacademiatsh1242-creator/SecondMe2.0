@@ -33,6 +33,16 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   const bridgeDown = game.currentLevel.doors.some(door => door.liftBridge && door.openProgress < 1);
   const visibleOnGround = ({x}: {x:number}) => !bridgeDown || x < WIND_BRIDGE.x || x >= WIND_BRIDGE.x + WIND_BRIDGE.width;
   const visibleEnemies = bridgeDown ? game.enemies.filter(visibleOnGround) : game.enemies;
+  ctx.save();
+  ctx.strokeStyle = '#abeaff';
+  for (const enemy of visibleEnemies) {
+    if (!enemy.chillTime || enemy.hp <= 0) continue;
+    ctx.globalAlpha = Math.min(.9, enemy.chillTime * 2);
+    ctx.beginPath();
+    ctx.ellipse(enemy.x, enemy.y + 4, 17, 7, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
   drawEnemies(ctx,visibleEnemies,time);
   if(game.supportAlly){
     const a=game.supportAlly;ctx.save();ctx.globalAlpha=.9;

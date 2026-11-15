@@ -14,7 +14,7 @@ import { FROST_PRELUDE_KILLS, PILLAR_SUMMON, newPillarClocks, stepPillarSummons 
 import { createCaveSlimes, createEnemies, ENEMY_STATS, EMBER_SLIME_ID, updateEnemies, type Enemy } from './logic/enemies.ts';
 import { ECHO_RUNES, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
 import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
-import {ICE_MAGIC,FROST_STRIKE,insideIceRay,type FrostZone} from './logic/iceMagic.ts';
+import {ICE_MAGIC,ENEMY_CHILL,FROST_STRIKE,insideIceRay,type FrostZone} from './logic/iceMagic.ts';
 import { puzzleBalance, SHARD_BONUS, ENEMY_TIME_BONUS, PUZZLE_HINTS, GUARDIAN_HP, BOSS_PLAYER_DAMAGE, SWORD_WAVE_RANGE, encounterBalance } from './logic/balance.ts';
 import { heroStats, type HeroRanks, type HeroUpgradeStat } from './logic/heroUpgrades.ts';
 import { TutorialDirector, type GuideTopic } from './logic/tutorials.ts';
@@ -1494,8 +1494,13 @@ export class GameEngine {
       if(zone.timer<=0&&!zone.struck){
         zone.struck=true;
         sounds.playFrostBurst();
-        const targets:CombatTarget[]=[...this.enemies.filter(e=>e.hp>0),...(this.boss&&this.boss.hp>0?[...this.boss.pillars.filter(p=>p.hp>0),this.boss]:[])];
-        for(const target of targets)if(Math.hypot(target.x-zone.x,target.y-zone.y)<=zone.radius)this.strike(target,ICE_MAGIC.DAMAGE);
+        for (const {t: target} of this.combatTargets()) {
+          if (Math.hypot(target.x - zone.x, target.y - zone.y) > zone.radius) continue;
+          this.strike(target, ICE_MAGIC.DAMAGE);
+          if ('kind' in target && 'homeX' in target && target.hp > 0 && target.kind !== 'dummy') {
+            target.chillTime = ENEMY_CHILL.SECONDS;
+          }
+        }
       }
     }
     this.frostZones=this.frostZones.filter(z=>z.timer>-ICE_MAGIC.IMPACT);
