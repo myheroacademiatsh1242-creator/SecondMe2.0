@@ -4,12 +4,12 @@ import {Campaign} from './campaign.ts';
 import {ECHO_RUNES} from './echoRunes.ts';
 import {GameEngine} from '../GameEngine.ts';
 function storage(t:TestContext){const old=Object.getOwnPropertyDescriptor(globalThis,'localStorage'),map=new Map<string,string>();Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:(k:string)=>map.get(k)??null,setItem:(k:string,v:string)=>map.set(k,v)}});t.after(()=>old?Object.defineProperty(globalThis,'localStorage',old):Reflect.deleteProperty(globalThis,'localStorage'));return map;}
-test('loadout picks any owned rune but rejects duplicates and a fifth slot',()=>{
+test('loadout allows duplicate slots only up to owned copies and rejects a fifth slot',()=>{
  const c=new Campaign();c.echoRunes=Object.fromEntries(ECHO_RUNES.map(r=>[r.id,2]));
  assert.equal(ECHO_RUNES.length,12);
  for(let i=0;i<4;i++)assert.ok(c.setRuneSlot(i,ECHO_RUNES[i].id));
  const before=[...c.runeLoadout],stock={...c.echoRunes};
- assert.equal(c.setRuneSlot(4,'call'),false);assert.equal(c.setRuneSlot(1,'call'),false);
+ assert.equal(c.setRuneSlot(4,'call'),false);assert.equal(c.setRuneSlot(1,'call'),true);assert.equal(c.setRuneSlot(2,'call'),false);assert.ok(c.setRuneSlot(1,before[1]));
  assert.ok(c.setRuneSlot(0,'cleave'));assert.equal(c.runeLoadout[0],'cleave');assert.ok(c.setRuneSlot(0,before[0]));
  assert.ok(c.setRuneSlot(3,null));assert.ok(c.setRuneSlot(3,before[3]));assert.deepEqual(c.runeLoadout,before);
  for(const r of ECHO_RUNES)assert.equal(c.echoRunes[r.id],stock[r.id]);
@@ -33,4 +33,15 @@ test('editing freezes combat and timers, leaves active buffs intact, then gamepl
  const g=new GameEngine();g.currentLevelIdx=1;g.restartLevel();g.tutorialEnabled=false;g.campaign.echoRunes.guard=2;g.activeEchoRunes.add('guard');const time=g.legTimeRemaining;
  g.setRuneEditing(true);(g as any).update(1);assert.equal(g.legTimeRemaining,time);assert.ok(g.setRuneSlot(0,'guard'));assert.ok(g.activeEchoRunes.has('guard'));assert.equal(g.campaign.echoRunes.guard,2);assert.equal(g.useEchoRune('guard'),false);
  g.setRuneEditing(false);(g as any).update(.1);assert.ok(g.legTimeRemaining!<time!);
+});
+
+
+test('duplicate equipment survives reload and excess saved copies are trimmed',t=>{
+ const m=storage(t);const c=new Campaign();c.echoRunes={power:2,guard:1};assert.ok(c.setRuneSlot(0,'power'));assert.ok(c.setRuneSlot(1,'power'));assert.equal(c.setRuneSlot(2,'power'),false);assert.equal(c.echoRunes.power,2);
+ const restored=new Campaign();restored.load();assert.deepEqual(restored.runeLoadout,['power','power']);
+ m.set('second-me-campaign-v3',JSON.stringify({echoRunes:{power:2,guard:1},runeLoadout:['power','power','power','guard'],pendingRuneChoices:['power','power','guard']}));restored.load();assert.deepEqual(restored.runeLoadout,['power','power','guard']);assert.deepEqual(restored.pendingRuneChoices,['power','power','guard']);
+});
+test('equipping duplicates does not stack a buff or consume an extra copy',t=>{
+ const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));
+ const g=new GameEngine();g.currentLevelIdx=1;g.restartLevel();g.campaign.echoRunes={power:2};g.campaign.runeLoadout=['power','power'];assert.ok(g.useEchoRune('power'));assert.equal(g.campaign.echoRunes.power,1);assert.equal(g.useEchoRune('power'),false);assert.equal(g.campaign.echoRunes.power,1);assert.equal(g.activeEchoRunes.size,1);
 });

@@ -66,6 +66,18 @@ export function ChestGacha({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
     return ()=>window.removeEventListener('keydown',key,true);
   },[open,panelArt,showSummonScene,showRewardModal,showHistory]);
 
+  useEffect(()=>{
+    engine?.tutorialUI({chestOpen:open,chestAvailable:available,chestRates:showRates,chestRewards:showRewardModal});
+    if(open)engine?.onboarding.event('chest-open');
+    if(open&&showRates)engine?.onboarding.event('chest-rates');
+    if(open&&showRewardModal)engine?.onboarding.event('chest-cards');
+    return()=>engine?.tutorialUI({chestOpen:false,chestRates:false,chestRewards:false});
+  },[engine,open,available,showRates,showRewardModal]);
+  useEffect(()=>{
+    if(open&&engine?.onboarding.active?.id==='chest.cards'&&!results.length&&engine.campaign.lastChestRewards.length){
+      setResults([...engine.campaign.lastChestRewards]);setShowRewardModal(true);
+    }
+  },[engine,open]);
   const draw=(count:1|10)=>{
     if(!available){
       if (chestContent.current) chestContent.current.scrollTop = 0;
@@ -106,7 +118,7 @@ export function ChestGacha({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
         <button ref={closeButton} className="chest-close-btn" aria-label={vi?'Đóng rương':'Close chest'} onClick={close}>×</button>
       </header>
       <nav className="chest-kind-buttons" aria-label={vi?'Chọn loại rương':'Choose chest type'}>
-        {chestKinds.map(chest=><button type="button" key={chest.id} aria-pressed={kind===chest.id} disabled={busy.current} onClick={()=>selectChest(chest.id)}>{vi?chest.vi:chest.en}</button>)}
+        {chestKinds.map(chest=><button type="button" key={chest.id} aria-pressed={kind===chest.id} disabled={busy.current} onClick={()=>{selectChest(chest.id);if(isChestAvailable(chest.id))engine?.onboarding.event('chest-kind');}}>{vi?chest.vi:chest.en}</button>)}
       </nav>
       <div ref={chestContent} className="chest-panel-scroll">
       {notice&&<div className="chest-development-notice" role="status"><p>{vi?'Rương đang trong quá trình hoàn thiện, chưa có phần thưởng để quay. Vui lòng quay lại sau. Tinh thể của bạn được giữ nguyên.':'This chest is under development. Rewards are not available yet. Please return later. Your crystals are preserved.'}</p><button type="button" onClick={()=>setNotice(false)}>{vi?'Đã hiểu':'Got it'}</button></div>}

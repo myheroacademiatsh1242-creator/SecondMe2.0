@@ -30,6 +30,13 @@ export function levelRating(seconds: number, levelId?: number): { stars: number;
 }
 
 export class Campaign {
+  tutorialWelcomeClaimed=false;
+  grantTutorialWelcome(){
+    if(this.tutorialWelcomeClaimed||!this.completed.includes(1))return false;
+    this.tutorialWelcomeClaimed=true;
+    this.coins+=SHOP_ITEMS.find(item=>item.id==='time')!.price*3;this.chestKeys+=CHEST_PRICES.royal.single*3;this.save();return true;
+  }
+
   heroRanks = cleanHeroRanks();
   heroUpgradeSpent = { mage: 0, swordsman: 0 };
   ownedOutfits:ShopOutfitId[]=[];
@@ -80,6 +87,7 @@ export class Campaign {
       this.heroClears={mage:[],swordsman:[]};
       for(const hero of ['mage','swordsman'])if(Array.isArray(value.heroClears?.[hero]))this.heroClears[hero]=[...new Set<number>(value.heroClears[hero].filter((n:unknown)=>Number.isInteger(n)&&Number(n)>=1&&Number(n)<=6))];
       this.aidUnlocked=value.aidUnlocked===true||value.supportClaimed===true||['mage','swordsman'].every(h=>this.heroClears[h].length===6);
+      this.tutorialWelcomeClaimed=value.tutorialWelcomeClaimed===true;
       this.completed = [...new Set<number>((value.completed ?? []).filter((id: unknown) => Number.isInteger(id) && Number(id) >= 1 && Number(id) <= 13 && Number(id)!==6))].sort((a,b)=>a-b);
       // Only a continuous run unlocks later trails.
       this.completed = this.completed.filter(id=>Array.from({length:id-(id>=7?7:1)+1},(_,i)=>(id>=7?7:1)+i).every(n=>this.completed.includes(n)));
@@ -94,7 +102,7 @@ export class Campaign {
       this.lastChestRewards=Array.isArray(value.lastChestRewards)?value.lastChestRewards.filter((id:unknown)=>typeof id==='string'&&Boolean(chestReward(id as ChestRewardId))).slice(0,10):[];
       this.echoRunes=cleanRuneStock(value.echoRunes);
       this.pendingRuneChoices=cleanRuneChoices(value.pendingRuneChoices);
-      this.runeLoadout=Array.isArray(value.runeLoadout)?[...new Set(value.runeLoadout.filter((id:unknown)=>typeof id==='string'&&ECHO_RUNES.some(r=>r.id===id)))].slice(0,4) as EchoRuneId[]:ECHO_RUNES.filter(r=>(this.echoRunes[r.id]??0)>0).slice(0,4).map(r=>r.id);
+      this.runeLoadout=Array.isArray(value.runeLoadout)?value.runeLoadout.filter((id:unknown,index:number,all:unknown[])=>typeof id==='string'&&ECHO_RUNES.some(r=>r.id===id)&&all.slice(0,index).filter(x=>x===id).length<Math.max(1,this.echoRunes[id as EchoRuneId]??0)).slice(0,4) as EchoRuneId[]:ECHO_RUNES.filter(r=>(this.echoRunes[r.id]??0)>0).slice(0,4).map(r=>r.id);
       const migrateRunes=value.echoRunes===undefined&&this.completed.length>0;
       if(migrateRunes)for(const _id of this.completed)this.grantRune();
       this.bestStars = Object.fromEntries(Object.entries(value.bestStars ?? {}).filter(([id, stars]) => Number(id) >= 1 && Number(id) <= 13 && Number.isInteger(stars) && Number(stars) >= 0 && Number(stars) <= 3)) as Record<number, number>;
@@ -116,7 +124,7 @@ export class Campaign {
       ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
       supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
-      completed: this.completed, bossDefeated: this.bossDefeated,
+      tutorialWelcomeClaimed:this.tutorialWelcomeClaimed, completed: this.completed, bossDefeated: this.bossDefeated,
       echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
   }
@@ -139,7 +147,9 @@ export class Campaign {
     if(id===null){if(slot>=this.runeLoadout.length)return false;this.runeLoadout.splice(slot,1);}
     else{
       if(!ECHO_RUNES.some(r=>r.id===id)||(this.echoRunes[id]??0)<=0)return false;
-      if(this.runeLoadout.includes(id))return false;
+      const target=Math.min(slot,this.runeLoadout.length);
+      if(this.runeLoadout[target]===id)return false;
+      if(this.runeLoadout.filter((r,i)=>r===id&&i!==target).length>=(this.echoRunes[id]??0))return false;
       this.runeLoadout[Math.min(slot,this.runeLoadout.length)]=id;
     }
     this.save();return true;

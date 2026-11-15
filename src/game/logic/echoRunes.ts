@@ -30,12 +30,11 @@ export function cleanRuneStock(value:unknown):EchoRuneStock {
  return stock;
 }
 
+/** Three independent uniform rolls, with replacement: duplicate choices are intentional. */
 export function rollRuneChoices(random:()=>number=Math.random):EchoRuneId[]{
- const pool:EchoRuneId[]=ECHO_RUNES.map(r=>r.id),choices:EchoRuneId[]=[];
- while(choices.length<3){const index=Math.min(pool.length-1,Math.max(0,Math.floor(random()*pool.length)));choices.push(pool.splice(index,1)[0]);}
- return choices;
+ return Array.from({length:3},()=>rollEchoRune(random));
 }
 export function cleanRuneChoices(value:unknown):EchoRuneId[]{
- if(!Array.isArray(value)||value.length!==3||new Set(value).size!==3)return [];
+ if(!Array.isArray(value)||value.length!==3)return [];
  return value.every(id=>ECHO_RUNES.some(r=>r.id===id)) ? value as EchoRuneId[] : [];
 }

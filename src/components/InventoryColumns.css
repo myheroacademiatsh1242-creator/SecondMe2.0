@@ -176,3 +176,45 @@ html body #root .inventory-pack-slots .pack-quantity button{
  .battle-preparation .inventory-packed-item>.shop-item-icon{width:28px;height:28px}
  .battle-preparation .inventory-packed-item .pack-quantity{grid-column:1/-1;justify-self:center}
 }
+
+/* Battle preparation: a compact packing table within the existing forest frame. */
+#root .adventure-app .battle-preparation .inventory-modal.forest-dialog.panel{width:min(1000px,calc(100vw - 40px))}
+#root .adventure-app .battle-preparation .trail-inventory{height:min(590px,calc(100dvh - 112px))}
+#root .adventure-app .battle-preparation .inventory-supply-column{padding:18px;column-gap:22px;grid-template-columns:minmax(0,1fr) minmax(260px,38%);background-color:#20291fe0}
+#root .adventure-app .battle-preparation .inventory-pack{padding:16px;border:1px solid #9b8c52;background:#141f18;box-shadow:inset 0 0 0 3px #2c3828,0 4px 0 #101810}
+.battle-preparation .inventory-pack-heading{padding-bottom:12px;border-bottom:1px solid #68704b;gap:10px}
+.battle-preparation .inventory-pack-slots{gap:10px;margin-top:14px}
+.battle-preparation .inventory-pack-slots>.inventory-empty-slot{display:flex;flex-direction:column;justify-content:center;gap:5px;min-height:76px;color:#a6ad86;border:1px dashed #67734f;background:#1d2a20;box-shadow:inset 0 0 14px #101910}
+.battle-preparation .inventory-empty-slot svg{opacity:.55}
+.battle-preparation .inventory-empty-slot span{font-size:14px}
+.battle-preparation .inventory-pack-slots>.inventory-packed-item{min-height:76px;background:#2c3825;border-color:#b1a061}
+.battle-preparation .inventory-pack>p{color:#b9bf9a;line-height:1.5;margin-top:14px}
+#root .adventure-app .battle-preparation .inventory-supplies article{background:#263025;border:1px solid #69744a;box-shadow:inset 3px 0 #a69451;margin-bottom:10px}
+.preparation-empty-stock{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;text-align:center;gap:12px;color:#c5c9a2;padding:24px}
+.preparation-empty-stock>svg{color:#a69b60}
+.preparation-empty-stock p{max-width:28ch;line-height:1.5}
+.battle-preparation .inventory-footer{gap:16px}
+.battle-preparation button:focus-visible{outline:2px solid #eed58a;outline-offset:3px}
+@media(max-width:720px){
+ #root .adventure-app .battle-preparation .inventory-supply-column{grid-template-columns:minmax(0,1fr);padding:10px;gap:8px}
+ #root .adventure-app .battle-preparation .inventory-pack{padding:10px}
+ .battle-preparation .inventory-pack-slots>.inventory-empty-slot{min-height:66px;padding:12px 5px 6px}
+ .battle-preparation .inventory-empty-slot span{font-size:12px}
+}
+@media(max-height:560px){
+ #root .adventure-app .battle-preparation .trail-inventory{height:calc(100dvh - 86px)}
+ #root .adventure-app .battle-preparation .inventory-pack{padding:8px}
+ .battle-preparation .inventory-pack-slots>*{min-height:38px!important}
+ .battle-preparation .inventory-empty-slot svg{display:none}
+ .battle-preparation .inventory-pack-heading{padding-bottom:6px}
+ .battle-preparation .inventory-pack-slots{margin-top:8px;gap:6px}
+ .preparation-empty-stock{min-height:100px;padding:12px}
+}
+
+#root .adventure-app .battle-preparation .inventory-pack-slots>.inventory-packed-item{grid-template-columns:42px minmax(0,1fr);grid-template-rows:auto auto;padding:12px 24px 10px 12px;gap:6px 10px;position:relative}
+#root .adventure-app .battle-preparation .inventory-packed-item>.shop-item-icon{grid-column:1;grid-row:1/span 2;align-self:center}
+#root .adventure-app .battle-preparation .inventory-packed-name{grid-column:2;grid-row:1;font-size:15px;line-height:1.3;text-align:left}
+#root .adventure-app .battle-preparation .inventory-packed-item>.pack-quantity{grid-column:2;grid-row:2;justify-self:start}
+#root .adventure-app .battle-preparation .inventory-pack-slots kbd{position:absolute;top:4px;left:4px;width:auto;min-width:14px;padding:0 2px}
+#root .adventure-app .battle-preparation .inventory-empty-slot{position:relative}
+@media(max-width:720px){#root .adventure-app .battle-preparation .inventory-pack-slots>.inventory-packed-item{grid-template-columns:28px minmax(0,1fr);gap:4px;padding:20px 7px 7px}#root .adventure-app .battle-preparation .inventory-packed-name{font-size:12px}}

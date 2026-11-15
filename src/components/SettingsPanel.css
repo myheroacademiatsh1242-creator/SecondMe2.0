@@ -57,3 +57,16 @@ html body .settings-clean.settings-panel .settings-tabs{grid-template-columns:re
 html body .settings-clean.settings-panel .dev-supplies h3{font-size:21px;margin:0 0 10px;color:#f0d491}
 html body .settings-clean.settings-panel .dev-supplies button{margin:14px 0 6px;padding:14px 12px;line-height:1.4;white-space:normal}
 html body .settings-clean.settings-panel .dev-supplies p{font-size:18px!important;line-height:1.5!important}
+
+/* A scannable key reference, with one action per row. */
+html body .settings-clean.settings-panel .control-groups{display:grid;gap:20px;margin-top:18px}
+html body .settings-clean.settings-panel .control-group{min-width:0;text-align:left}
+html body .settings-clean.settings-panel .control-group h3{font:400 18px/1.4 'Second Me Pixel',monospace!important;color:#e8cd88;margin:0 0 8px;padding-bottom:7px;border-bottom:1px solid #b4ab6844;letter-spacing:.04em}
+html body .settings-clean.settings-panel .control-group dl{margin:0}
+html body .settings-clean.settings-panel .control-binding{display:grid;grid-template-columns:minmax(150px,42%) minmax(0,1fr);align-items:center;gap:14px;padding:9px 0;border-bottom:1px solid #a2ad791c}
+html body .settings-clean.settings-panel .control-binding dt,html body .settings-clean.settings-panel .control-binding dd{margin:0;min-width:0;text-align:left;font:400 18px/1.4 'Second Me Pixel',monospace!important;letter-spacing:0;color:#d0d1ae}
+html body .settings-clean.settings-panel .control-binding kbd{display:inline-block;max-width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid #8c9464;border-bottom-width:3px;background:#202c22;box-shadow:inset 0 0 0 1px #ffffff08;color:#f2dfaa;font:400 17px/1.4 'Second Me Pixel',monospace!important;white-space:normal;overflow-wrap:anywhere;text-shadow:none}
+@media(max-width:480px){html body .settings-clean.settings-panel .control-binding{grid-template-columns:minmax(100px,44%) minmax(0,1fr);gap:10px}html body .settings-clean.settings-panel .control-binding kbd{font-size:15px!important;padding:3px 5px}html body .settings-clean.settings-panel .control-binding dd{font-size:17px!important}}
+
+html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel{display:flex;flex-direction:column}
+html body .settings-clean.settings-panel>.panel-top,html body .settings-clean.settings-panel>h2,html body .settings-clean.settings-panel>.settings-tabs{flex-shrink:0}

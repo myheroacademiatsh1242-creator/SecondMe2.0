@@ -30,7 +30,7 @@ test('consumed rings grant two slots and charges for one attempt without stackin
   assert.equal(game.echoes.length,6);assert.equal(new Set(game.echoes.map(e=>e.colorSlot)).size,6);
   game.recorder.startRecording(game.player.x,game.player.y,'right');game.spawnEcho();assert.equal(game.echoes.length,6);
   const input=game as unknown as {handleKeyDown(event:KeyboardEvent):void};
-  input.handleKeyDown({key:'6',code:'Digit6',repeat:false,preventDefault(){}} as KeyboardEvent);assert.equal(game.selectedEcho,5);
+  const latest=game.echo;input.handleKeyDown({key:'4',code:'Digit4',repeat:false,preventDefault(){}} as KeyboardEvent);assert.equal(game.echo,latest);
   game.restartLevel();assert.equal(game.echoLimit,4);assert.equal(game.campaign.limitRings,2);assert.equal(game.limitRingActive,false);
   game.pauseGame();assert.equal(game.useLimitRing(),false);assert.equal(game.campaign.limitRings,2);
 });

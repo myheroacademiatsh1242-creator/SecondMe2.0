@@ -33,6 +33,7 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
       : (vi ? 'Cấp 5 / 10 · Pháp trận kéo dài 7 / 9 giây.' : 'Rank 5 / 10 · Sanctuary lasts 7 / 9 seconds.'),
   };
 
+  useEffect(()=>{engine?.tutorialUI({heroUpgrade:true,resetOpen:resetSpent!==null});if(resetSpent!==null)engine?.onboarding.event('upgrade-reset-view');return()=>engine?.tutorialUI({heroUpgrade:false,resetOpen:false});},[engine,resetSpent]);
   return <dialog ref={dialog} className="hero-upgrades" data-lobby-dialog aria-labelledby="hero-upgrades-title"
     onKeyDown={event => { if (event.key === 'Escape') event.stopPropagation(); }}
     onCancel={event => { event.preventDefault(); if (resetSpent !== null) setResetSpent(null); else close(); }}>
@@ -72,7 +73,7 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
         <p role="status">{vi
           ? `Đưa cả 3 chỉ số của ${heroName} về cấp 0. Hoàn ${coins(resetQuote.refund)}, trừ phí ${coins(resetQuote.fee)} (${HERO_RESET_FEE_PERCENT}%).`
           : `Reset all 3 stats for ${heroName} to rank 0. Refund ${coins(resetQuote.refund)} after a ${coins(resetQuote.fee)} fee (${HERO_RESET_FEE_PERCENT}%).`}</p>
-        <button type="button" onClick={() => setResetSpent(null)}>{vi ? 'Hủy' : 'Cancel'}</button>
+        <button type="button" onClick={() => {setResetSpent(null);engine?.onboarding.event('upgrade-reset-close');}}>{vi ? 'Hủy' : 'Cancel'}</button>
         <button type="button" className="hero-reset-button" disabled={resetSpent !== spent}
           onClick={() => { if (resetSpent !== null && engine?.resetHeroUpgrades(hero, resetSpent)) setResetSpent(null); }}>
           {vi ? 'Xác nhận đặt lại' : 'Confirm reset'}

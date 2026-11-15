@@ -23,7 +23,7 @@ export function RuneRewardRoll({choices,vi,reducedMotion,choose,renderRune}:{
   <p className="reward-intro" role="status">
    {phase==='ready'?(vi?'Quay để mở ba ấn thưởng.':'Spin to reveal three reward runes.'):
     phase==='spinning'?(vi?'Đang quay rune…':'Spinning runes…'):
-    (vi?'Chọn 1 trong 3 ấn để thêm vào túi.':'Choose one of three runes for your inventory.')}
+    (vi?'Chọn 1 trong 3 kết quả để thêm vào túi. Có thể quay ra trùng.':'Choose one of three rolls for your inventory. Duplicates are possible.')}
   </p>
   <div className="rune-roll-slots" aria-hidden={!revealed}>
    {choices.map((id,index)=>{
@@ -33,7 +33,7 @@ export function RuneRewardRoll({choices,vi,reducedMotion,choose,renderRune}:{
     if(!revealed)return <div className="rune-roll-slot" key={index} style={{'--rune-glow':phase==='ready'?'#afaa7c':visible.color} as React.CSSProperties}>
      <div className="reward-pedestal">{phase==='ready'?<span className="rune-roll-question">?</span>:renderRune(visible.id)}</div>
     </div>;
-    return <button type="button" key={id} className="rune-roll-slot" onClick={()=>choose(id)} style={{'--rune-glow':rune.color} as React.CSSProperties}>
+    return <button type="button" key={`${id}-${index}`} className="rune-roll-slot" onClick={()=>choose(id)} style={{'--rune-glow':rune.color} as React.CSSProperties}>
      <div className="reward-pedestal">{renderRune(id)}</div>
      <strong>{vi?rune.vi:rune.en}</strong>
      <p>{vi?rune.detailVi:rune.detailEn}</p>

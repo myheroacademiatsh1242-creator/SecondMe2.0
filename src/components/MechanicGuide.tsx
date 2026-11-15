@@ -1,3 +1,5 @@
+import {TUTORIAL_STEPS} from '../game/logic/interactiveTutorial.ts';
+import {ECHO_RUNES} from '../game/logic/echoRunes.ts';
 import { useEffect, useRef } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Clock3, Footprints, Link, Shield, Snowflake, Sparkles, Swords, TriangleAlert } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
@@ -79,7 +81,7 @@ export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | nul
           <Footprints size={18} aria-hidden="true"/>}
         <span>{objective[vi ? 3 : 4]}</span>
       </aside>}
-      {Icon && hint && <aside className={`mechanic-hint${objective ? ' with-objective' : ''}`} role="status">
+      {Icon && hint && !engine?.onboarding.active && <aside className={`mechanic-hint${objective ? ' with-objective' : ''}`} role="status">
         <Icon size={18} aria-hidden="true"/>
         <span>{hint}</span>
       </aside>}
@@ -106,6 +108,7 @@ export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | nul
             </button>;
           })}
         </div>}
+        {!copy&&<section className="tutorial-library"><h3>Thực hành từng bước</h3><p>Chọn một bài rồi tới màn hoặc chức năng tương ứng để thực hành lại. Bài xem lại không trao thêm thưởng và không tự tiêu tài nguyên.</p>{[...new Set(TUTORIAL_STEPS.map(s=>s.track))].map(track=><details key={track}><summary>{({combat:'Màn 1 · Chiến đấu',echo:'Màn 2 · Echo',chest:'Rương thưởng',shop:'Cửa hàng',pack:'Hành trang',rune:'Chọn & dùng rune',hero:'Nhân vật',upgrade:'Nâng chỉ số',ultimate:'Tuyệt kỹ',menu:'Tiện ích',defeat:'Khi thất bại'} as Record<string,string>)[track]}</summary>{TUTORIAL_STEPS.filter(s=>s.track===track).map(s=><p key={s.id}><b>{s.title}</b> · {s.text}</p>)}<button onClick={()=>{engine?.onboarding.replay(track);engine?.closeGuide();}}>Thực hành lại</button></details>)}<details><summary>Tra cứu đủ 12 rune</summary>{ECHO_RUNES.map(r=><p key={r.id}><b>{vi?r.vi:r.en}</b> · {vi?r.detailVi:r.detailEn}</p>)}</details></section>}
       </div>
       <footer>
         {copy && <button className="guide-library-link" onClick={() => engine?.dismissGuide()}>

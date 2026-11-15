@@ -4,6 +4,7 @@ import { ITEM_LOADOUT_LIMIT, SHOP_ITEMS, type ShopItemId } from '../game/logic/s
 import { ShopItemIcon } from './ShopItemIcon.tsx';
 
 export function CampSupplyKit({ hud, onOpen }: { hud: HUDState; onOpen: () => void }) {
+  if(!hud.completed.includes(2)&&!hud.devUnlocked)return null;
   const vi = hud.language === 'vi';
   return <div className="rest-kit">
     <div><span>{vi ? 'VẬT PHẨM MANG THEO' : 'COMBAT ITEMS'}</span><p>{hud.itemLoadout?.length ?? 0} / {ITEM_LOADOUT_LIMIT}</p></div>
@@ -12,6 +13,7 @@ export function CampSupplyKit({ hud, onOpen }: { hud: HUDState; onOpen: () => vo
 }
 
 export function CombatItemSlots({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
+  if(!hud.completed.includes(2)&&!hud.devUnlocked)return null;
   const vi = hud.language === 'vi';
   return <section className="combat-items" aria-label={vi ? 'Vật phẩm mang theo' : 'Combat items'}>
     <h3>{vi ? 'VẬT PHẨM' : 'ITEMS'}</h3>
@@ -59,7 +61,7 @@ export function InventoryPack({ engine, hud, playing = false }: { engine: GameEn
         {Array.from({ length: ITEM_LOADOUT_LIMIT }, (_, index) => {
           const stack = selected[index];
           const item = SHOP_ITEMS.find(item => item.id === stack?.id);
-          if (!stack || !item) return <div key={index}><kbd>{index + 1}</kbd>{vi ? 'Ô trống' : 'Empty'}</div>;
+          if (!stack || !item) return <div className="inventory-empty-slot" key={index}><kbd>{index + 1}</kbd><Backpack size={24} aria-hidden="true"/><span>{vi ? 'Chưa chọn vật phẩm' : 'Choose an item'}</span></div>;
           const name = vi ? item.vi : item.en;
           return <div className="inventory-packed-item" key={item.id}>
             <kbd>{index + 1}</kbd><ShopItemIcon id={item.id}/><span className="inventory-packed-name">{name}</span>

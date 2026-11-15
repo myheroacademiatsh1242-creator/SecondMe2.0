@@ -1,3 +1,4 @@
+import {InteractiveTutorial} from './logic/interactiveTutorial.ts';
 import {loadDemonSprites} from './rendering/demonBoss.ts';
 import type {ChestKind} from './logic/chest.ts';
 import {createDemonBoss} from './logic/demonBoss.ts';
@@ -86,6 +87,7 @@ export type CombatSkill = 'fire' | 'lightning' | 'stone' | 'haste' | 'armor' | '
 const CLASS_SKILLS: Record<CharacterClass, CombatSkill[]> = { mage: ['fire','lightning','stone'], swordsman: ['haste','armor','wave'], mechanical: ['fire','armor','haste'] };
 
 export interface HUDState {
+  missionBriefing?:boolean;
   trailAction?: TrailAction;
   outfits?:Record<OutfitHero,OutfitId>;
   ownedOutfits?:ShopOutfitId[];
@@ -201,6 +203,22 @@ export function readSavedSettings(): { language: Language; reducedMotion: boolea
 }
 
 export class GameEngine {
+  public missionBriefingEnabled=false;
+  public missionBriefing=false;
+  public continueMission(){
+    if(!this.missionBriefing||this.orientationBlocked)return;
+    this.missionBriefing=false;this.screen='playing';this.heldKeys.clear();
+    document.body.dataset.state='playing';this.voiceLevelStart();this.notifyHUD();
+  }
+
+  public echoMarkArmed=false;
+  public armEchoMark(){if(this.screen!=='playing'||!this.echo)return;this.echoMarkArmed=!this.echoMarkArmed;this.notifyHUD();}
+  public markEchoTarget(target:{x:number;y:number}){if(this.screen!=='playing'||!this.echo||this.inventoryOpen||this.runeEditing)return false;this.pingTarget={...target,life:4};this.echoMarkArmed=false;this.notifyHUD();return true;}
+  public readonly onboarding = new InteractiveTutorial();
+  public tutorialUI: (patch: Partial<{chestOpen:boolean;chestAvailable:boolean;chestRates:boolean;chestRewards:boolean;shopConfirm:boolean;heroUpgrade:boolean;resetOpen:boolean}>)=>void = ()=>{};
+  public get tutorialClockPaused(){const s=this.onboarding.active;return this.tutorialEnabled&&!!s&&['combat','echo'].includes(s.track)&&s.id!=='combat.finish';}
+  public notifyTutorialHUD(){this.notifyHUD();}
+
   // Screen state
   public screen: GameScreen = 'intro';
   /** Set by the UI while the cinematic intro covers the stage. */
@@ -258,7 +276,6 @@ export class GameEngine {
     if(value) this.echoes[this.selectedEcho]=value;
     else {this.echoes.splice(this.selectedEcho,1);this.selectedEcho=Math.max(0,Math.min(this.selectedEcho,this.echoes.length-1));}
   }
-  public selectEcho(index:number) {if(index>=0&&index<this.echoes.length){this.selectedEcho=index;this.notifyHUD();}}
   public pauseEcho() {if(this.screen==='playing'&&this.echo){this.echo.status=this.echo.status==='paused'?'replaying':'paused';this.notifyHUD();}}
 
   // Recording
@@ -598,7 +615,8 @@ export class GameEngine {
     document.body.dataset.state = 'intro';
     this.notifyHUD();
   }
-  public openShop() { if (this.screen !== 'lobby') return; this.screen = 'shop'; document.body.dataset.state = 'shop'; this.notifyHUD(); }
+  public get shopUnlocked(){return !this.tutorialEnabled||this.onboarding.disabled||this.devUnlocked||this.campaign.completed.includes(1);}
+  public openShop() { if (this.screen !== 'lobby'||!this.shopUnlocked) return; this.screen = 'shop'; document.body.dataset.state = 'shop'; this.notifyHUD(); }
   public openCharacters() { if (this.screen !== 'lobby') return; this.screen = 'characters'; document.body.dataset.state = 'characters'; this.notifyHUD(); }
   public buyTimeItem() { if (this.screen !== 'shop') return; if (this.campaign.buyTimeItem()) this.showBanner('Time potion purchased'); else this.showBanner('Not enough coins'); this.notifyHUD(); }
   public openChest(count:1|10,kind:ChestKind='royal') { if(this.screen!=='shop')return null;const rewards=this.campaign.openChest(count,Math.random,kind);this.notifyHUD();return rewards; }
@@ -687,6 +705,7 @@ export class GameEngine {
   }
 
   public resumeGame() {
+    if(this.missionBriefing)return;
     if (this.screen === 'paused') {
       this.screen = 'playing';
       document.body.dataset.state = 'playing';
@@ -704,6 +723,8 @@ export class GameEngine {
   public requestBattleStart(start: () => void) {
     if (this.pendingBattleStart || this.orientationBlocked || this.bossIntroduction) return;
     if (this.screen === 'playing' && !this.canOpenCombatInventory()) return;
+    // Let new players learn the first two trails before introducing equipment.
+    if (!this.campaign.completed.includes(2)) { start(); this.notifyHUD(); return; }
     this.pendingBattleStart = start;
     this.heldKeys.clear();
     this.notifyHUD();
@@ -734,6 +755,8 @@ export class GameEngine {
 
   /** Fresh state for the current level, without starting play. */
   private buildLevel() {
+    this.missionBriefing=false;
+    this.echoMarkArmed=false;
     this.heldKeys.clear();
     this.renderer.reset();
     this.currentLevel = this.cloneLevel(levelAt(this.currentLevelIdx));
@@ -803,7 +826,9 @@ export class GameEngine {
     else if(this.currentLevel.id===6)this.showBanner(this.language==='vi'?`Pha Lê Băng thấy bạn khắp bản đồ · Đập vỡ ${FROST_PRELUDE_KILLS} con!`:`Frost Crystals see you anywhere · Shatter ${FROST_PRELUDE_KILLS} of them!`,5);
     else if(this.currentLevel.id>=7)this.showBanner(translate(this.currentLevel.description,this.language),8);
     else if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
-    this.voiceLevelStart();
+    if(this.missionBriefingEnabled){
+      this.missionBriefing=true;this.screen='paused';document.body.dataset.state='paused';this.heldKeys.clear();
+    }else this.voiceLevelStart();
     this.notifyHUD();
   }
 
@@ -1979,6 +2004,7 @@ export class GameEngine {
       return;
     }
     this.devKeyCount=0;
+    if(this.missionBriefing)return;
     if(this.bossIntroduction&&this.screen==='playing')return;
     if(typeof HTMLElement!=='undefined'&&e.target instanceof HTMLElement){
       if(e.target.closest('input,textarea,select'))return;
@@ -2059,7 +2085,6 @@ export class GameEngine {
       if (/^(Digit|Numpad)[1-6]$/.test(code)) {
         const slot = Number(code.slice(-1)) - 1;
         if (!e.shiftKey && slot < ITEM_LOADOUT_LIMIT) this.useCarriedItem(slot);
-        else this.selectEcho(slot);
         return;
       }
       if (key === 'c') { this.pauseEcho(); return; }
@@ -2087,6 +2112,7 @@ export class GameEngine {
   };
 
   private handleWindowBlur = () => {
+    this.echoMarkArmed=false;
     this.mouseOverArena = false;
     this.heldKeys.clear();
     this.touchMove = { x: 0, y: 0 };
@@ -2105,7 +2131,7 @@ export class GameEngine {
     const bounds = this.canvas.getBoundingClientRect();
     const target = { x: (e.clientX - bounds.left) * this.canvas.width / bounds.width,
       y: (e.clientY - bounds.top) * this.canvas.height / bounds.height };
-    if (e.shiftKey && this.echo) { this.pingTarget={...target,life:4}; this.showBanner(this.language==='vi'?'Echo ưu tiên mục tiêu đã đánh dấu.':'Echo target marked.'); return; }
+    if ((e.shiftKey||this.echoMarkArmed) && this.echo) { this.markEchoTarget(target); this.showBanner(this.language==='vi'?'Echo ưu tiên mục tiêu đã đánh dấu.':'Echo target marked.'); return; }
     if (e.button === 1) { e.preventDefault(); this.useUltimate(target); }
     else if (e.button === 2) { e.preventDefault(); this.useSkill(target); }
     else this.attack(target);
@@ -2270,7 +2296,7 @@ export class GameEngine {
     this.updateUltimate(dt);
     this.mana.update(dt);
     // Expire before accepting a checkpoint: arriving after zero cannot rescue a run.
-    if (this.legTimeRemaining !== null) {
+    if (this.legTimeRemaining !== null && !this.tutorialClockPaused) {
       this.legTimeRemaining = Math.max(0, this.legTimeRemaining - dt);
       if ((!this.devUnlocked || this.currentLevel.id>=7) && this.legTimeRemaining <= 0.000001) {
         this.legTimeRemaining = 0;
@@ -2834,6 +2860,7 @@ export class GameEngine {
         guideTopic:this.tutorialEnabled && (this.showHints || this.guides.libraryOpen) ? this.guides.active : null,
         guideLibrary:this.tutorialEnabled&&this.guides.libraryOpen,
         screen: this.screen,
+        missionBriefing:this.missionBriefing,
         levelName: this.currentLevel.name,
         levelSubtitle: this.currentLevel.subtitle,
         recordingStatus: this.recorder.getStatus(),

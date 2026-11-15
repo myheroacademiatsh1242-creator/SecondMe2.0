@@ -24,7 +24,6 @@ export interface Preload {
 
 const BASE = import.meta.env?.BASE_URL ?? '/';
 const CONCURRENCY = 6;
-const TIMEOUT_MS = 6000;
 type FileEntry = { path: string; bytes: number };
 /** Decoded images by path, kept so the browser keeps them ready for the game's own images. */
 const decoded = new Map<string, HTMLImageElement>();
@@ -45,23 +44,49 @@ function stageOf(path: string): LoadStage {
   return 'environment';
 }
 
-function withTimeout<T>(p: Promise<T>, name: string): Promise<T | void> {
-  let timer = 0;
-  return Promise.race([p, new Promise<void>((_, reject) => { timer = window.setTimeout(() => reject(new Error(`timeout: ${name}`)), TIMEOUT_MS); })])
-    .finally(() => window.clearTimeout(timer));
-}
-
 function imageTask(path: string, bytes: number): Task {
   return {
     stage: stageOf(path), name: path, weight: Math.max(bytes, 1), done: 0,
-    run: () => new Promise<void>((resolve, reject) => {
-      const img = new Image();
-      img.decoding = 'async';
-      const ready = () => { decoded.set(path, img); resolve(); };
-      img.onload = () => { (img.decode ? img.decode() : Promise.resolve()).then(ready, ready); };
-      img.onerror = () => reject(new Error(`image failed: ${path}`));
-      img.src = BASE + path;
-    }),
+    async run(report) {
+      // Fetch keeps normal browser caching while exposing real transfer progress.
+      // No fixed deadline: a slow connection must not count as a finished download.
+      const response = await fetch(BASE + path);
+      if (!response.ok) throw new Error(`image failed: ${path} (${response.status})`);
+      const expected = Number(response.headers.get('Content-Length')) || bytes;
+      let blob: Blob;
+      if (response.body) {
+        const reader = response.body.getReader();
+        const chunks: Uint8Array<ArrayBuffer>[] = [];
+        let received = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            received += value.byteLength;
+            if (expected > 0) report(received / expected);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        blob = new Blob(chunks, { type: response.headers.get('Content-Type') || '' });
+      } else {
+        blob = await response.blob();
+      }
+      const url = URL.createObjectURL(blob);
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.decoding = 'async';
+          const ready = () => { decoded.set(path, img); resolve(); };
+          img.onload = () => { (img.decode ? img.decode() : Promise.resolve()).then(ready, ready); };
+          img.onerror = () => reject(new Error(`image failed: ${path}`));
+          img.src = url;
+        });
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    },
   };
 }
 
@@ -154,7 +179,7 @@ async function run(state: Preload, plan: Plan, delayMs: number) {
     }
     update();
   };
-  const exec = (t: Task) => withTimeout(t.run(f => { t.done = Math.max(t.done, Math.min(0.999, f)); update(); }), t.name)
+  const exec = (t: Task) => t.run(f => { t.done = Math.max(t.done, Math.min(0.999, f)); update(); })
     .then(() => finish(t), e => finish(t, e));
 
   let next = 0;

@@ -1,3 +1,6 @@
+import {MissionBriefing} from './components/MissionBriefing.tsx';
+import {connectTutorial} from './game/logic/tutorialBridge.ts';
+import {InteractiveCoach} from './components/InteractiveCoach.tsx';
 import {PANEL_ART,warmPanelArt} from './components/panelArt.ts';
 
 import {sounds} from './game/logic/sound.ts';
@@ -77,6 +80,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   useEffect(() => {
     const engine = new GameEngine(); ref.current = engine;
     engine.tutorialEnabled = true;
+    engine.missionBriefingEnabled = true;
     engine.levelLoading = true;   // levels open through the loading screen
     if (gameDevToolsEnabled) (window as unknown as { __engine?: GameEngine }).__engine = engine;
     engine.setOrientationBlocked(readLandscapeRequirement());
@@ -91,8 +95,9 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
       setHud({ ...state });
     };
     engine.start(false, restoreCamp);
+    const disconnectTutorial=connectTutorial(engine,touchControls);
     prepare?.(engine);
-    return () => engine.stop();
+    return () => {disconnectTutorial();engine.stop();};
   }, []);
   useEffect(()=>{
     const update=()=>{const blocked=readLandscapeRequirement();ref.current?.setOrientationBlocked(blocked);setPortraitBlocked(blocked);};update();
@@ -112,7 +117,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   const engine = ref.current;
   const lang = hud.language === 'vi' ? 'vi' : 'en';
   const bossIntroVisible = hud.screen === 'playing' && hud.bossIntroduction;
-  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
+  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle || hud.missionBriefing}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
     {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
     {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
     {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}
@@ -130,9 +135,10 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'victory' && <Completion engine={engine} hud={hud}/>}
     {(hud.screen === 'ending' || hud.screen === 'defeat') && <EndScreen engine={engine} hud={hud}/>}
     {!['lobby', 'playing', 'paused', 'loading', 'shop'].includes(hud.screen) && <FullscreenButton floating vi={hud.language === 'vi'}/>}
-    {hud.screen === 'paused' && <PauseMenu engine={engine} hud={hud}/>}
+    {hud.screen === 'paused' && !hud.missionBriefing && <PauseMenu engine={engine} hud={hud}/>}
 
   </div>
+    {hud.missionBriefing&&engine&&!portraitBlocked&&<MissionBriefing engine={engine} hud={hud} touch={touchControls}/>}
     {hud.preparingBattle && engine && <div className="modal-backdrop inventory-backdrop battle-preparation" inert={portraitBlocked}>
       <div className="panel inventory-modal forest-dialog">
         <TrailInventory preparing engine={engine} hud={hud} close={() => engine.cancelBattleStart()}/>
@@ -141,5 +147,6 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
       <BossIntro engine={engine} hud={hud}/>
     </div>}
+    {engine&&!filmPlaying&&!portraitBlocked&&!bossIntroVisible&&!hud.missionBriefing&&<InteractiveCoach engine={engine} hud={hud} touch={touchControls}/>}
   </main>);
 }

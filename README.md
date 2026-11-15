@@ -8,8 +8,8 @@ Game giải đố hành động góc nhìn từ trên xuống, dùng Echo ghi v�
 - Tối đa 4 Echo độc lập, bản ghi tối đa 8 giây; ghi cả di chuyển và sự kiện tấn công/kỹ năng.
 - Màn 2-5 lần lượt có 2, 3, 4, 5 quái. Quái báo trước vị trí đánh, bị tường/cổng chặn và có thể bị Echo dụ.
 - Goblin, Bear, Skull, Shaman và Minotaur dùng sprite từ bộ asset do người dùng cung cấp; xem `public/assets/enemies/SOURCE.md`.
-- Sau mỗi lần thắng màn 1-5, chọn 1 trong 3 ấn nâng Echo khác nhau, rút ngẫu nhiên từ bộ 5. Mỗi loại có xác suất 60% xuất hiện trong một bộ ba; mỗi màn có thể gặp lại các loại đã thấy.
-- 5 ấn: Triệu hồi, Bền bỉ, Khuếch đại, Dẫn dụ, Hồi phục. Dùng được ở màn 2-6; kích hoạt tốn 1 ấn. Hiệu ứng hết khi rời/chơi lại màn; ấn chưa dùng được giữ trong túi.
+- Sau mỗi lần thắng màn có thưởng rune, quay 3 kết quả độc lập từ 12 loại và chọn nhận 1 ấn. Có thể ra trùng trong cùng bộ ba; xác suất có ít nhất hai kết quả trùng là 23,61%.
+- 12 ấn: Triệu hồi, Bền bỉ, Khuếch đại, Truy kích, Hồi phục, Liên kích, Hút sinh lực, Lan truyền, Trấn giữ, Tái tạo, Hoán ảnh, Kết liễu. Có thể trang bị cùng loại vào nhiều ô khi đủ số lượng đang sở hữu (tối đa 4 ô). Trang bị không tiêu hao; buff cùng loại không cộng dồn. Dùng được ở màn 2-6; kích hoạt tốn 1 ấn. Hiệu ứng hết khi rời/chơi lại màn; ấn chưa dùng được giữ trong túi.
 - Lựa chọn thưởng và số lượng ấn được lưu; tải lại không tạo lại bộ ba. Cần chọn thưởng trước khi vào màn tiếp theo.
 - Đồng hồ tính theo từng chặng, không tính cho trận boss. Ngân sách màn 1-5: 16 / 24 / 30 / 32 / 30 giây mỗi chặng.
 - Hạ quái hồi tối đa 3 giây (không vượt ngân sách chặng) và 1 lượt Echo (giới hạn 4). Không bắt buộc giết hết quái để mở cổng.

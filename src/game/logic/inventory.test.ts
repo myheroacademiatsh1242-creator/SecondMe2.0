@@ -78,6 +78,7 @@ test('packed items survive reload and legacy saves keep all stock without a load
 
 test('entering a battle requires confirming equipment when an item is available', t => {
  const g = setup(t);
+ g.campaign.completed = [1, 2];
  g.goToLobby();
  g.unpackItem(1);
  g.unpackItem(0);
@@ -129,4 +130,23 @@ test('number shortcuts spend one copy without shifting the other item types', t 
  assert.equal(g.canUseCarriedItem(0), true);
  press('Digit1');
  assert.equal(g.campaign.timeItems, 0);
+});
+
+
+test('battle preparation is hidden until trail two is completed, including on reload', t => {
+ const g = setup(t);
+ g.goToLobby();
+ let entries = 0;
+ for (const completed of [[], [1]]) {
+  g.campaign.completed = completed;
+  g.requestBattleStart(() => { entries++; });
+  assert.equal(g.canConfirmBattleStart(), false);
+ }
+ assert.equal(entries, 2);
+ g.campaign.completed = [1, 2];
+ g.requestBattleStart(() => { entries++; });
+ assert.equal(entries, 2);
+ assert.equal(g.canConfirmBattleStart(), true);
+ g.confirmBattleStart();
+ assert.equal(entries, 3);
 });
