@@ -130,7 +130,7 @@ test('Kael and Aeris: each hit deals ATK × its multiplier exactly once, the fin
     const strikes = fullCombo(g, hero);
     const expected = [0, 1, 2, 3].map(s => comboDamage(hero, s));
     assert.deepEqual(strikes, expected, `${hero}: ${strikes}`);
-    assert.equal(GUARDIAN_HP - g.boss!.hp, expected.reduce((a, b) => a + b, 0));
+    assert.equal(GUARDIAN_HP - g.boss!.hp, expected.reduce((a, b) => a + b, 0) * (hero === 'swordsman' ? 2 : 1));   // Kael is fire: double against the Frost Guardian
     assert.equal(g.combo!.landed, 4);
     assert.equal(g.combo!.active, false);
   }
@@ -146,12 +146,12 @@ test('the spin, the orbit and the finishers strike several targets; light hits s
   g.boss!.x = 1100; g.boss!.y = 600;
   g.attack({ x: g.player.x + 100, y: g.player.y - 18 });
   for (let i = 0; i < 40; i++) tick(1 / 120);
-  assert.deepEqual(g.boss!.pillars.slice(0, 2).map(p => p.hp), [60 - comboDamage('swordsman', 0), 60]);
+  assert.deepEqual(g.boss!.pillars.slice(0, 2).map(p => p.hp), [60 - comboDamage('swordsman', 0) * 2, 60]);
   g.attack({ x: g.player.x + 100, y: g.player.y - 18 }); for (let i = 0; i < 40; i++) tick(1 / 120);   // hit 2 (buffered → plays)
   for (let i = 0; i < 40; i++) tick(1 / 120);
   g.attack({ x: g.player.x + 100, y: g.player.y - 18 }); for (let i = 0; i < 60; i++) tick(1 / 120);   // hit 3: the spin
   const spin = comboDamage('swordsman', 2);
-  assert.ok(g.boss!.pillars[1].hp <= 60 - spin, 'the spin reached the pillar behind him');
+  assert.ok(g.boss!.pillars[1].hp <= 60 - spin * 2, 'the spin reached the pillar behind him');
 
   // Aeris's Arcane Burst: three spells at one pillar still count once.
   const m = arena(t, 'mage');
@@ -184,5 +184,5 @@ test('hit timing: damage lands on the hit frame, not when the swing starts', t =
   const h = COMBO_HITS.swordsman[0];
   g.attack();
   tick(hitTime(h) * 0.9); assert.equal(g.boss!.hp, GUARDIAN_HP);
-  tick(hitTime(h) * 0.2); assert.equal(g.boss!.hp, GUARDIAN_HP - comboDamage('swordsman', 0));
+  tick(hitTime(h) * 0.2); assert.equal(g.boss!.hp, GUARDIAN_HP - comboDamage('swordsman', 0) * 2);
 });

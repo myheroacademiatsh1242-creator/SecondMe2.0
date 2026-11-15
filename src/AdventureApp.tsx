@@ -25,6 +25,7 @@ import { localize } from './localize.tsx';
 import { BossIntro } from './components/BossIntro.tsx';
 import { MechanicGuide } from './components/MechanicGuide.tsx';
 import { TrailInventory } from './components/TrailInventory.tsx';
+import { PlayerGuide, OPEN_GUIDE_EVENT } from './components/guide/PlayerGuide.tsx';
 
 const initial: HUDState = { screen:'intro', levelName:'LEVEL 01', levelSubtitle:'ECHO GROVE', recordingStatus:'idle', echoCharges:2, echoStability:0, echoElapsedMs:0, echoDurationMs:0, echoEvents:[], dissonanceSeconds:0,
   recordingTimeRemaining:8000, echoStatus:'none', echoCount:0, isMuted:false, bannerMessage:'', elapsedLevelTime:0,
@@ -104,6 +105,16 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     const media=window.matchMedia('(pointer: coarse)');window.addEventListener('resize',update);window.addEventListener('orientationchange',update);media.addEventListener('change',update);
     return()=>{window.removeEventListener('resize',update);window.removeEventListener('orientationchange',update);media.removeEventListener('change',update);};
   },[]);
+  // The guide outside a level (camp, the rotate-to-landscape gate); inside a level it opens through the engine, which freezes play.
+  const [guideOpen, setGuideOpen] = useState(false);
+  useEffect(() => {
+    const open = () => {
+      const e = ref.current;
+      if (e && e.screen === 'playing') e.openGuide(); else setGuideOpen(true);
+    };
+    document.addEventListener(OPEN_GUIDE_EVENT, open);
+    return () => document.removeEventListener(OPEN_GUIDE_EVENT, open);
+  }, []);
   const filmPlaying = hud.screen === 'intro' && (splash || introRun > 0);
   useEffect(() => { if (ref.current) ref.current.suspendVisuals = filmPlaying; }, [filmPlaying]);
   const timedLevel=hud.legTimeRemaining!==null;
@@ -144,6 +155,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
         <TrailInventory preparing engine={engine} hud={hud} close={() => engine.cancelBattleStart()}/>
       </div>
     </div>}
+    {guideOpen && !hud.guideLibrary && <PlayerGuide lang={lang} onClose={() => setGuideOpen(false)} onReplayTutorial={track=>{engine?.onboarding.replay(track);setGuideOpen(false);}}/>}
     {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
       <BossIntro engine={engine} hud={hud}/>
     </div>}

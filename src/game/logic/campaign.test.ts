@@ -164,12 +164,12 @@ test('the boss health comes in four quarters, each one behind the four pillars, 
   const hit=game as unknown as {damageCombatTarget(x:number,y:number,amount:number,radius?:number):boolean};
   const boss=game.boss!;
   assert.deepEqual([bossShieldFloor(boss),bossSegment(boss)],[GUARDIAN_HP*.75,1]);
-  for(const [floor,segment] of [[GUARDIAN_HP*.5,2],[GUARDIAN_HP*.25,3],[0,4]]){
+  for(const [floor,segment,hpAfter] of [[GUARDIAN_HP*.5,2,.75],[0,3,.5]]){   // the shield comes back at 75% and 50%; below that the pillars are gone
     for(const pillar of boss.pillars)hit.damageCombatTarget(pillar.x,pillar.y,60);
     assert.equal(boss.armor,0);
     boss.mode='stalking';
     while(boss.armor===0)hit.damageCombatTarget(boss.x,boss.y,1000);
-    assert.equal(boss.hp,floor+GUARDIAN_HP*.25);
+    assert.equal(boss.hp,GUARDIAN_HP*hpAfter);
     assert.deepEqual([bossShieldFloor(boss),bossSegment(boss)],[floor,segment]);
     assert.equal((boss.shieldRaise??0)>0,true);
   }
@@ -278,7 +278,7 @@ test('all six class pickups apply their distinct damage or defense',t=>{
   game.player.x=game.boss!.x-250;game.player.direction='right';
   internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before);
   game.player.x=game.boss!.x-80;
-  internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before-55);
+  internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before-110);
 });
 
 test('later trails increase gate and trap count',()=>{
@@ -314,7 +314,7 @@ test('attack cooldown prevents duplicate hits and a dodge prevents immediate dam
   assert.equal(game.boss!.hp,GUARDIAN_HP);
   const tick=(game as unknown as {updateCombo(dt:number):void}).updateCombo.bind(game);
   for(let i=0;i<10;i++)tick(.05);
-  assert.equal(game.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0));
+  assert.equal(game.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0)*2);
   game.dodge();(game as unknown as {takeDamage():void}).takeDamage();
   assert.equal(game.health,game.maxHealth);assert.ok(game.dodgeCooldown>0);
 });

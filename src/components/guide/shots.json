@@ -1,0 +1,477 @@
+{
+ "l1-01-start": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "player": {
+    "x": 220,
+    "y": 360
+   },
+   "rune1": {
+    "x": 465,
+    "y": 205
+   },
+   "start": {
+    "x": 220,
+    "y": 360
+   }
+  },
+  "staged": null
+ },
+ "l1-02-walk": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "player": {
+    "x": 402,
+    "y": 211
+   },
+   "rune1": {
+    "x": 465,
+    "y": 205
+   },
+   "start": {
+    "x": 220,
+    "y": 360
+   },
+   "corner": {
+    "x": 220,
+    "y": 205
+   }
+  },
+  "staged": null
+ },
+ "l1-03-on-rune": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "player": {
+    "x": 462,
+    "y": 211
+   },
+   "rune1": {
+    "x": 465,
+    "y": 205
+   }
+  },
+  "staged": null
+ },
+ "l1-04-summon": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "player": {
+    "x": 562,
+    "y": 211
+   },
+   "echo": {
+    "x": 220,
+    "y": 356
+   },
+   "rune1": {
+    "x": 465,
+    "y": 205
+   }
+  },
+  "staged": null
+ },
+ "l1-05-echo-holds": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "player": {
+    "x": 562,
+    "y": 211
+   },
+   "echo": {
+    "x": 462,
+    "y": 211
+   },
+   "rune1": {
+    "x": 465,
+    "y": 205
+   },
+   "gate1": {
+    "x": 678,
+    "y": 360
+   }
+  },
+  "staged": null
+ },
+ "l1-06-cross": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "player": {
+    "x": 765,
+    "y": 356
+   },
+   "echo": {
+    "x": 462,
+    "y": 211
+   },
+   "gate1": {
+    "x": 678,
+    "y": 360
+   },
+   "exit": {
+    "x": 1070,
+    "y": 390
+   }
+  },
+  "staged": null
+ },
+ "hud-desktop": {
+  "w": 1600,
+  "h": 900,
+  "marks": {},
+  "staged": null
+ },
+ "inventory": {
+  "w": 1600,
+  "h": 900,
+  "marks": {},
+  "staged": null
+ },
+ "enemy-warning": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "warning": {
+    "x": 505,
+    "y": 570
+   },
+   "player": {
+    "x": 505,
+    "y": 570
+   }
+  },
+  "staged": {
+   "vi": "đặt nhân vật cạnh quái để chụp lúc quái báo đòn",
+   "en": "the hero was placed next to the enemy to catch its warning"
+  }
+ },
+ "map-1": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-2": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-3": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-4": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-5": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-6": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-7": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-8": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-9": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-10": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-11": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-12": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "map-13": {
+  "w": 1280,
+  "h": 720,
+  "marks": {},
+  "staged": null
+ },
+ "boss1-overview": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 330
+   },
+   "player": {
+    "x": 640,
+    "y": 560
+   },
+   "pillar1": {
+    "x": 130,
+    "y": 125
+   },
+   "pillar2": {
+    "x": 1150,
+    "y": 125
+   },
+   "pillar3": {
+    "x": 130,
+    "y": 595
+   },
+   "pillar4": {
+    "x": 1150,
+    "y": 595
+   }
+  },
+  "staged": null
+ },
+ "boss1-slam": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 330
+   },
+   "target": {
+    "x": 700,
+    "y": 430
+   }
+  },
+  "staged": {
+   "vi": "boss được đặt vào đúng đòn này để chụp",
+   "en": "the boss was put into this attack for the picture"
+  }
+ },
+ "boss1-rays": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 330
+   }
+  },
+  "staged": {
+   "vi": "boss được đặt vào đúng đòn này để chụp",
+   "en": "the boss was put into this attack for the picture"
+  }
+ },
+ "boss1-volley": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 330
+   }
+  },
+  "staged": {
+   "vi": "boss được đặt vào đúng đòn này để chụp",
+   "en": "the boss was put into this attack for the picture"
+  }
+ },
+ "boss1-open": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 330
+   }
+  },
+  "staged": {
+   "vi": "các trụ được phá ngay bằng một đòn mạnh để chụp",
+   "en": "the pillars were broken instantly for the picture"
+  }
+ },
+ "boss2-overview": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 300
+   },
+   "player": {
+    "x": 640,
+    "y": 560
+   }
+  },
+  "staged": null
+ },
+ "boss2-cleave": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 620,
+    "y": 300
+   },
+   "target": {
+    "x": 700,
+    "y": 400
+   }
+  },
+  "staged": {
+   "vi": "boss được đặt vào đúng đòn này để chụp",
+   "en": "the boss was put into this attack for the picture"
+  }
+ },
+ "boss2-ritual": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 300
+   },
+   "core1": {
+    "x": 360,
+    "y": 220
+   },
+   "core2": {
+    "x": 920,
+    "y": 220
+   },
+   "core3": {
+    "x": 640,
+    "y": 520
+   }
+  },
+  "staged": {
+   "vi": "máu boss được đặt ở 60% để vào tế lễ",
+   "en": "the boss was set to 60% health to start the ritual"
+  }
+ },
+ "boss2-charge": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 300
+   }
+  },
+  "staged": {
+   "vi": "máu boss được đặt ở 60% để vào tế lễ",
+   "en": "the boss was set to 60% health to start the ritual"
+  }
+ },
+ "boss2-stunned": {
+  "w": 1280,
+  "h": 720,
+  "marks": {
+   "boss": {
+    "x": 640,
+    "y": 300
+   }
+  },
+  "staged": {
+   "vi": "boss được đặt vào đúng đòn này để chụp",
+   "en": "the boss was put into this attack for the picture"
+  }
+ },
+ "heroes": {
+  "w": 1600,
+  "h": 900,
+  "marks": {},
+  "staged": null
+ },
+ "shop": {
+  "w": 1600,
+  "h": 900,
+  "marks": {},
+  "staged": null
+ },
+ "mobile-hud": {
+  "w": 1688,
+  "h": 780,
+  "marks": {
+   "stick": {
+    "x": 112,
+    "y": 555
+   },
+   "echoStrip": {
+    "x": 112,
+    "y": 280
+   },
+   "attack": {
+    "x": 1601,
+    "y": 573
+   },
+   "pause": {
+    "x": 1650,
+    "y": 101
+   }
+  },
+  "staged": null
+ },
+ "mobile-echo": {
+  "w": 1688,
+  "h": 780,
+  "marks": {
+   "select": {
+    "x": 66,
+    "y": 236
+   },
+   "pause": {
+    "x": 162,
+    "y": 236
+   },
+   "swap": {
+    "x": 66,
+    "y": 332
+   },
+   "mark": {
+    "x": 162,
+    "y": 332
+   }
+  },
+  "staged": null
+ },
+ "battle-prep": {
+  "w": 1600,
+  "h": 900,
+  "marks": {},
+  "staged": {
+   "vi": "kho được thêm 2 bình thời gian và 3 bình hồi phục nhỏ để thấy các ô",
+   "en": "the stock was given 2 time potions and 3 small healing potions to show the slots"
+  }
+ }
+}

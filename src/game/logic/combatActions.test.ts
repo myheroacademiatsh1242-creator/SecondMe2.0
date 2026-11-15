@@ -30,8 +30,8 @@ test('Aeris projectile hits along its path once and cannot pass through a wall',
 test('Kael strikes nearby targets in the aimed direction, never behind or beyond reach',t=>{
  const g=setup(t);g.characterClass='swordsman';g.boss!.x=390;
  g.attack({x:0,y:350});run(g,.6);assert.equal(g.boss!.hp,GUARDIAN_HP);
- g.combo!.cancel();g.attack({x:700,y:350});run(g,.6);assert.equal(g.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0));
- g.combo!.cancel();g.boss!.x=450;g.attack({x:700,y:350});run(g,.6);assert.equal(g.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0));
+ g.combo!.cancel();g.attack({x:700,y:350});run(g,.6);assert.equal(g.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0)*2);
+ g.combo!.cancel();g.boss!.x=450;g.attack({x:700,y:350});run(g,.6);assert.equal(g.boss!.hp,GUARDIAN_HP-comboDamage('swordsman',0)*2);
 });
 test("Kael's sword does not cut through a wall",t=>{
  const g=setup(t);g.characterClass='swordsman';g.boss!.x=380;g.currentLevel.walls=[{x:335,y:0,width:12,height:720}];

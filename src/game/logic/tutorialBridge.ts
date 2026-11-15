@@ -28,7 +28,7 @@ export function connectTutorial(engine:GameEngine,touch=false){
   restores.push(()=>{internals[name]=original;});
  };
  const booleanResult=(_a:any,_b:any,result:any)=>result===true;
- for(const [name,event] of Object.entries({buyShopItem:'purchase',packItem:'pack-add',unpackItem:'pack-remove',chooseRune:'rune-reward',useEchoRune:'rune-use',useTimeItem:'time-use',useCarriedItem:'item-use',useSupply:'item-use',markEchoTarget:'echo-mark',buyHeroUpgrade:'upgrade-buy',resetHeroUpgrades:'upgrade-reset-close'}))wrap(name,event,booleanResult,()=>null);
+ for(const [name,event] of Object.entries({buyShopItem:'purchase',packItem:'pack-add',unpackItem:'pack-remove',chooseRune:'rune-reward',useEchoRune:'rune-use',useTimeItem:'time-use',useCarriedItem:'item-use',useSupply:'item-use',markEchoTarget:'echo-mark',markTarget:'echo-mark',buyHeroUpgrade:'upgrade-buy',resetHeroUpgrades:'upgrade-reset-close'}))wrap(name,event,booleanResult,()=>null);
  const supply=engine.useSupply.bind(engine);engine.useSupply=(id)=>{update();const ticket=tutorial.active;const ok=supply(id);if(ok&&id==='revive')tutorial.event('defeat-choice',ticket);update();return ok;};restores.push(()=>{engine.useSupply=supply;});
  wrap('setPackedCount','pack-quantity',(a,b,r)=>r===true&&a!==b,()=>JSON.stringify(engine.campaign.itemLoadout));
  wrap('setRuneSlot','rune-equip',(_a,_b,r,args)=>r===true&&args[1]!==null,()=>null);

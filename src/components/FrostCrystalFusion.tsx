@@ -9,7 +9,7 @@ import DANCE from '../game/data/frostFusionDance.json';
  * frostFusionDance.json); this places the two dancers as mirror images and adds the light. Timeline (s):
  *  0-.8 stand facing each other · .8-1.65 "Fuuu" three side steps out, arms swung out · 1.65-2.5 "-sion" arms over the head,
  *  three steps in, knee up · 2.5-TOUCH "Ha!" lunge, index fingers meet at the centre · TOUCH-4 the pose is held (a small spark) ·
- *  4-5 light from the touch: a cold beam, both bodies light up, motes circle, a frost nova under their feet, a light shake ·
+ *  4-5 light from the touch: a cold glow, both bodies light up, motes circle, a frost nova under their feet, a light shake ·
  *  5-6.2 they vanish in the light, ice shards rush in, a snowflake burst, and the Guardian forms (its own sheet: the death row
  *  played backwards, the pieces gathering into it, fists raised) · 6.2-6.8 it slams both fists into the ground: shockwaves, dust,
  *  a hard screen shake at T_IMPACT · then it stands in a fading aura · HANDOFF `onHandoff` mounts the
@@ -109,12 +109,11 @@ export function FrostCrystalFusion({ onHandoff, onDone }: { onHandoff: () => voi
           if (t >= 1.65) once('sion', () => sounds.playEchoSpawn());
           if (t >= TOUCH) once('touch', () => sounds.playIceHit(false));
         }
-        // The touch: a small spark held on the fingertips, then a cold cross of light from it.
+        // The touch: a small spark held on the fingertips, then a cold glow that grows from it (no straight beams).
         if (t >= TOUCH && t < T_FORM + .3) {
           const k = t < T_LIGHT ? .6 + .4 * Math.sin((t - TOUCH) * 14) : 1;
-          const arm = t < T_LIGHT ? 2 : 2 + 60 * ease(seg(t, T_LIGHT, T_FORM));
           ctx.fillStyle = `rgba(235,253,255,${k})`;
-          ctx.fillRect(cx - 1, Math.round(p.tipY - arm), 2, Math.round(arm * 2)); ctx.fillRect(Math.round(cx - arm * .6), Math.round(p.tipY) - 1, Math.round(arm * 1.2), 2);
+          ctx.fillRect(cx - 1, Math.round(p.tipY) - 1, 2, 2);
           glow(cx, p.tipY, 8 + 120 * ease(seg(t, T_LIGHT, T_FORM)), .35 + .55 * seg(t, T_LIGHT, T_FORM), '200,245,255');
         }
         // Ice motes circling both, closing in as the light peaks; they drift off once the Guardian stands.

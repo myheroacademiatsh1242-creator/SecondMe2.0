@@ -321,24 +321,29 @@ export function createBoss(): BossState {
  */
 export const BOSS_SEGMENTS = 4;
 const segmentSize = (boss: Pick<BossState, 'maxHp'>) => boss.maxHp / BOSS_SEGMENTS;
-/** The HP at which the shield comes back: the bottom of the part the boss is in (0 in the last). */
-export function bossShieldFloor(boss: Pick<BossState, 'hp' | 'maxHp'>) {
+/** The bottom of the quarter the boss is in. */
+const quarterFloor = (boss: Pick<BossState, 'hp' | 'maxHp'>) => {
   const size = segmentSize(boss);
   return damagePoints(Math.max(0, (Math.ceil(damagePoints(boss.hp) / size - 1e-6) - 1) * size));
+};
+/** The HP at which the shield comes back: at 75% and at 50% of its health; below that the pillars are gone for good (0). */
+export function bossShieldFloor(boss: Pick<BossState, 'hp' | 'maxHp'>) {
+  const floor = quarterFloor(boss);
+  return floor <= segmentSize(boss) ? 0 : floor;
 }
 /** The top of the part the boss is in: the most its pillars can heal it back to. */
 export function bossSegmentTop(boss: Pick<BossState, 'hp' | 'maxHp'>) {
-  return Math.min(boss.maxHp, damagePoints(bossShieldFloor(boss) + segmentSize(boss)));
+  return Math.min(boss.maxHp, damagePoints(quarterFloor(boss) + segmentSize(boss)));
 }
 /** Which part the boss is in, 1 (full health) … BOSS_SEGMENTS (the last). */
 export function bossSegment(boss: Pick<BossState, 'hp' | 'maxHp'>) {
-  return BOSS_SEGMENTS - Math.round(bossShieldFloor(boss) / segmentSize(boss));
+  return BOSS_SEGMENTS - Math.round(quarterFloor(boss) / segmentSize(boss));
 }
 /**
  * How much sooner the boss attacks in each part of its health: its pause between attacks and its
  * recovery after one are multiplied by these (1 at full health, shortest in the last part).
  */
-export const BOSS_TEMPO = { pause: [1, .75, .55, .4], recover: [1, .9, .8, .7] } as const;
+export const BOSS_TEMPO = { pause: [.8, .6, .45, .33], recover: [.9, .8, .7, .6] } as const;
 export function bossTempo(boss: Pick<BossState, 'hp' | 'maxHp'>) {
   const i = Math.min(BOSS_SEGMENTS, Math.max(1, bossSegment(boss))) - 1;
   return { pause: BOSS_TEMPO.pause[i], recover: BOSS_TEMPO.recover[i] };

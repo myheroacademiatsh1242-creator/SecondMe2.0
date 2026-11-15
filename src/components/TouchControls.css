@@ -54,3 +54,21 @@
 .skill-ultimate.is-ready{animation:ultimate-ready 1s ease-in-out infinite alternate}
 @keyframes ultimate-ready{to{box-shadow:inset 0 0 0 3px #f2d8ff,inset 0 -7px 0 #121c14,0 0 16px #c78dff}}
 @media(prefers-reduced-motion:reduce){.skill-ultimate.is-ready{animation:none;box-shadow:inset 0 0 0 3px #f2d8ff,inset 0 -7px 0 #121c14,0 0 16px #c78dff}}
+
+/* Echo strip (phones): select / pause-play / swap / mark, a 2x2 grid at the top of the left control rail (the stick
+   zone's column, outside the arena), so it never covers runes, gates, the hero or a boss. Only shown while an Echo is out. */
+.touch-echo-strip{position:absolute;left:4px;top:calc(var(--status-rail,78px) + 6px);z-index:12;width:calc(var(--control-left,112px) - 8px);
+  display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px 4px 4px;box-sizing:border-box;
+  background:#0a1610c8;border:3px solid #050d08;box-shadow:inset 0 0 0 2px #3f6a3a;pointer-events:auto;touch-action:none}
+.touch-echo-stability{position:absolute;left:4px;top:2px;height:3px;max-width:calc(100% - 8px);background:#5fe0c4}
+.touch-echo-btn{position:relative;display:grid;place-items:center;width:100%;min-width:44px;height:44px;padding:0;color:#bff8ec;
+  background:#2b3a2c;border:3px solid #050d08;box-shadow:inset 0 0 0 2px #4f8f80,inset 0 -6px 0 #121c14;
+  touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.touch-echo-btn svg{width:22px;height:22px;filter:drop-shadow(2px 2px 0 #050d08)}
+.touch-echo-btn:active:not(:disabled){transform:translateY(2px)}
+.touch-echo-btn:disabled{filter:grayscale(.7) brightness(.6)}
+.touch-echo-btn.is-armed{color:#2a1d08;background:#e6c46e;box-shadow:inset 0 0 0 2px #fff0b0,inset 0 -6px 0 #8a6424}
+.touch-echo-number{font-size:20px;line-height:1;text-shadow:2px 2px 0 #050d08}
+.touch-echo-number small{font-size:12px;opacity:.8}
+.touch-echo-btn.is-recovering::after{content:'';position:absolute;inset:0;pointer-events:none;background:conic-gradient(#050d08c8 calc(var(--cd) * 360deg),transparent 0)}
+.touch-echo-timer{position:absolute;z-index:1;font-size:18px;color:#fff;text-shadow:2px 2px 0 #050d08}

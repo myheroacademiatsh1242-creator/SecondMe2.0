@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Backpack, ChevronLeft, Flame, Lock, Play, Snowflake, Users } from 'lucide-react';
+import { ArrowRight, Backpack, BookOpen, ChevronLeft, Flame, Lock, Play, Snowflake, Users } from 'lucide-react';
+import { openPlayerGuide } from './guide/PlayerGuide.tsx';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { DEMON_LEVEL } from '../game/logic/levels.ts';
 import { FROST_LEVELS } from '../game/logic/frostLevels.ts';
@@ -206,6 +207,7 @@ export function FrostChapter({
             <Snowflake size={17} />
             {vi ? 'TRẠI TUYẾT ECHO' : 'FROST CAMP'}
           </span>
+          <button type="button" className="camp-guide" onClick={openPlayerGuide}><BookOpen size={15} aria-hidden="true"/>{vi ? 'Sổ tay' : 'Guide'}</button>
           <span>{done} / 7</span>
         </header>
 
