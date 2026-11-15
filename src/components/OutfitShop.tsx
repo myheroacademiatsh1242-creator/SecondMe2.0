@@ -3,7 +3,6 @@ import {createPortal} from 'react-dom';
 import {useEffect,useRef,useState} from 'react';
 import {SHOP_OUTFITS,orderedShopOutfits,type ShopOutfitId} from '../game/logic/outfits.ts';
 import {rarityName,RARITY_COLORS} from '../game/logic/rarity.ts';
-import {drawKnightOutfit} from '../game/rendering/knightOutfits.ts';
 import {drawSoldierSprite} from '../game/rendering/soldierSprite.ts';
 import {drawWizardSprite} from '../game/rendering/wizardSprite.ts';
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
@@ -11,7 +10,7 @@ import './OutfitShop.css';
 export function OutfitPortrait({id}:{id:ShopOutfitId}){
  const product=SHOP_OUTFITS.find(o=>o.id===id)!;
  const ref=useRef<HTMLCanvasElement>(null);
- useEffect(()=>{const draw=()=>{const ctx=ref.current?.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,84,84);if(product.hero==='mage')drawWizardSprite(ctx,42,69,'down',false,false,0,product.outfit);else if(product.rarity==='refined')drawKnightOutfit(ctx,42,69,'down',false,0,false,0,product.outfit);else drawSoldierSprite(ctx,42,69,'down',false,false,0,false,0,product.outfit);};draw();const timer=window.setInterval(draw,250);return()=>window.clearInterval(timer);},[id]);
+ useEffect(()=>{const draw=()=>{const ctx=ref.current?.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,84,84);if(product.hero==='mage')drawWizardSprite(ctx,42,69,'down',false,false,0,product.outfit);else drawSoldierSprite(ctx,42,69,'down',false,false,0,false,0,product.outfit);};draw();const timer=window.setInterval(draw,250);return()=>window.clearInterval(timer);},[id]);
  return <canvas ref={ref} width={84} height={84} aria-hidden="true"/>;
 }
 export function OutfitShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){

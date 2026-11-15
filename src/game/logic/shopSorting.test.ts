@@ -12,5 +12,5 @@ test('sort groups rarity low to high and sorts prices ascending within each rari
 test('current item and outfit catalogues follow the requested ordering',()=>{
  assert.deepEqual(sortShopCatalogue(SHOP_ITEMS.filter(x=>x.id!=='aid')).map(x=>x.id),['manaSmall','time','healSmall','healLarge','manaLarge','ring','revive','chances']);
  const expected=SHOP_OUTFITS.map(x=>x.id);
- assert.deepEqual(orderedShopOutfits(['void-knight']).map(x=>x.id),expected);
+ assert.deepEqual(orderedShopOutfits(['mage-ember']).map(x=>x.id),expected);
 });
