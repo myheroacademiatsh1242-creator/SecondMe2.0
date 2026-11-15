@@ -14,7 +14,7 @@ function setup(t: TestContext, level = 1) {
   t.after(() => old ? Object.defineProperty(globalThis, 'document', old) : Reflect.deleteProperty(globalThis, 'document'));
   const game = new GameEngine(); game.currentLevelIdx = level; game.restartLevel();game.beginBossFight();
   game.currentLevel = structuredClone(game.currentLevel); game.currentLevel.walls=[]; game.currentLevel.doors=[]; game.currentLevel.traps=[];
-  game.enemies=[]; game.legTimeRemaining=null; game.player.x=100; game.player.y=600;
+  game.enemies=[]; (game as unknown as {pillarClocks:{clock:number}}).pillarClocks.clock=1e9; game.legTimeRemaining=null; game.player.x=100; game.player.y=600;
   const update = (dt=.05) => (game as unknown as {update(dt:number):void}).update(dt);
   const summon = (x:number,y:number) => { const before={x:game.player.x,y:game.player.y}; game.player.x=x; game.player.y=y; game.recorder.startRecording(x,y,'right'); game.spawnEcho(); game.player.x=before.x; game.player.y=before.y; return game.echo!; };
   return {game, update, summon};
@@ -143,4 +143,18 @@ test('passive stability depletion recalls an Echo without any enemy hits',t=>{
   assert.equal(echo.stability,65);
   hit(64);assert.ok(game.echoes.includes(echo));
   hit(1);assert.ok(!game.echoes.includes(echo));
+});
+
+test('boss arena Echo sees the whole map: small enemies first, then pillars, never the armoured boss',t=>{
+  const {game,update,summon}=setup(t,5);const echo=summon(640,360);echo.status='finished';
+  const boss=game.boss!;boss.x=1000;boss.y=360;boss.mode='recover';boss.timer=100;boss.burstCooldown=100;
+  const mob={...createEnemies({...game.currentLevel,id:2})[0],id:'mob',x:100,y:650,homeX:100,homeY:650,hp:300,maxHp:300,timer:100};
+  game.enemies=[mob];
+  for(let i=0;i<160;i++)update();
+  assert.ok(mob.hp<300,'a far small enemy is hunted first');
+  assert.ok(boss.pillars.every(p=>p.hp===p.maxHp),'pillars wait while an enemy lives');
+  mob.hp=0;game.enemies=[];
+  for(let i=0;i<200;i++){game.enemies=[];update();}
+  assert.ok(boss.pillars.some(p=>p.hp<p.maxHp),'then the Echo breaks a pillar');
+  assert.equal(boss.hp,GUARDIAN_HP,'the armoured boss is left alone');
 });

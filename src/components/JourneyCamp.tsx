@@ -2,7 +2,8 @@ import {FrostChapter} from './FrostChapter.tsx';
 import { CampSupplyKit } from './InventorySupplies.tsx';
 import {CampHeroCaption, CampHeroUpgrade} from './CampHeroCaption.tsx';
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ChevronRight, Flame, Lock, Play, Snowflake, Users, Backpack } from 'lucide-react';
+import { ArrowRight, ChevronRight, Flame, Lock, Play, Snowflake, Users, Backpack, BookOpen } from 'lucide-react';
+import { openPlayerGuide } from './guide/PlayerGuide.tsx';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { LEVELS } from '../game/logic/levels.ts';
 import { RuneLoadoutEditor } from './EchoRunes.tsx';
@@ -151,7 +152,7 @@ export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero,onO
   const maxLive=Math.max(heroStop,selected);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
     <aside className="journey-camp integrated-camp"><button className="frost-back frost-forward" disabled={!frostUnlocked} onClick={()=>setFrost(true)}><span>{frostUnlocked?(vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'):(vi?'HẠ THỦ VỆ BĂNG ĐỂ MỞ CHƯƠNG 2':'DEFEAT THE FROST GUARDIAN TO UNLOCK CHAPTER 2')}</span>{frostUnlocked?<ChevronRight size={18}/>:<Lock size={16}/>}</button>
-      <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><span>{count} / 6</span></header>
+      <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><button type="button" className="camp-guide" onClick={openPlayerGuide}><BookOpen size={15} aria-hidden="true"/>{vi?'Sổ tay':'Guide'}</button><span>{count} / 6</span></header>
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
         <div className="rest-firelight" aria-hidden="true"/><FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx"/><div className="rest-embers" aria-hidden="true"><i/><i/><i/></div>
         <button className="rest-hero" onClick={()=>engine?.openCharacters()} aria-label={vi?'Đổi nhân vật':'Change character'}><span>{traveler??<Users size={50}/>}</span></button>

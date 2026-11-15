@@ -1,13 +1,14 @@
 /**
- * The Frost Guardian's ice pillars summon Frost Crystals: every standing pillar runs its own clock (staggered so they do not
- * all fire at once), faster in later phases, and the arena never holds more than MAX_ALIVE of them. A broken pillar
- * summons nothing, so breaking pillars also stops the slimes. Spawning and drawing live in GameEngine.
+ * The Frost Guardian's ice pillars summon Frost Crystals in waves: all standing pillars release at the same moment, each one
+ * PER_PILLAR[stage] crystals, where stage 1 is the start of the fight, 2 after the boss drops to 75% and 3 after it drops to 50%
+ * (below that the pillars are gone). A wave comes the moment the pillars appear, then every EVERY seconds. A broken pillar
+ * summons nothing. Spawning and drawing live in GameEngine.
  */
 export const PILLAR_SUMMON = {
-  FIRST: 6, STAGGER: 2.5,          // first summon 6 s into the fight, then one pillar every 2.5 s after it
-  EVERY: [12, 10, 8],              // seconds between two summons of one pillar, by boss phase 1-3
+  EVERY: 15,                       // seconds between two waves
+  PER_PILLAR: [2, 3, 6],           // crystals each standing pillar releases in stage 1, 2, 3
   RETRY: 1.5,                      // when the arena is full, try again this soon
-  MAX_ALIVE: 4,
+  MAX_ALIVE: 24,
   HP: 40,
   HUE: 165,                        // picks the ice slime's traits (slow, long reach: enemies.ts); drawn as a Frost Crystal (rendering/frostCrystal.ts)
 };
@@ -15,18 +16,17 @@ export const PILLAR_SUMMON = {
 /** Level 6 opens with one Frost Crystal per pillar and no Guardian; shattering this many wakes it (the rest fuse into it). */
 export const FROST_PRELUDE_KILLS = 2;
 
-export const newPillarClocks = (n = 4) => Array.from({ length: n }, (_, i) => PILLAR_SUMMON.FIRST + i * PILLAR_SUMMON.STAGGER);
+export const newPillarClocks = () => ({ clock: 0 });   // 0: the first wave comes as soon as the fight starts
 
-/** Advances the clocks by `dt` s; returns the indices of the pillars that summon a slime now. */
-export function stepPillarSummons(clocks: number[], pillars: readonly { hp: number }[], phase: number, alive: number, dt: number): number[] {
-  const every = PILLAR_SUMMON.EVERY[Math.min(2, Math.max(0, phase - 1))];
+/** Advances the wave clock by `dt` s; returns the pillar index once per crystal to spawn (a pillar appears 2, 3 or 6 times). */
+export function stepPillarSummons(state: ReturnType<typeof newPillarClocks>, pillars: readonly { hp: number }[], stage: number, alive: number, dt: number): number[] {
+  const standing = pillars.flatMap((p, i) => p.hp > 0 ? [i] : []);
+  if (!standing.length) { state.clock = 0; return []; }   // when they rise again, their wave comes at once
+  state.clock -= dt;
+  if (state.clock > 0) return [];
+  const perPillar = PILLAR_SUMMON.PER_PILLAR[Math.min(PILLAR_SUMMON.PER_PILLAR.length, Math.max(1, stage)) - 1];
   const summon: number[] = [];
-  pillars.forEach((pillar, i) => {
-    if (pillar.hp <= 0) { clocks[i] = every; return; }   // when it rises again it waits a full round first
-    clocks[i] -= dt;
-    if (clocks[i] > 0) return;
-    if (alive + summon.length < PILLAR_SUMMON.MAX_ALIVE) { summon.push(i); clocks[i] = every; }
-    else clocks[i] = PILLAR_SUMMON.RETRY;
-  });
+  for (const i of standing) for (let k = 0; k < perPillar; k++) if (alive + summon.length < PILLAR_SUMMON.MAX_ALIVE) summon.push(i);
+  state.clock = summon.length ? PILLAR_SUMMON.EVERY : PILLAR_SUMMON.RETRY;
   return summon;
 }

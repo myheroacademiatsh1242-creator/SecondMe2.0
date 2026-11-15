@@ -363,6 +363,7 @@ test('heroes face their movement in every level, including the boss arena, and E
       engine.characterClass = character;
       engine.restartLevel();engine.beginBossFight();
       engine.enemies = [];
+      (engine as unknown as {pillarClocks:{clock:number}}).pillarClocks.clock = 1e9;   // no Frost Crystal wave to fight
       if (engine.boss) { engine.boss.x = engine.player.x + 300; engine.boss.y = engine.player.y; }
       engine.recorder.startRecording(engine.player.x, engine.player.y, engine.player.direction);
       for (const [key, direction] of [['KeyA','left'], ['KeyW','up'], ['KeyS','down'], ['KeyD','right']] as const) {

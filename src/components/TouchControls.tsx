@@ -1,6 +1,42 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameEngine } from '../game/GameEngine.ts';
+import { ArrowLeftRight, Crosshair, Pause, Play } from 'lucide-react';
+import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import './TouchControls.css';
+
+/**
+ * Phones: the Echo keys that have no other touch control — select (1–6), pause/play (C), swap (Shift+Q) and mark a
+ * target (Shift + click). Shown only while an Echo is on the field. Acts on touch-down, like TouchSkills.
+ */
+export function TouchEchoStrip({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
+  const list = hud.echoList ?? [];
+  if (!list.length) return null;
+  const vi = hud.language === 'vi';
+  const sel = Math.min(Math.max(0, hud.selectedEcho ?? 0), list.length - 1);
+  const echo = list[sel];
+  const swapRune = (hud.activeEchoRunes ?? []).includes('swap');
+  const swapCost = swapRune ? 15 : 30, swapMax = swapRune ? 4 : 7, swapCd = hud.swapCooldown ?? 0;
+  const paused = echo.status === 'paused';
+  const buttons = [
+    { id: 'select', name: vi ? `Chọn Echo · đang chọn ${sel + 1}/${list.length}` : `Select Echo · ${sel + 1} of ${list.length}`,
+      icon: <b className="touch-echo-number">{sel + 1}<small>/{list.length}</small></b>, disabled: list.length < 2, run: () => engine?.selectEcho((sel + 1) % list.length) },
+    { id: 'pause', name: paused ? (vi ? 'Cho Echo chạy tiếp' : 'Resume Echo') : (vi ? 'Tạm dừng Echo' : 'Pause Echo'),
+      icon: paused ? <Play fill="currentColor"/> : <Pause fill="currentColor"/>, disabled: false, run: () => engine?.pauseEcho() },
+    { id: 'swap', name: vi ? 'Hoán đổi vị trí với Echo' : 'Swap places with Echo', icon: <ArrowLeftRight/>,
+      disabled: swapCd > 0 || echo.stability < swapCost, cooldown: swapCd, max: swapMax, run: () => engine?.swapEcho() },
+    { id: 'mark', name: vi ? 'Đánh dấu mục tiêu cho Echo' : 'Mark a target for Echoes', icon: <Crosshair/>,
+      disabled: false, pressed: !!hud.targetMarkArmed, run: () => engine?.armTargetMark() },
+  ];
+  return <div className="touch-echo-strip" role="group" aria-label={vi ? 'Điều khiển Echo' : 'Echo controls'}>
+    <i className="touch-echo-stability" style={{ width: `${Math.max(0, Math.min(100, echo.stability))}%` }} aria-hidden="true"/>
+    {buttons.map(b => <button key={b.id} type="button" className={`touch-echo-btn echo-${b.id}${b.pressed ? ' is-armed' : ''}${b.cooldown ? ' is-recovering' : ''}`}
+      disabled={b.disabled} aria-label={b.name} aria-pressed={b.pressed} title={b.name}
+      style={{ '--cd': b.cooldown && b.max ? Math.min(1, b.cooldown / b.max) : 0 } as React.CSSProperties}
+      onPointerDown={e => { e.preventDefault(); e.stopPropagation(); b.run(); }}
+      onClick={e => { if (e.detail === 0) b.run(); }}>
+      {b.icon}{b.cooldown ? <span className="touch-echo-timer">{Math.ceil(b.cooldown)}</span> : null}
+    </button>)}
+  </div>;
+}
 
 const RADIUS = 46;      // px the knob can travel from the stick's centre
 const DEAD_ZONE = 0.2;  // fraction of RADIUS ignored, so a resting thumb does not drift

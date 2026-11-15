@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Clock3, Footprints, Link, Shield, Snowflake, Sparkles, Swords, TriangleAlert } from 'lucide-react';
+import { Clock3, Footprints, Link, Shield, Snowflake, Sparkles, Swords, TriangleAlert } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
-import { GUIDE_TOPICS, QUICK_HINTS, type GuideTopic } from '../game/logic/tutorials.ts';
-import { PANEL_ART, usePanelArt } from './panelArt.ts';
+import { QUICK_HINTS } from '../game/logic/tutorials.ts';
+import { PlayerGuide } from './guide/PlayerGuide.tsx';
 import './MechanicGuide.css';
 
 const hintIcons = {
@@ -31,90 +30,24 @@ const trailCopy = {
 } as const;
 
 export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | null; hud: HUDState; touch: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
   const libraryOpen = hud.guideLibrary === true;
-  const panelArt = usePanelArt(PANEL_ART.inventory);
   const topic = hud.guideTopic;
   const vi = hud.language === 'vi';
-  const copy = topic ? GUIDE_TOPICS[topic][vi ? 'vi' : 'en'] : null;
   const hint = topic ? QUICK_HINTS[topic][vi ? 0 : 1] : null;
-
-  useEffect(() => {
-    if (!libraryOpen) return;
-    const previous = document.activeElement as HTMLElement | null;
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        if (topic) engine?.dismissGuide();
-        else engine?.closeGuide();
-      } else if (event.key === 'Tab') {
-        const buttons = Array.from(ref.current?.querySelectorAll('button') ?? []);
-        const first = buttons[0], last = buttons.at(-1);
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      } else if (event.key !== 'Enter' && event.key !== ' ') {
-        event.stopPropagation();
-      }
-    };
-    if (panelArt !== 'loading') ref.current?.querySelector('button')?.focus({ preventScroll: true });
-    window.addEventListener('keydown', key, true);
-    return () => {
-      window.removeEventListener('keydown', key, true);
-      previous?.focus();
-    };
-  }, [libraryOpen, topic, engine, panelArt]);
-
-  if (!libraryOpen) {
-    const objective = hud.trailAction ? trailCopy[hud.trailAction] : null;
-    const Icon = topic ? hintIcons[topic] : null;
-    return <>
-      {objective && <aside className="trail-objective" role="status">
-        {objective[0] ? <kbd>{touch ? objective[vi ? 1 : 2] : objective[0]}</kbd> :
-          <Footprints size={18} aria-hidden="true"/>}
-        <span>{objective[vi ? 3 : 4]}</span>
-      </aside>}
-      {Icon && hint && <aside className={`mechanic-hint${objective ? ' with-objective' : ''}`} role="status">
-        <Icon size={18} aria-hidden="true"/>
-        <span>{hint}</span>
-      </aside>}
-    </>;
-  }
-
-  return <div className="mechanic-guide-backdrop is-library">
-    <div ref={ref} className="mechanic-guide" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="mechanic-guide-title">
-      <header>
-        <span><BookOpen size={15}/>{vi ? 'SỔ TAY TIẾNG VỌNG' : 'THE ECHO FIELD GUIDE'}</span>
-        <h2 id="mechanic-guide-title">{copy?.[0] ?? (vi ? 'Sổ tay hành trình' : 'Your field guide')}</h2>
-      </header>
-      <div className="guide-scroll" key={topic ?? 'topics'}>
-        {copy ? <>
-          <div className="guide-control-note">{hint}</div>
-          <p className="guide-details">{copy[1]}</p>
-        </> : <div className="guide-topic-list">
-          {(Object.keys(GUIDE_TOPICS) as GuideTopic[]).map(id => {
-            const Icon = hintIcons[id];
-            return <button key={id} onClick={() => engine?.replayGuide(id)}>
-              <Icon size={16} aria-hidden="true"/>
-              <span>{GUIDE_TOPICS[id][vi ? 'vi' : 'en'][0]}</span>
-              {engine?.guides.seen.has(id) ? <Check size={14} aria-hidden="true"/> : <ArrowRight size={14} aria-hidden="true"/>}
-            </button>;
-          })}
-        </div>}
-      </div>
-      <footer>
-        {copy && <button className="guide-library-link" onClick={() => engine?.dismissGuide()}>
-          <ArrowLeft size={16}/>{vi ? 'Về mục lục' : 'Back to topics'}
-        </button>}
-        <button className="guide-ack primary" onClick={() => engine?.closeGuide()}>
-          {vi ? 'Chơi tiếp' : 'Resume'}<ArrowRight size={16}/>
-        </button>
-      </footer>
-    </div>
-  </div>;
+  // The library is the full player guide (guide/PlayerGuide.tsx); play stays frozen while it is open (guides.blocking).
+  if (libraryOpen) return <PlayerGuide lang={vi ? 'vi' : 'en'} topic={topic} onClose={() => engine?.closeGuide()}/>;
+  const objective = hud.trailAction ? trailCopy[hud.trailAction] : null;
+  const Icon = topic ? hintIcons[topic] : null;
+  return <>
+    {objective && <aside className="trail-objective" role="status">
+      {objective[0] ? <kbd>{touch ? objective[vi ? 1 : 2] : objective[0]}</kbd> :
+        <Footprints size={18} aria-hidden="true"/>}
+      <span>{objective[vi ? 3 : 4]}</span>
+    </aside>}
+    {Icon && hint && topic && <aside className={`mechanic-hint${objective ? ' with-objective' : ''}`} role="status">
+      <Icon size={18} aria-hidden="true"/>
+      <span>{hint}</span>
+      <button type="button" className="mechanic-hint-more" onClick={() => { engine?.openGuide(); engine?.replayGuide(topic); }}>{vi ? 'Xem chi tiết' : 'Details'}</button>
+    </aside>}
+  </>;
 }

@@ -31,6 +31,7 @@ export function StudioSplash({ onDone, paused = false }: { onDone: () => void; p
   // Keys go to the splash only: Enter / Space would otherwise open the lobby underneath (GameEngine).
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
+      if (document.querySelector('.player-guide-backdrop')) return;   // the player guide, opened over the intro, owns the keys
       e.preventDefault(); e.stopImmediatePropagation();
       if (['Enter', 'Space', 'Escape'].includes(e.code)) finish();
     };

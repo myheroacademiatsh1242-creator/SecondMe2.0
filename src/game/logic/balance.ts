@@ -1,8 +1,8 @@
 export const HERO_MAX_HP = { mage: 85, swordsman: 115, mechanical: 100 } as const;
 export const HERO_COMBO_ATTACK = { mage: 12, swordsman: 16 } as const;
-export const GUARDIAN_HP = 440;
+export const GUARDIAN_HP = 520;
 export const EMBER_DEMON_HP = 1440;
-export const BOSS_PLAYER_DAMAGE = { guardian: 1.25, demon: 1.4 } as const;
+export const BOSS_PLAYER_DAMAGE = { guardian: 1.35, demon: 1.4 } as const;
 export const SWORD_WAVE_RANGE = 96;
 
 const ENCOUNTER_HEALTH = [.6, 1, 1.11, 1.23, 1.37, 1.5, 1.65, 1.8, 1.98, 2.17, 2.38, 2.6, 2.85];

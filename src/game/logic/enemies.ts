@@ -25,7 +25,7 @@ export const ENEMY_STATS={goblin:{hp:108,speed:82,reach:42,notice:180,lure:260,d
 export const LURE_MEMORY = 2;
 /** How far from home an Echo can lead an enemy: its lure range plus this (px). */
 export const LURE_LEASH = 120;
-const encounters:Record<number,[EnemyKind,number,number][]>= {
+export const encounters:Record<number,[EnemyKind,number,number][]>= {
  1:[['goblin',1090,570]],
  2:[['goblin',450,580],['shaman',1040,220]],
  3:[['goblin',830,130],['bear',420,120],['shaman',440,580]],

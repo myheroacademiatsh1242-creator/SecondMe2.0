@@ -83,7 +83,7 @@ const KAEL_SWINGS = [
 const FINISHER_DASH = 42;                     // px Kael lunges during the finisher's dash frames
 
 export type CombatSkill = 'fire' | 'lightning' | 'stone' | 'haste' | 'armor' | 'wave';
-const CLASS_SKILLS: Record<CharacterClass, CombatSkill[]> = { mage: ['fire','lightning','stone'], swordsman: ['haste','armor','wave'], mechanical: ['fire','armor','haste'] };
+export const CLASS_SKILLS: Record<CharacterClass, CombatSkill[]> = { mage: ['fire','lightning','stone'], swordsman: ['haste','armor','wave'], mechanical: ['fire','armor','haste'] };
 
 export interface HUDState {
   trailAction?: TrailAction;
@@ -102,6 +102,12 @@ export interface HUDState {
   recordingTimeRemaining: number;
   echoStatus: EchoStatus;
   echoCount: number; // 0 or 1
+  /** Every Echo on the field, oldest first, for the touch Echo strip. */
+  echoList?: { stability: number; status: EchoStatus }[];
+  selectedEcho?: number;
+  swapCooldown?: number;
+  /** Touch: the next tap on the arena marks the Echoes' target instead of attacking. */
+  targetMarkArmed?: boolean;
   echoCharges: number;
   echoStability: number;
   echoElapsedMs: number;
@@ -272,6 +278,23 @@ export class GameEngine {
   private swapCooldown = 0;
   private echoGrace = 0;
   private pingTarget: {x:number;y:number;life:number}|null = null;
+  /** Seconds left in touch "mark target" mode (armTargetMark). */
+  private targetMarkArmed = 0;
+  /** Shift + click, or a tap after armTargetMark: Echoes favour this spot for 4 s. Needs an Echo on the field. */
+  public markTarget(target: { x: number; y: number }): boolean {
+    this.targetMarkArmed = 0;
+    if (this.screen !== 'playing' || !this.echo) { this.notifyHUD(); return false; }
+    this.pingTarget = { ...target, life: 4 };
+    this.showBanner(this.language==='vi'?'Echo ưu tiên mục tiêu đã đánh dấu.':'Echo target marked.');
+    this.notifyHUD();
+    return true;
+  }
+  /** Touch: toggles mark mode; while it is on, the next tap on the arena calls markTarget instead of attacking. */
+  public armTargetMark() {
+    this.targetMarkArmed = this.targetMarkArmed > 0 || !this.echo || this.screen !== 'playing' ? 0 : 4;
+    if (this.targetMarkArmed) this.showBanner(this.language==='vi'?'Chạm vào mục tiêu để Echo ưu tiên đánh.':'Tap a target for your Echoes.');
+    this.notifyHUD();
+  }
   public campaign = new Campaign();
   public readonly guides = new TutorialDirector();
   public tutorialEnabled = false;
@@ -746,7 +769,7 @@ export class GameEngine {
     this.dissonanceSeconds = 0;
     this.swapCooldown = 0;
     this.echoGrace = 0;
-    this.pingTarget = null;
+    this.pingTarget = null; this.targetMarkArmed = 0;
     this.recorder.clear();
     this.elapsedLevelTime = 0;
     this.legTimeRemaining = !this.isTraining && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) ? puzzleBalance(this.currentLevel.id).legSeconds : null;
@@ -1031,6 +1054,9 @@ export class GameEngine {
    */
   private strike(target: CombatTarget, amount: number, heavy = false, source:{x:number;y:number}=this.player): boolean {
     if (source === this.player) amount *= 1 + this.heroStats.attackBonus / 100;
+    // The swordsman is fire-aligned: double damage to the Frost Guardian, its pillars and ice enemies (Frost Crystals, ice slimes).
+    const sourceClass = source === this.player ? this.characterClass : (source as {characterClass?: CharacterClass}).characterClass;
+    if (sourceClass === 'swordsman' && ((target as Enemy).slimeHue === PILLAR_SUMMON.HUE || (this.boss && this.boss.kind !== 'demon' && (target === this.boss || this.boss.pillars.includes(target as BossState['pillars'][number]))))) amount *= 2;
     if (this.enemies.includes(target as Enemy)) {
       const enemy = target as Enemy;
       if (enemy.hp <= 0) return false;
@@ -1883,10 +1909,14 @@ export class GameEngine {
     echo.attackTimer = Math.max(0, (echo.attackTimer ?? 0) - dt);
     const anchor = echo.combatAnchor ?? {x: echo.x, y: echo.y};
     const walls = getActiveObstacles(this.currentLevel.walls, this.currentLevel.doors);
-    const targets: (Enemy | BossState)[] = this.enemies.filter(e => e.hp > 0);
-    if (this.boss && this.boss.hp > 0 && !this.bossDeathPending) targets.push(this.boss);
-    const target = targets.filter(t => Math.hypot(t.x-anchor.x, t.y-anchor.y) <= ECHO_COMBAT_RADIUS && !walls.some(w => segmentWall(echo, t, w, 0) !== null))
-      .sort((a,b) => Math.hypot(a.x-echo.x, a.y-echo.y) - Math.hypot(b.x-echo.x, b.y-echo.y))[0];
+    // Boss arenas: the Echo sees the whole map (walls still block sight) and works in order: small enemies, then the pillars, then the boss.
+    const arena = this.currentLevel.id === 6 || this.currentLevel.id === 13;
+    const range = arena ? Infinity : ECHO_COMBAT_RADIUS;
+    const visible = (list: CombatTarget[]) => list.filter(t => Math.hypot(t.x-anchor.x, t.y-anchor.y) <= range && !walls.some(w => segmentWall(echo, t, w, 0) !== null))
+      .sort((a,b) => Math.hypot(a.x-echo.x, a.y-echo.y) - Math.hypot(b.x-echo.x, b.y-echo.y));
+    const live = this.boss && this.boss.hp > 0 && !this.bossDeathPending ? this.boss : null;
+    const pillars = live ? live.pillars.filter(p => p.hp > 0) : [];
+    const target = visible(this.enemies.filter(e => e.hp > 0))[0] ?? (live ? visible(pillars.length ? pillars : [live])[0] : undefined);
     if (!target && !echo.combatAnchor) return false;
     if (target && !echo.combatAnchor) echo.combatAnchor = anchor;
     const destination = target ?? anchor;
@@ -1904,7 +1934,7 @@ export class GameEngine {
       const x = echo.x + dx / distance * amount, y = echo.y + dy / distance * amount;
       const resolved = resolveMovement(echo.x, echo.y, x, y, 24, 24, walls);
       // Reject corner-assist nudges outside the original 3m circle.
-      const inBounds = Math.hypot(resolved.x-anchor.x, resolved.y-anchor.y) <= ECHO_COMBAT_RADIUS + .001;
+      const inBounds = Math.hypot(resolved.x-anchor.x, resolved.y-anchor.y) <= range + .001;
       const moved = inBounds && Math.hypot(resolved.x-echo.x, resolved.y-echo.y) > .01;
       if (moved) { echo.x=resolved.x; echo.y=resolved.y; echo.direction=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
       echo.isMoving = moved;
@@ -2105,7 +2135,7 @@ export class GameEngine {
     const bounds = this.canvas.getBoundingClientRect();
     const target = { x: (e.clientX - bounds.left) * this.canvas.width / bounds.width,
       y: (e.clientY - bounds.top) * this.canvas.height / bounds.height };
-    if (e.shiftKey && this.echo) { this.pingTarget={...target,life:4}; this.showBanner(this.language==='vi'?'Echo ưu tiên mục tiêu đã đánh dấu.':'Echo target marked.'); return; }
+    if ((e.shiftKey || this.targetMarkArmed > 0) && this.markTarget(target)) return;
     if (e.button === 1) { e.preventDefault(); this.useUltimate(target); }
     else if (e.button === 2) { e.preventDefault(); this.useSkill(target); }
     else this.attack(target);
@@ -2290,6 +2320,7 @@ export class GameEngine {
     this.idleTime = this.player.isMoving ? 0 : this.idleTime + dt;
     if (this.idleTime > 14) { this.idleTime = 0; voice.say(this.voiceRole, 'idle'); }
     if(this.pingTarget) {this.pingTarget.life-=dt;if(this.pingTarget.life<=0)this.pingTarget=null;}
+    if(this.targetMarkArmed>0){this.targetMarkArmed=Math.max(0,this.targetMarkArmed-dt);if(!this.targetMarkArmed||!this.echo){this.targetMarkArmed=0;this.notifyHUD();}}
     const altar=this.currentLevel.playerSpawn;
     const outsideAltar=Math.hypot(this.player.x-altar.x,this.player.y-altar.y)>85;
     this.echoGrace=Math.max(0,this.echoGrace-dt);
@@ -2676,22 +2707,24 @@ export class GameEngine {
   private summonFromPillars(dt: number) {
     if (!this.boss) return;
     const alive = this.enemies.filter(e => e.hp > 0 && e.id.startsWith('frost-crystal-')).length;
-    for (const i of stepPillarSummons(this.pillarClocks, this.boss.pillars, this.boss.phase, alive, dt)) {
-      const pillar = this.boss.pillars[i];
-      this.enemies.push(this.newFrostCrystal(pillar));
+    const batch = stepPillarSummons(this.pillarClocks, this.boss.pillars, bossSegment(this.boss), alive, dt);
+    batch.forEach((i, at) => {
+      const pillar = this.boss!.pillars[i];
+      const n = batch.filter(j => j === i).length, k = batch.slice(0, at).filter(j => j === i).length;   // this crystal is the k-th of n from its pillar
+      this.enemies.push(this.newFrostCrystal(pillar, k === 0, k, n));
       pillar.hitFlash = .3;
-      this.renderer.emitMagic('sparkle', pillar.x, pillar.y - 20, 55);
+      if (k === 0) this.renderer.emitMagic('sparkle', pillar.x, pillar.y - 20, 55);
       if (!this.pillarsSummoned) {
         this.pillarsSummoned = true;
         this.showBanner(this.language === 'vi' ? 'Trụ băng triệu hồi Pha Lê Băng · Phá trụ để chặn lại!' : 'The ice pillars summon Frost Crystals · Break the pillars!', 2.6);
       }
-    }
+    });
   }
 
   /** A Frost Crystal stepping out of a pillar toward the middle of the arena, in a burst of snowflakes (pixelfx ice/snowflake-burst). */
-  private newFrostCrystal(pillar: { x: number; y: number }, audible = true): Enemy {
-    const a = Math.atan2(360 - pillar.y, 640 - pillar.x);
-    const x = pillar.x + Math.cos(a) * 62, y = pillar.y + Math.sin(a) * 48;
+  private newFrostCrystal(pillar: { x: number; y: number }, audible = true, k = 0, n = 1): Enemy {
+    const a = Math.atan2(360 - pillar.y, 640 - pillar.x) + (k - (n - 1) / 2) * .5;   // several from one pillar fan out
+    const x = Math.max(50, Math.min(1230, pillar.x + Math.cos(a) * 62)), y = Math.max(50, Math.min(670, pillar.y + Math.sin(a) * 48));
     this.spawnPfx('snowflake-burst', x, y + 6, { scale: .6 });
     if (audible) sounds.playFrostBurst();
     const hp = Math.round(PILLAR_SUMMON.HP * encounterBalance(6).health);
@@ -2840,6 +2873,10 @@ export class GameEngine {
         recordingTimeRemaining: this.recorder.getRemainingTimeMs(),
         echoStatus: echoState,
         echoCount: this.echoes.length,
+        echoList: this.echoes.map(e => ({ stability: e.stability ?? 100, status: e.status })),
+        selectedEcho: this.selectedEcho,
+        swapCooldown: this.swapCooldown,
+        targetMarkArmed: this.targetMarkArmed > 0,
         echoCharges: this.availableEchoCharges,
         echoStability: this.echo?.stability??0,
         echoElapsedMs: this.echo?.elapsedMs??0,

@@ -64,7 +64,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
     skipRef.current = skip;
     // Capture phase on window so the engine's own Enter/Space handler never fires mid-film.
     const onKey = (e: KeyboardEvent) => {
-      if(pausedRef.current)return;
+      if(pausedRef.current||document.querySelector('.player-guide-backdrop'))return;   // the player guide owns the keys while open
       if (SKIP_KEYS.has(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); skip(); return; }
       gestured = true;
     };
