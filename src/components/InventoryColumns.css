@@ -56,7 +56,7 @@ html body #root .inventory-pack-slots .pack-quantity button{
 #root .adventure-app .inventory-modal .inventory-supplies [data-inventory-item]>.supply-icon,
 #root .adventure-app .inventory-modal .inventory-supplies [data-inventory-item] .shop-item-icon{width:54px;height:54px}
 .inventory-supplies [data-inventory-item]>.supply-icon .shop-item-icon[data-item="time"],
-.inventory-pack-slots .shop-item-icon[data-item="time"]{transform:scale(1.65)}
+.inventory-pack-slots .shop-item-icon[data-item="time"]{transform:none}
 #root .adventure-app .inventory-modal :is(.inventory-supplies article,.inventory-rune-slots>button,.inventory-rune-description){border-image-slice:100 fill!important;border-image-repeat:round!important}
 #root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 #root .adventure-app .inventory-modal .inventory-rune-slots>button{min-height:116px;padding:14px 5px 8px}

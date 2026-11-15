@@ -35,7 +35,7 @@
 .combat-item-slots button:disabled{opacity:.72}
 .combat-item-slots kbd,.inventory-pack-slots kbd{position:absolute;top:2px;left:2px;padding:0 3px;border-radius:0;line-height:1.15;font-size:9px;color:#efe0aa;background:#263629}
 .combat-item-slots .shop-item-icon{width:min(32px,100%);height:auto;aspect-ratio:1;object-fit:contain;image-rendering:pixelated}
-.combat-item-slots .shop-item-icon[data-item="time"]{transform:scale(1.65)}
+.combat-item-slots .shop-item-icon[data-item="time"]{transform:none}
 .combat-item-count{
   position:absolute;right:2px;bottom:2px;padding:0 2px;background:#17241c;
   color:#f1dc9f;font-size:10px;line-height:1.1;

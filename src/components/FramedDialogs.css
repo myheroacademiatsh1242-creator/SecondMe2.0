@@ -7,6 +7,24 @@ html body .credits-panel .credits-section{
 html body .credits-panel .credits-section li{flex-wrap:wrap;column-gap:12px;row-gap:2px}
 html body .credits-panel .credits-section li :is(b,span){overflow-wrap:anywhere;min-width:0}
 html body .credits-panel .credits-scroll{flex:1;min-height:0;}
+/* Credits need only the frame slices, never the stretched center of the atlas. */
+html body .modal-backdrop.modal-backdrop .credits-panel.settings-panel.panel.panel.panel{
+ box-sizing:border-box;
+ border:28px solid transparent!important;
+ border-image:url('/assets/ui/inventory-nine-slice-pixel.png') 25% / 28px / 0 round!important;
+ background:#283429!important;background-clip:padding-box!important;
+ padding:16px;box-shadow:none!important;
+}
+html body .credits-panel.settings-panel .credits-section{
+ border:8px solid transparent;
+ border-image:url('/assets/ui/stone-card-pixel.png') 100 / 8px / 0 round!important;
+ background:#1d2b20!important;background-clip:padding-box!important;
+}
+@media(max-width:600px),(max-height:480px){
+ html body .modal-backdrop.modal-backdrop .credits-panel.settings-panel.panel.panel.panel{
+  border-width:22px!important;border-image-width:22px!important;padding:10px;
+ }
+}
 html body .modal-backdrop.modal-backdrop :is(.settings-panel.panel.panel.panel,.rune-loadout-editor.panel.panel.panel){
  border-image-source:url('/assets/ui/inventory-nine-slice-pixel.png')!important;
  border-image-slice:25% fill!important;border-image-repeat:round!important;

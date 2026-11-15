@@ -28,7 +28,7 @@ html body .trading-confirm>p{margin:0!important;font-size:21px!important;line-he
 html body .outfit-confirm-body .outfit-confirm-meta{font-size:19px!important;color:#c6b892!important}
 html body .purchase-dialog .trading-confirm-item{display:grid;grid-template-columns:96px minmax(0,1fr);gap:20px;align-items:center;margin:20px 0}
 html body .purchase-dialog .trading-confirm-item>.shop-item-icon{width:96px;height:96px;margin:0;align-self:center;justify-self:center;transform-origin:center;pointer-events:none}
-html body .purchase-dialog .trading-confirm-item>.shop-item-icon[data-item="time"]{transform:scale(1.78)}
+html body .purchase-dialog .trading-confirm-item>.shop-item-icon[data-item="time"]{transform:none}
 html body .purchase-dialog .trading-confirm-item>.shop-item-icon[data-item="ring"]{transform:scale(1.02)}
 html body .purchase-dialog .trading-confirm-item>.shop-item-icon[data-item="healSmall"]{transform:scale(1.26)}
 html body .purchase-dialog .trading-confirm-item>.shop-item-icon[data-item="healLarge"]{transform:scale(1.2)}
