@@ -9,7 +9,7 @@ import { MAX_MP, MP_REGEN_PER_SECOND, MP_REGEN_DELAY, skillManaCost, COMBO_MP } 
 import { ICE_MAGIC, ENEMY_CHILL, FROST_STRIKE } from '../../game/logic/iceMagic.ts';
 import { AERIS_ULT, RAGE } from '../../game/logic/ultimate.ts';
 import { ECHO_RUNES } from '../../game/logic/echoRunes.ts';
-import { SHOP_ITEMS } from '../../game/logic/shopItems.ts';
+import { SHOP_ITEMS, ITEM_LOADOUT_LIMIT } from '../../game/logic/shopItems.ts';
 import { CHEST_PRICES } from '../../game/logic/chest.ts';
 import { HERO_UPGRADE_PRICES, HERO_MAX_RANK, HERO_RESET_FEE_PERCENT } from '../../game/logic/heroUpgrades.ts';
 import { SKILL_PICKUPS } from '../../game/logic/skillPickups.ts';
@@ -55,7 +55,7 @@ export const CONTROLS: { group: L; rows: ControlRow[] }[] = [
     { keys: 'W A S D / ← ↑ → ↓', touch: t('Cần điều khiển (cột trái)', 'Stick (left column)'), action: t('Di chuyển', 'Move') },
     { keys: 'E', touch: t('Nút Ghi hình / Dừng ghi', 'Record / Stop button'), action: t(`Bắt đầu ghi đường đi; bấm lần nữa để lưu (tối đa ${SEC} giây, đủ ${SEC} giây tự lưu)`, `Start recording your path; press again to save (up to ${SEC} s, saved automatically at ${SEC} s)`) },
     { keys: 'Q', touch: t('Nút Gọi Echo', 'Summon Echo button'), action: t('Gọi Echo phát lại bản ghi (tốn 1 lượt Echo)', 'Summon an Echo that replays the recording (costs 1 Echo charge)') },
-    { keys: '1 – 6', touch: t('Nút số trên dải Echo (bấm để chuyển)', 'Number button on the Echo strip (tap to cycle)'), action: t('Chọn Echo', 'Select an Echo') },
+    { keys: 'Shift + 1 – 6 (hoặc 4 – 6)', touch: t('Nút số trên dải Echo (bấm để chuyển)', 'Number button on the Echo strip (tap to cycle)'), action: t('Chọn Echo (phím 1–3 không có Shift là dùng vật phẩm)', 'Select an Echo (1–3 without Shift use items)') },
     { keys: 'C', touch: t('Nút ❚❚ / ▶ trên dải Echo', '❚❚ / ▶ on the Echo strip'), action: t('Tạm dừng / cho Echo đang chọn chạy tiếp', 'Pause / resume the selected Echo') },
     { keys: 'X', touch: t('Nút Thu Echo', 'Recall Echo button'), action: t('Thu hồi Echo đã gọi lâu nhất', 'Recall the oldest Echo') },
     { keys: 'Shift + Q', touch: t('Nút ⇄ trên dải Echo', '⇄ on the Echo strip'), action: t('Đổi chỗ với Echo đang chọn (đường thẳng không được có tường/cổng; tốn 30 ổn định, chờ 7 giây)', 'Swap places with the selected Echo (no wall or gate on the straight line; costs 30 stability, 7 s cooldown)') },
@@ -68,10 +68,11 @@ export const CONTROLS: { group: L; rows: ControlRow[] }[] = [
     { keys: 'Shift', touch: t('Nút Né tránh', 'Dodge button'), action: t('Lướt né (chỉ khi còn quái hoặc boss; chờ 1,2 giây)', 'Dodge (only while enemies or a boss remain; 1.2 s cooldown)') },
   ] },
   { group: t('Vật phẩm & hệ thống', 'Items & system'), rows: [
-    { keys: 'R', touch: t('Túi đồ → Bình thời gian', 'Inventory → Time potion'), action: t('Dùng Bình thời gian: +2 giây cho chặng (tối đa 5 lần mỗi màn)', 'Use a Time potion: +2 s for this leg (up to 5 per level)') },
-    { keys: '—', touch: t('Nút Túi đồ', 'Inventory button'), action: t('Bình hồi máu, năng lượng, ấn nâng Echo', 'Healing and energy potions, Echo runes') },
+    { keys: '1 – 3', touch: t('Túi đồ → DÙNG ở vật phẩm mang theo', 'Inventory → USE on a carried item'), action: t(`Dùng vật phẩm ở ô mang theo 1–${ITEM_LOADOUT_LIMIT} (chọn trước khi vào trận)`, `Use the item in carried slot 1–${ITEM_LOADOUT_LIMIT} (packed before the battle)`) },
+    { keys: 'R', touch: t('Túi đồ → Bình thời gian → DÙNG', 'Inventory → Time potion → USE'), action: t('Dùng Bình thời gian đã mang theo: +2 giây cho chặng', 'Use a carried Time potion: +2 s for this leg') },
+    { keys: 'Tab', touch: t('Nút Túi đồ', 'Inventory button'), action: t('Mở Kho đồ: vật phẩm mang theo và ấn nâng Echo (trận tạm dừng khi mở)', 'Open the inventory: carried items and Echo runes (play pauses while open)') },
     { keys: 'Esc / P', touch: t('Nút ❚❚ góc trên', '❚❚ at the top'), action: t('Tạm dừng / tiếp tục', 'Pause / resume') },
-    { keys: 'T', touch: t('Tạm dừng → Chơi lại màn', 'Pause → Retry level'), action: t('Chơi lại màn', 'Retry the level') },
+    { keys: 'T', touch: t('Tạm dừng → Chơi lại màn', 'Pause → Retry level'), action: t('Chơi lại màn (qua bước chọn vật phẩm mang theo)', 'Retry the level (through the item-packing step)') },
     { keys: 'M', touch: t('Tạm dừng → Cài đặt → Tắt âm', 'Pause → Settings → Mute'), action: t('Bật/tắt âm thanh', 'Mute / unmute') },
     { keys: 'F', touch: null, action: t('Bật/tắt toàn màn hình', 'Toggle full screen') },
     { keys: '—', touch: t('Nút ? góc trên / Tạm dừng → Sổ tay', '? at the top / Pause → Guide'), action: t('Mở sổ tay này', 'Open this guide') },
@@ -139,7 +140,7 @@ export const GUIDE: Section[] = [
   { id: 'controls', letter: 'B', title: t('Điều khiển', 'Controls'), pages: [
     { id: 'pc', title: t('Bàn phím & chuột (PC)', 'Keyboard & mouse (PC)'), blocks: [
       { t: 'controls', rows: CONTROLS.flatMap(g => g.rows) },
-      { t: 'figure', fig: { shot: 'hud-desktop', alt: t('Giao diện chơi trên máy tính', 'The desktop play screen'), caption: t('Cột phải: máu (HP), năng lượng (MP) và các nút chiêu kèm phím tắt. Cột trái: màn, thời gian, ấn Echo, cài đặt và túi đồ.', 'Right column: HP, MP and the ability buttons with their keys. Left column: level, time, Echo runes, settings and inventory.') } },
+      { t: 'figure', fig: { shot: 'hud-desktop', alt: t('Giao diện chơi trên máy tính', 'The desktop play screen'), caption: t('Cột phải: máu (HP), năng lượng (MP) và các nút chiêu kèm phím tắt. Cột trái: màn, thời gian, ấn Echo, ô vật phẩm mang theo (1–3), cài đặt, túi đồ và sổ tay.', 'Right column: HP, MP and the ability buttons with their keys. Left column: level, time, Echo runes, carried item slots (1–3), settings, inventory and this guide.') } },
     ] },
     { id: 'touch', title: t('Điện thoại & máy tính bảng', 'Phones & tablets'), blocks: [
       { t: 'p', text: t('Trên điện thoại, game cần cầm ngang. Tất cả chức năng của bàn phím đều có nút cảm ứng tương ứng (bảng dưới).', 'On phones the game needs landscape. Every keyboard function has a touch equivalent (table below).') },
@@ -165,7 +166,7 @@ export const GUIDE: Section[] = [
     ] },
     { id: 'multi', title: t('Nhiều Echo, hoán đổi, thu hồi', 'Several Echoes, swapping, recalling'), topics: ['multi', 'recycle'], blocks: [
       { t: 'list', items: [
-        t('Mỗi Echo giữ bản ghi riêng. Chọn bằng 1–6 (điện thoại: nút số trên dải Echo).', 'Each Echo keeps its own recording. Select with 1–6 (phones: the number on the Echo strip).'),
+        t('Mỗi Echo giữ bản ghi riêng. Chọn bằng Shift + 1–6 hoặc 4–6 (điện thoại: nút số trên dải Echo).', 'Each Echo keeps its own recording. Select with Shift + 1–6 or 4–6 (phones: the number on the Echo strip).'),
         t('C tạm dừng / cho Echo đang chọn chạy tiếp.', 'C pauses / resumes the selected Echo.'),
         t('X luôn thu Echo đã gọi lâu nhất.', 'X always recalls the oldest Echo.'),
         t('Shift + Q đổi chỗ với Echo đang chọn khi đường thẳng giữa hai bên không có tường hay cổng. Tốn 30 ổn định của Echo, chờ 7 giây (ấn Hoán ảnh: 15 và 4 giây).', 'Shift + Q swaps places with the selected Echo when the straight line between you is free of walls and gates. Costs 30 of its stability, 7 s cooldown (Phasewalk rune: 15 and 4 s).'),
@@ -177,7 +178,7 @@ export const GUIDE: Section[] = [
       { t: 'list', items: [
         t('Mỗi chặng (từ ấn này tới ấn kế tiếp) có thời gian riêng; hết giờ là thua. Tới ấn kế tiếp là nạp lại. Trận boss không tính giờ.', 'Each leg (rune to rune) has its own time; when it runs out you lose. Reaching the next rune refills it. Boss fights are untimed.'),
         t(`Đồng hồ cát xuất hiện gần bạn: nhặt được +${SHARD_BONUS} giây, mỗi chặng một mảnh.`, `An hourglass appears near you: +${SHARD_BONUS} s, one per leg.`),
-        t('Bình thời gian (R hoặc trong túi đồ): +2 giây, tối đa 5 lần mỗi màn.', 'Time potion (R or from the inventory): +2 s, up to 5 per level.'),
+        t('Bình thời gian: +2 giây. Chỉ dùng được bình đã mang theo vào trận (R, phím ô 1–3, hoặc trong túi đồ).', 'Time potion: +2 s. Only potions packed for the battle can be used (R, its slot key 1–3, or the inventory).'),
         t(`Hạ quái: +${ENEMY_TIME_BONUS} giây (không vượt thời gian của chặng) và +1 lượt Echo.`, `Defeating an enemy: +${ENEMY_TIME_BONUS} s (never above the leg's budget) and +1 Echo charge.`),
         t('Xong màn càng nhanh càng nhiều sao (0–3) và xu (0 / 4 / 8 / 12). Mỗi lần thắng được chọn 1 trong 3 ấn nâng Echo.', 'The faster you finish, the more stars (0–3) and coins (0 / 4 / 8 / 12). Every win lets you pick 1 of 3 Echo runes.'),
       ] },
@@ -293,6 +294,14 @@ export const GUIDE: Section[] = [
       { t: 'list', items: [
         t(`Rương Phàm Phẩm: ${CHEST_PRICES.wood.single} xu mỗi lần mở. Rương Hoàng Phẩm: ${CHEST_PRICES.royal.single} Tanuki phàm tinh thể mỗi lần. Phần thưởng ngẫu nhiên (xu, bình, tinh thể…), có lịch sử mở rương. Các rương khác đang được hoàn thiện.`, `Common chest: ${CHEST_PRICES.wood.single} coins per pull. Royal chest: ${CHEST_PRICES.royal.single} Tanuki Common Crystals per pull. Random rewards (coins, potions, crystals…), with a pull history. The other chests are still being finished.`),
         t('Tinh thể nhận được khi thắng màn có sao và khi hạ boss.', 'Crystals come from starred level wins and boss victories.'),
+      ] },
+    ] },
+    { id: 'loadout', title: t('Mang vật phẩm vào trận', 'Packing items for a battle'), blocks: [
+      { t: 'p', text: t(`Trước mỗi trận (vào màn, chơi lại, sang màn kế) hiện cửa sổ "CHỌN VẬT PHẨM VÀO TRẬN". Chọn 1–${ITEM_LOADOUT_LIMIT} loại vật phẩm từ kho; mỗi ô chứa một loại, bấm − / + để chỉnh số lượng. Kho trống thì có nút "VÀO TAY KHÔNG".`, `Before each battle (entering a level, retrying, the next level) the "PACK ITEMS FOR THE BATTLE" window opens. Pick 1–${ITEM_LOADOUT_LIMIT} kinds from your stock; each slot holds one kind, − / + sets the amount. With an empty stock there is an "ENTER EMPTY-HANDED" button.`) },
+      { t: 'figure', fig: { shot: 'battle-prep', alt: t('Cửa sổ chọn vật phẩm vào trận', 'The item-packing window') } },
+      { t: 'list', items: [
+        t('Trong trận chỉ dùng được vật phẩm đã mang theo: phím 1–3 theo từng ô (máy tính có ô vật phẩm ở cột trái), hoặc nút DÙNG trong túi đồ (Tab).', 'In battle only packed items can be used: keys 1–3 by slot (desktop shows the slots in the left column), or USE in the inventory (Tab).'),
+        t('Nhẫn giới hạn Echo, Trục phục sinh và 3 cơ hội: mỗi trận mang tối đa 1.', 'Echo limit ring, Revival scroll and Three chances: at most 1 per battle.'),
       ] },
     ] },
     { id: 'upgrades', title: t('Nâng cấp nhân vật', 'Hero upgrades'), blocks: [

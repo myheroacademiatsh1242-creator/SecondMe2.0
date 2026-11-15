@@ -1,5 +1,5 @@
 // Minimal Chrome DevTools Protocol driver (Node 24: built-in fetch + WebSocket, no dependencies).
-// Used by the guide screenshot script and the touch-control checks; needs `npm run dev` on :3000.
+// Used by the guide screenshot script and the touch-control checks; needs `VITE_GAME_DEV_TOOLS=1 npm run dev` on :3000.
 import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

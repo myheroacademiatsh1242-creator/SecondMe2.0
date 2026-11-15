@@ -464,5 +464,14 @@
    }
   },
   "staged": null
+ },
+ "battle-prep": {
+  "w": 1600,
+  "h": 900,
+  "marks": {},
+  "staged": {
+   "vi": "kho được thêm 2 bình thời gian và 3 bình hồi phục nhỏ để thấy các ô",
+   "en": "the stock was given 2 time potions and 3 small healing potions to show the slots"
+  }
  }
 }

@@ -91,14 +91,24 @@ try {
   await page.tap((await center('.hud-tools button[aria-label="Tạm dừng"]')).x, (await center('.hud-tools button[aria-label="Tạm dừng"]')).y); await sleep(300);
   check('pause button pauses', (await state()).screen === 'paused');
   await page.shot(`${out}/touch-pause.png`, null, { format: 'png' });
-  const retry = await page.eval(`(() => { const b = [...document.querySelectorAll('.pause-menu-options button')].find(b => /Chơi lại/.test(b.textContent)); const r = b?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; })()`);
-  await page.tap(retry.x, retry.y); await sleep(400);
+  // Retry goes through the item-packing window: pack a time potion there (by touch), enter, then use it from the inventory.
+  await page.eval(`window.__engine.campaign.timeItems = 1`);   // stock to pack (staged)
+  const btnByText = (scope, re) => page.eval(`(() => { const b = [...document.querySelectorAll(${JSON.stringify(scope)})].find(b => ${re}.test(b.textContent) && !b.disabled); b?.scrollIntoView({ block: 'center' }); const r = b?.getBoundingClientRect(); return r && r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; })()`);
+  const retry = await btnByText('.pause-menu-options button', '/Chơi lại/');
+  await page.tap(retry.x, retry.y); await sleep(600);
+  check('retry from the pause menu opens the item-packing window', await page.eval(`!!document.querySelector('.battle-preparation')`));
+  const pack = await page.eval(`(() => { const a = [...document.querySelectorAll('.battle-preparation article')].find(a => /Bình thời gian/.test(a.textContent)); const b = a && [...a.querySelectorAll('button')].find(b => /MANG THEO|\\+/.test(b.textContent)); b?.scrollIntoView({ block: 'center' }); const r = b?.getBoundingClientRect(); return r && r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; })()`);
+  check('packing window offers the time potion', !!pack);
+  if (pack) { await page.tap(pack.x, pack.y); await sleep(300); }
+  const enter = await btnByText('.battle-preparation button', '/VÀO TRẬN/');
+  check('"enter battle" is available after packing', !!enter);
+  if (enter) { await page.tap(enter.x, enter.y); await sleep(600); }
   s = await state();
-  check('retry from the pause menu restarts the level', s.screen === 'playing' && s.echoes === 0);
-  await page.eval(`window.__engine.campaign.timeItems = 1; window.__engine.legTimeRemaining = 5`);
+  check('retry restarts the level with the packed item', s.screen === 'playing' && s.echoes === 0 && await page.eval(`window.__engine.carriedItems.some(i => i?.id === 'time')`));
+  await page.eval(`window.__engine.legTimeRemaining = 5`);
   await page.tap((await center('.hud-tools button[aria-label="Túi đồ"]')).x, (await center('.hud-tools button[aria-label="Túi đồ"]')).y); await sleep(500);
   await page.shot(`${out}/touch-inventory.png`, null, { format: 'png' });
-  const potion = await page.eval(`(() => { const b = [...document.querySelectorAll('.trail-inventory button')].find(b => b.closest('article')?.querySelector('.supply-icon.time')); b?.scrollIntoView({block:'center'}); const r = b?.getBoundingClientRect(); return r && r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2, disabled: b.disabled } : null; })()`);
+  const potion = await page.eval(`(() => { const a = [...document.querySelectorAll('.trail-inventory article')].find(a => /Bình thời gian/.test(a.textContent)); const b = a && [...a.querySelectorAll('button')].find(b => /DÙNG/.test(b.textContent)); b?.scrollIntoView({block:'center'}); const r = b?.getBoundingClientRect(); return r && r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2, disabled: b.disabled } : null; })()`);
   check('inventory has a usable time-potion button', potion && !potion.disabled, JSON.stringify(potion));
   if (potion && !potion.disabled) { const t = await page.eval('window.__engine.legTimeRemaining'); await page.tap(potion.x, potion.y); await sleep(200); check('time potion adds time', (await page.eval('window.__engine.legTimeRemaining')) > t + 1); }
 } catch (err) {

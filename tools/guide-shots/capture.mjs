@@ -3,6 +3,7 @@
 // and src/components/guide/shots.json. Real input (keys, clicks, touches) drives the hero; window.__engine (dev only)
 // is used only to open levels/screens directly and, for boss attack shots, to put the boss into that attack — those
 // shots carry a `staged` note shown under the picture.
+//   VITE_GAME_DEV_TOOLS=1 npm run dev   (window.__engine only exists then, see logic/devAccess.ts)
 //   node tools/guide-shots/capture.mjs [only-prefix]
 import { launch, sleep } from './cdp.mjs';
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
@@ -183,6 +184,16 @@ try {
     await ev(`(() => { const b = ${E}.boss; b.mode = 'stunned'; b.timer = 4.5; b.demon.stunned = 4.5; b.demon.heatShield = 0; b.demon.overheated = false; b.demon.modeAge = 0; })()`);
     await sleep(400);
     await shot('boss2-stunned', 'canvas', { boss: await b() }, STAGED.boss);
+  }
+
+  // The item-packing window shown before every battle (the stock is given two potions so the slots are visible).
+  if (want('battle-prep')) {
+    await ev(`${E}.goToLobby()`); await sleep(1200);
+    await ev(`(() => { const e = ${E}; e.campaign.timeItems = 2; e.campaign.supplies.healSmall = 3; e.requestBattleStart(() => {}); })()`);
+    await page.waitFor(`!!document.querySelector('.battle-preparation')`, 6000);
+    await sleep(1200);
+    await shot('battle-prep', 'view', {}, { vi: 'kho được thêm 2 bình thời gian và 3 bình hồi phục nhỏ để thấy các ô', en: 'the stock was given 2 time potions and 3 small healing potions to show the slots' });
+    await ev(`${E}.cancelBattleStart()`); await sleep(400);
   }
 
   // Camp screens.
