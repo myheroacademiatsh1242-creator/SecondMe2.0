@@ -1,6 +1,12 @@
 @font-face{font-family:'Second Me Pixel';src:url('/assets/fonts/VT323-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
 /* One complete Vietnamese pixel alphabet, including portalled dialogs. */
-body :is(#root,.modal-backdrop,.landscape-gate),body :is(#root,.modal-backdrop,.landscape-gate) *{font-family:'Second Me Pixel',monospace!important;font-style:normal;letter-spacing:.02em}
+/* Root specificity wins over screen-specific serif/system font shorthands.
+   Body descendants include React portals, native fields and SVG guide labels. */
+:root{--font-game:'Second Me Pixel',monospace}
+html body,html body #root,html body #root *,html body :is(.modal-backdrop,.landscape-gate,.rune-loadout-backdrop,.fullscreen-hint-backdrop,.rune-function-tip),html body :is(.modal-backdrop,.landscape-gate,.rune-loadout-backdrop,.fullscreen-hint-backdrop,.rune-function-tip) *{font-family:var(--font-game)!important;font-synthesis:none}
+body :is(#root,.modal-backdrop,.landscape-gate),body :is(#root,.modal-backdrop,.landscape-gate) *{font-style:normal;letter-spacing:.02em}
+html body :is(button,input,select,textarea,option,kbd){font-family:var(--font-game)!important}
+html body :is(button,input,textarea)::placeholder{font-family:var(--font-game);opacity:.7}
 body :is(#root,.modal-backdrop) :is(h1,h2,h3,h4){line-height:1.25!important;letter-spacing:.02em!important}
 body :is(#root,.modal-backdrop) :is(p,button,label){line-height:1.35}
 body :is(#root,.modal-backdrop) :is(.eyebrow,.inventory-section-title,.rune-help,.inventory-usage-note){font-size:14px;line-height:1.4}

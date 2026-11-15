@@ -158,7 +158,7 @@ export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine
     const k = 1 - t.life / t.max;
     ctx.globalAlpha = Math.min(1, t.life / 0.25);
     const size = t.heavy ? 22 : 16;
-    ctx.font = `bold ${size}px 'Trebuchet MS', system-ui, sans-serif`;
+    ctx.font = `${size}px "Second Me Pixel", monospace`;
     const y = t.y - k * 26;
     ctx.lineWidth = 4; ctx.strokeStyle = '#120b06';
     ctx.strokeText(t.text, t.x, y);

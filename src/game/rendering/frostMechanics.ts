@@ -10,7 +10,7 @@ export function drawFrostMechanics(ctx:CanvasRenderingContext2D,game:GameEngine,
  const bridgeDown=level.doors.some(door=>door.liftBridge&&door.openProgress<1);
  const onBridge=(x:number)=>x>=WIND_BRIDGE.x&&x<WIND_BRIDGE.x+WIND_BRIDGE.width;
  const tag=(text:string,x:number,y:number,color:string)=>{
-  ctx.font='700 20px system-ui, sans-serif';
+  ctx.font='20px "Second Me Pixel", monospace';
   ctx.textAlign='center';
   ctx.textBaseline='middle';
   const width=Math.ceil(ctx.measureText(text).width)+20;
