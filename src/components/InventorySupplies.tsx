@@ -1,3 +1,4 @@
+import {bindingLabel,type ControlAction} from '../game/logic/controlSettings.ts';
 import { Backpack, Minus, Plus, X } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { ITEM_LOADOUT_LIMIT, SHOP_ITEMS, type ShopItemId } from '../game/logic/shopItems.ts';
@@ -26,7 +27,7 @@ export function CombatItemSlots({ engine, hud }: { engine: GameEngine | null; hu
           aria-label={stack ? `${slot + 1} · ${name} ×${stack.count}` : `${slot + 1} · ${name}`}
           title={item ? `${name} · ${vi ? item.detailVi : item.detailEn}` : name}
           disabled={!engine?.canUseCarriedItem(slot)} onClick={() => engine?.useCarriedItem(slot)}>
-          <kbd>{slot + 1}</kbd>
+          <kbd>{bindingLabel(('item'+(slot+1)) as ControlAction)}</kbd>
           {item ? <ShopItemIcon id={item.id}/> : <span aria-hidden="true">—</span>}
           {stack && <span className="combat-item-count" aria-hidden="true">×{stack.count}</span>}
         </button>;

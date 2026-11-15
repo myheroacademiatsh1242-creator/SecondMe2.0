@@ -1,3 +1,5 @@
+import {controls,touchVars} from './game/logic/controlSettings.ts';
+import {startGamepadControls} from './game/logic/gamepadControls.ts';
 import {MissionBriefing} from './components/MissionBriefing.tsx';
 import {connectTutorial} from './game/logic/tutorialBridge.ts';
 import {InteractiveCoach} from './components/InteractiveCoach.tsx';
@@ -13,7 +15,7 @@ import './components/ForestDialogs.css';
 import {LandscapeGate} from './components/LandscapeGate.tsx';
 import {readLandscapeRequirement,isTouchDevice} from './game/logic/orientation.ts';
 import { installScreenControls, FullscreenButton } from './components/FullscreenButton.tsx';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { GameEngine, readSavedSettings, type HUDState } from './game/GameEngine.ts';
 import { gameDevToolsEnabled } from './game/logic/devAccess.ts';
 import { Intro, Lobby, Shop, Characters, AdventureHUD, Completion, EndScreen } from './components/CampaignUI.tsx';
@@ -39,6 +41,7 @@ function shouldRestoreCamp() {
 
 
 export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngine) => void } = {}) {
+  useSyncExternalStore(controls.subscribe,controls.snapshot);
   const [touchControls]=useState(isTouchDevice);
   // Keep the 1280×720 arena and its 78/142px HUD rails in one coordinate system.
   // Recompute in CSS pixels when moving between monitors or changing browser zoom.
@@ -97,8 +100,10 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     };
     engine.start(false, restoreCamp);
     const disconnectTutorial=connectTutorial(engine,touchControls);
+    const stopGamepad=startGamepadControls(engine);
+    const unbindControls=controls.subscribe(()=>engine.clearControlInput());
     prepare?.(engine);
-    return () => {disconnectTutorial();engine.stop();};
+    return () => {stopGamepad();unbindControls();disconnectTutorial();engine.stop();};
   }, []);
   useEffect(()=>{
     const update=()=>{const blocked=readLandscapeRequirement();ref.current?.setOrientationBlocked(blocked);setPortraitBlocked(blocked);};update();
@@ -128,7 +133,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   const engine = ref.current;
   const lang = hud.language === 'vi' ? 'vi' : 'en';
   const bossIntroVisible = hud.screen === 'playing' && hud.bossIntroduction;
-  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle || hud.missionBriefing}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
+  return localize(<main className="adventure-app" style={{...touchVars(),'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle || hud.missionBriefing}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
     {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
     {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
     {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}

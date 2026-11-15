@@ -1,3 +1,4 @@
+import {liveKeyLabel} from '../game/logic/controlSettings.ts';
 import {createPortal} from 'react-dom';
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
@@ -32,7 +33,7 @@ export function InteractiveCoach({engine,hud,touch}:{engine:GameEngine;hud:HUDSt
   {spot&&<div className="tutorial-spotlight" aria-hidden="true" style={{left:spot.x-4,top:spot.y-4,width:spot.width+8,height:spot.height+8}}/>}
   {active&&<aside ref={card} className={`interactive-coach coach-${side}${touch?' coach-touch':''}`} aria-label="Hướng dẫn tương tác" data-tutorial-step={active.id}>
    <div className="coach-progress"><span>HƯỚNG DẪN · {active.track.toUpperCase()}</span><span>{progress} / {track.length}</span></div>
-   <h2>{active.title}</h2><p aria-live="polite">{active.text}</p><kbd>{key}</kbd>{engine.tutorialClockPaused&&<small className="coach-clock-note">Đồng hồ chặng tạm dừng trong bước học này.</small>}
+   <h2>{active.title}</h2><p aria-live="polite">{active.text}</p><kbd>{touch?key:liveKeyLabel(key??'')}</kbd>{engine.tutorialClockPaused&&<small className="coach-clock-note">Đồng hồ chặng tạm dừng trong bước học này.</small>}
    {spot&&<span className="coach-point" aria-hidden="true">↗ Thao tác ở vùng sáng</span>}
    <footer><button type="button" onClick={()=>tutorial.skip()}>Bỏ qua bước</button><button type="button" onClick={()=>setConfirm(true)}>Bỏ qua toàn bộ</button>{tutorial.replayTrack&&<button type="button" onClick={()=>tutorial.endReplay()}>Dừng xem lại</button>}</footer>
   </aside>}

@@ -72,3 +72,10 @@
 .touch-echo-number small{font-size:12px;opacity:.8}
 .touch-echo-btn.is-recovering::after{content:'';position:absolute;inset:0;pointer-events:none;background:conic-gradient(#050d08c8 calc(var(--cd) * 360deg),transparent 0)}
 .touch-echo-timer{position:absolute;z-index:1;font-size:18px;color:#fff;text-shadow:2px 2px 0 #050d08}
+
+/* Saved touch layout, bounded to keep the control groups inside the viewport. */
+.touch-skills{right:clamp(8px,calc(14px - var(--touch-skills-x,0vw)),calc(100% - 360px))!important;bottom:clamp(8px,calc(14px - var(--touch-skills-y,0vh)),calc(100% - 360px))!important;transform:scale(calc(var(--touch-skills-scale,1) * var(--touch-base-scale,1)))!important}
+.touch-echo-strip{left:clamp(4px,calc(4px + var(--touch-echo-x,0vw)),calc(100% - 170px));top:clamp(60px,calc(var(--status-rail,78px) + 6px + var(--touch-echo-y,0vh)),calc(100% - 160px));transform:scale(var(--touch-echo-scale,1));transform-origin:top left}
+.touch-stick-zone:not(.is-active) .touch-stick{left:clamp(48px,calc(70px + var(--touch-joystick-x,0vw)),calc(100% - 48px));bottom:clamp(0px,calc(12px - var(--touch-joystick-y,0vh)),calc(100% - 96px));transform:scale(var(--touch-joystick-scale,1));transform-origin:center}
+.mobile-combat-items{left:clamp(4px,calc(12px + var(--touch-items-x,0vw)),calc(100% - 260px))!important;top:clamp(60px,calc(140px + var(--touch-items-y,0vh)),calc(100% - 100px))!important;transform:scale(var(--touch-items-scale,1));transform-origin:top left}
+@media(max-height:440px){.touch-skills{--touch-base-scale:.8}}

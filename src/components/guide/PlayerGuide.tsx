@@ -1,3 +1,4 @@
+import {liveKeyLabel} from '../../game/logic/controlSettings.ts';
 import {TUTORIAL_STEPS} from '../../game/logic/interactiveTutorial.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -142,7 +143,7 @@ function BlockView({ block: b, lang, zoom, go }: { block: Block; lang: 'vi' | 'e
     case 'controls': return <div className="player-guide-controls">
       {CONTROLS.map(g => <section key={g.group.vi}><h4>{g.group[lang]}</h4>
         {g.rows.filter(r => b.rows.includes(r)).map(r => <div key={r.keys + r.action.vi} className="player-guide-control">
-          <kbd>{r.keys}</kbd><span>{r.action[lang]}</span></div>)}</section>)}
+          <kbd>{liveKeyLabel(r.keys)}</kbd><span>{r.action[lang]}</span></div>)}</section>)}
     </div>;
     case 'topic': { const c = GUIDE_TOPICS[b.id][lang]; return <details className="player-guide-topic"><summary>{vi ? 'Gợi ý trong game: ' : 'In-game hint: '}{c[0]}</summary><p>{c[1]}</p></details>; }
     case 'level': return <LevelView facts={ALL_LEVEL_FACTS.find(f => f.id === b.id)!} lang={lang} zoom={zoom} go={go}/>;

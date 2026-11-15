@@ -5,7 +5,7 @@
  * shows a "no picture yet" frame instead of anything made up.
  */
 import { HERO_MAX_HP, HERO_COMBO_ATTACK, SHARD_BONUS, ENEMY_TIME_BONUS, GUARDIAN_HP, EMBER_DEMON_HP, BOSS_PLAYER_DAMAGE } from '../../game/logic/balance.ts';
-import { MAX_MP, MP_REGEN_PER_SECOND, MP_REGEN_DELAY, skillManaCost, COMBO_MP } from '../../game/logic/mana.ts';
+import { maxMana, MP_REGEN_PER_SECOND, MP_REGEN_DELAY, skillManaCost, COMBO_MP } from '../../game/logic/mana.ts';
 import { ICE_MAGIC, ENEMY_CHILL, FROST_STRIKE } from '../../game/logic/iceMagic.ts';
 import { AERIS_ULT, RAGE } from '../../game/logic/ultimate.ts';
 import { ECHO_RUNES } from '../../game/logic/echoRunes.ts';
@@ -202,7 +202,7 @@ export const GUIDE: Section[] = [
         heroRow(t('Nguyên tố', 'Element'), t('Băng', 'Ice'), t('Lửa — gây gấp đôi sát thương lên Thủ vệ băng, trụ băng, Pha Lê Băng và slime băng (cả Echo của Kael).', 'Fire — double damage to the Frost Guardian, its pillars, Frost Crystals and ice slimes (Kael’s Echoes too).')),
       ] },
       { t: 'list', items: [
-        t(`MP tối đa ${MAX_MP}; tự hồi ${MP_REGEN_PER_SECOND} MP/giây sau ${MP_REGEN_DELAY} giây không dùng.`, `Max MP ${MAX_MP}; regenerates ${MP_REGEN_PER_SECOND} MP/s after ${MP_REGEN_DELAY} s unused.`),
+        t(`MP tối đa: Pháp sư ${maxMana('mage')}, Kiếm sĩ ${maxMana('swordsman')}; tự hồi ${MP_REGEN_PER_SECOND} MP/giây sau ${MP_REGEN_DELAY} giây không dùng.`, `Max MP: Mage ${maxMana('mage')}, Swordsman ${maxMana('swordsman')}; regenerates ${MP_REGEN_PER_SECOND} MP/s after ${MP_REGEN_DELAY} s unused.`),
         t(`Nộ tăng khi đánh trúng (+${RAGE.HIT}, đòn mạnh +${RAGE.HEAVY}) và khi bị đánh (+${RAGE.HURT}).`, `Rage grows when you land hits (+${RAGE.HIT}, heavy +${RAGE.HEAVY}) and when you are hit (+${RAGE.HURT}).`),
         t('Bị trúng đòn hoặc lướt né sẽ làm mất combo đang đánh.', 'Getting hit or dodging breaks your current combo.'),
       ] },

@@ -11,12 +11,18 @@ const LABEL = {
   vi: { skip: 'BỎ QUA INTRO', sound: '♪ Bấm chuột hoặc nhấn phím bất kỳ để bật nhạc' },
 } as const;
 const SKIP_KEYS = new Set(['Enter', 'Space', 'Escape']);
+const INTRO_WATCHED_KEY = 'secondme.introWatched.v1';
+function hasWatchedIntro() {
+  try { return localStorage.getItem(INTRO_WATCHED_KEY) === 'true'; }
+  catch { return false; }
+}
 
 /**
  * Plays the cinematic on its own canvas above the game, then dissolves into the existing
  * main menu (the `Intro` screen underneath). Enter / Space / Esc or the button skips it.
  */
 export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { lang: 'en' | 'vi'; reducedMotion: boolean; onDone: () => void; paused?:boolean }) {
+  const [canSkip] = useState(hasWatchedIntro);
   const pausedRef=useRef(paused);pausedRef.current=paused;
   const canvas = useRef<HTMLCanvasElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -41,7 +47,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
 
     const finish = () => { if (finished) return; finished = true; stopScore?.(); stopScore = null; stopVoice?.(); stopVoice = null; onDone(); };
     const skip = () => {
-      if (skipAt !== null) return;
+      if (!canSkip || skipAt !== null) return;
       skipAt = now(); frozenT = Math.min(skipAt, INTRO.s6);
       stopScore?.(); stopScore = null; stopVoice?.(); stopVoice = null;
     };
@@ -65,7 +71,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
     // Capture phase on window so the engine's own Enter/Space handler never fires mid-film.
     const onKey = (e: KeyboardEvent) => {
       if(pausedRef.current||document.querySelector('.player-guide-backdrop'))return;   // the player guide owns the keys while open
-      if (SKIP_KEYS.has(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); skip(); return; }
+      if (SKIP_KEYS.has(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); gestured = true; skip(); return; }
       gestured = true;
     };
     const onPointer = () => { if(!pausedRef.current)gestured = true; };
@@ -88,7 +94,12 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
       const mix = skipAt !== null ? Math.min(1, (now() - skipAt) / 0.5) : easeInOutCubic(seg(t, INTRO.reveal, INTRO.end));
       box.style.opacity = String(1 - mix);
       box.style.pointerEvents = skipAt === null && t < INTRO.reveal ? 'auto' : 'none';
-      if (mix >= 1) { finish(); return; }
+      if (mix >= 1) {
+        if (skipAt === null) {
+          try { localStorage.setItem(INTRO_WATCHED_KEY, 'true'); } catch { /* Storage can be unavailable. */ }
+        }
+        finish(); return;
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -104,7 +115,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
   return (
     <div ref={root} className="cinematic-intro" data-testid="cinematic-intro">
       <canvas ref={canvas} width={W} height={H} />
-      {showSkip && <button type="button" className="cinematic-skip" onClick={() => skipRef.current?.()}>{text.skip} ▸▸</button>}
+      {canSkip && showSkip && <button type="button" className="cinematic-skip" onClick={() => skipRef.current?.()}>{text.skip} ▸▸</button>}
       {needsSound && <span className="cinematic-sound">{text.sound}</span>}
     </div>
   );

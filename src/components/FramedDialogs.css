@@ -1,4 +1,12 @@
 /* Reuse the corner-safe atlas: no elongated vines or stretched stone tiles. */
+html body .credits-panel .credits-section{
+ border:8px solid transparent;
+ border-image:url('/assets/ui/stone-card-pixel.png') 100 fill / 8px / 0 round;
+ padding:12px 14px;background:#303b2b;box-shadow:none;
+}
+html body .credits-panel .credits-section li{flex-wrap:wrap;column-gap:12px;row-gap:2px}
+html body .credits-panel .credits-section li :is(b,span){overflow-wrap:anywhere;min-width:0}
+html body .credits-panel .credits-scroll{flex:1;min-height:0;}
 html body .modal-backdrop.modal-backdrop :is(.settings-panel.panel.panel.panel,.rune-loadout-editor.panel.panel.panel){
  border-image-source:url('/assets/ui/inventory-nine-slice-pixel.png')!important;
  border-image-slice:25% fill!important;border-image-repeat:round!important;

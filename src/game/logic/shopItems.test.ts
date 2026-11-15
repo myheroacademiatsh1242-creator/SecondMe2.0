@@ -99,7 +99,7 @@ test('energy potions restore 15 and 55 MP repeatedly, cap at 100 and do not cons
  assert.ok(g.useSupply('manaSmall'));assert.equal(g.mana.value,30);
  assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,85);
  assert.equal(g.useSupply('manaLarge'),false);assert.equal(g.mana.value,85);
- g.restartLevel();g.mana.value=60;assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,100);
+ g.restartLevel();g.mana.value=60;assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,115);
  g.campaign.supplies.manaSmall=1;assert.equal(g.useSupply('manaSmall'),false);assert.equal(g.campaign.supplies.manaSmall,1);
 });
 

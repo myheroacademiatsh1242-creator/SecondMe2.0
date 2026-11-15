@@ -1,3 +1,5 @@
+import {actionForInput,bindingLabel,controls,liveKeyLabel} from '../game/logic/controlSettings.ts';
+import {ControlSettingsPanel} from './ControlSettingsPanel.tsx';
 import {DEFEAT_ART,PANEL_ART,usePanelArt} from './panelArt.ts';
 import { GUARDIAN_HP, SHARD_BONUS } from '../game/logic/balance.ts';
 import './ForestDefeat.css';
@@ -154,27 +156,29 @@ function CreditsPanel({ vi, close }: { vi: boolean; close: () => void }) {
   ];
   return <div className="modal-backdrop intro-dialog" onClick={close}><div className="panel settings-panel credits-panel" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-label={vi ? 'Tác giả' : 'Credits'} onClick={event => event.stopPropagation()}>
     <div className="panel-top"><span className="eyebrow gold">{vi ? 'TÁC GIẢ' : 'CREDITS'}</span><button className="icon-close" aria-label={vi ? 'Đóng' : 'Close'} onClick={close}><X size={18}/></button></div>
+    <div className="settings-scroll credits-scroll">
     <h2>SECOND ME</h2>
     <p className="credits-tagline">{vi ? 'Một chuyến phiêu lưu Echo trong khu rừng cổ.' : 'An Echo adventure in the ancient forest.'}</p>
     {sections.map(([titleVi, titleEn, list]) => <section key={titleEn} className="credits-section">
       <h3>{vi ? titleVi : titleEn}</h3>
       <ul>{list.map((entry, i) => <li key={i}><b>{entry.name || '—'}</b><span>{[entry.by, vi ? entry.roleVi : entry.roleEn].filter(Boolean).join(' · ') || '—'}</span></li>)}</ul>
     </section>)}
+    </div>
     <button className="primary" onClick={close}>{vi ? 'QUAY LẠI' : 'BACK TO MENU'}</button>
   </div></div>;
 }
 
 export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | null; hud: HUDState; close: () => void }) {
   const panelArt=usePanelArt(PANEL_ART.inventory);
-  const [tab,setTab]=useState<'audio'|'display'|'dev'>('audio');
+  const [tab,setTab]=useState<'audio'|'display'|'controls'|'dev'>('audio');
   const vi=hud.language==='vi';
-  const tabs: ('audio'|'display'|'dev')[]=hud.devUnlocked?['audio','display','dev']:['audio','display'];
+  const tabs: ('audio'|'display'|'controls'|'dev')[]=hud.devUnlocked?['audio','display','controls','dev']:['audio','display','controls'];
   return localize(<div className="modal-backdrop settings-backdrop"><div className="panel settings-panel settings-clean" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="settings-title">
 
     <div className="panel-top"><span className="eyebrow gold">CÀI ĐẶT TRÒ CHƠI</span></div>
     <h2 id="settings-title">Điều chỉnh trải nghiệm</h2>
     <div className="settings-tabs" role="tablist" aria-label={vi?'Nhóm cài đặt':'Settings groups'}>
-      {tabs.map(id=><button key={id} id={`settings-tab-${id}`} type="button" role="tab" aria-selected={tab===id} aria-controls={`settings-${id}`} tabIndex={tab===id?0:-1} onClick={()=>setTab(id)} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?tabs[0]:e.key==='End'?tabs[tabs.length-1]:tabs[(tabs.indexOf(tab)+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];setTab(next);document.getElementById(`settings-tab-${next}`)?.focus();}}}>{id==='audio'?(vi?'Âm thanh':'Audio'):id==='display'?(vi?'Hiển thị & điều khiển':'Display & controls'):(vi?'DEV · Công cụ test':'DEV · Test tools')}</button>)}
+      {tabs.map(id=><button key={id} id={`settings-tab-${id}`} type="button" role="tab" aria-selected={tab===id} aria-controls={`settings-${id}`} tabIndex={tab===id?0:-1} onClick={()=>setTab(id)} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?tabs[0]:e.key==='End'?tabs[tabs.length-1]:tabs[(tabs.indexOf(tab)+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];setTab(next);document.getElementById(`settings-tab-${next}`)?.focus();}}}>{id==='audio'?(vi?'Âm thanh':'Audio'):id==='display'?(vi?'Hiển thị':'Display'):id==='controls'?(vi?'Tùy chỉnh nút':'Controls'):(vi?'DEV · Công cụ test':'DEV · Test tools')}</button>)}
     </div>
     <div className="settings-scroll" key={tab}>
       <div id={`settings-${tab}`} role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
@@ -201,9 +205,9 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
         {title:vi?'HÀNH TRANG & TRÒ CHƠI':'ITEMS & GAME',rows:[
           ['1 / 2 / 3',vi?'Dùng vật phẩm ở ô tương ứng':'Use item in matching slot'],['R',vi?'Dùng bình thời gian đã mang':'Use carried time potion'],
           ['Tab',vi?'Mở kho đồ':'Open inventory'],['Esc',vi?'Tạm dừng':'Pause'],['F',vi?'Bật / tắt toàn màn hình':'Toggle full screen']]},
-      ].map(group=><section className="control-group" key={group.title}><h3>{group.title}</h3><dl>{group.rows.map(([key,label])=><div className="control-binding" key={key}><dt><kbd>{key}</kbd></dt><dd>{label}</dd></div>)}</dl></section>)}</div>
+      ].map(group=><section className="control-group" key={group.title}><h3>{group.title}</h3><dl>{group.rows.map(([key,label])=><div className="control-binding" key={key}><dt><kbd>{liveKeyLabel(key)}</kbd></dt><dd>{label}</dd></div>)}</dl></section>)}</div>
     </details>
-      </>:hud.devUnlocked?<div className="dev-supplies">
+      </>:tab==='controls'?<ControlSettingsPanel engine={engine}/>:hud.devUnlocked?<div className="dev-supplies">
         <h3>{vi?'QUYỀN DEVELOPER ĐÃ BẬT':'DEVELOPER ACCESS ENABLED'}</h3>
         <p>{vi?'Nạp 99.999 vàng, 99.999 Tanuki phàm tinh thể, 99.999 Tanuki thanh tinh thể và 99.999 Tanuki huyền tinh thể; mở toàn bộ trang phục, vũ khí và rune; cấp đầy tất cả vật phẩm theo giới hạn túi đồ. Có thể bấm lại để nạp khi cần.':'Set gold, Tanuki Common Crystals and Tanuki Azure Crystals and Tanuki Mystic Crystals to 99,999, unlock all outfits, weapons and runes, and fill all item stocks to their inventory limits. Refill again whenever needed.'}</p>
         <button type="button" className="secondary" onClick={()=>engine?.grantDevResources()}>{vi?'DEV · NHẬN TÀI NGUYÊN & MỞ KHÓA TẤT CẢ':'DEV · GRANT RESOURCES & UNLOCK ALL'}</button>
@@ -345,7 +349,7 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
   useEffect(() => {
     if (!engine || bag || hud.screen !== 'playing') return;
     const openWithTab = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab' || event.defaultPrevented || event.repeat || event.isComposing ||
+      if (actionForInput(event.code,event.shiftKey)!=='inventory' || controls.capturing || event.defaultPrevented || event.repeat || event.isComposing ||
         event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.target instanceof HTMLElement &&
         event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
@@ -353,8 +357,9 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
       event.preventDefault();
       setBag(true);
     };
-    window.addEventListener('keydown', openWithTab);
-    return () => window.removeEventListener('keydown', openWithTab);
+    const openWithPad=()=>{if(engine.canOpenCombatInventory())setBag(true);};
+    document.addEventListener('game-open-inventory',openWithPad);window.addEventListener('keydown', openWithTab);
+    return () => {document.removeEventListener('game-open-inventory',openWithPad);window.removeEventListener('keydown', openWithTab);};
   }, [engine, bag, hud.screen]);
 
   const openBag = () => {
@@ -405,8 +410,8 @@ function LevelOneHUD({ engine, hud, openBag, inventory }: { engine: GameEngine |
         <CombatItemSlots engine={engine} hud={hud}/>
       </div>
       <div className="level-one-utilities" role="group" aria-label={vi ? 'Tiện ích' : 'Game utilities'}>
-        <button aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title={vi ? 'Cài đặt · Esc' : 'Settings · Esc'} onClick={() => engine?.pauseGame()}><Settings size={18}/></button>
-        <button aria-label={vi ? 'Túi đồ' : 'Inventory'} data-tutorial="bag" aria-keyshortcuts="Tab" title={vi ? 'Túi đồ · Tab' : 'Inventory · Tab'} onClick={openBag}><Backpack size={18}/></button>
+        <button aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title={`${vi?'Cài đặt':'Settings'} · ${bindingLabel('pause')}`} onClick={() => engine?.pauseGame()}><Settings size={18}/></button>
+        <button aria-label={vi ? 'Túi đồ' : 'Inventory'} data-tutorial="bag" aria-keyshortcuts="Tab" title={`${vi?'Túi đồ':'Inventory'} · ${bindingLabel('inventory')}`} onClick={openBag}><Backpack size={18}/></button>
         <button aria-label={vi ? 'Sổ tay hướng dẫn' : 'Guide'} title={vi ? 'Sổ tay hướng dẫn' : 'Guide'} onClick={() => engine?.openGuide()}><BookOpen size={18}/></button>
       </div>
     </aside>

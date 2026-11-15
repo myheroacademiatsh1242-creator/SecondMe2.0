@@ -1,3 +1,4 @@
+import {controls,actionForInput,bindingLabel} from '../game/logic/controlSettings.ts';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Maximize, Minimize, Share, SquarePlus, X } from 'lucide-react';
@@ -43,14 +44,15 @@ export function installScreenControls() {
   const onVisible = () => { if (document.visibilityState === 'visible') reset(); };
   // F toggles full screen on every screen (a key press counts as a user action, so browsers allow it).
   const onKey = (e: KeyboardEvent) => {
-    if (e.code !== 'KeyF' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || !canFullscreen()) return;
+    if (controls.capturing||actionForInput(e.code,e.shiftKey)!=='fullscreen' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || !canFullscreen()) return;
     if ((e.target as Element | null)?.closest?.('input,textarea,select,[contenteditable="true"]')) return;
     if (fullscreenElement()) exitFullscreen(); else void enterFullscreen();
   };
+  const toggle=()=>{if(fullscreenElement())exitFullscreen();else void enterFullscreen();};window.addEventListener('game-toggle-fullscreen',toggle);
   document.addEventListener('visibilitychange', onVisible);
   window.addEventListener('orientationchange', reset);
   window.addEventListener('keydown', onKey);
-  const unbase = () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('orientationchange', reset); window.removeEventListener('keydown', onKey); };
+  const unbase = () => {window.removeEventListener('game-toggle-fullscreen',toggle); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('orientationchange', reset); window.removeEventListener('keydown', onKey); };
   if (!canFullscreen() || !isTouchDevice()) return unbase;
 
   const landscape = window.matchMedia('(orientation: landscape)');
@@ -86,7 +88,7 @@ export function FullscreenButton({ vi, floating = false }: { vi: boolean; floati
   if (standalone() || (!canFullscreen() && !iphone)) return null;
   const label = full ? (vi ? 'Thu nhỏ màn hình' : 'Exit full screen') : (vi ? 'Toàn màn hình' : 'Full screen');
   return <>
-    <button type="button" className={`fullscreen-toggle${floating ? ' is-floating' : ''}`} aria-label={label} title={`${label} (F)`} aria-pressed={full}
+    <button type="button" className={`fullscreen-toggle${floating ? ' is-floating' : ''}`} aria-label={label} title={`${label} (${bindingLabel('fullscreen')})`} aria-pressed={full}
       onClick={() => (iphone ? setHint(true) : full ? exitFullscreen() : void enterFullscreen())}>
       {full ? <Minimize size={18}/> : <Maximize size={18}/>}
     </button>

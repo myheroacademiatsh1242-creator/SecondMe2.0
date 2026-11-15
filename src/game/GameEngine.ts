@@ -1,3 +1,4 @@
+import {controls,actionForInput,type ControlAction} from './logic/controlSettings.ts';
 import {InteractiveTutorial} from './logic/interactiveTutorial.ts';
 import {loadDemonSprites} from './rendering/demonBoss.ts';
 import type {ChestKind} from './logic/chest.ts';
@@ -6,7 +7,7 @@ import { trailObjective, type TrailAction } from './logic/trailObjective.ts';
 import {restoreWeapons,getWeapons,equipWeapon,cleanOwnedWeapons,canUseWeapon,WEAPONS,DEFAULT_WEAPON,type WeaponHero,type WeaponId} from './logic/weapons.ts';
 import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,SHOP_OUTFITS,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
 import { SKILL_PICKUPS } from './logic/skillPickups.ts';
-import { ManaPool, MAX_MP, comboManaCost, skillManaCost } from './logic/mana.ts';
+import { ManaPool, maxMana, comboManaCost, skillManaCost } from './logic/mana.ts';
 import {ITEM_LOADOUT_LIMIT,SHOP_ITEMS,type PackedItem,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
 import { gameDevToolsEnabled } from './logic/devAccess.ts';
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
@@ -209,6 +210,16 @@ export function readSavedSettings(): { language: Language; reducedMotion: boolea
 }
 
 export class GameEngine {
+  public gamepadMove={x:0,y:0};
+  public clearControlInput(){this.heldKeys.clear();this.touchMove={x:0,y:0};this.gamepadMove={x:0,y:0};}
+  public setGamepadInput(x:number,y:number,aimX=0,aimY=0){this.gamepadMove={x,y};if(Math.hypot(aimX,aimY)>.2)this.cursorTarget={x:this.player.x+aimX*200,y:this.player.y+aimY*200};}
+  public performControl(action:ControlAction){
+    if(controls.capturing||this.orientationBlocked||this.inventoryOpen||this.runeEditing||this.pendingBattleStart||this.missionBriefing||this.bossIntroduction||this.guides.blocking)return;
+    if(action==='pause'){if(this.screen==='paused')this.resumeGame();else this.pauseGame();return;}
+    if(this.screen!=='playing')return;
+    switch(action){case 'attack':if(this.targetMarkArmed>0)this.markTarget(this.cursorTarget??{x:this.player.x+120,y:this.player.y});else this.attack();break;case 'skill':this.useSkill();break;case 'ultimate':this.useUltimate();break;case 'dodge':this.dodge();break;case 'record':this.toggleRecording();break;case 'summon':this.spawnEcho();break;case 'recall':this.dismissEcho();break;case 'echoPause':this.pauseEcho();break;case 'swap':this.swapEcho();break;case 'mark':this.armTargetMark();break;case 'time':this.useTimeItem();break;case 'item1':this.useCarriedItem(0);break;case 'item2':this.useCarriedItem(1);break;case 'item3':this.useCarriedItem(2);break;case 'retry':this.requestBattleRetry();break;case 'mute':this.toggleAudio();break;case 'guide':this.openGuide();break;case 'inventory':if(typeof document!=='undefined')document.dispatchEvent(new Event('game-open-inventory'));break;case 'fullscreen':if(typeof window!=='undefined')window.dispatchEvent(new Event('game-toggle-fullscreen'));break;}
+  }
+
   public missionBriefingEnabled=false;
   public missionBriefing=false;
   public continueMission(){
@@ -388,12 +399,12 @@ export class GameEngine {
   public reducedMotion = false;
   public showHints = true;
   private devRequested = false;
-  public get devUnlocked() { return gameDevToolsEnabled && this.devRequested; }
-  public set devUnlocked(value: boolean) { this.devRequested = gameDevToolsEnabled && value; }
+  public get devUnlocked() { return this.devRequested; }
+  public set devUnlocked(value: boolean) { this.devRequested = value; }
   public language: Language = 'vi';
   public characterClass: CharacterClass = 'mage';
   public lastRating: { stars: number; coins: number; commonCrystals?:number } | null = null;
-  public mana=new ManaPool();
+  public mana=new ManaPool(()=>maxMana(this.characterClass));
   public skillCooldown = 0;
   public frostZones:FrostZone[]=[];
   public frostSlow=0;
@@ -904,7 +915,15 @@ export class GameEngine {
 
   public goToTitle() { this.goToLobby(); }
 
-  public toggleAudio() { sounds.toggleMute(); this.saveSettings(); this.notifyHUD(); }
+  private devAudioPresses = 0;
+  public toggleAudio() {
+    sounds.toggleMute();
+    if (!this.devUnlocked && ++this.devAudioPresses >= 5) {
+      this.devAudioPresses = 0;
+      this.unlockDevMode();
+    }
+    this.saveSettings(); this.notifyHUD();
+  }
   public setVolume(value: number) { sounds.setVolume(value); this.saveSettings(); this.notifyHUD(); }
   public setVoiceVolume(value: number) { sounds.setVoiceVolume(value); this.saveSettings(); this.notifyHUD(); }
   public setEffectsVolume(value: number) { sounds.setEffectsVolume(value); this.saveSettings(); this.notifyHUD(); }
@@ -918,7 +937,6 @@ export class GameEngine {
   public setLanguage(value: Language) { this.language = value; setCurrentLanguage(value); voice.lang = value; if (typeof document !== 'undefined') document.title = 'SECOND ME — Vọng Ảnh'; this.saveSettings(); this.notifyHUD(); }
 
   public unlockDevMode() {
-    if (!gameDevToolsEnabled) return;
     this.devUnlocked = true;
     this.saveSettings();
     this.showBanner(this.language==='vi'?'DEV · Đã bật công cụ test trong Cài đặt':'DEV · Test tools enabled in Settings');
@@ -968,7 +986,7 @@ export class GameEngine {
     if(!this.canUseCombatItems())return false;
     if(id==='chances')return false; // passive, consumed only when an automatic revival starts
     if(this.campaign.supplies[id]<=0)return false;
-    if(id==='manaSmall'||id==='manaLarge')return this.mana.value<MAX_MP;
+    if(id==='manaSmall'||id==='manaLarge')return this.mana.value<this.mana.max;
     if(id==='aid')return this.campaign.aidUnlocked&&!this.usedSupplies.has(id)&&!this.supportAlly;
     return this.health<this.maxHealth;
   }
@@ -980,7 +998,7 @@ export class GameEngine {
       this.health=Math.min(this.maxHealth,this.health+(id==='healSmall'?10:50));
       this.renderer.emitMagic('sparkle',this.player.x,this.player.y,40);
     }else if(id==='manaSmall'||id==='manaLarge'){
-      this.mana.value=Math.min(MAX_MP,this.mana.value+(id==='manaSmall'?15:55));
+      this.mana.value=Math.min(this.mana.max,this.mana.value+(id==='manaSmall'?15:55));
       this.renderer.emitMagic('sparkle',this.player.x,this.player.y,40);
     }else if(id==='revive'){
       this.usedSupplies.add(id);this.reviveAt(this.currentLevel.playerSpawn.x,this.currentLevel.playerSpawn.y);
@@ -2022,6 +2040,7 @@ export class GameEngine {
   // --- Input Handling ---
 
   private handleKeyDown = (e: KeyboardEvent) => {
+    if(controls.capturing)return;
     const editing=typeof HTMLElement!=='undefined'&&e.target instanceof HTMLElement&&!!e.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
     // Four consecutive presses; holding Y or typing into a field is not the command.
     if(editing||e.ctrlKey||e.metaKey||e.altKey||this.orientationBlocked){this.devKeyCount=0;return;}
@@ -2039,6 +2058,17 @@ export class GameEngine {
     if(typeof HTMLElement!=='undefined'&&e.target instanceof HTMLElement){
       if(e.target.closest('input,textarea,select'))return;
       if(['Enter','Space'].includes(e.code)&&e.target.closest('button'))return;
+    }
+    if(['playing','paused','defeat'].includes(this.screen)){
+      const action=actionForInput(e.code,e.shiftKey);
+      if(action){
+        if(['attack','mark','guide'].includes(action)){if(!e.repeat)this.performControl(action);return;}
+        const canonical:Partial<Record<ControlAction,string>>={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',skill:'Space',ultimate:'KeyV',dodge:'ShiftLeft',record:'KeyE',summon:'KeyQ',recall:'KeyX',echoPause:'KeyC',swap:'KeyQ',item1:'Digit1',item2:'Digit2',item3:'Digit3',time:'KeyR',pause:'Escape',retry:'KeyT',mute:'KeyM'};
+        const code=canonical[action];
+        if(!code)return;
+        const original=e;const key=code.startsWith('Key')?code.slice(3).toLowerCase():code==='Escape'?'Escape':code==='Space'?' ':code;
+        e={...e,code,key,shiftKey:action==='swap',target:original.target,repeat:original.repeat,ctrlKey:original.ctrlKey,metaKey:original.metaKey,altKey:original.altKey,preventDefault:()=>original.preventDefault()} as KeyboardEvent;
+      }else if(!['Enter','Escape'].includes(e.code)&&!(this.isTraining&&e.code==='KeyG'))return;
     }
     if(this.orientationBlocked||this.runeEditing||this.inventoryOpen||this.pendingBattleStart)return;
     // Prevent default browser scroll on arrow keys / space
@@ -2137,6 +2167,7 @@ export class GameEngine {
   };
 
   private handleKeyUp = (e: KeyboardEvent) => {
+    const action=actionForInput(e.code,e.shiftKey);const movement:Record<string,string>={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD'};if(action&&movement[action])this.heldKeys.delete(movement[action]);
     this.heldKeys.delete(e.code);
     this.heldKeys.delete(e.key.toLowerCase());
   };
@@ -2144,7 +2175,7 @@ export class GameEngine {
   private handleWindowBlur = () => {
     this.targetMarkArmed=0;
     this.mouseOverArena = false;
-    this.heldKeys.clear();
+    this.clearControlInput();
     this.touchMove = { x: 0, y: 0 };
     this.pauseGame();
   };
@@ -2161,10 +2192,11 @@ export class GameEngine {
     const bounds = this.canvas.getBoundingClientRect();
     const target = { x: (e.clientX - bounds.left) * this.canvas.width / bounds.width,
       y: (e.clientY - bounds.top) * this.canvas.height / bounds.height };
-    if ((e.shiftKey || this.targetMarkArmed > 0) && this.markTarget(target)) return;
-    if (e.button === 1) { e.preventDefault(); this.useUltimate(target); }
-    else if (e.button === 2) { e.preventDefault(); this.useSkill(target); }
-    else this.attack(target);
+    if ((actionForInput('Mouse'+e.button,e.shiftKey)==='mark' || this.targetMarkArmed > 0) && this.markTarget(target)) return;
+    if(controls.capturing)return;
+    const action=actionForInput('Mouse'+e.button,e.shiftKey);
+    if(action==='mark'){this.markTarget(target);return;}
+    if(action==='attack')this.attack(target);else if(action==='skill'){e.preventDefault();this.useSkill(target);}else if(action==='ultimate'){e.preventDefault();this.useUltimate(target);}else if(action)this.performControl(action);
   };
   private handleCanvasContextMenu = (e: MouseEvent) => { if (this.screen === 'playing') e.preventDefault(); };
 
@@ -2443,6 +2475,7 @@ export class GameEngine {
       moveX *= invLen;
       moveY *= invLen;
     }
+    if(!moveX&&!moveY){moveX=this.gamepadMove.x;moveY=this.gamepadMove.y;}
     if (!moveX && !moveY) {
       const length = Math.hypot(this.touchMove.x, this.touchMove.y);
       if (length > 0) { moveX = this.touchMove.x / length; moveY = this.touchMove.y / length; }
@@ -2959,7 +2992,7 @@ export class GameEngine {
         limitRingActive: this.limitRingActive,
         bestStars: { ...this.campaign.bestStars },
         lastRating: this.lastRating,
-        skillCooldown: this.skillCooldown,mana:this.mana.value,maxMana:MAX_MP,skillManaCost:this.personalSkillManaCost,rage:this.rage.value,maxRage:RAGE.MAX,hasUltimate:this.hasUltimate,
+        skillCooldown: this.skillCooldown,mana:this.mana.value,maxMana:this.mana.max,skillManaCost:this.personalSkillManaCost,rage:this.rage.value,maxRage:RAGE.MAX,hasUltimate:this.hasUltimate,
         mechanicalOwned: this.campaign.mechanicalOwned,
         loadingLevel: this.pendingLevel ? levelAt(this.pendingLevel.idx).id : null,
         loadingFromMenu: this.loadingFromMenu,

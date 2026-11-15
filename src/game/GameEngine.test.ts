@@ -411,7 +411,7 @@ test('boss introduction freezes combat and the clock until explicitly started', 
  assert.equal(engine.enemies.filter(e=>e.id.startsWith('frost-crystal-')).length,0,'the survivors became the Guardian');
  const x=guardian().x,y=guardian().y,before=clock();
  engine.attack();engine.useSkill();advance(1);
- assert.equal(clock(),before);assert.equal(guardian().x,x);assert.equal(guardian().y,y);assert.equal(engine.mana.value,100);
+ assert.equal(clock(),before);assert.equal(guardian().x,x);assert.equal(guardian().y,y);assert.equal(engine.mana.value,120);
  engine.beginBossFight();advance(.1);assert.equal(engine.bossIntroduction,false);assert.ok(clock()>before);
 });
 

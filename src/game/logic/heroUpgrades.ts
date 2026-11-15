@@ -27,7 +27,7 @@ const ATTACK_BONUS = {
   mage: [0, 8, 16, 24, 38, 55, 70, 85, 105, 125, 150],
   swordsman: [0, 10, 20, 30, 48, 70, 88, 108, 132, 156, 185],
 };
-const ICE_MP_DISCOUNT = [0, 2, 4, 6, 8, 11, 13, 15, 18, 21, 24];
+const ICE_MP_DISCOUNT = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12];
 const DAMAGE_REDUCTION = [0, 4, 8, 12, 15, 20, 23, 26, 30, 33, 38];
 
 export function isUpgradeHero(hero: string): hero is UpgradeHero {
