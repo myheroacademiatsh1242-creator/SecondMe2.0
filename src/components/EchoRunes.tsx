@@ -1,9 +1,11 @@
+import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {useDialogClose} from './useDialogClose.ts';
 import {createPortal} from 'react-dom';
 import {useState,useEffect,useRef} from 'react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { ECHO_RUNES, type EchoRuneId } from '../game/logic/echoRunes.ts';
 import './EchoRunes.css';
+import {RuneRewardRoll} from './RuneRewardRoll.tsx';
 import './RuneLoadout.css';
 export function EchoRuneStock({hud,engine,compact=false,summaryOnly=false}:{hud:HUDState;engine?:GameEngine|null;compact?:boolean;summaryOnly?:boolean}){
  const vi=hud.language==='vi',boss=(engine?.currentLevel.id??1)>=2&&hud.screen==='playing';
@@ -30,6 +32,7 @@ export function EchoRuneStock({hud,engine,compact=false,summaryOnly=false}:{hud:
 }
 
 export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:HUDState;engine:GameEngine|null;close:()=>void;initialSlot?:number}){
+ const panelArt=usePanelArt(PANEL_ART.inventory);
  const {closing,close}=useDialogClose(onClose);
  const vi=hud.language==='vi',selected=(hud.runeLoadout??[]).slice(0,4),[slot,setSlot]=useState(Math.min(initialSlot,selected.length,3)),owned=ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0);
  useEffect(()=>{engine?.setRuneEditing(true);const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}};window.addEventListener('keydown',key,true);return()=>{engine?.setRuneEditing(false);window.removeEventListener('keydown',key,true);};},[engine,close]);
@@ -52,7 +55,7 @@ export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:
  const focused=ECHO_RUNES.find(r=>r.id===selected[slot]);
  const previewRef=useRef<HTMLDivElement>(null);
  useEffect(()=>{if(previewRef.current)previewRef.current.scrollTop=0;},[slot,focused?.id]);
- return createPortal(<div lang={vi ? 'vi' : 'en'} className={`modal-backdrop rune-loadout-backdrop forest-dialog-backdrop ${closing?'is-leaving':''}`} onClick={close}><section className="panel rune-loadout-editor forest-dialog" data-lobby-dialog role="dialog" aria-modal="true" aria-label={vi?'Đổi rune':'Change runes'} onClick={e=>e.stopPropagation()}>
+ return createPortal(<div lang={vi ? 'vi' : 'en'} className={`modal-backdrop rune-loadout-backdrop forest-dialog-backdrop ${closing?'is-leaving':''}`} onClick={close}><section className="panel rune-loadout-editor forest-dialog" data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-label={vi?'Đổi rune':'Change runes'} onClick={e=>e.stopPropagation()}>
   <div className="loadout-scenery" aria-hidden="true"><i/><i/><i/><i/></div>
   <div className="loadout-equipped">
    <header><small>{vi?`ĐÃ CHỌN ${selected.length}/4 RUNE`:`${selected.length}/4 RUNES EQUIPPED`}</small><h2>{vi?'Chọn 4 rune mang theo':'Choose your four runes'}</h2></header>
@@ -98,12 +101,15 @@ export function RuneChoicePicker({hud,engine}:{hud:HUDState;engine:GameEngine|nu
  const vi=hud.language==='vi';
  if(!hud.pendingRuneChoices?.length){const rune=ECHO_RUNES.find(r=>r.id===hud.lastRuneReward);return <div className="rune-claimed" role="status">{rune&&<span style={{color:rune.color}}><RuneStone id={rune.id}/></span>}<div><small>{vi?'ĐÃ NHẬN ẤN':'RUNE CLAIMED'}</small><h3>{rune?(vi?rune.vi:rune.en):(vi?'Phần thưởng đã nhận':'Reward collected')}</h3><p>{vi?'Đã cất vào túi · Dùng trong màn 2–12':'Added to inventory · Use in levels 2–12'}</p></div><b>✓</b></div>;}
  return <section className="rune-choice" aria-label={vi?'Chọn một ấn nâng Echo':'Choose one Echo rune'}>
-  <h3>{vi?'CHỌN 1 TRONG 3 ẤN':'CHOOSE 1 OF 3 RUNES'}</h3>
-  <p>{vi?'Ba lựa chọn ngẫu nhiên. Chọn một, hai ấn còn lại sẽ biến mất.':'Three random choices. Keep one; the other two disappear.'}</p>
-  <div className="rune-choice-grid">{hud.pendingRuneChoices.map(id=>{const rune=ECHO_RUNES.find(r=>r.id===id)!;return <button key={id} onClick={()=>engine?.chooseRune(id)} style={{color:rune.color}} aria-label={`${vi?'Chọn':'Choose'} ${vi?rune.vi:rune.en}`}><span className="rune-art"><RuneStone id={rune.id}/></span><strong>{vi?rune.vi:rune.en}</strong><p>{RUNE_SHORT[rune.id][vi?0:1]}</p><small>{vi?'CHỌN ẤN NÀY':'KEEP THIS RUNE'}</small></button>;})}</div>
+  <h3>{vi?'PHẦN THƯỞNG RUNE':'RUNE REWARD'}</h3>
+  <RuneRewardRoll choices={hud.pendingRuneChoices} vi={vi} reducedMotion={hud.reducedMotion} choose={id=>engine?.chooseRune(id)} renderRune={id=><RuneStone id={id}/>}/>
  </section>;
 }
 export function RuneChoiceDialog({hud,engine}:{hud:HUDState;engine:GameEngine|null}){
  if(!hud.pendingRuneChoices?.length)return null;
- return <div className="modal-backdrop rune-choice-dialog"><div className="panel rune-choice-panel" role="dialog" aria-modal="true" aria-label={hud.language==='vi'?'Phần thưởng đang chờ':'Unclaimed rune reward'}><RuneChoicePicker hud={hud} engine={engine}/></div></div>;
+ return <PendingRuneDialog hud={hud} engine={engine}/>;
+}
+function PendingRuneDialog({hud,engine}:{hud:HUDState;engine:GameEngine|null}){
+ const panelArt=usePanelArt(PANEL_ART.material);
+ return <div className="modal-backdrop rune-choice-dialog"><div className="panel rune-choice-panel" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-label={hud.language==='vi'?'Phần thưởng đang chờ':'Unclaimed rune reward'}><RuneChoicePicker hud={hud} engine={engine}/></div></div>;
 }

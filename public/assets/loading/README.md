@@ -33,16 +33,10 @@ python -I -X utf8 tools/assets/clean_bar_frame.py             # after prepare_po
 
 ## Portal transition
 
-When loading has really finished (and the wizard has finished his stride), the screen plays
-about 6.3 s: **move** (1.5 s) the arch slides to the screen centre while the title, the bar,
-the percentage, the status lines and the caption sink away; **rotate** (1.5 s) the arch turns
-about its vertical axis from the painted three-quarter view to face the camera; **activate**
-(1.3 s) the stone rumbles, then the whole arch (stone, vines and vortex) bends into a
-counter-clockwise spiral while chips break off and particles spiral in; **dive** (2.1 s) the
-camera zooms in on the centre while the spiral winds tighter and faster and the arch is drawn
-into the eye, the tunnel opens behind it, turquoise fills the screen and a white flash hands
-over to the next screen, where `AdventureApp` fades it out. With reduced motion (or if the
-transition art has not loaded) it is a plain fade.
+When the destination art is ready, the main menu plays the wizard pull, moves the arch to
+the centre, rotates it to face the camera, then opens the vortex and dives into it.
+The final portal frame fades directly over the mounted chapter map. With reduced motion
+or missing transition art, the loading screen fades straight to the destination.
 
 There is no painted front view of the arch: `portal-front.png` is built from the painting by
 mirroring the near pillar and the near half of the opening. The turn is one rigid slab

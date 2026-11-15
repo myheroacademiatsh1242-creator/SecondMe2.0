@@ -1,4 +1,5 @@
 import { SHAMAN_BOLT_RADIUS, type Enemy, type EnemyKind } from '../logic/enemies.ts';
+import { drawFrostCrystal } from './frostCrystal.ts';
 let slimeSheet: HTMLImageElement | undefined;
 
 function drawEmberSlime(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
@@ -46,7 +47,7 @@ function sheet(kind:Exclude<EnemyKind,'dummy'>,moving:boolean){
 }
 export function drawEnemies(ctx:CanvasRenderingContext2D,enemies:Enemy[],time:number){
  for(const e of [...enemies].sort((a,b)=>a.y-b.y)){
-  if(e.slimeHue!==undefined){drawEmberSlime(ctx,e,time);continue;}
+  if(e.slimeHue!==undefined){if(!(e.id.startsWith('frost-crystal-')&&drawFrostCrystal(ctx,e,time)))drawEmberSlime(ctx,e,time);continue;}
   if(e.kind==='dummy'){drawDummy(ctx,e);continue;}
   if(e.hp<=0&&e.deathAge>.55)continue;const moving=e.mode==='chase',image=sheet(e.kind,moving),cell=cells[e.kind];
   if(!image)continue;const size=e.kind==='minotaur'?180:e.kind==='bear'?154:e.kind==='goblin'?150:e.kind==='shaman'?126:110;

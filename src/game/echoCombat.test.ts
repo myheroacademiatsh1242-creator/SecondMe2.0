@@ -1,4 +1,4 @@
-import { GUARDIAN_HP } from './logic/balance.ts';
+import { encounterBalance, GUARDIAN_HP } from './logic/balance.ts';
 import {makeIceRays} from './logic/iceMagic.ts';
 import test, {type TestContext} from 'node:test';
 import assert from 'node:assert/strict';
@@ -76,7 +76,7 @@ test('boss ground rays deal 24 stability damage and prioritize Echo over the pla
   const {game,update,summon}=setup(t,5);const echo=summon(400,300);echo.status='finished';const boss=game.boss!;boss.x=600;boss.y=300;boss.burstCooldown=100;
   for(let i=1;i<=5;i++){
     boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
-    assert.equal(game.echoes.includes(echo),i<5);assert.equal(game.health,100);
+    assert.equal(game.echoes.includes(echo),i<5);assert.equal(game.health,game.maxHealth);
   }
 });
 
@@ -109,10 +109,11 @@ test('enemy and boss damage accumulate in the same stability pool',t=>{
     update();assert.ok(game.echoes.includes(echo));
   }
   boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
-  assert.ok(game.echoes.includes(echo),'28 enemy damage plus 24 boss damage leaves 48 stability');
-  assert.equal(echo.stability,48);
+  const enemyDamage = Math.round(12 * encounterBalance(6).damage);
+  assert.ok(game.echoes.includes(echo));
+  assert.equal(echo.stability,100 - 2 * enemyDamage - 24);
   boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
-  assert.equal(echo.stability,24);
+  assert.equal(echo.stability,100 - 2 * enemyDamage - 48);
   boss.mode='warning';boss.timer=.01;boss.targetX=echo.x;boss.targetY=echo.y;update();
   assert.equal(game.echoes.length,0);
 });

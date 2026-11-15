@@ -4,6 +4,7 @@ import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { sounds } from '../game/logic/sound.ts';
 import './BossIntro.css';
 import { DemonSlimeMerge } from './DemonSlimeMerge.tsx';
+import { FrostCrystalFusion } from './FrostCrystalFusion.tsx';
 
 // Snowflakes: fixed spread (no randomness, so every showing looks the same and nothing re-rolls on render).
 const SNOW = Array.from({ length: 22 }, (_, i) => ({
@@ -31,6 +32,9 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
   const demon = hud.bossKind === 'demon';
   const still = hud.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const transforming = demon && !still && phase === 'merge';
+  // Frost Guardian: the last two Frost Crystals do the fusion dance first (FrostCrystalFusion); its card mounts at the hand-off.
+  const [fusion, setFusion] = useState<'play' | 'handoff' | 'done'>(demon || still ? 'done' : 'play');
+  const fused = useRef(false);
   const enterFight = useCallback(() => {
     if (entering.current) return;
     entering.current = true;
@@ -69,15 +73,16 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
   // Enter, Space or Escape: skip the transformation, or start the fight.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!e.repeat && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) {
+      if (!engine?.orientationBlocked && !e.repeat && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) {
         e.preventDefault();
         if (transforming) setPhase('cut');
+        else if (fusion === 'play') setFusion('done');
         else enterFight();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [enterFight, transforming]);
+  }, [enterFight, transforming, fusion]);
 
   if (demon) {
     const merging = !still && phase !== 'cut';
@@ -97,7 +102,6 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
           {EMBERS.map((e, i) => <i key={i} style={{ left: `${e.left}%`, width: e.size, height: e.size, animationDelay: `${e.delay}s`, animationDuration: `${e.duration}s`, '--drift': `${e.drift}px` } as CSSProperties} />)}
         </div>
         <div className="demon-cut-glow" aria-hidden="true" />
-        <div className="demon-cut-fissure" aria-hidden="true" />
         <div className="demon-cut-figure" aria-hidden="true">
           <div className="demon-cut-sprite" />
         </div>
@@ -166,7 +170,14 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
       </>}
     </>);
   }
-  return <div ref={dialog} tabIndex={-1} className={`boss-cut${skipped || hud.reducedMotion ? ' is-skipped' : ''}`} role="dialog" aria-modal="true" aria-labelledby="boss-intro-name"
+  const fusing = fusion !== 'done' && <div className={`frost-fusion${fusion === 'handoff' ? ' is-handing-off' : ''}`} role="dialog" aria-modal="true"
+    aria-label={vi ? 'Pha Lê Băng hợp thể' : 'Frost Crystals fusing'} aria-hidden={fusion === 'handoff'}>
+    <FrostCrystalFusion onHandoff={() => { fused.current = true; setFusion('handoff'); }} onDone={() => setFusion('done')} />
+    {fusion === 'play' && <button type="button" className="demon-intro-skip" onClick={() => setFusion('done')}>{vi ? 'Bỏ qua hoạt ảnh' : 'Skip animation'}</button>}
+  </div>;
+  if (fusion === 'play') return fusing;
+  // After the fusion the Guardian is already standing (it glided into place): the card skips its drop from the sky.
+  return <>{fusing}<div ref={dialog} tabIndex={-1} className={`boss-cut${skipped || still ? ' is-skipped' : ''}${fused.current ? ' from-fusion' : ''}`} role="dialog" aria-modal="true" aria-labelledby="boss-intro-name"
     onPointerDown={() => { setSkipped(true); playRoar(); }}>
     <div className="boss-cut-snow" aria-hidden="true">
       {SNOW.map((f, i) => <i key={i} style={{ left: `${f.left}%`, width: f.size, height: f.size, animationDelay: `${f.delay}s`, animationDuration: `${f.duration}s`, '--drift': `${f.drift}px` } as CSSProperties}/>)}
@@ -189,8 +200,8 @@ export function BossIntro({ engine, hud }: { engine: GameEngine | null; hud: HUD
           <li><Move aria-hidden="true"/><b>{vi ? 'Lướt khỏi vùng báo đòn' : 'Dash out of marked zones'}</b></li>
           <li><Swords aria-hidden="true"/><b>{vi ? 'Đánh khi hiện “Sơ hở”' : 'Strike when “Opening” appears'}</b></li>
         </ol>
-        <button className="boss-cut-start" onClick={() => engine?.beginBossFight()}>{vi ? 'Vào trận' : 'Start fight'} <ArrowRight size={20}/></button>
+        <button className="boss-cut-start" onClick={enterFight}>{vi ? 'Vào trận' : 'Start fight'} <ArrowRight size={20}/></button>
       </div>
     </section>
-  </div>;
+  </div></>;
 }

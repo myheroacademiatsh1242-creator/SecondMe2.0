@@ -11,6 +11,7 @@ import {isChestAvailable, rollChest, chestReward, CHEST_PRICES, chestBalance, ty
 import { DAMAGE, damagePoints } from './damage.ts';
 import { ECHO_RUNES, rollEchoRune, rollRuneChoices, cleanRuneChoices, cleanRuneStock, type EchoRuneId, type EchoRuneStock } from './echoRunes.ts';
 import { puzzleBalance } from './balance.ts';
+import { cleanHeroRanks, heroResetQuote, heroUpgradeCost, HERO_UPGRADE_PRICES, HERO_UPGRADE_STATS, isUpgradeHero, type HeroUpgradeStat } from './heroUpgrades.ts';
 // Temporarily unavailable while its art and gameplay are revised. Ownership is retained.
 export const MECHANICAL_ENABLED = false;
 export const MATERIALS = [
@@ -29,6 +30,8 @@ export function levelRating(seconds: number, levelId?: number): { stars: number;
 }
 
 export class Campaign {
+  heroRanks = cleanHeroRanks();
+  heroUpgradeSpent = { mage: 0, swordsman: 0 };
   ownedOutfits:ShopOutfitId[]=[];
   ownedWeapons:WeaponId[]=[];
   completed: number[] = [];
@@ -56,6 +59,16 @@ export class Campaign {
     try {
       if (typeof localStorage === 'undefined') return;
       const value = JSON.parse(localStorage.getItem('second-me-campaign-v3') ?? '{}');
+      this.heroRanks = cleanHeroRanks(value.heroRanks);
+      for (const hero of ['mage', 'swordsman'] as const) {
+        const ranks = this.heroRanks[hero];
+        const maximum = HERO_UPGRADE_STATS.reduce((sum, stat) => sum + heroUpgradeCost(ranks[stat]), 0);
+        const saved = value.heroUpgradeSpent?.[hero];
+        // Legacy bundled ranks were paid for once, even though they raised all stats.
+        this.heroUpgradeSpent[hero] = Number.isSafeInteger(saved) && saved >= 0 && saved <= maximum
+          ? saved
+          : typeof value.heroRanks?.[hero] === 'number' ? heroUpgradeCost(ranks.health) : maximum;
+      }
       this.ownedOutfits=cleanOwnedOutfits(value.ownedOutfits);
       this.ownedWeapons=cleanOwnedWeapons(value.ownedWeapons);
       this.supplies=cleanSupplies(value.supplies);
@@ -92,12 +105,14 @@ export class Campaign {
         this.devShopStockMigrated=true;
       }
       if(migrateRunes||legacyDevStock)this.save();
-    } catch { this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+    } catch { this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+
   }
   save() {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
       ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
       supplies:this.supplies,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
+      heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
       completed: this.completed, bossDefeated: this.bossDefeated,
       echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
@@ -134,8 +149,13 @@ export class Campaign {
     this.lastRuneDrop=null;
     if(levelId>=1&&levelId<=12&&levelId!==6&&this.pendingRuneChoices.length===0)this.pendingRuneChoices=rollRuneChoices();
     const reward = levelRating(seconds,levelId);
+    // A slow clear still earns coins, including when replaying a completed trail.
+    if (Number.isInteger(levelId) && levelId >= 1 && levelId <= 13) {
+      reward.coins = Math.max(4, reward.coins) + (levelId - 1) * 4;
+    }
     const commonCrystals=(levelId===6||levelId===13)?3+Math.min(2,Math.floor(Math.max(0,random())*3)):levelId>=1&&levelId<=12&&levelId!==6&&reward.stars>0?reward.stars+2:0;
     this.chestKeys+=commonCrystals;
+
     this.coins += reward.coins;
     this.bestStars[levelId] = Math.max(this.bestStars[levelId] ?? 0, reward.stars);
     this.save();
@@ -167,6 +187,26 @@ export class Campaign {
     this.save();
   }
   buySupply(id:Exclude<ShopItemId,'time'|'ring'>){return this.buyShopItem(id);}
+  buyHeroUpgrade(hero: CharacterClass, stat: HeroUpgradeStat, expectedRank: number): boolean {
+    if (!isUpgradeHero(hero) || !HERO_UPGRADE_STATS.includes(stat) || this.heroRanks[hero][stat] !== expectedRank) return false;
+    const price = HERO_UPGRADE_PRICES[expectedRank];
+    if (price === undefined || this.coins < price) return false;
+    this.coins -= price;
+    this.heroUpgradeSpent[hero] += price;
+    this.heroRanks = { ...this.heroRanks, [hero]: { ...this.heroRanks[hero], [stat]: expectedRank + 1 } };
+    this.save();
+    return true;
+  }
+  resetHeroUpgrades(hero: CharacterClass, expectedSpent: number): boolean {
+    if (!isUpgradeHero(hero) || expectedSpent <= 0 || this.heroUpgradeSpent[hero] !== expectedSpent) return false;
+    const { refund } = heroResetQuote(expectedSpent);
+    if (!Number.isSafeInteger(this.coins + refund)) return false;
+    this.heroRanks = { ...this.heroRanks, [hero]: cleanHeroRanks()[hero] };
+    this.heroUpgradeSpent[hero] = 0;
+    this.coins += refund;
+    this.save();
+    return true;
+  }
   shopStock(id:ShopItemId){return id==='time'?this.timeItems:id==='ring'?this.limitRings:this.supplies[id];}
   buyShopItem(id:ShopItemId,quantity=1){
     const item=SHOP_ITEMS.find(i=>i.id===id);
@@ -186,7 +226,8 @@ export class Campaign {
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
   get unlockedLevel() { return Math.min(5, this.completed.filter(id=>id<=5).length); }
-  reset() { this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
+  reset() { this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
+
 }
 
 export interface BossState extends BossBehavior {

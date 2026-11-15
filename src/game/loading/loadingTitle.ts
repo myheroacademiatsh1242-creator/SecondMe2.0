@@ -2,24 +2,30 @@ import { layout } from './placement.ts';
 
 export type TitleLanguage = 'en' | 'vi';
 
-const VI = { sub: 'HOÀI NIỆM LỐI CỔ', lines: ['NHỮNG LỐI ĐI', 'BẮT ĐẦU LỘ DIỆN'] };
+const TITLES = {
+  en: { sub: 'THE ANCIENT PATH REMEMBERS', lines: ['THE TRAILS ARE', 'APPEARING…'] },
+  vi: { sub: 'HOÀI NIỆM LỐI CỔ', lines: ['NHỮNG LỐI ĐI', 'BẮT ĐẦU LỘ DIỆN'] },
+};
 const FAMILY = '"Second Me Pixel", monospace';
 const PIXEL = 3;
 
-let vi: HTMLCanvasElement | null = null;
-let pending = false;
+const rendered = new Map<TitleLanguage, HTMLCanvasElement>();
+const pending = new Set<TitleLanguage>();
 
-/** The Vietnamese title is cached once the game's Vietnamese pixel font loads. */
-export function vietnameseTitle(): HTMLCanvasElement | null {
-  if (vi || pending || typeof document === 'undefined') return vi;
-  pending = true;
-  document.fonts.load(`36px ${FAMILY}`, [VI.sub, ...VI.lines].join(' '))
-    .then(() => { vi = drawTitle(); })
-    .catch(() => { pending = false; });
+/** Cache each localized title for the loading and portal animations. */
+export function loadingTitle(language: TitleLanguage): HTMLCanvasElement | null {
+  const title = rendered.get(language);
+  if (title || pending.has(language) || typeof document === 'undefined') return title ?? null;
+  pending.add(language);
+  const copy = TITLES[language];
+  void document.fonts.load(`36px ${FAMILY}`, [copy.sub, ...copy.lines].join(' '))
+    .catch(() => [])
+    .then(() => { rendered.set(language, drawTitle(copy)); })
+    .finally(() => pending.delete(language));
   return null;
 }
 
-function drawTitle() {
+function drawTitle({sub, lines}: typeof TITLES.en) {
   const { w } = layout.title;
   const h = layout.title.h + 65;
   const pixels = document.createElement('canvas');
@@ -34,18 +40,20 @@ function drawTitle() {
 
   ctx.font = `15px ${FAMILY}`;
   ctx.letterSpacing = '1px';
+  const subSize = Math.floor(15 * Math.min(1, (pixels.width - 12) / ctx.measureText(sub).width));
+  ctx.font = `${subSize}px ${FAMILY}`;
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#0b1610';
-  ctx.strokeText(VI.sub, center, 17);
+  ctx.strokeText(sub, center, 17);
   ctx.fillStyle = '#f4e6bf';
-  ctx.fillText(VI.sub, center, 17);
+  ctx.fillText(sub, center, 17);
 
   const size = 30;
   ctx.font = `${size}px ${FAMILY}`;
   ctx.letterSpacing = '0px';
-  const widest = Math.max(...VI.lines.map(line => ctx.measureText(line).width));
+  const widest = Math.max(...lines.map(line => ctx.measureText(line).width));
   ctx.font = `${Math.floor(size * Math.min(1, (pixels.width - 14) / widest))}px ${FAMILY}`;
-  VI.lines.forEach((line, i) => {
+  lines.forEach((line, i) => {
     const y = 53 + i * 36;
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#160d09';

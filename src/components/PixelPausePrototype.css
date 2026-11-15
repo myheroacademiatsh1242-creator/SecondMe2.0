@@ -1,48 +1,118 @@
-/* One bitmap prototype; the remaining screens retain their current theme until review. */
-#root .adventure-app .pause-menu.pause-menu--pixel{
- position:relative;isolation:isolate;display:flex;flex-direction:column;
- width:min(500px,calc(100vw / var(--desktop-scale,1) - 32px));
- height:min(666px,calc(100dvh / var(--desktop-scale,1) - 32px));
- max-height:calc(100dvh / var(--desktop-scale,1) - 32px);
- padding:58px 58px 62px;border:0!important;border-image:none!important;
- background:transparent!important;box-shadow:none!important;overflow:visible;
- color:#e7d49a;
+#root .adventure-app .pause-menu.pause-menu--pixel {
+ --frame-pixel: .21px;
+ position: relative;
+ isolation: isolate;
+ display: flex;
+ flex-direction: column;
+ width: min(500px, calc(100vw / var(--desktop-scale, 1) - 32px));
+ max-height: calc(100dvh / var(--desktop-scale, 1) - 32px);
+ padding: 52px clamp(38px, 12vw, 76px) 54px;
+ border: 0 !important;
+ border-image: none !important;
+ background: transparent !important;
+ box-shadow: none !important;
+ overflow: visible;
+ color: #e7d49a;
 }
-#root .pause-menu--pixel::before{
- content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
- background:url('/assets/ui/pause-pixel-prototype.png') center/100% 100% no-repeat;
- image-rendering:pixelated;
+
+#root .pause-menu--pixel::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ z-index: -1;
+ pointer-events: none;
+ border-image: url('/assets/ui/pause-pixel-prototype.png') 240 406 280 195 fill /
+  calc(240 * var(--frame-pixel)) calc(406 * var(--frame-pixel))
+  calc(280 * var(--frame-pixel)) calc(195 * var(--frame-pixel)) stretch;
+ image-rendering: pixelated;
 }
-#root .pause-menu--pixel .pause-menu-content{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227;padding:4px;flex:1;display:flex;flex-direction:column}
-#root .pause-menu--pixel header>span{color:#b5aa80;font-size:12px}
-#root .pause-menu--pixel h2{font-size:36px!important;margin:14px 0 5px;color:#f0d68d!important;text-shadow:2px 2px #272a20}
-#root .pause-menu--pixel .pause-menu-level{color:#c2b88e!important;font-size:14px}
-#root .pause-menu--pixel dl{margin:22px 0;padding:15px 0;border-color:#83754e!important}
-#root .pause-menu--pixel dl>div+div{border-color:#6b6849!important}
-#root .pause-menu--pixel dd{font-size:24px;color:#eedca0!important}
-#root .pause-menu--pixel :is(dt,small,footer){color:#bdb38a!important}
-#root .pause-menu--pixel button:not(.pause-menu-resume){
- background:linear-gradient(#555647,#424637)!important;
- border:2px solid #8c8257!important;border-radius:0!important;
- box-shadow:inset 2px 2px #74705a,inset -2px -2px #2a3026,0 2px #20271e!important;
- color:#e9d694!important;min-height:44px;font-size:16px!important;
+
+.pause-menu-crest { display: none }
+#root .pause-menu--pixel .pause-menu-content {
+ min-height: 0;
+ overflow: auto;
+ scrollbar-width: thin;
+ scrollbar-color: #b3a26c #263629;
+ padding: 5px;
+ display: grid;
+ gap: 12px;
 }
-#root .pause-menu--pixel header>button{width:28px;min-height:28px;padding:3px;background:#693e33!important;border-color:#ad8b5e!important}
-#root .pause-menu--pixel .pause-menu-resume{
- margin-top:auto;flex:none;min-height:50px;background:linear-gradient(#e2ca83,#b2934e)!important;
- border:2px solid #dbc17e!important;box-shadow:inset 2px 2px #f5dfa1,inset -2px -2px #8a7139,0 3px #25291c!important;
- color:#493c20!important;font-size:19px!important;
+#root .pause-menu--pixel header { display: block }
+#root .pause-menu--pixel h2 {
+ font-size: 32px !important;
+ margin: 0 0 8px;
+ color: #f0d68d !important;
+ text-shadow: 2px 2px #272a20;
 }
-#root .pause-menu--pixel .pause-menu-options{gap:10px;margin-top:14px;flex:none}
-#root .pause-menu--pixel footer{font-size:12px;margin-top:20px}
-@media(max-height:480px){
- #root .adventure-app .pause-menu.pause-menu--pixel{width:min(580px,calc(100vw - 32px));padding:30px 66px}
- #root .pause-menu--pixel h2{font-size:26px!important;margin:6px 0}
- #root .pause-menu--pixel dl{margin:10px 0;padding:8px 0}
- #root .pause-menu--pixel button:not(.pause-menu-resume){min-height:34px;padding:5px 8px}
- #root .pause-menu--pixel .pause-menu-resume{min-height:38px}
- #root .pause-menu--pixel footer{margin-top:10px}
+#root .pause-menu--pixel .pause-menu-level { color: #c2b88e !important; font-size: 14px }
+#root .pause-menu--pixel dl { margin: 14px 0 0; padding: 10px 0; border-color: #83754e !important }
+#root .pause-menu--pixel dl > div + div { border-color: #6b6849 !important }
+#root .pause-menu--pixel dd { font-size: 24px; color: #eedca0 !important }
+#root .pause-menu--pixel :is(dt, small) { color: #bdb38a !important }
+#root .pause-menu--pixel .pause-quests { margin: 0; padding: 12px; background: #17291dec }
+#root .pause-menu--pixel button:not(.pause-menu-resume) {
+ background: linear-gradient(#555647, #424637) !important;
+ border: 2px solid #8c8257 !important;
+ border-radius: 0 !important;
+ box-shadow: inset 2px 2px #74705a, inset -2px -2px #2a3026, 0 2px #20271e !important;
+ color: #e9d694 !important;
+ min-height: 42px;
+ min-width: 0;
+ padding-inline: 6px;
+ font-size: 16px !important;
 }
-/* Keep every live label inside the frame's inner gold line. */
-#root .adventure-app .pause-menu.pause-menu--pixel{padding:70px 80px 80px}
-@media(max-height:480px){#root .adventure-app .pause-menu.pause-menu--pixel{padding:36px 88px}}
+#root .pause-menu--pixel .pause-menu-resume {
+ min-height: 48px;
+ background: linear-gradient(#e2ca83, #b2934e) !important;
+ border: 2px solid #dbc17e !important;
+ box-shadow: inset 2px 2px #f5dfa1, inset -2px -2px #8a7139, 0 3px #25291c !important;
+ color: #493c20 !important;
+ font-size: 18px !important;
+}
+#root .pause-menu--pixel .pause-menu-options { margin: 0 }
+
+@media (min-width: 720px) {
+ #root .adventure-app .pause-menu.pause-menu--pixel {
+  --frame-pixel: .49px;
+  width: min(800px, calc(100vw / var(--desktop-scale, 1) - 32px));
+  padding: 104px clamp(74px, 9vw, 100px) 80px;
+ }
+ #root .pause-menu--pixel::before {
+  border-image: url('/assets/ui/pause-forest-frame.png') 208 258 238 242 fill /
+   calc(208 * var(--frame-pixel)) calc(258 * var(--frame-pixel))
+   calc(238 * var(--frame-pixel)) calc(242 * var(--frame-pixel)) stretch;
+ }
+ #root .pause-menu--pixel[data-panel-art='ready'] .pause-menu-crest {
+  display: block;
+  position: absolute;
+  top: calc(86 * var(--frame-pixel));
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(64 * var(--frame-pixel));
+  height: auto;
+  color: #dbc17e;
+  pointer-events: none;
+ }
+ #root .pause-menu--pixel .pause-menu-content {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px 20px;
+ }
+ #root .pause-menu--pixel .pause-quests { grid-column: 2; grid-row: 1 }
+ #root .pause-menu--pixel :is(.pause-menu-resume, .pause-menu-options) { grid-column: 1 / -1 }
+ #root .pause-menu--pixel .pause-menu-options { grid-template-columns: repeat(4, minmax(0, 1fr)) }
+}
+
+@media (max-height: 520px) {
+ #root .adventure-app .pause-menu.pause-menu--pixel { padding-block: 38px }
+ #root .pause-menu--pixel .pause-menu-content { gap: 8px 16px }
+ #root .pause-menu--pixel h2 { font-size: 25px !important; margin-bottom: 4px }
+ #root .pause-menu--pixel dl { margin-top: 8px; padding: 6px 0 }
+ #root .pause-menu--pixel button:not(.pause-menu-resume) { min-height: 34px; padding-block: 5px }
+ #root .pause-menu--pixel .pause-menu-resume { min-height: 38px }
+}
+
+@media (min-width: 720px) and (max-height: 520px) {
+ #root .adventure-app .pause-menu.pause-menu--pixel { --frame-pixel: .33px; padding-block: 69px 48px }
+}
+
+#root .pause-menu--pixel[data-panel-art='fallback']::before { border-image: none }

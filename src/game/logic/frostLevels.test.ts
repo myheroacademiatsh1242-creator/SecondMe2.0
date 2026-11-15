@@ -22,9 +22,18 @@ test('frozen progress saves independently and never unlocks the original boss',t
  const c=new Campaign();for(const l of FROST_LEVELS){assert.ok(c.award(l.id));assert.equal(c.award(l.id),false);c.completeLevel(l.id,120);assert.equal(c.pendingRuneChoices.length,3);assert.ok(c.chooseRune(c.pendingRuneChoices[0]));}
  const reload=new Campaign();reload.load();assert.deepEqual(reload.completed,[7,8,9,10,11,12]);assert.equal(reload.unlockedLevel,0);assert.equal(reload.bossDefeated,false);assert.ok(reload.chestKeys>0);
 });
-test('first snow trail is accessible locally; later ones require the previous clear; exit requires combat',t=>{
+test('chapter two requires the Frost Guardian clear; later trails and exits require their own clears',t=>{
  const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));
- const g=new GameEngine();g.tutorialEnabled=false;g.selectLevel(7);assert.equal(g.currentLevelIdx,0);g.selectLevel(6);assert.equal(g.currentLevel.id,7);assert.equal(g.boss,null);assert.ok(g.legTimeRemaining!>0);
+ const g=new GameEngine();g.tutorialEnabled=false;
+ g.selectLevel(6);assert.equal(g.currentLevelIdx,0);
+ for(let id=1;id<=5;id++)g.campaign.award(id);
+ g.selectLevel(6);assert.equal(g.currentLevelIdx,0);
+ g.continueGame();g.finishLoading();assert.equal(g.currentLevel.id,6);
+ g.nextLevel();assert.equal(g.currentLevel.id,6);
+ g.campaign.bossDefeated=true;
+ g.continueGame();g.finishLoading();assert.equal(g.currentLevel.id,7);
+ g.selectLevel(7);assert.equal(g.currentLevel.id,7);
+ g.selectLevel(6);assert.equal(g.currentLevel.id,7);assert.equal(g.boss,null);assert.ok(g.legTimeRemaining!>0);
  g.checkpointIndex=g.currentLevel.plates.length;g.finalGateCrossed=true;g.player.x=g.currentLevel.exit.x+30;g.player.y=g.currentLevel.exit.y+30;(g as any).update(.02);assert.equal(g.exitTravelRemaining,0);
  g.enemies.forEach(e=>e.hp=0);(g as any).update(.02);assert.ok(g.exitTravelRemaining>0);
  g.campaign.award(7);g.selectLevel(7);assert.equal(g.currentLevel.id,8);assert.equal(g.boss,null);

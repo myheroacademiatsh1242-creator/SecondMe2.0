@@ -63,7 +63,8 @@ test('pause freezes the checkpoint clock and boss arena has no checkpoint deadli
   advance(1); const remaining=game.legTimeRemaining;game.pauseGame();advance(8);
   assert.equal(game.legTimeRemaining,remaining);game.resumeGame();advance(1);assert.ok(game.legTimeRemaining!<14.01);
   game.currentLevelIdx=5;game.restartLevel();assert.equal(game.legTimeRemaining,null);
-  game.boss!.timer=100;game.boss!.burstCooldown=100;advance(puzzleBalance(2).legSeconds);assert.equal(game.screen,'playing');assert.equal(game.defeatReason,'damage');
+  game.enemies=[];   // the opening Frost Crystals would fight; only the clock matters here
+  advance(puzzleBalance(2).legSeconds);assert.equal(game.screen,'playing');assert.equal(game.defeatReason,'damage');
 });
 
 test('damaging traps warn before impact and vines slow without dealing damage',()=>{
@@ -85,7 +86,7 @@ test('vine movement slowdown clears on leaving and trap impact cannot drain heal
   game.player.x=400;advance(.1);assert.ok(Math.abs(game.player.x-420)<.01);assert.equal(game.slowed,false);
   controls.heldKeys.clear();
   game.currentLevel.traps=[{kind:'crusher',x:390,y:310,width:80,height:100,period:4,offset:3.5}];
-  advance(.2);assert.equal(game.health,80);
+  advance(.2);assert.equal(game.health,game.maxHealth-20);
 });
 
 test('all five trials contain at least three distinct trap types in clear walkable space; boss has none',()=>{
@@ -126,7 +127,7 @@ test('each leg offers one safe time shard worth the configured bonus',t=>{
 test('a crusher hit roots the player for a quarter second',t=>{
   const {game,controls,advance}=setup(t);
   game.currentLevel.traps=[{kind:'crusher',x:180,y:320,width:80,height:80,period:4,offset:3.6}];
-  advance(.01); assert.equal(game.health,80); assert.ok(game.trappedTime>=.25);
+  advance(.01); assert.equal(game.health,game.maxHealth-20); assert.ok(game.trappedTime>=.25);
   game.currentLevel.traps=[]; controls.heldKeys.add('KeyD');
   const x=game.player.x;advance(.2);assert.equal(game.player.x,x);
   advance(.1);assert.ok(game.player.x>x);
@@ -141,4 +142,22 @@ test('time items stack up to five per level, including across checkpoints, and r
   for(let i=0;i<2;i++)assert.equal(game.useTimeItem(),true);
   assert.equal(game.useTimeItem(),false);assert.equal(game.campaign.timeItems,2);
   game.restartLevel();assert.equal(game.useTimeItem(),true);assert.equal(game.campaign.timeItems,1);
+});
+
+test('levels 7 through 12 start a countdown, refill it at a checkpoint, and time out', t => {
+  const { game, advance, checkpoint } = setup(t, 6);
+  for (let id = 7; id <= 12; id++) {
+    game.currentLevelIdx = id - 1;
+    game.restartLevel();
+    game.enemies = [];
+    const budget = puzzleBalance(id).legSeconds;
+    assert.equal(game.legTimeRemaining, budget);
+    advance(1);
+    assert.ok(game.legTimeRemaining! < budget);
+    checkpoint(0);
+    assert.equal(game.legTimeRemaining, budget);
+    advance(budget);
+    assert.equal(game.screen, 'defeat');
+    assert.equal(game.defeatReason, 'timeout');
+  }
 });

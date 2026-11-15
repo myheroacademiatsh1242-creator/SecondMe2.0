@@ -94,7 +94,7 @@ test('all five wins unlock the boss directly, and the boss gates the ending', t 
     game.chooseRune(game.campaign.pendingRuneChoices[0]);
     game.nextLevel();
   }
-  assert.equal(game.bossIntroduction, true);
+  assert.equal(game.boss, null);   // Frost Crystals first; beginBossFight skips them
   game.beginBossFight();
   assert.equal(game.currentLevelIdx, 5);
   assert.equal(game.screen, 'playing');
@@ -228,7 +228,7 @@ test('Echo draws boss attention and spends stability to absorb a hit',t=>{
   (game as unknown as {update(dt:number):void}).update(.05);
   assert.ok(game.echo);
   assert.ok(game.echo!.stability!<100);
-  assert.equal(game.health,100);
+  assert.equal(game.health,game.maxHealth);
 });
 
 test('boss volleys have a warning, multiple waves and a safe recovery',()=>{
@@ -265,7 +265,7 @@ test('all six class pickups apply their distinct damage or defense',t=>{
   internal.collectCombatSkill('fire');assert.equal(game.boss!.hp,GUARDIAN_HP-35);assert.equal(game.fireBurnTime,3);
   internal.collectCombatSkill('lightning');assert.equal(game.boss!.hp,GUARDIAN_HP-85);
   internal.collectCombatSkill('stone');assert.equal(game.stoneShield,40);
-  internal.takeDamage();assert.equal(game.health,100);assert.equal(game.stoneShield,20);
+  internal.takeDamage();assert.equal(game.health,game.maxHealth);assert.equal(game.stoneShield,20);
   game.invulnerability=0;internal.takeDamage();assert.equal(game.stoneShield,0);
   game.characterClass='swordsman';
   internal.collectCombatSkill('haste');assert.equal(game.hasteTime,6);
@@ -273,7 +273,7 @@ test('all six class pickups apply their distinct damage or defense',t=>{
   game.attackCooldown=0;game.attack();             // haste plays the combo twice as fast
   assert.equal(game.attackCooldown,hitDuration(COMBO_HITS.swordsman[0])/2);
   internal.collectCombatSkill('armor');assert.equal(game.armorShield,20);
-  game.invulnerability=0;internal.takeDamage();assert.equal(game.health,100);assert.equal(game.armorShield,0);
+  game.invulnerability=0;internal.takeDamage();assert.equal(game.health,game.maxHealth);assert.equal(game.armorShield,0);
   const before=game.boss!.hp;
   game.player.x=game.boss!.x-250;game.player.direction='right';
   internal.collectCombatSkill('wave');assert.equal(game.boss!.hp,before);
@@ -329,7 +329,8 @@ test('losing and retrying a boss fight keeps sword and restores health and boss'
   const internal=game as unknown as {takeDamage():void};
   for(let i=0;i<5;i++){game.invulnerability=0;internal.takeDamage();}
   assert.equal(game.screen,'defeat');game.restartLevel();
-  assert.equal(game.screen,'playing');assert.equal(game.health,100);
+  assert.equal(game.screen,'playing');assert.equal(game.health,game.maxHealth);
+  assert.equal(game.boss,null);game.beginBossFight();   // the retry starts again from the Frost Crystals
   assert.equal(game.boss!.hp,GUARDIAN_HP);assert.equal(game.campaign.unlockedLevel,5);
   assert.equal(game.campaign.completed.length,5);
 });

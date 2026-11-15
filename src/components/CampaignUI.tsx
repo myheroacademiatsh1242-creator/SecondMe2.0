@@ -1,4 +1,5 @@
-import { GUARDIAN_HP, HERO_MAX_HP, SHARD_BONUS } from '../game/logic/balance.ts';
+import {DEFEAT_ART,PANEL_ART,usePanelArt} from './panelArt.ts';
+import { GUARDIAN_HP, SHARD_BONUS } from '../game/logic/balance.ts';
 import './ForestDefeat.css';
 import {RuneRewardFlow} from './RuneRewardFlow.tsx';
 import {OUTFITS,canWearOutfit,characterOutfitRarity,orderedCharacterOutfits,type OutfitId,type OutfitHero} from '../game/logic/outfits.ts';
@@ -10,12 +11,11 @@ import './CombatActionBar.css';
 import { CombatActionBar } from './CombatActionBar.tsx';
 import { TouchJoystick } from './TouchControls.tsx';
 import { FullscreenButton } from './FullscreenButton.tsx';
-import { BossIntro } from './BossIntro.tsx';
 import { isTouchDevice } from '../game/logic/orientation.ts';
 import { TrailInventory } from './TrailInventory.tsx';
 import { TanukiShop } from './TanukiShop.tsx';
 import { ECHO_RUNES } from '../game/logic/echoRunes.ts';
-import { EchoRuneStock, RuneChoicePicker, RuneChoiceDialog } from './EchoRunes.tsx';
+import { EchoRuneStock, RuneChoiceDialog } from './EchoRunes.tsx';
 import { JourneyCamp } from './JourneyCamp.tsx';
 import { MechanicalPortrait } from './MechanicalPortrait.tsx';
 import { IntroEffects } from './IntroEffects.tsx';
@@ -23,13 +23,15 @@ import { MenuVines } from './MenuVines.tsx';
 import credits from '../game/data/credits.json';
 import { ComboPreview } from './ComboShowcase.tsx';
 import { WeaponPreview } from './WeaponPreview.tsx';
+import { HeroUpgrades } from './HeroUpgrades.tsx';
+import { cleanHeroRanks, heroStats, isUpgradeHero } from '../game/logic/heroUpgrades.ts';
 import React, { useEffect, useRef, useState } from 'react';
 import { drawWizardSprite } from '../game/rendering/wizardSprite.ts';
 import { sounds } from '../game/logic/sound.ts';
 import { drawSoldierSprite } from '../game/rendering/soldierSprite.ts';
 import { localize } from '../localize.tsx';
 import { translate } from '../i18n.ts';
-import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Check, Shield, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap } from 'lucide-react';
+import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Check, Shield, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap, ChevronsUp } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { MECHANICAL_ENABLED } from '../game/logic/campaign.ts';
 import { LEVELS } from '../game/logic/levels.ts';
@@ -141,6 +143,7 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
  * entry shows as "—"), and the third-party work it uses, credited as their licences ask.
  */
 function CreditsPanel({ vi, close }: { vi: boolean; close: () => void }) {
+  const panelArt=usePanelArt(PANEL_ART.material);
   type Entry = { name: string; roleVi: string; roleEn: string; by?: string };
   const sections: [string, string, Entry[]][] = [
     ['ĐỘI PHÁT TRIỂN', 'DEVELOPMENT TEAM', credits.team],
@@ -148,7 +151,7 @@ function CreditsPanel({ vi, close }: { vi: boolean; close: () => void }) {
     ['ÂM NHẠC', 'MUSIC', credits.music],
     ['TÀI NGUYÊN BÊN THỨ BA', 'THIRD-PARTY ASSETS', credits.thirdParty],
   ];
-  return <div className="modal-backdrop intro-dialog" onClick={close}><div className="panel settings-panel credits-panel" role="dialog" aria-modal="true" aria-label={vi ? 'Tác giả' : 'Credits'} onClick={event => event.stopPropagation()}>
+  return <div className="modal-backdrop intro-dialog" onClick={close}><div className="panel settings-panel credits-panel" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-label={vi ? 'Tác giả' : 'Credits'} onClick={event => event.stopPropagation()}>
     <div className="panel-top"><span className="eyebrow gold">{vi ? 'TÁC GIẢ' : 'CREDITS'}</span><button className="icon-close" aria-label={vi ? 'Đóng' : 'Close'} onClick={close}><X size={18}/></button></div>
     <h2>SECOND ME</h2>
     <p className="credits-tagline">{vi ? 'Một chuyến phiêu lưu Echo trong khu rừng cổ.' : 'An Echo adventure in the ancient forest.'}</p>
@@ -161,10 +164,12 @@ function CreditsPanel({ vi, close }: { vi: boolean; close: () => void }) {
 }
 
 export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | null; hud: HUDState; close: () => void }) {
+  const panelArt=usePanelArt(PANEL_ART.inventory);
   const [tab,setTab]=useState<'audio'|'display'|'dev'>('audio');
   const vi=hud.language==='vi';
   const tabs: ('audio'|'display'|'dev')[]=hud.devUnlocked?['audio','display','dev']:['audio','display'];
-  return localize(<div className="modal-backdrop settings-backdrop"><div className="panel settings-panel settings-clean" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  return localize(<div className="modal-backdrop settings-backdrop"><div className="panel settings-panel settings-clean" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="settings-title">
+
     <div className="panel-top"><span className="eyebrow gold">CÀI ĐẶT TRÒ CHƠI</span></div>
     <h2 id="settings-title">Điều chỉnh trải nghiệm</h2>
     <div className="settings-tabs" role="tablist" aria-label={vi?'Nhóm cài đặt':'Settings groups'}>
@@ -199,7 +204,8 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
 const latestNews = { title: 'Diện mạo Tanuki mới', description: 'Chủ quầy có bộ lông nâu, mõm sáng và chiếc lá xanh trên đầu. Các động tác chào khách cũng được cập nhật đồng bộ.' };
 
 export function Notifications({ close }: { close: () => void }) {
-  return localize(<div className="modal-backdrop"><div className="panel news-panel"><div className="panel-top"><span className="eyebrow gold">THÔNG BÁO TRÒ CHƠI</span><button className="icon-close" aria-label="Đóng thông báo" onClick={close}><X size={18}/></button></div><h2>Tiếng vọng mới trong rừng</h2>
+  const panelArt=usePanelArt(PANEL_ART.material);
+  return localize(<div className="modal-backdrop"><div className="panel news-panel" data-panel-art={panelArt}><div className="panel-top"><span className="eyebrow gold">THÔNG BÁO TRÒ CHƠI</span><button className="icon-close" aria-label="Đóng thông báo" onClick={close}><X size={18}/></button></div><h2>Tiếng vọng mới trong rừng</h2>
     <article className="news-feature"><span>MỚI · 09.11.2026</span><div><h3>{latestNews.title}</h3><p>{latestNews.description}</p></div></article><article><time>08.11.2026</time><div><h3>Cửa hàng Tanuki mới</h3><p>Ghé quầy Tanuki để mua vật phẩm và trò chuyện.</p></div></article><article><time>08.11.2026</time><div><h3>Diện mạo mới cho xu</h3><p>Xu gấu mèo pixel đã xuất hiện trong cửa hàng, túi đồ và phần thưởng của game.</p></div></article><article><time>08.11.2026</time><div><h3>Nhẫn tăng giới hạn</h3><p>Mua nhẫn trong cửa hàng với giá 30 xu để tăng giới hạn lên 6 Echo trong một màn. Hiệu ứng không cộng dồn.</p></div></article><article><time>08.11.2026</time><div><h3>Thứ tự thu hồi Echo</h3><p>Nhấn X để thu hồi Echo đã ở trên sân lâu nhất trước, theo thứ tự triệu hồi.</p></div></article>
     <article><time>08.11.2026</time><div><h3>Chiêu gai băng của boss</h3><p>Vòng phép băng xuất hiện cảnh báo, sau đó gai băng trồi lên gây sát thương rồi tan biến.</p></div></article>
     <article><time>08.11.2026</time><div><h3>Echo tự chiến đấu</h3><p>Echo thu hút kẻ địch, tự chiến đấu trong phạm vi gần và mất ổn định theo sát thương và chỉ bị thu hồi khi ổn định về 0.</p></div></article>
@@ -217,19 +223,20 @@ export function Notifications({ close }: { close: () => void }) {
 }
 
 export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
-  const [panel, setPanel] = useState<'none'|'news'|'settings'>('none');
+  const [panel, setPanel] = useState<'none'|'news'|'settings'|'heroUpgrades'>('none');
   const [bag, setBag] = useState(false);
   const complete = engine?.campaign.bossDefeated === true;
   const next = Math.min(hud.completed.filter(id=>id<=5).length, 5);
   // Esc returns to the main menu, unless a lobby panel is open (Esc is for closing it then).
   useEffect(() => {
-    if (panel !== 'none' || bag) return;
+    if (hud.screen !== 'lobby' || panel !== 'none' || bag) return;
     const onKey = (e: KeyboardEvent) => { if (e.code === 'Escape' && !document.querySelector('[data-lobby-dialog]')) { e.preventDefault(); engine?.goToMainMenu(); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [panel, bag, engine]);
+  }, [panel, bag, engine, hud.screen]);
   return localize(<div className="lobby-screen overlay journey-lobby"><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
-    <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} traveler={<SelectedCharacterAvatar hud={hud}/>} onNews={()=>setPanel('news')}/>
+    <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} traveler={<SelectedCharacterAvatar hud={hud}/>} onNews={()=>setPanel('news')} onUpgradeHero={()=>setPanel('heroUpgrades')}/>
+    {panel==='heroUpgrades' && isUpgradeHero(hud.characterClass) && <HeroUpgrades engine={engine} hud={hud} hero={hud.characterClass} close={()=>setPanel('none')}/>}
     {bag&&<div className="modal-backdrop inventory-backdrop" onClick={()=>document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e=>e.stopPropagation()}><Inventory engine={engine} hud={hud} close={()=>setBag(false)}/></div></div>}
     <RuneChoiceDialog engine={engine} hud={hud}/>{panel==='news'&&<Notifications close={()=>setPanel('none')}/>} {panel==='settings'&&<SettingsPanel engine={engine} hud={hud} close={()=>setPanel('none')}/>}</div>);
 }
@@ -249,6 +256,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const [draftOutfits,setDraftOutfits]=useState<Record<OutfitHero,OutfitId>>(hud.outfits??{mage:'default',swordsman:'default'});
   const [draftWeapons,setDraftWeapons]=useState<Record<WeaponHero,WeaponId>>(hud.weapons??{...DEFAULT_WEAPON});
   const [tab,setTab]=useState<'outfit'|'weapon'>('outfit');
+  const [upgradeOpen,setUpgradeOpen]=useState(false);
   // Start keyboard focus on the current hero, so focus and selection agree on open.
   useEffect(() => { grid.current?.querySelector<HTMLButtonElement>('.is-selected')?.focus({preventScroll: true}); }, []);
   const roster: {id: SelectableCharacter; name: string; roleVi: string; roleEn: string}[] = [
@@ -264,10 +272,11 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const weapon=hero?weaponById(draftWeapons[hero]):undefined;
   const ownedWeapons=hud.ownedWeapons??[];
   const outfitColor=RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,outfit)];
+  const {maxHealth} = heroStats(choice.id, hud.heroRanks ?? cleanHeroRanks());
   const detail = choice.id === 'mage'
-    ? (vi ? `${HERO_MAX_HP.mage} HP. Đánh xa và phủ nhiều mục tiêu, sát thương mỗi đòn thấp. Chuột phải thi triển Gai Băng diện rộng.` : `${HERO_MAX_HP.mage} HP. Ranged attacks cover several targets with lower damage per hit. Right-click to cast area Ice Spike.`)
+    ? (vi ? `${maxHealth} HP. Đánh xa và phủ nhiều mục tiêu, sát thương mỗi đòn thấp. Chuột phải thi triển Gai Băng diện rộng.` : `${maxHealth} HP. Ranged attacks cover several targets with lower damage per hit. Right-click to cast area Ice Spike.`)
     : choice.id === 'swordsman'
-    ? (vi ? `${HERO_MAX_HP.swordsman} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${HERO_MAX_HP.swordsman} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
+    ? (vi ? `${maxHealth} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${maxHealth} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
   const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);engine.setCharacterWeapon(choice.id,draftWeapons[choice.id]);}engine.selectClass(choice.id); engine.goToLobby(); };
   return <div className="characters-screen overlay hero-select-screen">
@@ -276,7 +285,15 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
       <button className="hero-select-back" onClick={() => engine?.goToLobby()} aria-label={vi ? 'Về sảnh' : 'Back to lobby'}>{vi ? 'VỀ SẢNH' : 'BACK'}</button>
       <div className="hero-outfit-workspace">
        <div className="hero-roster" ref={grid} role="group" aria-label={vi?'Chọn nhân vật':'Choose character'}>{roster.map(c=><button key={c.id} className={`hero-slot${choice.id===c.id?' is-selected':''}`} aria-pressed={choice.id===c.id} aria-label={c.name} onClick={()=>setSelected(c.id)}><span className="roster-portrait">{portrait(c.id,c.id==='mechanical'?undefined:draftOutfits[c.id])}</span><strong>{c.name}</strong></button>)}</div>
-       <div className="outfit-large-preview"><span>{choice.name}</span><div>{portrait(choice.id,outfit)}</div>{choice.id==='mage'&&weapon&&<WeaponPreview id={weapon.id} reducedMotion={hud.reducedMotion}/>}<strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong></div>
+       <div className="outfit-large-preview">
+         <span>{choice.name}</span>
+         {hero && <button type="button" className="hero-upgrade-trigger" onClick={()=>setUpgradeOpen(true)} disabled={!engine}>
+           <ChevronsUp size={16} aria-hidden="true"/>{vi?'Nâng cấp':'Upgrades'}
+         </button>}
+         <div>{portrait(choice.id,outfit)}</div>
+         {tab==='weapon'&&choice.id==='mage'&&weapon&&<WeaponPreview id={weapon.id} reducedMotion={hud.reducedMotion}/>}
+         <strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong>
+       </div>
        <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header>{choice.id==='mechanical'?<strong>{vi?'TRANG PHỤC':'OUTFITS'}</strong>:<div role="tablist" className="collection-tabs">{(['outfit','weapon'] as const).map(t=><button key={t} role="tab" aria-selected={tab===t} className={tab===t?'outfit-selected':''} onClick={()=>setTab(t)}>{t==='outfit'?(vi?'TRANG PHỤC':'OUTFITS'):(vi?'VŨ KHÍ':'WEAPONS')}</button>)}</div>}<small>{tab==='weapon'&&choice.id!=='mechanical'?(vi?'Cùng sát thương · Khác hiệu ứng':'Same damage · Different effects'):(vi?'Đổi ngoại hình · Giữ nguyên chỉ số':'Appearance only · Same stats')}</small></header>{tab==='weapon'&&hero?<div className="outfit-options" role="group" aria-label={vi?'Chọn vũ khí':'Choose weapon'}>{weaponsOf(hero).map(w=><button key={w.id} className={draftWeapons[hero]===w.id?'outfit-selected':''} aria-pressed={draftWeapons[hero]===w.id} aria-label={(vi?w.vi:w.en)+(canUseWeapon(hero,w.id,ownedWeapons)?'':(vi?' · Chưa sở hữu':' · Not owned'))} disabled={!canUseWeapon(hero,w.id,ownedWeapons)} style={{'--outfit-color':RARITY_COLORS[w.rarity]} as React.CSSProperties} onClick={()=>setDraftWeapons(old=>({...old,[hero]:w.id}))}><span><small>{rarityName(w.rarity,vi)}</small></span><strong>{vi?w.vi:w.en}</strong>{draftWeapons[hero]===w.id&&<Check size={16}/>}</button>)}</div>:<div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div>}</section>
       </div>
       <section className="hero-select-info" aria-live="polite">
@@ -285,6 +302,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
         <div className="hero-info-action"><span>{choice.id === hud.characterClass ? (vi ? 'ĐANG CHỌN' : 'CURRENT HERO') : (vi ? 'NHÂN VẬT SẴN SÀNG' : 'HERO READY')}</span><button type="button" onClick={confirm} disabled={!engine}>{vi ? 'TRANG BỊ & CHỌN' : 'EQUIP & CONFIRM'}</button></div>
       </section>
     </div>
+    {upgradeOpen && hero && <HeroUpgrades engine={engine} hud={hud} hero={hero} close={()=>setUpgradeOpen(false)}/>}
   </div>;
 }
 
@@ -300,7 +318,7 @@ export function Title({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     </div><div className="title-footer">5 MÀN GIẢI ĐỐ <span>◇</span> 1 TRẬN BOSS</div>
     {tab !== 'none' && <div className="modal-backdrop"><div className="panel trail-panel"><div className="panel-top"><span className="eyebrow gold">{tab === 'trails' ? 'HÀNH TRÌNH CỦA BẠN' : 'DẤU VẾT CỦA QUÁ KHỨ'}</span><button className="text-button" onClick={() => setTab('none')}>ĐÓNG ×</button></div>
       {tab === 'trails' ? <><h2>Những lối mòn</h2><div className="trail-list">{LEVELS.map((level, index) => {
-        const unlocked = hud.devUnlocked || (index>=6?(index===6||hud.completed.includes(index)):index<=hud.completed.filter(id=>id<=5).length);
+        const unlocked = engine?.canSelectLevel(index)??false;
         return <button key={level.id} disabled={!unlocked} onClick={() => engine?.selectLevel(index)} className="trail-item"><span className="trail-number">0{level.id}</span><span><strong>{translate(level.subtitle, hud.language)}</strong><small>{translate(level.description, hud.language)}</small></span>{!unlocked ? <Lock size={17}/> : hud.completed.includes(level.id) ? <Check size={18}/> : <ArrowRight size={18}/>}</button>;
       })}</div></> : <><h2>Hợp tác với chính mình</h2><div className="help-grid"><p><kbd>W A S D</kbd> / phím mũi tên: di chuyển.</p><p><kbd>E</kbd> bắt đầu ghi; nhấn lần nữa để lưu. Echo đứng ở điểm cuối.</p><p><kbd>1–6</kbd> chọn Echo; <kbd>C</kbd> tạm dừng; <kbd>Shift + Q</kbd> hoán đổi khi đường thẳng không bị chặn.</p><p><kbd>Q</kbd> gọi Echo. Để Echo giữ nút trong khi bạn vượt cổng. <kbd>X</kbd> xóa Echo.</p><p>5 màn đầu: thời gian mỗi chặng thay đổi theo màn. Đặt Echo giữ các rune được ghi bên cổng cuối; màn 5 có 5 rune nhưng chỉ cần giữ đúng 4 rune cuối. Mỗi chặng có tối đa một mảnh +{SHARD_BONUS} giây và dùng một bình +2 giây; không thể farm vô hạn. Chỉ nhân vật chạm rune kế tiếp mới được nạp giờ.</p><p>Bẫy dập và đá rơi có viền vàng báo trước, gây 20 sát thương và giữ chân 0,25 giây khi trúng. Dây leo làm chậm 45% trên cả dải; có thể đi vòng.</p><p>Sau mỗi màn 1–5, chọn một trong ba ấn Echo ngẫu nhiên. Hoàn thành năm màn để mở trạm chuẩn bị; không tiêu hao ấn để mở boss.</p><p>Chuột trái tấn công; chuột phải hoặc <kbd>Space</kbd> dùng kỹ năng class; <kbd>R</kbd> dùng vật phẩm +2 giây; <kbd>F</kbd> bật/tắt toàn màn hình. <kbd>Shift</kbd> lướt né; <kbd>Esc</kbd> tạm dừng.</p><p>Boss báo trước đòn đánh bằng vòng băng xanh. Né ra ngoài; Echo giữ ấn sẽ tăng sức mạnh.</p></div></>}
     </div></div>}
@@ -313,7 +331,6 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
   const boss = hud.bossHp > 0;
   if (!touch) return <LevelOneHUD engine={engine} hud={hud}/>;
   return localize(<div className="adventure-hud overlay">
-    {hud.bossIntroduction&&<BossIntro engine={engine} hud={hud}/>}
 
     <div className="hud-top"><div className="level-card"><small>{hud.levelName}{hud.training?' · DEV':' / 13'}</small><strong>{translate(hud.levelSubtitle, hud.language)}</strong><span>{Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2,'0')}:{Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2,'0')} <i/> <span className="player-health" role="meter" aria-label={hud.language==='vi'?'Máu nhân vật':'Player health'} aria-valuenow={hud.health} aria-valuemin={0} aria-valuemax={hud.maxHealth??100}><b style={{width:`${hud.health/(hud.maxHealth??100)*100}%`}}/><strong>{hud.health} / {hud.maxHealth??100} HP</strong></span></span>
       {(hud.enemiesRemaining??0)>0&&<small>{boss?(hud.language==='vi'?`QUỶ LỬA · ${hud.enemiesRemaining}`:`MINIONS · ${hud.enemiesRemaining}`):(hud.language==='vi'?`QUÁI CANH ĐƯỜNG · ${hud.enemiesRemaining}`:`TRAIL ENEMIES · ${hud.enemiesRemaining}`)}</small>}
@@ -338,54 +355,33 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
 
 function LevelOneHUD({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   const [bag, setBag] = useState(false);
-  const [missionsOpen, setMissionsOpen] = useState(true);
   const vi = hud.language === 'vi';
   const boss = hud.bossHp > 0;
   const time = `${Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2, '0')}:${Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2, '0')}`;
   const hero = hud.characterClass === 'swordsman' ? 'KAEL' : hud.characterClass === 'mechanical' ? 'RIVET-07' : 'AERIS';
-  const runesRequired = Math.max(1, hud.runesRequired ?? 1);
-  const tasks = boss
-    ? (hud.bossKind === 'demon'
-      ? [
-          { done: !hud.demonHeatShield, text: vi ? 'Phá giáp kháng hỏa' : 'Break heat shield' },
-          { done: !!hud.demonStunned || !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
-          { done: false, text: vi ? 'Hạ Quỷ Tâm Hỏa' : 'Defeat Flame Demon' },
-        ]
-      : [
-          { done: hud.pillarsRemaining === 0, text: vi ? `Phá trụ băng (${4 - hud.pillarsRemaining}/4)` : `Break pillars (${4 - hud.pillarsRemaining}/4)` },
-          { done: !!hud.bossVulnerable, text: vi ? 'Đánh lúc sơ hở' : 'Strike in opening' },
-          { done: false, text: vi ? 'Hạ Thủ Vệ Băng' : 'Defeat Guardian' },
-        ])
-    : [
-        { done: hud.checkpointIndex >= hud.checkpointCount, text: vi ? `Kích hoạt ấn (${hud.checkpointIndex}/${hud.checkpointCount})` : `Activate runes (${hud.checkpointIndex}/${hud.checkpointCount})` },
-        { done: (hud.runesHeld ?? 0) >= runesRequired || !!hud.finalGateCrossed, text: hud.finalGateCrossed ? (vi ? 'Đã qua cổng cuối' : 'Final gate crossed') : (vi ? `Giữ ấn cổng cuối (${hud.runesHeld ?? 0}/${runesRequired})` : `Hold final seals (${hud.runesHeld ?? 0}/${runesRequired})`) },
-        ...(hud.finalGateNeedsRelease && !hud.finalGateCrossed ? [{ done: false, text: vi ? 'Thu Echo ở ấn cần nhả' : 'Recall Echo on release rune' }] : []),
-        ...(hud.trailAction === 'rhythm' ? [{ done: false, text: vi ? 'Chờ nhịp mở của cổng' : 'Wait for the gate window' }] : []),
-        ...((hud.exitBlockingEnemiesRemaining ?? 0) > 0 ? [{ done: false, text: vi ? `Hạ lính giữ cổng (${hud.exitBlockingEnemiesRemaining})` : `Defeat exit guards (${hud.exitBlockingEnemiesRemaining})` }] : []),
-        { done: !!hud.exitOpen, text: hud.exitOpen ? (vi ? 'Cổng thoát đã mở' : 'Exit portal open') : hud.finalGateCrossed ? (vi ? 'Hoàn tất nhiệm vụ để mở cổng thoát' : 'Finish objectives to open exit') : (vi ? 'Qua cổng cuối để mở lối thoát' : 'Cross the final gate to open exit') },
-      ];
   return localize(<div className="level-one-hud overlay">
     <aside className="level-one-left">
-      <div className="level-one-stat"><small>{vi ? 'MÀN CHƠI' : 'LEVEL'}</small><strong>{hud.training ? 'DEV' : <>{String(engine?.currentLevel.id ?? 1).padStart(2, '0')} <em>/ {String(LEVELS.length).padStart(2, '0')}</em></>}</strong></div>
-      <div className="level-one-stat"><small>{vi ? 'THỜI GIAN' : 'ELAPSED'}</small><strong>{time}</strong></div>
-      {boss ? (
-        <div className="level-one-stat"><small>{vi ? 'MÁU BOSS' : 'BOSS HP'}</small><strong>{hud.bossHp} <em>/ {hud.bossMaxHp ?? 240}</em></strong></div>
-      ) : (
-        <div className="level-one-stat"><small>{vi ? 'ĐẾM NGƯỢC' : 'COUNTDOWN'}</small><strong className={hud.legTimeRemaining !== null && hud.legTimeRemaining <= 2 ? 'urgent' : ''}>{hud.legTimeRemaining === null ? '—' : `${hud.legTimeRemaining.toFixed(1)}s`}</strong></div>
-      )}
-      <section className="level-one-missions">
-        <header><strong>{vi ? 'NHIỆM VỤ' : 'QUESTS'}</strong><button aria-label={missionsOpen ? 'Thu gọn nhiệm vụ' : 'Mở nhiệm vụ'} onClick={() => setMissionsOpen(!missionsOpen)}>{missionsOpen ? '−' : '+'}</button></header>
-        {missionsOpen && <div className="level-one-mission-list">{tasks.map(task => <div key={task.text} className={task.done ? 'complete' : ''}><i/>{task.text}</div>)}</div>}
-      </section>
-      <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
+      <div className="level-one-sidebar-content">
+        <div className="level-one-stat"><small>{vi ? 'MÀN CHƠI' : 'LEVEL'}</small><strong>{hud.training ? 'DEV' : <>{String(engine?.currentLevel.id ?? 1).padStart(2, '0')} <em>/ {String(LEVELS.length).padStart(2, '0')}</em></>}</strong></div>
+        <div className="level-one-stat"><small>{vi ? 'THỜI GIAN' : 'ELAPSED'}</small><strong>{time}</strong></div>
+        {boss && (
+          <div className="level-one-stat"><small>{vi ? 'MÁU BOSS' : 'BOSS HP'}</small><strong>{hud.bossHp} <em>/ {hud.bossMaxHp ?? 240}</em></strong></div>
+        )}
+        <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
+      </div>
+      <div className="level-one-utilities" role="group" aria-label={vi ? 'Tiện ích' : 'Game utilities'}>
+        <button aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title={vi ? 'Cài đặt · Esc' : 'Settings · Esc'} onClick={() => engine?.pauseGame()}><Settings size={18}/></button>
+        <button aria-label={vi ? 'Túi đồ' : 'Inventory'} title={vi ? 'Túi đồ' : 'Inventory'} onClick={() => setBag(true)}><Backpack size={18}/></button>
+      </div>
     </aside>
     <header className="level-one-top">
-      <button aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title="Esc" onClick={() => engine?.pauseGame()}><Settings size={18}/></button>
-      <button aria-label={vi ? 'Túi đồ' : 'Inventory'} onClick={() => setBag(true)}><Backpack size={18}/></button>
       <div className="level-one-heading"><strong>{hud.levelSubtitle}</strong></div>
+      {hud.legTimeRemaining !== null && <div className="level-one-countdown" role="timer" aria-label={vi ? 'Thời gian còn lại' : 'Time remaining'}>
+        <span>{vi ? 'CÒN LẠI' : 'TIME LEFT'}</span>
+        <strong className={hud.legTimeRemaining <= 2 ? 'urgent' : undefined}>{hud.legTimeRemaining.toFixed(1)}s</strong>
+      </div>}
     </header>
     <div className="level-one-arena-overlay">
-      {hud.bossIntroduction && <BossIntro engine={engine} hud={hud}/>}
       {boss && <div className="boss-bar"><div><span>{hud.bossKind === 'demon' ? 'QUỶ TÂM HỎA' : 'THỦ VỆ BĂNG'}</span><small>{hud.bossHp} / {hud.bossMaxHp ?? 240} · {translate('GIAI ĐOẠN', hud.language)} {hud.bossPhase} / 3</small></div><div className="health-track boss-segments" role="progressbar" aria-label="Máu boss" aria-valuenow={hud.bossHp} aria-valuemin={0} aria-valuemax={hud.bossMaxHp ?? 240}><i style={{ width: `${hud.bossHp / (hud.bossMaxHp ?? 240) * 100}%` }}/>{[1, 2, 3].map(k => <b key={k} className={hud.bossHp > k * (hud.bossMaxHp ?? 240) / 4 ? '' : 'spent'} style={{ left: `${k * 25}%` }}/>)}</div><p className="boss-armor">{hud.bossKind === 'demon' ? (hud.demonStunned ? (vi ? 'SƠ HỞ CHOÁNG · SÁT THƯƠNG ×2.5 · ĐÁNH NGAY!' : 'STUNNED · 2.5× DAMAGE · STRIKE NOW!') : hud.demonRitual ? (vi ? 'TẾ LỄ NGUYÊN TỐ · ĐỨNG LÊN TRỤ ĐỂ PHONG ẤN!' : 'RITUAL · STAND ON CORE TO SEAL!') : hud.demonHeatShield ? (vi ? 'GIÁP KHÁNG HỎA · DỤ BOSS HÚC VÀO TRỤ TẢN NHIỆT!' : 'HEAT SHIELD · BAIT BOSS INTO COOLING VENT!') : hud.bossVulnerable ? (vi ? 'SƠ HỞ · PHẢN CÔNG +35%' : 'OPENING · DAMAGE +35%') : (vi ? 'NÉ VÙNG CAM · DỤ BOSS ĐÁNH ECHO' : 'EVADE ORANGE ZONES · BAIT ATTACKS ON ECHO')) : hud.pillarsRemaining > 0 ? (vi ? `PHÁ ${hud.pillarsRemaining} TRỤ · GIÁP ${hud.bossArmor}` : `BREAK ${hud.pillarsRemaining} PILLARS · ARMOR ${hud.bossArmor}`) : hud.bossVulnerable ? (vi ? 'SƠ HỞ · SÁT THƯƠNG +35%' : 'OPENING · DAMAGE +35%') : (hud.bossShieldAt ?? 0) > 0 ? (vi ? `KHIÊN KẾ TIẾP · ${hud.bossShieldAt} HP` : `NEXT SHIELD · ${hud.bossShieldAt} HP`) : (vi ? 'ĐOẠN MÁU CUỐI' : 'FINAL HEALTH BAR')}</p></div>}
       <div className="hud-alerts">
         {hud.bannerMessage && <div className={'hud-banner ' + (boss ? 'boss-banner' : 'trail-banner')}>{hud.bannerMessage}</div>}
@@ -425,6 +421,7 @@ export function Completion({ engine, hud }: { engine: GameEngine | null; hud: HU
 function DefeatScreen({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  const vi=hud.language==='vi',timeout=hud.defeatReason==='timeout',boss=engine?.boss;
  const art=timeout?'timeout':hud.characterClass==='swordsman'?'swordsman':'mage';
+ const panelArt=usePanelArt(PANEL_ART.defeat[art]);
  const hint = timeout
   ? (vi ? `Chạm ấn kế tiếp để nạp lại giờ. Mảnh thời gian cộng ${SHARD_BONUS} giây.` : `Reach the next rune to refill the timer. Time shards add ${SHARD_BONUS} seconds.`)
   : boss?.kind==='demon'
@@ -432,12 +429,12 @@ function DefeatScreen({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   : boss
    ? (vi ? 'Phá 4 trụ để hạ khiên. Rời vùng báo đòn, rồi đánh khi hiện “Sơ hở”.' : 'Break 4 pillars to drop the shield. Dodge marked attacks, then strike during “Opening”.')
    : (vi ? 'Rời vòng cảnh báo trước khi quái hoặc bẫy ra đòn.' : 'Leave the marked area before enemies or traps strike.');
- return <div className="modal-backdrop defeat-backdrop"><section className="forest-defeat" data-reduced-motion={hud.reducedMotion} data-reason={timeout?'timeout':'damage'} role="dialog" aria-modal="true" aria-labelledby="defeat-title">
+ return <div className="modal-backdrop defeat-backdrop"><section className="forest-defeat" data-panel-art={panelArt} data-reduced-motion={hud.reducedMotion} data-reason={timeout?'timeout':'damage'} role="dialog" aria-modal="true" aria-labelledby="defeat-title">
   <h2 id="defeat-title">{timeout?(vi?'HẾT THỜI GIAN':'TIME RAN OUT'):(vi?'TỬ VONG':'DEFEATED')}</h2>
   <div className="defeat-content">
   <p className="defeat-level">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>
   <figure className="defeat-hero-scene" data-hero={art}>
-   <img src={`${import.meta.env.BASE_URL}assets/ui/defeat-${art}.webp`} alt="" />
+   <img src={DEFEAT_ART[art]} alt="" />
   </figure>
   <div className="defeat-stats"><span>{vi?'THỜI GIAN':'TIME'} <b>{hud.elapsedLevelTime.toFixed(1)}s</b></span><span>{vi?'MÀN CHƠI':'TRAIL'} <b>{String((engine?.currentLevelIdx??0)+1).padStart(2,'0')}</b></span></div>
   <p className="defeat-hint">{hint}</p>

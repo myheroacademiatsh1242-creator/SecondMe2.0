@@ -23,3 +23,5 @@ import './components/FramedDialogs.css';
 import './components/SettingsPanel.css';
 
 import './components/PurchaseDialog.css';
+
+import './components/PanelArt.css';

@@ -1,5 +1,12 @@
 /* Settings use a single stone frame; rows share a quiet, aligned surface. */
 html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel{height:auto;max-height:calc(100dvh / var(--desktop-scale,1) - 32px)!important;width:min(720px,calc(100vw / var(--desktop-scale,1) - 32px));padding:24px;gap:0;text-align:left}
+/* The center slice supplies the stone surface and leaves the outer corners transparent. */
+html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel{
+ background:transparent!important;box-shadow:none!important;
+}
+html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel[data-panel-art='fallback']{
+ background:#34372b!important;border-color:#948364!important;border-image:none!important;
+}
 html body .settings-clean.settings-panel>.panel-top{border:0;padding:0}
 html body .settings-clean.settings-panel>h2{margin:10px 0 20px!important;text-align:left;font-size:30px!important;line-height:1.2}
 html body .settings-clean.settings-panel .settings-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;border-bottom:1px solid #a7986555;margin-bottom:12px;flex:none}

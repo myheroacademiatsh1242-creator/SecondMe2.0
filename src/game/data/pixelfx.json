@@ -635,5 +635,31 @@
    0,
    0
   ]
+ },
+ "ice-crystal": {
+  "id": "ice/ice-crystal",
+  "w": 58,
+  "h": 73,
+  "frames": 90,
+  "fps": 30.0,
+  "loop": true,
+  "columns": 11,
+  "pivot": [
+   29,
+   66
+  ]
+ },
+ "snowflake-burst": {
+  "id": "ice/snowflake-burst",
+  "w": 130,
+  "h": 116,
+  "frames": 97,
+  "fps": 30.0,
+  "loop": false,
+  "columns": 10,
+  "pivot": [
+   65,
+   104
+  ]
  }
 }

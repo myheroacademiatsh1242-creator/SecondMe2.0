@@ -1,0 +1,60 @@
+.hero-select-screen .hero-upgrade-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  min-height: 26px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  color: #efdaa0;
+  background: #243c2b;
+  border: 1px solid #938152;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hero-select-screen .hero-upgrade-trigger:hover { background: #344e32; }
+.hero-upgrade-trigger svg { flex: none; }
+.hero-upgrades {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: min(670px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+  padding: clamp(14px, 3vw, 32px);
+  border: 10px solid #756b48;
+  border-image: url('/assets/ui/inventory-nine-slice-pixel.png') 25% fill / 24px stretch;
+  background: #18271d;
+  color: #e7d8a6;
+  font: inherit;
+}
+.hero-upgrades::backdrop { background: #07130edb; }
+.hero-upgrades header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.hero-upgrades h2 { margin: 0 auto 0 0; font-size: clamp(20px, 4vw, 30px); }
+.hero-upgrades header span { white-space: nowrap; color: #f0d082; }
+.hero-upgrade-name { margin: 0 0 10px; color: #e9d7a3; }
+.hero-upgrade-list { display: grid; gap: 8px; }
+.hero-upgrade-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(110px, 28%); align-items: center; gap: 8px 16px; padding: 12px; background: #192b20; border: 1px solid #888052; }
+.hero-upgrade-card h4 { margin: 0 0 5px; }
+.hero-upgrade-card p { margin: 0; }
+.hero-upgrade-card strong { color: #c6e1a4; }
+.hero-upgrade-card button { width: 100%; min-height: 38px; padding: 5px; color: #37290c; background: #ddc178; border: 2px solid #f2d996; }
+.hero-upgrade-card button:disabled { color: #cfc099; background: #3a4533; border-color: #826f4b; }
+.hero-upgrade-card small { display: block; margin-top: 6px; }
+.hero-rank-track { display: grid; grid-template-columns: repeat(10,minmax(0,1fr)); gap: 3px; max-width: 230px; margin-top: 7px; }
+.hero-rank-track i { height: 5px; background: #465343; }
+.hero-rank-track i[data-filled='true'] { background: #c7dc92; }
+.hero-rank-track i[data-milestone='true'] { outline: 1px solid #978457; }
+.hero-rank-track i[data-filled='true'][data-milestone='true'] { background: #f6ce70; }
+.hero-upgrade-card p { animation: hero-rank-reveal .3s ease-out; }
+@keyframes hero-rank-reveal { from { color: #fff3bd; transform: translateY(2px); } }
+@media (prefers-reduced-motion: reduce) { .hero-upgrade-card p { animation: none; } }
+.hero-upgrade-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.hero-upgrade-footer p { flex: 1 1 240px; margin: 0; }
+.hero-upgrade-footer button { padding: 6px 10px; min-height: 34px; border: 1px solid #978457; background: #344438; color: #ead9ae; }
+.hero-upgrade-footer .hero-reset-button { border-color: #ae775c; background: #54352a; }
+.hero-upgrade-footer button:disabled { opacity: .55; }
+@media (max-width: 380px) {
+  .hero-upgrade-card { grid-template-columns: 1fr; }
+}

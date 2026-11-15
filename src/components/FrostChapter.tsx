@@ -8,6 +8,7 @@ import { FxCanvas } from './JourneyAmbience.tsx';
 import { FrostAmbience } from './FrostAmbience.tsx';
 import { translate } from '../i18n.ts';
 import './FrostChapter.css';
+import { CampHeroCaption, CampHeroUpgrade } from './CampHeroCaption.tsx';
 
 const STAGES = [...FROST_LEVELS, DEMON_LEVEL];
 
@@ -44,11 +45,13 @@ export function FrostChapter({
   hud,
   back,
   traveler,
+  onUpgradeHero,
 }: {
   engine: GameEngine | null;
   hud: HUDState;
   back: () => void;
   traveler?: React.ReactNode;
+  onUpgradeHero: () => void;
 }) {
   const vi = hud.language === 'vi';
   const done = STAGES.filter((l) => hud.completed.includes(l.id)).length;
@@ -56,8 +59,7 @@ export function FrostChapter({
   const nextIdx = STAGES.findIndex((l) => l.id === next.id);
   const hereIdx = Math.max(0, Math.min(nextIdx, stops.length - 1));
 
-  const unlocked = (id: number) =>
-    hud.devUnlocked || id === 7 || hud.completed.includes(id - 1) || hud.completed.includes(id);
+  const unlocked = (id: number) => engine?.canSelectLevel(id - 1) ?? false;
 
   const readSavedStop = () => {
     try {
@@ -213,16 +215,10 @@ export function FrostChapter({
           >
             <span>{traveler ?? <Users size={50} />}</span>
           </button>
-          <div className="rest-scene-caption">
-            <strong>
-              {hud.characterClass === 'swordsman' ? 'Kael' : hud.characterClass === 'mechanical' ? 'Rivet' : 'Aeris'}
-            </strong>
-            <button onClick={() => engine?.openCharacters()}>
-              {vi ? 'Đổi nhân vật' : 'Change hero'} <ArrowRight size={14} />
-            </button>
-          </div>
+          <CampHeroCaption engine={engine} hud={hud}/>
         </div>
 
+        <CampHeroUpgrade hud={hud} onOpen={onUpgradeHero} frost/>
         <div className="rest-kit frost-kit">
           <div>
             <span>{vi ? 'BỘ RUNE' : 'RUNE LOADOUT'}</span>

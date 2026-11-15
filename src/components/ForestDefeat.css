@@ -27,7 +27,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: url('../../public/assets/ui/defeat-forest-frame.png') center / 100% 100% no-repeat;
+  background: url('/assets/ui/defeat-forest-frame.png') center / 100% 100% no-repeat;
   image-rendering: pixelated;
   pointer-events: none;
 }

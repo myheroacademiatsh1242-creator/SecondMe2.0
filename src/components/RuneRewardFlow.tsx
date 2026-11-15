@@ -1,3 +1,4 @@
+import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {useState} from 'react';
 import {ArrowRight,Home,Backpack} from 'lucide-react';
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
@@ -7,15 +8,16 @@ import {VictoryStars} from './CampaignUI.tsx';
 import {TrailInventory} from './TrailInventory.tsx';
 import {translate} from '../i18n.ts';
 import './RuneRewardFlow.css';
+import {RuneRewardRoll} from './RuneRewardRoll.tsx';
 export function RuneRewardFlow({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  const vi=hud.language==='vi',pending=!!hud.pendingRuneChoices?.length;
  const [bag,setBag]=useState(false);
+ const panelArt=usePanelArt(PANEL_ART.reward);
  const claimed=ECHO_RUNES.find(r=>r.id===hud.lastRuneReward);
- return <div className="modal-backdrop reward-flow-backdrop"><section className={`reward-flow ${pending?'is-choosing':'is-claimed'}`} role="dialog" aria-modal="true" aria-labelledby="reward-flow-title" data-reduced-motion={hud.reducedMotion}>
+ return <div className="modal-backdrop reward-flow-backdrop"><section className={`reward-flow ${pending?'is-choosing':'is-claimed'}`} data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="reward-flow-title" data-reduced-motion={hud.reducedMotion}>
   <header><h2 id="reward-flow-title">{vi?'HOÀN THÀNH MÀN':'TRAIL COMPLETE'}</h2></header>
   <div className="reward-flow-body">{pending?<>
-   <p className="reward-intro" role="status">{vi?'Chọn 1 trong 3 ấn để thêm vào túi.':'Choose one of three runes for your inventory.'}</p>
-   <div className="reward-three">{hud.pendingRuneChoices!.map(id=>{const rune=ECHO_RUNES.find(r=>r.id===id)!;return <button key={id} onClick={()=>engine?.chooseRune(id)} aria-label={`${vi?'Chọn':'Choose'} ${vi?rune.vi:rune.en}`} style={{'--rune-glow':rune.color} as React.CSSProperties}><div className="reward-pedestal"><RuneStone id={id}/></div><strong>{vi?rune.vi:rune.en}</strong><p>{RUNE_SHORT[id][vi?0:1]}</p><span>{vi?'CHỌN':'CHOOSE'} <ArrowRight size={16}/></span></button>;})}</div>
+   <RuneRewardRoll choices={hud.pendingRuneChoices!} vi={vi} reducedMotion={hud.reducedMotion} choose={id=>engine?.chooseRune(id)} renderRune={id=><RuneStone id={id}/>}/>
    <small className="reward-rule">{vi?'Nhận 1 ấn · Dùng cho Echo ở màn 2–12 · Kích hoạt trong túi đồ':'Keep 1 rune · Use for Echoes in levels 2–12 · Activate from inventory'}</small>
   </>:<>
    <p className="reward-intro">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>

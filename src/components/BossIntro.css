@@ -1,3 +1,6 @@
+.boss-intro-viewport{position:fixed;inset:0;z-index:120;overflow:hidden;background:#06141d}
+.boss-intro-viewport[data-boss=demon]{background:#0a0305}
+
 /* Frost Guardian cutscene (BossIntro.tsx). Every element's own style is its final pose; the entrance animations
    play from their first keyframe into it (fill: both), so skipping simply turns them off.
    Timeline: the Guardian drops from high above to the centre, both arms raised, and slams them down as it lands
@@ -8,7 +11,6 @@
      band and the Guardian stand on, so they always line up whatever the screen size. */
   --cell-h:78dvh;--band-x:66%;
   position:absolute;inset:0;z-index:80;overflow:hidden;pointer-events:auto;color:#e9f7fa;background:var(--deep);
-  box-shadow:0 0 0 48px var(--deep);   /* the shake moves this layer: its edges show more night, not the arena behind */
   animation:boss-shake .45s steps(1) .55s}   /* no fill: still until the slam */
 /* The slam's flash: a pale frost blink over everything, gone in a quarter second. */
 .boss-cut::before{content:'';position:absolute;inset:0;z-index:5;pointer-events:none;background:#dff8ff;opacity:0;animation:boss-flash .25s ease-out .55s}
@@ -207,7 +209,7 @@ body.reduced-motion .boss-cut-snow{display:none}
   to { visibility: visible; opacity: 1; transform: translateX(0); }
 }
 .demon-intro {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
   display: flex;
@@ -653,9 +655,9 @@ body.reduced-motion .boss-cut-snow{display:none}
    sparks, red vignette) as the name slams in · the briefing follows (3.0s). --ch is the sprite cell's height on screen
    (288 x 160 cells, 9:5); the feet sit on its bottom edge at x = --fx. */
 .demon-cut{--ch:84dvh;--cw:calc(var(--ch) * 1.8);--fx:76%;--floor:13dvh;--ix:calc(var(--fx) - var(--ch) * .3);
-  position:fixed;inset:0;z-index:100;overflow:hidden;pointer-events:auto!important;color:#f7e6ca;box-sizing:border-box;
+  position:absolute;inset:0;z-index:100;overflow:hidden;pointer-events:auto!important;color:#f7e6ca;box-sizing:border-box;
   background:radial-gradient(ellipse at var(--fx) 72%,#5a1608 0%,#2a0a0b 40%,#0a0305 86%);
-  box-shadow:0 0 0 48px #0a0305;animation:boss-shake .5s steps(1) 2.28s}
+  animation:boss-shake .5s steps(1) 2.28s}
 .demon-cut::before{content:'';position:absolute;inset:0;z-index:5;pointer-events:none;background:#ffb55a;opacity:0;animation:demon-flash .3s ease-out 2.28s}
 
 .demon-cut-cave{position:absolute;inset:-4%;background:url('/assets/demon-boss/cave-arena.png') center/cover no-repeat;opacity:.3;transform:scale(1.1);
@@ -664,9 +666,6 @@ body.reduced-motion .boss-cut-snow{display:none}
 .demon-cut-embers i:nth-child(3n){background:#ff6a1a}.demon-cut-embers i:nth-child(5n){background:#ffe2a0}
 .demon-cut-glow{position:absolute;left:var(--fx);bottom:calc(var(--floor) - 9dvh);width:76dvh;height:26dvh;transform:translateX(-50%);
   background:radial-gradient(ellipse,#ff7a22b0 0%,#ff3a0c55 44%,transparent 70%);animation:demon-glow-in .8s ease-out .3s both,demon-glow 2.2s ease-in-out 1.1s infinite alternate}
-.demon-cut-fissure{position:absolute;left:var(--fx);bottom:calc(var(--floor) - 4px);width:min(130dvh,74%);height:6px;transform:translateX(-50%);
-  background:linear-gradient(90deg,transparent,#c8340c 12%,#ffb347 50%,#c8340c 88%,transparent);box-shadow:0 0 14px #ff6a1a,0 0 40px #ff3a0c99;
-  animation:demon-fissure 1s cubic-bezier(.3,.9,.3,1) .2s both}
 
 .demon-cut-figure{position:absolute;left:calc(var(--fx) - var(--cw) / 2);bottom:var(--floor);width:var(--cw);height:var(--ch);
   filter:brightness(1) drop-shadow(0 0 16px #ff4a1466);animation:demon-arrive .7s ease-out both}
@@ -710,7 +709,7 @@ body.reduced-motion .boss-cut-snow{display:none}
 
 /* Tap to skip, or reduced motion: everything stands in its final pose. */
 .demon-cut.is-skipped,.demon-cut.is-skipped::before,
-.demon-cut.is-skipped :is(.demon-cut-cave,.demon-cut-figure,.demon-cut-fissure,.demon-cut-shockwave,.demon-cut-burst,.demon-cut-danger,.demon-cut-bar,.demon-cut-kicker,.demon-cut-desc,.demon-cut-tips li,.demon-cut-start-btn){animation:none}
+.demon-cut.is-skipped :is(.demon-cut-cave,.demon-cut-figure,.demon-cut-shockwave,.demon-cut-burst,.demon-cut-danger,.demon-cut-bar,.demon-cut-kicker,.demon-cut-desc,.demon-cut-tips li,.demon-cut-start-btn){animation:none}
 #root .demon-cut.is-skipped h2#demon-intro-title{animation:none}
 .demon-cut.is-skipped .demon-cut-sprite{animation:demon-idle .9s steps(6) infinite}
 .demon-cut.is-reduced :is(.demon-cut-sprite,.demon-cut-glow){animation:none}
@@ -721,7 +720,6 @@ body.reduced-motion .boss-cut-snow{display:none}
 @keyframes demon-ember{to{transform:translate(var(--drift),-112dvh)}}
 @keyframes demon-glow-in{from{opacity:0}}
 @keyframes demon-glow{from{opacity:.65;transform:translateX(-50%) scale(.94)}to{opacity:1;transform:translateX(-50%) scale(1.05)}}
-@keyframes demon-fissure{from{transform:translateX(-50%) scaleX(0);opacity:1}to{transform:translateX(-50%) scaleX(1);opacity:.85}}
 @keyframes demon-rise{
   from{transform:translateY(16%);opacity:0;filter:brightness(0) drop-shadow(0 0 0 #ff4a1400)}
   55%{opacity:1;filter:brightness(0) drop-shadow(0 0 22px #ff5a1acc)}
@@ -785,7 +783,7 @@ body.reduced-motion .boss-cut-snow{display:none}
 .demon-cut.is-leaving{animation:demon-exit 300ms ease-in both;pointer-events:none!important}
 
 /* The demon has already risen in DemonSlimeMerge: the cinematic opens on it with a hot flash instead of the rise. */
-.demon-merge{position:fixed;inset:0;z-index:101;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+.demon-merge{position:absolute;inset:0;z-index:101;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
 /* Camera hand-off: the merge's cave dissolves over the cinematic, whose demon stays hidden until the gliding one lands on it. */
 .demon-intro.is-handing-off{animation:demon-handoff-out .9s ease-in-out both;pointer-events:none!important}
 .demon-cut.is-handoff .demon-cut-figure{visibility:hidden}
@@ -794,3 +792,17 @@ body.reduced-motion .boss-cut-snow{display:none}
 .demon-cut.is-skipped .demon-cut-open{animation:none}
 @keyframes demon-open{from{opacity:.9}to{opacity:0}}
 @keyframes demon-arrive{from{filter:brightness(2.4) drop-shadow(0 0 30px #ffb347)}to{filter:brightness(1) drop-shadow(0 0 16px #ff4a1466)}}
+
+/* Frost Crystal fusion dance (FrostCrystalFusion.tsx), before the Guardian's card; during the hand-off it is see-through over .boss-cut. */
+.frost-fusion{position:fixed;inset:0;z-index:101;background:#030a12;pointer-events:auto}
+.frost-fusion.is-handing-off{background:transparent;pointer-events:none}
+/* Card after the fusion: the Guardian glided in already standing, so no drop, slam shake, flash or burst; its own sprite takes
+   over when the glide ends (.6 s). The name, band and briefing still enter as usual. */
+.boss-cut.from-fusion,.boss-cut.from-fusion::before,.boss-cut.from-fusion :is(.boss-cut-guardian,.boss-cut-burst,.boss-cut-shockwave){animation:none}
+.boss-cut.from-fusion .boss-cut-sprite{animation:boss-idle .9s steps(6) infinite}
+.boss-cut.from-fusion .boss-cut-guardian{animation:fusion-guardian-show 0s .6s backwards}
+.boss-cut.from-fusion{animation:fusion-card-in .6s ease-out backwards}
+@keyframes fusion-guardian-show{from{visibility:hidden}}
+@keyframes fusion-card-in{from{opacity:0}}
+.frost-fusion-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.frost-fusion .demon-intro-skip{border-color:#6fb6d3;background:#0b2230;color:#dff8ff}

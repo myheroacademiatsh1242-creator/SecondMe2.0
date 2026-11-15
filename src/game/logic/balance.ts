@@ -1,24 +1,33 @@
-export const HERO_MAX_HP = { mage: 100, swordsman: 135, mechanical: 100 } as const;
-export const HERO_COMBO_ATTACK = { mage: 11, swordsman: 19 } as const;
-export const GUARDIAN_HP = 380;
-export const EMBER_DEMON_HP = 1020;
+export const HERO_MAX_HP = { mage: 85, swordsman: 115, mechanical: 100 } as const;
+export const HERO_COMBO_ATTACK = { mage: 9, swordsman: 16 } as const;
+export const GUARDIAN_HP = 440;
+export const EMBER_DEMON_HP = 1440;
 export const BOSS_PLAYER_DAMAGE = { guardian: 1.25, demon: 1.4 } as const;
 export const SWORD_WAVE_RANGE = 96;
 
+const ENCOUNTER_HEALTH = [.6, 1, 1.11, 1.23, 1.37, 1.5, 1.65, 1.8, 1.98, 2.17, 2.38, 2.6, 2.85];
+const ENCOUNTER_DAMAGE = [.65, 1, 1.08, 1.16, 1.24, 1.33, 1.42, 1.52, 1.62, 1.73, 1.84, 1.95, 2.08];
+
 export function encounterBalance(levelId: number) {
-  const progression = Math.max(0, Math.min(11, levelId - 2));
-  return { health: 1 + progression * .065, damage: 1 + progression * .042 };
+  const index = Math.max(0, Math.min(12, levelId - 1));
+  const late = Math.max(0, index - 5);
+  return {
+    health: ENCOUNTER_HEALTH[index],
+    damage: ENCOUNTER_DAMAGE[index],
+    speed: 1 + late * .025,
+    recovery: 1 - late * .035,
+  };
 }
 
 export const PUZZLE_BALANCE = [
-  { legSeconds:14, shardInterval:5, threeStars:16 },
-  { legSeconds:20, shardInterval:8, threeStars:38 },
-  { legSeconds:24, shardInterval:10, threeStars:55 },
+  { legSeconds:12, shardInterval:5, threeStars:16 },
+  { legSeconds:17, shardInterval:7, threeStars:38 },
+  { legSeconds:21, shardInterval:9, threeStars:55 },
   { legSeconds:26, shardInterval:11, threeStars:65 },
   { legSeconds:25, shardInterval:10, threeStars:80 },
   {legSeconds:0, shardInterval:0,threeStars:120},
   {legSeconds:44, shardInterval:18,threeStars:140},
-  {legSeconds:46, shardInterval:19,threeStars:160},
+  {legSeconds:39, shardInterval:16,threeStars:160},
   {legSeconds:48, shardInterval:20,threeStars:200},
   {legSeconds:52, shardInterval:22,threeStars:230},
   {legSeconds:55, shardInterval:23,threeStars:250},

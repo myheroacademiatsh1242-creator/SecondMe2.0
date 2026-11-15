@@ -1,3 +1,4 @@
+import { HERO_MAX_HP } from './balance.ts';
 import test,{type TestContext} from 'node:test';
 import assert from 'node:assert/strict';
 import {Campaign} from './campaign.ts';
@@ -25,16 +26,16 @@ test('new item inventory, partial chance charges and hero clears survive saving;
  save=JSON.stringify({supplies:{healSmall:999,healLarge:-1,revive:1.5,chances:NaN},chanceCharges:50,heroClears:{mage:[1,1,7,'2']}});reload.load();assert.equal(reload.supplies.healSmall,99);assert.equal(reload.supplies.healLarge,0);assert.equal(reload.supplies.revive,0);assert.equal(reload.chanceCharges,3);assert.deepEqual(reload.heroClears.mage,[1]);
 });
 test('healing consumes only when useful, supports multiple uses, and respects the current maximum',t=>{
- const g=game(t);g.campaign.supplies.healSmall=5;g.campaign.supplies.healLarge=2;assert.equal(g.useSupply('healSmall'),false);g.health=85;assert.ok(g.useSupply('healSmall'));assert.equal(g.health,95);assert.ok(g.useSupply('healSmall'));assert.equal(g.health,100);assert.equal(g.campaign.supplies.healSmall,3);assert.equal(g.useSupply('healSmall'),false);
+ const g=game(t);g.campaign.supplies.healSmall=5;g.campaign.supplies.healLarge=2;assert.equal(g.useSupply('healSmall'),false);g.health=g.maxHealth-15;assert.ok(g.useSupply('healSmall'));assert.equal(g.health,g.maxHealth-5);assert.ok(g.useSupply('healSmall'));assert.equal(g.health,HERO_MAX_HP.mage);assert.equal(g.campaign.supplies.healSmall,3);assert.equal(g.useSupply('healSmall'),false);
  g.maxHealth=80;g.health=40;assert.ok(g.useSupply('healLarge'));assert.equal(g.health,80);g.screen='paused';g.health=20;assert.equal(g.useSupply('healLarge'),false);
 });
-test('three chances is passive, once per attempt, carries charges and revives with 100/90/80 HP',t=>{
+test('three chances is passive, once per attempt, carries charges and revives with a growing max HP penalty',t=>{
  const g=game(t);g.campaign.supplies.chances=2;const x=g.player.x,y=g.player.y;
- hit(g);assert.equal(g.screen,'playing');assert.equal(g.health,100);assert.equal(g.maxHealth,100);assert.equal(g.campaign.chanceCharges,2);assert.equal(g.campaign.supplies.chances,1);assert.equal(g.player.x,x);assert.equal(g.player.y,y);
+ hit(g);assert.equal(g.screen,'playing');assert.equal(g.health,HERO_MAX_HP.mage);assert.equal(g.maxHealth,HERO_MAX_HP.mage);assert.equal(g.campaign.chanceCharges,2);assert.equal(g.campaign.supplies.chances,1);assert.equal(g.player.x,x);assert.equal(g.player.y,y);
  hit(g);assert.equal(g.screen,'defeat');assert.equal(g.campaign.chanceCharges,2);
- g.restartLevel();hit(g);assert.equal(g.maxHealth,90);assert.equal(g.health,90);assert.equal(g.campaign.chanceCharges,1);
- g.restartLevel();hit(g);assert.equal(g.maxHealth,80);assert.equal(g.health,80);assert.equal(g.campaign.chanceCharges,0);
- g.restartLevel();hit(g);assert.equal(g.maxHealth,100);assert.equal(g.campaign.supplies.chances,0);assert.equal(g.campaign.chanceCharges,2);
+ g.restartLevel();hit(g);assert.equal(g.maxHealth,HERO_MAX_HP.mage-10);assert.equal(g.health,HERO_MAX_HP.mage-10);assert.equal(g.campaign.chanceCharges,1);
+ g.restartLevel();hit(g);assert.equal(g.maxHealth,HERO_MAX_HP.mage-20);assert.equal(g.health,HERO_MAX_HP.mage-20);assert.equal(g.campaign.chanceCharges,0);
+ g.restartLevel();hit(g);assert.equal(g.maxHealth,HERO_MAX_HP.mage);assert.equal(g.campaign.supplies.chances,0);assert.equal(g.campaign.chanceCharges,2);
 });
 test('scroll revives at altar without resetting enemies, runes or clock; rejects timeout and repeated use',t=>{
  const g=game(t);g.campaign.supplies.revive=2;g.player.x+=50;const enemies=g.enemies,time=g.legTimeRemaining;hit(g);assert.equal(g.screen,'defeat');assert.ok(g.useSupply('revive'));assert.equal(g.health,g.maxHealth);assert.equal(g.player.x,g.currentLevel.playerSpawn.x);assert.equal(g.player.y,g.currentLevel.playerSpawn.y);assert.equal(g.enemies,enemies);assert.equal(g.legTimeRemaining,time);assert.equal(g.campaign.supplies.revive,1);assert.ok(g.invulnerability>0);

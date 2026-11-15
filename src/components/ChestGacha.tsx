@@ -1,4 +1,6 @@
+import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {ChestCurrencyIcon} from './ChestCurrencyIcon.tsx';
+
 import {useEffect,useRef,useState} from 'react';
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
 import {chestPool,isChestAvailable,CHEST_PRICES,chestBalance,chestCurrencyName,type ChestRewardId} from '../game/logic/chest.ts';
@@ -17,6 +19,7 @@ const chestKinds: {id:ChestKind;vi:string;en:string}[]=[
 ];
 
 export function ChestGacha({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
+  const panelArt=usePanelArt(PANEL_ART.material);
   const vi=hud.language==='vi';
   const [open,setOpen]=useState(false);
   const [opening,setOpening]=useState(false);
@@ -55,12 +58,13 @@ export function ChestGacha({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
     busy.current=false;
   };
   useEffect(()=>{
-    if(!open)return;
+    if(!open||panelArt==='loading')return;
     if(!showSummonScene&&!showRewardModal)closeButton.current?.focus();
     const key=(e:KeyboardEvent)=>{if(showSummonScene||showRewardModal||showHistory)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}else if(e.key==='Tab'){const buttons=Array.from(closeButton.current?.closest('section')?.querySelectorAll<HTMLButtonElement>('button:not(:disabled),summary')??[]);const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}};
     window.addEventListener('keydown',key,true);
     return ()=>window.removeEventListener('keydown',key,true);
-  },[open,showSummonScene,showRewardModal,showHistory]);
+  },[open,panelArt,showSummonScene,showRewardModal,showHistory]);
+
   const draw=(count:1|10)=>{
     if(!available){setNotice(true);return;}
     if(busy.current||!engine)return;
@@ -87,7 +91,7 @@ export function ChestGacha({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
       <i className="chest-sparkle sparkle-2" aria-hidden="true" />
       <i className="chest-sparkle sparkle-3" aria-hidden="true" />
     </button>
-    {open&&<div className="chest-backdrop" onClick={close}><section className="chest-panel" role="dialog" aria-modal="true" aria-label={vi?'Rương thưởng':'Reward chest'} onClick={e=>e.stopPropagation()}>
+    {open&&<div className="chest-backdrop" onClick={close}><section className="chest-panel" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-label={vi?'Rương thưởng':'Reward chest'} onClick={e=>e.stopPropagation()}>
       <header className="chest-panel-header">
         <div className="chest-header-left">
           <button className="chest-rate-toggle" type="button" disabled={!available} aria-expanded={showRates} aria-controls="chest-rates" onClick={()=>setShowRates(value=>!value)}>{vi?(showRates?'Ẩn tỉ lệ':'Xem tỉ lệ'):(showRates?'Hide rates':'View rates')}</button>
@@ -111,6 +115,7 @@ export function ChestGacha({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
     </section>{showRates&&available&&<aside className="chest-rates" id="chest-rates" aria-label={vi?'Tỉ lệ phần thưởng':'Reward probabilities'} onClick={e=>e.stopPropagation()}>
         <strong>{vi?selectedChest.vi:selectedChest.en} · {vi?'Tỉ lệ thưởng':'Drop rates'}</strong>
         <ul>{pool.filter(item=>item.weight>0).map(item=><li key={item.id}><span>{vi?item.vi:item.en}</span><b>{item.weight}%</b></li>)}</ul>
+
         <small>{vi?'Mỗi lượt tính riêng, kể cả mở ×10.':'Each draw rolls separately, including ×10.'}</small>
       </aside>}
       {showSummonScene&&results.length>0&&kind!=='wood'&&<GachaSummonScene highestTier={results.some(id=>pool.find(item=>item.id===id)?.tier==='fire')?'fire':results.some(id=>['time','healLarge'].includes(id))?'gold':'rare'} isTenPull={results.length>=10} kind={kind} language={vi?'vi':'en'} onComplete={onSummonComplete} reducedMotion={hud.reducedMotion}/>}

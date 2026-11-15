@@ -22,7 +22,7 @@ test('Calling replenishes charges up to six with a ring and does not consume at 
 test('Endurance protects existing and newly summoned Echoes, but does not buff hero health',t=>{
  const {g,summon,hit}=setup(t);const first=summon();g.useEchoRune('guard');hit(first,20);assert.equal(first.stability,87);
  const second=summon(700,300);hit(second,20);assert.equal(second.stability,87);
- (g as any).takeDamage(20);assert.equal(g.health,80);
+ (g as any).takeDamage(20);assert.equal(g.health,g.maxHealth-20);
 });
 test('Endurance reduces paused drain; swapping retains its fixed 30 point cost',t=>{
  const {g,summon}=setup(t);const echo=summon();echo.status='paused';g.useEchoRune('guard');(g as any).update(.1);
