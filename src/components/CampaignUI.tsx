@@ -41,21 +41,21 @@ import { LEVELS } from '../game/logic/levels.ts';
 
 function CoinIcon() { return <img className="raccoon-coin" src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt="" aria-hidden="true"/>; }
 
-function AerisPortrait({outfit}:{outfit?:OutfitId}={}) {
+function AerisPortrait({outfit,direction='down'}:{outfit?:OutfitId;direction?:'up'|'down'|'left'|'right'}={}) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const draw = () => { const ctx = ref.current?.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, 70, 70); drawWizardSprite(ctx, 35, 55, 'down', false, false, 0,outfit); } };
+    const draw = () => { const ctx = ref.current?.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, 70, 70); drawWizardSprite(ctx, 35, 55, direction, false, false, 0,outfit); } };
     draw(); const timer = window.setInterval(draw, 250); return () => window.clearInterval(timer);
-  }, [outfit]);
+  }, [outfit,direction]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Aeris"/>;
 }
 function WizardAvatar({className=''}:{className?:string}) { return <span className={`wizard-avatar ${className}`}><AerisPortrait/></span>; }
-function KaelPortrait({outfit}:{outfit?:OutfitId}={}) {
+function KaelPortrait({outfit,direction='down'}:{outfit?:OutfitId;direction?:'up'|'down'|'left'|'right'}={}) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const draw = () => { const ctx = ref.current?.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, 70, 70); drawSoldierSprite(ctx, 35, 55, 'down', false, false, 0,false,0,outfit); } };
+    const draw = () => { const ctx = ref.current?.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, 70, 70); drawSoldierSprite(ctx, 35, 55, direction, false, false, 0,false,0,outfit); } };
     draw(); const timer = window.setInterval(draw, 250); return () => window.clearInterval(timer);
-  }, [outfit]);
+  }, [outfit,direction]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Kael"/>;
 }
 function SelectedCharacterAvatar({hud}:{hud:HUDState}) {
@@ -272,8 +272,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const [selected, setSelected] = useState<SelectableCharacter>(hud.characterClass);
   const grid = useRef<HTMLDivElement>(null);
   const [draftOutfits,setDraftOutfits]=useState<Record<OutfitHero,OutfitId>>(hud.outfits??{mage:'default',swordsman:'default'});
-  const [draftWeapons,setDraftWeapons]=useState<Record<WeaponHero,WeaponId>>(hud.weapons??{...DEFAULT_WEAPON});
-  const [tab,setTab]=useState<'outfit'|'weapon'>('outfit');
+  const [previewDirection,setPreviewDirection]=useState<'down'|'left'|'up'|'right'>('down');
   const [upgradeOpen,setUpgradeOpen]=useState(false);
   // Start keyboard focus on the current hero, so focus and selection agree on open.
   useEffect(() => { grid.current?.querySelector<HTMLButtonElement>('.is-selected')?.focus({preventScroll: true}); }, []);
@@ -287,8 +286,6 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const outfit=choice.id==='mechanical'?'default':draftOutfits[choice.id];
   const outfitInfo=OUTFITS.find(o=>o.id===outfit)!;
   const hero=choice.id==='mechanical'?null:choice.id;
-  const weapon=hero?weaponById(draftWeapons[hero]):undefined;
-  const ownedWeapons=hud.ownedWeapons??[];
   const outfitColor=RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,outfit)];
   const {maxHealth} = heroStats(choice.id, hud.heroRanks ?? cleanHeroRanks());
   const detail = choice.id === 'mage'
@@ -296,7 +293,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     : choice.id === 'swordsman'
     ? (vi ? `${maxHealth} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${maxHealth} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
-  const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);engine.setCharacterWeapon(choice.id,draftWeapons[choice.id]);}engine.selectClass(choice.id); engine.goToLobby(); };
+  const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
   return <div className="characters-screen overlay hero-select-screen">
     <div className="hero-select-scene has-outfit-selector" role="dialog" aria-modal="true" aria-labelledby="hero-select-title">
       <h1 id="hero-select-title" className="hero-select-title">{vi ? 'CHỌN NHÂN VẬT' : 'CHOOSE YOUR HERO'}</h1>
@@ -308,15 +305,15 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
          {hero && <button type="button" className="hero-upgrade-trigger" onClick={()=>setUpgradeOpen(true)} disabled={!engine}>
            <ChevronsUp size={16} aria-hidden="true"/>{vi?'Nâng cấp':'Upgrades'}
          </button>}
-         <div>{portrait(choice.id,outfit)}</div>
-         {tab==='weapon'&&choice.id==='mage'&&weapon&&<WeaponPreview id={weapon.id} reducedMotion={hud.reducedMotion}/>}
+         <div>{choice.id==='mage'?<AerisPortrait outfit={outfit} direction={previewDirection}/>:choice.id==='swordsman'?<KaelPortrait outfit={outfit} direction={previewDirection}/>:<MechanicalPortrait/>}</div>
+         <nav aria-label={vi?'Xoay hướng xem':'Rotate preview'}>{(['down','left','up','right'] as const).map((direction,index)=><button type="button" key={direction} aria-pressed={previewDirection===direction} onClick={()=>setPreviewDirection(direction)}>{vi?['Trước','Trái','Sau','Phải'][index]:['Front','Left','Back','Right'][index]}</button>)}</nav>
          <strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong>
        </div>
-       <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header>{choice.id==='mechanical'?<strong>{vi?'TRANG PHỤC':'OUTFITS'}</strong>:<div role="tablist" className="collection-tabs">{(['outfit','weapon'] as const).map(t=><button key={t} role="tab" aria-selected={tab===t} className={tab===t?'outfit-selected':''} onClick={()=>{setTab(t);engine?.onboarding.event('hero-gear');}}>{t==='outfit'?(vi?'TRANG PHỤC':'OUTFITS'):(vi?'VŨ KHÍ':'WEAPONS')}</button>)}</div>}<small>{tab==='weapon'&&choice.id!=='mechanical'?(vi?'Cùng sát thương · Khác hiệu ứng':'Same damage · Different effects'):(vi?'Đổi ngoại hình · Giữ nguyên chỉ số':'Appearance only · Same stats')}</small></header>{tab==='weapon'&&hero?<div className="outfit-options" role="group" aria-label={vi?'Chọn vũ khí':'Choose weapon'}>{weaponsOf(hero).map(w=><button key={w.id} className={draftWeapons[hero]===w.id?'outfit-selected':''} aria-pressed={draftWeapons[hero]===w.id} aria-label={(vi?w.vi:w.en)+(canUseWeapon(hero,w.id,ownedWeapons)?'':(vi?' · Chưa sở hữu':' · Not owned'))} disabled={!canUseWeapon(hero,w.id,ownedWeapons)} style={{'--outfit-color':RARITY_COLORS[w.rarity]} as React.CSSProperties} onClick={()=>setDraftWeapons(old=>({...old,[hero]:w.id}))}><span><small>{rarityName(w.rarity,vi)}</small></span><strong>{vi?w.vi:w.en}</strong>{draftWeapons[hero]===w.id&&<Check size={16}/>}</button>)}</div>:<div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div>}</section>
+       <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header><small>{vi?'Chọn trang phục':'Choose outfit'}</small></header><div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div></section>
       </div>
       <section className="hero-select-info" aria-live="polite">
         <div className="hero-info-portrait">{choice.id === 'mage' || choice.id === 'swordsman' ? <ComboPreview key={choice.id} hero={choice.id} outfit={outfit}/> : portrait(choice.id)}</div>
-        <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small>{vi ? 'VŨ KHÍ' : 'WEAPON'} · {weapon?(vi?weapon.vi:weapon.en)+' · '+(vi?TRAIT_TEXT[weapon.trait].vi:TRAIT_TEXT[weapon.trait].en):(vi ? 'Cưa máy' : 'Chainblade')} · <span style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
+        <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small><span style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
         <div className="hero-info-action"><span>{choice.id === hud.characterClass ? (vi ? 'ĐANG CHỌN' : 'CURRENT HERO') : (vi ? 'NHÂN VẬT SẴN SÀNG' : 'HERO READY')}</span><button type="button" onClick={confirm} disabled={!engine}>{vi ? 'TRANG BỊ & CHỌN' : 'EQUIP & CONFIRM'}</button></div>
       </section>
     </div>
