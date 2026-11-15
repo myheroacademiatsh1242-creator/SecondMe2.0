@@ -6,6 +6,7 @@ import {InteractiveCoach} from './components/InteractiveCoach.tsx';
 import {PANEL_ART,warmPanelArt} from './components/panelArt.ts';
 
 import {sounds} from './game/logic/sound.ts';
+import {installUISounds} from './game/logic/uiSounds.ts';
 
 import './components/PlayHudLayout.css';
 import './components/ResponsivePlayLayout.css';
@@ -41,6 +42,7 @@ function shouldRestoreCamp() {
 
 
 export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngine) => void } = {}) {
+  useEffect(()=>installUISounds(),[]);
   useSyncExternalStore(controls.subscribe,controls.snapshot);
   const [touchControls]=useState(isTouchDevice);
   // Keep the 1280×720 arena and its 78/142px HUD rails in one coordinate system.
@@ -160,7 +162,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
         <TrailInventory preparing engine={engine} hud={hud} close={() => engine.cancelBattleStart()}/>
       </div>
     </div>}
-    {guideOpen && !hud.guideLibrary && <PlayerGuide lang={lang} onClose={() => setGuideOpen(false)} onReplayTutorial={track=>{engine?.onboarding.replay(track);setGuideOpen(false);}}/>}
+    {guideOpen && !hud.guideLibrary && <PlayerGuide progress={engine?.campaign} lang={lang} onClose={() => setGuideOpen(false)} onReplayTutorial={track=>{engine?.onboarding.replay(track);setGuideOpen(false);}}/>}
     {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
       <BossIntro engine={engine} hud={hud}/>
     </div>}

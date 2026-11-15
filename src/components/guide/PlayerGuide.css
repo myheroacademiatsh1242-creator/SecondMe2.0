@@ -124,3 +124,4 @@
   .player-guide-main{padding-top:14px}
 }
 @media (prefers-reduced-motion:reduce){.player-guide-side{transition:none}}
+.player-guide-nav .player-guide-cat button:disabled{opacity:.5;cursor:not-allowed;filter:saturate(.35)}

@@ -35,7 +35,7 @@ export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | nul
   const vi = hud.language === 'vi';
   const hint = topic ? QUICK_HINTS[topic][vi ? 0 : 1] : null;
   // The library is the full player guide (guide/PlayerGuide.tsx); play stays frozen while it is open (guides.blocking).
-  if (libraryOpen) return <PlayerGuide lang={vi ? 'vi' : 'en'} topic={topic} onClose={() => engine?.closeGuide()} onReplayTutorial={track=>{engine?.onboarding.replay(track);engine?.closeGuide();}}/>;
+  if (libraryOpen) return <PlayerGuide progress={engine?.campaign} lang={vi ? 'vi' : 'en'} topic={topic} onClose={() => engine?.closeGuide()} onReplayTutorial={track=>{engine?.onboarding.replay(track);engine?.closeGuide();}}/>;
   const objective = hud.trailAction ? trailCopy[hud.trailAction] : null;
   const Icon = topic ? hintIcons[topic] : null;
   return <>

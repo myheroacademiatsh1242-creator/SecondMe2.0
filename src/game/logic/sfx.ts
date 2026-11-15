@@ -2,8 +2,7 @@
  * Sound effects from public/assets/sfx. As with music, the FILE NAME decides which sound a
  * file replaces, so adding effects never needs code: drop an .mp3/.ogg/.wav/.m4a in the folder
  * and name it after the sound (accents and case do not matter). A sound with no file keeps its
- * synthesised version in sound.ts; the four combat sounds marked "new" and the two portal
- * transition sounds are silent without one.
+ * synthesised version in sound.ts; the two portal transition sounds require files.
  * Several files for one sound are picked at random each time (good for footsteps and hits).
  * The folder listing comes from assets/sfx/index.json, which vite.config.ts serves live in dev
  * and writes at build time. The README in the folder lists the names for players.

@@ -1,17 +1,18 @@
 {
   "team": [
-    { "name": "", "roleVi": "", "roleEn": "" },
-    { "name": "", "roleVi": "", "roleEn": "" },
-    { "name": "", "roleVi": "", "roleEn": "" }
+    { "name": "Studio 8HANDS", "roleVi": "Đội ngũ phát triển SECOND ME", "roleEn": "SECOND ME development team" },
+    { "name": "Các AI", "roleVi": "Hỗ trợ trong quá trình phát triển", "roleEn": "AI assistance during development" }
   ],
   "art": [
-    { "name": "", "roleVi": "", "roleEn": "" }
+    { "name": "BlueWizard Animations", "roleVi": "Hoạt ảnh Pháp sư · gói tài nguyên được cung cấp cho dự án", "roleEn": "Mage animations · asset pack supplied to the project" },
+    { "name": "Mossy Assets / Plant Animations", "roleVi": "Cảnh quan rừng và thực vật chuyển động", "roleEn": "Forest scenery and animated plants" }
   ],
   "music": [
-    { "name": "", "roleVi": "", "roleEn": "" }
+    { "name": "DYLANN TAYLOR", "roleVi": "BUZZY BITS · Nhạc menu, cửa hàng và màn chơi", "roleEn": "BUZZY BITS · Menu, shop and level music" }
   ],
   "thirdParty": [
     { "name": "Super Pixel Effects Gigapack", "by": "Will Tice / unTied Games", "roleVi": "Hiệu ứng phép thuật", "roleEn": "Magic effects" },
+    { "name": "OmniVoice", "by": "k2-fsa", "roleVi": "Công cụ tạo giọng thoại và lời dẫn", "roleEn": "Tool for character voices and narration" },
     { "name": "VT323", "by": "The VT323 Project Authors", "roleVi": "Phông chữ pixel · SIL OFL 1.1", "roleEn": "Pixel font · SIL OFL 1.1" },
     { "name": "Noto Serif", "by": "The Noto Project Authors", "roleVi": "Phông chữ tiêu đề · SIL OFL 1.1", "roleEn": "Title font · SIL OFL 1.1" },
     { "name": "mastermind-game", "by": "github.com/DoNgocSon-Dn", "roleVi": "Sprite quái vật", "roleEn": "Enemy sprites" }

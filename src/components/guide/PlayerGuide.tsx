@@ -2,7 +2,8 @@ import {liveKeyLabel} from '../../game/logic/controlSettings.ts';
 import {TUTORIAL_STEPS} from '../../game/logic/interactiveTutorial.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Keyboard, Menu, Search, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Keyboard, Lock, Menu, Search, X } from 'lucide-react';
+import {guidePageUnlocked,type GuideProgress} from '../../game/logic/guideProgress.ts';
 import { GUIDE, CONTROLS, ENEMY_NAMES, fold, pageForTopic, pageText, type Block, type Figure, type L, type Page } from './guideContent.ts';
 import { ALL_LEVEL_FACTS, type LevelFacts } from './levelFacts.ts';
 import { GuideFigure, Label, shots, type ShotInfo } from './GuideFigure.tsx';
@@ -17,7 +18,7 @@ export const OPEN_GUIDE_EVENT = 'open-player-guide';
 export const openPlayerGuide = () => document.dispatchEvent(new Event(OPEN_GUIDE_EVENT));
 const readStore = (): Set<string> => { try { const v = JSON.parse(localStorage.getItem(READ_KEY) ?? '[]'); return new Set(Array.isArray(v) ? v.filter(x => typeof x === 'string') : []); } catch { return new Set(); } };
 const saveRead = (s: Set<string>) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...s])); } catch { /* storage can be unavailable */ } };
-const flat = GUIDE.flatMap(s => s.pages.map(p => ({ section: s, page: p })));
+const allPages = GUIDE.flatMap(s => s.pages.map(p => ({ section: s, page: p })));
 const key = (sectionId: string, pageId: string) => `${sectionId}/${pageId}`;
 const tr = (x: L | string, lang: 'vi' | 'en') => typeof x === 'string' ? x : x[lang];
 
@@ -26,8 +27,10 @@ const tr = (x: L | string, lang: 'vi' | 'en') => typeof x === 'string' ? x : x[l
  * Rendered into document.body (outside the scaled game stage) so it lays out against the real viewport; it stops every
  * key from reaching the game while open (the engine also freezes play while the in-level library is open).
  */
-export function PlayerGuide({ lang, topic, onClose, onReplayTutorial }: { lang: 'vi' | 'en'; topic?: GuideTopic | null; onClose: () => void; onReplayTutorial?:(track:string)=>void }) {
+export function PlayerGuide({ lang, topic, onClose, onReplayTutorial,progress }: { lang: 'vi' | 'en'; topic?: GuideTopic | null; onClose: () => void; onReplayTutorial?:(track:string)=>void;progress?:GuideProgress }) {
   const vi = lang === 'vi';
+  const allowed=(section:string,page:string)=>guidePageUnlocked(section,page,progress);
+  const flat=allPages.filter(f=>allowed(f.section.id,f.page.id));
   const start = (topic && pageForTopic(topic)) ?? { section: GUIDE[0].id, page: GUIDE[0].pages[0].id };
   const [at, setAt] = useState(start);
   const [query, setQuery] = useState('');
@@ -35,14 +38,14 @@ export function PlayerGuide({ lang, topic, onClose, onReplayTutorial }: { lang: 
   const [zoom, setZoom] = useState<{ fig: Figure; extra?: (info: ShotInfo) => React.ReactNode } | null>(null);
   const [read, setRead] = useState(readStore);
   const root = useRef<HTMLDivElement>(null), main = useRef<HTMLElement>(null), search = useRef<HTMLInputElement>(null);
-  const index = flat.findIndex(f => f.section.id === at.section && f.page.id === at.page);
+  const index = Math.max(0,flat.findIndex(f => f.section.id === at.section && f.page.id === at.page));
   const current = flat[Math.max(0, index)];
   const results = useMemo(() => {
     const q = fold(query.trim());
     return q ? flat.filter(f => pageText(f.page, lang).includes(q) || fold(f.section.title[lang]).includes(q)) : null;
-  }, [query, lang]);
+  }, [query, lang,progress?.bossDefeated,progress?.completed.join(',')]);
 
-  const go = (section: string, page: string) => { setAt({ section, page }); setDrawer(false); main.current?.scrollTo({ top: 0 }); };
+  const go = (section: string, page: string) => { if(!allowed(section,page))return;setAt({ section, page }); setDrawer(false); main.current?.scrollTo({ top: 0 }); };
   const step = (d: number) => { const n = flat[index + d]; if (n) go(n.section.id, n.page.id); };
 
   useEffect(() => {   // reading a page marks it read; the contents keep the open page in view
@@ -85,8 +88,8 @@ export function PlayerGuide({ lang, topic, onClose, onReplayTutorial }: { lang: 
         : <p>{vi ? 'Không tìm thấy mục nào.' : 'Nothing found.'}</p>}
     </div> : GUIDE.map(s => <section key={s.id} className="player-guide-cat">
       <h3><b>{s.letter}</b>{s.title[lang]}</h3>
-      {s.pages.map(p => { const k = key(s.id, p.id); return <button key={k} className={s.id === current.section.id && p.id === current.page.id ? 'is-current' : ''} aria-current={s.id === current.section.id && p.id === current.page.id ? 'page' : undefined} onClick={() => go(s.id, p.id)}>
-        <span>{s.id === 'levels' && p.id.startsWith('level-') ? levelTitle(Number(p.id.slice(6)), lang) : p.title[lang]}</span>{read.has(k) && <Check aria-label={vi ? 'đã đọc' : 'read'}/>}</button>; })}
+      {s.pages.map(p => { const k = key(s.id, p.id),locked=!allowed(s.id,p.id); return <button key={k} disabled={locked} title={locked?(vi?'Chơi đến màn này để mở hướng dẫn':'Reach this level to unlock its guide'):undefined} className={s.id === current.section.id && p.id === current.page.id ? 'is-current' : ''} aria-current={s.id === current.section.id && p.id === current.page.id ? 'page' : undefined} onClick={() => go(s.id, p.id)}>
+        <span>{s.id === 'levels' && p.id.startsWith('level-') ? levelTitle(Number(p.id.slice(6)), lang) : p.title[lang]}</span>{locked?<Lock aria-label={vi?'Chưa mở khóa':'Locked'}/>:read.has(k) && <Check aria-label={vi ? 'đã đọc' : 'read'}/>}</button>; })}
     </section>)}
   </nav>;
 

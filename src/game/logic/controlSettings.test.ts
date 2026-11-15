@@ -25,6 +25,16 @@ function game(t:test.TestContext){
  const initial=structuredClone(controls.value);t.after(()=>{controls.value=initial;controls.capturing=false;});controls.value=freshControls();const e=new GameEngine();e.currentLevelIdx=1;e.restartLevel();e.legTimeRemaining=null;return e;
 }
 function press(e:GameEngine,code:string,shiftKey=false,up=false){(e as any)[up?'handleKeyUp':'handleKeyDown']({code,key:code.startsWith('Key')?code.slice(3).toLowerCase():code,shiftKey,repeat:false,preventDefault(){}});}
+test('purchases and consumables emit their own sound only after a successful action',t=>{
+ const e=game(t),cues:string[]=[];t.mock.method(sounds,'playFeedback',(kind:string)=>{cues.push(kind);});
+ e.screen='shop';e.campaign.coins=100;
+ assert.ok(e.buyShopItem('manaLarge'));assert.deepEqual(cues,['purchase']);
+ assert.equal(e.buyShopItem('manaLarge',0),false);assert.deepEqual(cues,['purchase']);
+ assert.ok(e.campaign.packItem('manaLarge'));e.restartLevel();e.mana.value=0;
+ assert.ok(e.useSupply('manaLarge'));assert.deepEqual(cues,['purchase','item']);
+ assert.equal(e.useSupply('manaLarge'),false);e.pauseEcho();e.swapEcho();
+ assert.deepEqual(cues,['purchase','item']);
+});
 test('five sound toggles unlock dev tools without changing normal mute behavior',t=>{
  const e=game(t);e.devUnlocked=false;
  const muted=sounds.getMuted();t.after(()=>sounds.setMuted(muted));

@@ -189,14 +189,14 @@ class SoundEngine {
     };
   }
 
-  /** Kael's combo swing (new: silent without a file). */
-  public playSlash() { if (!this.isMuted) this.sample('slash'); }
-  /** Aeris's combo cast (new: silent without a file). */
-  public playSpell() { if (!this.isMuted) this.sample('spell'); }
+  /** Kael's combo swing, with a synthesised fallback while samples are unavailable. */
+  public playSlash() { if (!this.isMuted && !this.sample('slash')) this.stoneHit(.1,2100,.12,210,90,.07); }
+  /** Aeris's combo cast, with a short magical fallback. */
+  public playSpell() { if (!this.isMuted && !this.sample('spell')) this.threatGrowl(540,2300,.13,.07); }
   /** The fourth combo hit landing; without a file it keeps the old heavy thud. */
   public playFinisher() { if (!this.isMuted && !this.sample('finisher')) this.playPlateActivate(); }
-  /** Dodge roll (new: silent without a file). */
-  public playDodge() { if (!this.isMuted) this.sample('dodge'); }
+  /** Dodge roll, with a quiet noise sweep fallback. */
+  public playDodge() { if (!this.isMuted && !this.sample('dodge')) this.stoneHit(.14,1400,.12,110,45,.025); }
 
   public playFootstep() {
     if (this.isMuted || this.sample('footstep')) return;
@@ -225,7 +225,15 @@ class SoundEngine {
   public playStoneHover() { this.stoneHit(0.08, 900, 0.07, 190, 120, 0.05); }
 
   /** Main-menu stone slab pressed: grind plus a low thud. */
-  public playStoneClick() { this.stoneHit(0.22, 520, 0.16, 140, 50, 0.32); }
+  public uiRevision = 0;
+  public playStoneClick() { this.uiRevision++; this.stoneHit(0.22, 520, 0.16, 140, 50, 0.32); }
+  /** Short, quiet action cues routed through the existing effects volume bus. */
+  public playFeedback(kind:'item'|'time'|'echoPause'|'swap'|'mark'|'purchase'|'upgrade'|'rune') {
+    this.uiRevision++;
+    if(this.isMuted)return;
+    const pitch={item:620,time:820,echoPause:320,swap:480,mark:960,purchase:740,upgrade:880,rune:680}[kind];
+    this.threatGrowl(pitch,1800,kind==='upgrade'?.3:.16,.065);
+  }
 
   public playGuardianLanding() { this.stoneHit(.55, 460, .24, 125, 42, .45); }
 

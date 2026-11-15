@@ -293,7 +293,7 @@ export class GameEngine {
     if(value) this.echoes[this.selectedEcho]=value;
     else {this.echoes.splice(this.selectedEcho,1);this.selectedEcho=Math.max(0,Math.min(this.selectedEcho,this.echoes.length-1));}
   }
-  public pauseEcho() {if(this.screen==='playing'&&this.echo){this.echo.status=this.echo.status==='paused'?'replaying':'paused';this.notifyHUD();}}
+  public pauseEcho() {if(this.screen==='playing'&&this.echo){this.echo.status=this.echo.status==='paused'?'replaying':'paused';sounds.playFeedback('echoPause');this.notifyHUD();}}
 
   // Recording
   public recorder = new RecordingManager();
@@ -313,6 +313,7 @@ export class GameEngine {
     this.targetMarkArmed = 0;
     if (this.screen !== 'playing' || !this.echo || this.inventoryOpen || this.runeEditing || this.orientationBlocked || this.missionBriefing) { this.notifyHUD(); return false; }
     this.pingTarget = { ...target, life: 4 };
+    sounds.playFeedback('mark');
     this.showBanner(this.language==='vi'?'Echo ưu tiên mục tiêu đã đánh dấu.':'Echo target marked.');
     this.notifyHUD();
     return true;
@@ -678,6 +679,7 @@ export class GameEngine {
   public buyHeroUpgrade(hero: CharacterClass, stat: HeroUpgradeStat, expectedRank: number) {
     if (!this.canManageHeroUpgrades(hero)) return false;
     if (!this.campaign.buyHeroUpgrade(hero, stat, expectedRank)) return false;
+    sounds.playFeedback('upgrade');
     this.notifyHUD();
     return true;
   }
@@ -694,6 +696,7 @@ export class GameEngine {
     this.spendCarriedItem(slot);
     this.legTimeRemaining = (this.legTimeRemaining ?? 0) + 2;
     this.startVfx('clock', true);
+    sounds.playFeedback('time');
     this.showBanner(this.language === 'vi' ? '+2 giây' : '+2 seconds');
     this.notifyHUD();
     return true;
@@ -973,12 +976,12 @@ export class GameEngine {
 
   public buyOutfit(id:ShopOutfitId){
     if(this.screen!=='shop')return false;
-    const bought=this.campaign.buyOutfit(id);if(bought)this.notifyHUD();return bought;
+    const bought=this.campaign.buyOutfit(id);if(bought){sounds.playFeedback('purchase');this.notifyHUD();}return bought;
   }
   public buySupply(id:SupplyId){return this.buyShopItem(id);}
   public buyShopItem(id:ShopItemId,quantity=1){
     if(this.screen!=='shop')return false;
-    const bought=this.campaign.buyShopItem(id,quantity);if(bought)this.notifyHUD();return bought;
+    const bought=this.campaign.buyShopItem(id,quantity);if(bought){sounds.playFeedback('purchase');this.notifyHUD();}return bought;
   }
   public canUseSupply(id:SupplyId){
     if(this.orientationBlocked||this.runeEditing||this.carriedSlot(id)<0)return false;
@@ -1007,7 +1010,7 @@ export class GameEngine {
       this.supportAlly={x:this.player.x,y:this.player.y,hp:15,hero:this.characterClass==='mage'?'swordsman':'mage',direction:this.player.direction,isMoving:false,cooldown:.3,attackFlash:0};
       this.renderer.emitMagic('sparkle',this.player.x,this.player.y,60);
     }
-    this.campaign.save();this.notifyHUD();return true;
+    sounds.playFeedback('item');this.campaign.save();this.notifyHUD();return true;
   }
   private reviveAt(x:number,y:number){
     this.player.x=x;this.player.y=y;this.player.isMoving=false;this.health=this.maxHealth;
@@ -1886,6 +1889,7 @@ export class GameEngine {
   public setRuneSlot(slot:number,id:EchoRuneId|null):boolean{
     if(!['lobby','playing','paused','victory'].includes(this.screen))return false;
     if(!this.campaign.setRuneSlot(slot,id))return false;
+    sounds.playFeedback('rune');
     for (const active of this.activeEchoRunes) {
       if (!this.campaign.runeLoadout.includes(active)) this.activeEchoRunes.delete(active);
     }
@@ -1893,7 +1897,7 @@ export class GameEngine {
   }
   public chooseRune(id:EchoRuneId):boolean {
     if(!['victory','lobby'].includes(this.screen)||!this.campaign.chooseRune(id))return false;
-    this.lastRuneReward=id;this.notifyHUD();return true;
+    sounds.playFeedback('rune');this.lastRuneReward=id;this.notifyHUD();return true;
   }
   public canUseEchoRune(id:EchoRuneId):boolean {
     if(!this.campaign.runeLoadout.includes(id))return false;
@@ -2034,6 +2038,7 @@ export class GameEngine {
     this.echo.combatAnchor=undefined; this.echo.returnBlockedFor=0;
     this.hitEcho(this.echo, cost, false);
     this.swapCooldown=this.activeEchoRunes.has('swap')?4:7;this.invulnerability=Math.max(.2,this.invulnerability);
+    sounds.playFeedback('swap');
     this.notifyHUD();
   }
 
