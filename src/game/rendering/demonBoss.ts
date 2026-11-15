@@ -679,7 +679,7 @@ export function drawDemonBoss(ctx: CanvasRenderingContext2D, b: BossState, time:
       const sx = Math.cos(a) * 35;
       const sy = Math.sin(a) * 12;
       ctx.fillStyle = '#ffe978';
-      ctx.font = '22px sans-serif';
+      ctx.font = '22px "Second Me Pixel", monospace';
       ctx.fillText('★', sx, sy);
     }
     ctx.restore();
