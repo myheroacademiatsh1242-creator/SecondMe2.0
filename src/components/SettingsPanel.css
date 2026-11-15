@@ -1,5 +1,12 @@
 /* Settings use a single stone frame; rows share a quiet, aligned surface. */
-html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel{height:auto;max-height:calc(100dvh / var(--desktop-scale,1) - 32px)!important;width:min(720px,calc(100vw / var(--desktop-scale,1) - 32px));padding:24px;gap:0;text-align:left}
+html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel{
+ box-sizing:border-box;
+ height:min(700px,calc(100dvh / var(--desktop-scale,1) - 32px));
+ max-height:calc(100dvh / var(--desktop-scale,1) - 32px)!important;
+ width:min(720px,calc(100vw / var(--desktop-scale,1) - 32px));
+ overflow:hidden!important;
+ padding:24px;gap:0;text-align:left
+}
 /* The center slice supplies the stone surface and leaves the outer corners transparent. */
 html body .modal-backdrop.modal-backdrop .settings-clean.settings-panel.panel.panel.panel{
  background:transparent!important;box-shadow:none!important;
@@ -12,7 +19,7 @@ html body .settings-clean.settings-panel>h2{margin:10px 0 20px!important;text-al
 html body .settings-clean.settings-panel .settings-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;border-bottom:1px solid #a7986555;margin-bottom:12px;flex:none}
 html body .settings-clean.settings-panel .settings-tabs>button{border:0!important;border-image:none!important;border-bottom:3px solid transparent!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:12px 8px!important;color:#bfb991!important;text-shadow:none!important;font:400 20px/1.3 'Second Me Pixel',monospace!important;cursor:pointer}
 html body .settings-clean.settings-panel .settings-tabs>button[aria-selected=true]{border-bottom-color:#e2c479!important;color:#ffe5a3!important;background:#c8b67412!important}
-html body .settings-clean.settings-panel .settings-scroll{flex:0 1 auto;padding:0 12px 0 0;scrollbar-gutter:stable;min-height:0;overflow:auto}
+html body .settings-clean.settings-panel .settings-scroll{flex:1 1 0;padding:0 12px 0 0;scrollbar-gutter:stable;min-height:0;overflow:auto}
 html body .settings-clean.settings-panel .setting-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,170px) 44px;gap:16px;margin:0;padding:18px 0;border:0!important;border-image:none!important;border-bottom:1px solid #adab7b25!important;background:none!important;box-shadow:none!important;text-align:left;min-height:72px}
 html body .settings-clean.settings-panel .setting-row>span{display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;text-align:left;min-width:0}
 html body .settings-clean.settings-panel .setting-row>span svg{grid-column:1;grid-row:1/3;align-self:center;width:18px;color:#c2cc9b}

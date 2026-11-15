@@ -603,6 +603,46 @@ class SoundEngine {
     osc.stop(t + 0.26);
   }
 
+  public playChestCue(cue: 'charge' | 'unlock' | 'reveal', tier: 'rare' | 'gold' | 'fire' = 'rare') {
+    if (this.isMuted) return;
+    this.initCtx();
+    const ctx = this.ctx, output = this.effectsGain;
+    if (!ctx || !output) return;
+    const now = ctx.currentTime;
+    const accent = ctx.createOscillator();
+    const accentGain = ctx.createGain();
+    const charging = cue === 'charge';
+    const impact = cue === 'unlock';
+    const accentDuration = charging ? .37 : impact ? .21 : .33;
+    accent.type = charging ? 'triangle' : 'sine';
+    accent.frequency.setValueAtTime(charging ? 125 : impact ? 148 : 131, now);
+    accent.frequency.exponentialRampToValueAtTime(charging ? 385 : impact ? 43 : 62, now + accentDuration);
+    accentGain.gain.setValueAtTime(.001, now);
+    accentGain.gain.exponentialRampToValueAtTime(charging ? .10 : impact ? .26 : tier === 'fire' ? .30 : .17, now + (charging ? .24 : .013));
+    accentGain.gain.exponentialRampToValueAtTime(.001, now + accentDuration);
+    accent.connect(accentGain).connect(output);
+    accent.start(now);
+    accent.stop(now + accentDuration);
+    if (charging) return;
+
+    const notes = impact ? [320, 905] : tier === 'fire' ? [523, 659, 784, 1047, 1319]
+      : tier === 'gold' ? [523, 659, 784, 1047] : [523, 659, 784];
+    notes.forEach((pitch, i) => {
+      const start = now + i * (impact ? .027 : .064);
+      const duration = impact ? .12 : .34;
+      const note = ctx.createOscillator();
+      const envelope = ctx.createGain();
+      note.type = impact ? 'triangle' : 'sine';
+      note.frequency.value = pitch;
+      envelope.gain.setValueAtTime(.001, start);
+      envelope.gain.exponentialRampToValueAtTime(impact ? .11 : tier === 'fire' ? .14 : .105, start + .015);
+      envelope.gain.exponentialRampToValueAtTime(.001, start + duration);
+      note.connect(envelope).connect(output);
+      note.start(start);
+      note.stop(start + duration);
+    });
+  }
+
   public playVictory() {
     if (this.isMuted || this.sample('victory')) return;
     this.initCtx();

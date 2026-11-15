@@ -20,7 +20,7 @@ test('timeline visits all 12 frames in order, holds the final frame, and never w
   }
   assert.equal(elapsed,SUMMON_DURATION_MS);
   assert.equal(summonFrameAt(elapsed+10000).frame,11);
-  assert.equal(summonFrameAt(4900).frame,11);
+  assert.equal(summonFrameAt(SUMMON_DURATION_MS-SUMMON_FRAME_MS[11]).frame,11);
 });
 
 test('royal summon retains original red sprites for both reward effects',()=>{

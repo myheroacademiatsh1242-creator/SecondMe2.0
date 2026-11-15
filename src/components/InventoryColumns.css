@@ -1,11 +1,10 @@
 /* Two independent inventories. Their content never determines the other column's height. */
 #root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel{
  width:min(1120px,calc(100vw / var(--desktop-scale,1) - 32px));
- border-image-slice:180 fill!important;border-image-repeat:round!important;
 }
 #root .adventure-app .inventory-modal .trail-inventory{
- height:min(760px,calc(100dvh / var(--desktop-scale,1) - 76px));
- max-height:calc(100dvh / var(--desktop-scale,1) - 76px);
+ height:min(730px,calc(100dvh / var(--desktop-scale,1) - 104px));
+ max-height:calc(100dvh / var(--desktop-scale,1) - 104px);
 }
 #root .adventure-app .inventory-modal .inventory-scroll{
  flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
@@ -51,7 +50,7 @@
  #root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-height:480px){
- #root .adventure-app .inventory-modal .trail-inventory{height:calc(100dvh - 64px);max-height:calc(100dvh - 64px)}
+ #root .adventure-app .inventory-modal .trail-inventory{height:calc(100dvh / var(--desktop-scale,1) - 76px);max-height:calc(100dvh / var(--desktop-scale,1) - 76px)}
  #root .adventure-app .inventory-modal .inventory-heading{padding-top:8px;padding-bottom:4px}
  #root .adventure-app .inventory-modal .inventory-heading h2{font-size:22px!important}
  #root .adventure-app .inventory-modal .inventory-heading>div:first-of-type>small{display:none}
@@ -62,13 +61,21 @@
  #root .adventure-app .inventory-modal .inventory-footer{padding-block:6px}
  #root .adventure-app .inventory-modal .inventory-footer .inventory-done{min-height:32px;padding:6px 12px}
 }
-/* Corner-only foliage; the middle edge strips contain repeatable stone, not stretched vines. */
+/* Use the same stone and vine artwork as the chest, with equally scaled corners. */
 #root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel{
+ --inventory-frame-scale:.32px;
+ border-width:30px 38px 38px!important;
  background:transparent!important;
  box-shadow:none!important;
- border-image-source:url('/assets/ui/inventory-nine-slice-pixel.png')!important;
- border-image-slice:25% fill!important;
- border-image-repeat:round!important;
+ border-image:var(--forest-stone) 182 410 300 222 fill /
+  calc(182 * var(--inventory-frame-scale)) calc(410 * var(--inventory-frame-scale))
+  calc(300 * var(--inventory-frame-scale)) calc(222 * var(--inventory-frame-scale)) / 0 stretch!important;
+}
+@media (max-height:480px),(max-width:600px){
+ #root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel{
+  --inventory-frame-scale:.21px;
+  border-width:22px 26px 26px!important;
+ }
 }
 #root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel:has(> [data-panel-art='fallback']){
  background:#34372b!important;

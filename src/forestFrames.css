@@ -50,7 +50,7 @@ html body .trading-catalogue::after{background:#34372b!important}
 html body .trading-outfits{background:#34372b;color:#e7d29a}
 html body .trading-items>button{border-width:1px}
 /* Small controls retain their dimensions and live text. */
-html body :is(.inventory-modal,.settings-panel,.mechanic-guide,.rune-loadout-editor,.chest-panel,.trading-confirm,.fullscreen-hint) button:not(.primary):not(.inventory-done):not(.inventory-rune-slots>button):not(.loadout-slots>button):not(.loadout-library>button){
+html body :is(.inventory-modal,.settings-panel,.mechanic-guide,.rune-loadout-editor,.trading-confirm,.fullscreen-hint) button:not(.primary):not(.inventory-done):not(.inventory-rune-slots>button):not(.loadout-slots>button):not(.loadout-library>button){
  background:#454735!important;border-image:var(--forest-card) 12% fill / 7px / 0 stretch!important;
  border-radius:0!important;color:#e6cf8d!important;
 }

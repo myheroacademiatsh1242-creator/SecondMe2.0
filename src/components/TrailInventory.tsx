@@ -15,7 +15,7 @@ import {RuneLoadoutEditor,RuneStone} from './EchoRunes.tsx';
 import './TrailInventory.css';
 import './ForestInventory.css';
 export function TrailInventory({engine,hud,close:onClose}:{engine:GameEngine|null;hud:HUDState;close:()=>void}){
- const panelArt=usePanelArt(PANEL_ART.inventory);
+ const panelArt=usePanelArt(PANEL_ART.material);
  const {closing,close}=useDialogClose(onClose);
  const vi=hud.language==='vi',[inspect,setInspect]=useState(0),[editing,setEditing]=useState(false),root=useRef<HTMLDivElement>(null),closeRef=useRef(close);closeRef.current=close;
  const ids=hud.runeLoadout??[],rune=ECHO_RUNES.find(r=>r.id===ids[inspect]),active=rune&&hud.activeEchoRunes?.includes(rune.id),playing=hud.screen==='playing';

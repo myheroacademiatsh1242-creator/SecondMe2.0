@@ -1,14 +1,21 @@
-/* Give the confirmation its own inset, clear hierarchy and stable controls. */
-html body :is(#root,.modal-backdrop) .trading-confirm,
+/* Keep the decorative corners intact and inset the live controls past the stone. */
 html body :is(#root,.modal-backdrop) .trading-confirm.purchase-dialog{
   width:480px;
   max-height:640px;
-  padding:34px 36px 32px!important;
+  padding:30px 30px 34px!important;
   overflow:auto;
-  border:14px solid transparent!important;
-  border-image:url('/assets/ui/inventory-nine-slice-pixel.png') 25% fill / 28px / 0 round!important;
+  border:22px solid transparent!important;
+  border-image:url('/assets/ui/forest-panel-pixel.png') 16% fill / 60px / 0 round!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 10px 16px #0008);
   box-sizing:border-box;
   text-align:left;
+}
+html body :is(#root,.modal-backdrop) .trading-confirm.purchase-dialog[data-panel-art='fallback']{
+  border-image:none!important;
+  border-color:#827457!important;
+  background:#34372b!important;
 }
 html body :is(.trading-confirm,.purchase-dialog)>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 14px;border-bottom:1px solid #ad99604d}
 html body :is(.trading-confirm,.purchase-dialog)>header h2,

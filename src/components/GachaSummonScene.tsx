@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChestSprite, type ChestKind } from './ChestSprite.tsx';
-import { SUMMON_DURATION_MS, summonFrameAt, royalSummonAssets } from './chestSummon.ts';
+import { SUMMON_CHEST_MOTION_MS, SUMMON_DURATION_MS, SUMMON_GEM_MS, SUMMON_LID_SECONDS, summonFrameAt, royalSummonAssets } from './chestSummon.ts';
+import { usePanelArt, warmPanelArt } from './panelArt.ts';
+import { sounds } from '../game/logic/sound.ts';
+import { SummonPixelCircle } from './SummonPixelCircle.tsx';
 import './gachaSummon.css';
 
 export interface GachaSummonSceneProps {
@@ -14,6 +17,25 @@ export interface GachaSummonSceneProps {
 
 export type SummonStage = 'descending' | 'resonating' | 'shattering' | 'opening' | 'burst';
 
+const chestAsset = (file: string) => `${import.meta.env.BASE_URL}assets/chest/${file}`;
+const summonSources = (kind: ChestKind, fire: boolean) => kind === 'royal'
+  ? royalSummonAssets(fire).map(chestAsset)
+  : [kind === 'platinum' ? 'white-tanuki-crystal.png' : 'mystic-tanuki-crystal.png',
+    `chest_${kind}_closed.png`, `chest_${kind}_opening.png`, `chest_${kind}_open_loop.png`].map(chestAsset);
+
+function SummonPixelRing({ className }: { className: string }) {
+  return <svg className={className} viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
+    <path fill="currentColor" fillRule="evenodd" d="
+      M11 0h10v2h4v3h3v3h2v3h2v10h-2v3h-2v3h-3v3h-4v2H11v-2H7v-3H4v-3H2v-3H0V11h2V8h2V5h3V2h4z
+      M12 2h8v2h4v3h3v3h2v3h1v6h-1v3h-2v3h-3v3h-4v2h-8v-2H8v-3H5v-3H3v-3H2v-6h1v-3h2V7h3V4h4z
+    " />
+  </svg>;
+}
+
+export function warmRoyalSummon() {
+  warmPanelArt([...new Set([...summonSources('royal', false), ...summonSources('royal', true)])]);
+}
+
 export function GachaSummonScene({
   highestTier,
   isTenPull,
@@ -24,35 +46,16 @@ export function GachaSummonScene({
 }: GachaSummonSceneProps) {
   const vi = language === 'vi';
   const [frame, setFrame] = useState(0);
-  const [loaded, setLoaded] = useState(0);
   const completedRef = useRef(false);
   const completeRef = useRef(onComplete);
   const skipButton = useRef<HTMLButtonElement>(null);
-  const crystalSource=`${import.meta.env.BASE_URL}assets/${kind==='platinum'?'chest/white-tanuki-crystal.png':kind==='crystal'?'chest/mystic-tanuki-crystal.png':'ui/tanuki-crystal.png'}`;
+  const crystalSource=chestAsset(kind==='platinum'?'white-tanuki-crystal.png':kind==='crystal'?'mystic-tanuki-crystal.png':'tanuki-crystal.png');
   const crystalName=kind==='platinum'?(vi?'Tanuki thanh tinh thể':'Tanuki Azure Crystal'):kind==='crystal'?(vi?'Tanuki huyền tinh thể':'Tanuki Mystic Crystal'):(vi?'Tanuki phàm tinh thể':'Tanuki Common Crystal');
 
-  const sources = useMemo(() => {
-    const list = [
-      crystalSource,
-    ];
-    if (kind === 'royal') {
-      const isFire = highestTier === 'fire';
-      list.push(
-        `${import.meta.env.BASE_URL}assets/chest/chest_closed.png`,
-        `${import.meta.env.BASE_URL}assets/chest/chest_${isFire ? 'fire' : 'gold'}_opening.png`,
-        `${import.meta.env.BASE_URL}assets/chest/chest_${isFire ? 'fire' : 'gold'}_open_loop.png`,
-      );
-    } else {
-      list.push(
-        `${import.meta.env.BASE_URL}assets/chest/chest_${kind}_closed.png`,
-        `${import.meta.env.BASE_URL}assets/chest/chest_${kind}_opening.png`,
-        `${import.meta.env.BASE_URL}assets/chest/chest_${kind}_open_loop.png`,
-      );
-    }
-    return list;
-  }, [kind, highestTier, crystalSource]);
-
-  const ready = loaded >= sources.length;
+  const fire = highestTier === 'fire';
+  const sources = useMemo(() => summonSources(kind, fire), [kind, fire]);
+  const art = usePanelArt(sources);
+  const ready = art === 'ready';
   const still = reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const stage: SummonStage =
@@ -67,6 +70,13 @@ export function GachaSummonScene({
       : 'burst';
 
   useEffect(() => {
+    if (!ready) return;
+    if (stage === 'resonating') sounds.playChestCue('charge');
+    if (stage === 'opening') sounds.playChestCue('unlock');
+    if (stage === 'burst') sounds.playChestCue('reveal', highestTier);
+  }, [ready, stage, highestTier]);
+
+  useEffect(() => {
     completeRef.current = onComplete;
   }, [onComplete]);
 
@@ -77,10 +87,10 @@ export function GachaSummonScene({
   }, []);
 
   useEffect(() => {
-    if (kind === 'wood') {
+    if (kind === 'wood' || art === 'fallback') {
       finish();
     }
-  }, [kind, finish]);
+  }, [kind, art, finish]);
 
   useEffect(() => {
     if (!ready) return;
@@ -121,8 +131,8 @@ export function GachaSummonScene({
     return () => window.removeEventListener('keydown', key, true);
   }, [finish]);
 
-  const tierClass =
-    highestTier === 'fire' ? 'tier-legendary' : highestTier === 'gold' ? 'tier-epic' : 'tier-rare';
+  const tierClass = stage !== 'burst' || highestTier === 'rare'
+    ? 'tier-rare' : fire ? 'tier-legendary' : 'tier-epic';
 
   // Chest opens when reaching frame >= 7
   const chestTier = frame >= 7 ? (highestTier === 'fire' ? 'fire' : 'gold') : null;
@@ -135,18 +145,6 @@ export function GachaSummonScene({
       aria-modal="true"
       aria-label={vi ? 'Hoạt ảnh mở rương tinh thể' : 'Celestial Gem Summon Scene'}
     >
-      {/* Preload required image assets */}
-      {sources.map((src) => (
-        <img
-          key={src}
-          src={src}
-          alt=""
-          hidden
-          onLoad={() => setLoaded((n) => n + 1)}
-          onError={() => setLoaded((n) => n + 1)}
-        />
-      ))}
-
       {/* Magical vignette & astral aurora background */}
       <div className="summon-backdrop-aurora" aria-hidden="true" />
 
@@ -193,106 +191,21 @@ export function GachaSummonScene({
             (vi
               ? 'Rương báu đã mở! Bảo vật cổ xưa xuất thế…'
               : 'Chest unlocked! Ancient treasures revealed…')}
-          {stage === 'burst' &&
-            (vi ? 'BẢO VẬT ĐÃ THỨC TỈNH!' : 'TREASURE UNLEASHED!')}
+          {stage === 'burst' && (fire
+            ? (vi ? 'BẢO VẬT HIẾM!' : 'RARE TREASURE!')
+            : (vi ? 'RƯƠNG ĐÃ MỞ!' : 'CHEST OPENED!'))}
         </h3>
       </div>
 
       {/* Center Stage: Altar, Magic Circle, Floating Celestial Crystal & Chest */}
-      <div className="summon-stage">
+      <div className="summon-stage" style={{
+        '--summon-gem-duration': `${SUMMON_GEM_MS}ms`,
+        '--summon-chest-motion': `${SUMMON_CHEST_MOTION_MS}ms`,
+      } as React.CSSProperties} hidden={!ready}>
         {/* Magic Summoning Circle on ground */}
         <div className="summon-magic-circle" aria-hidden="true">
-          <svg className="summon-circle-svg" viewBox="0 0 400 400">
-            <defs>
-              <radialGradient id="summon-core-grad" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="currentColor" stopOpacity="0.45" />
-                <stop offset="50%" stopColor="currentColor" stopOpacity="0.18" />
-                <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-
-            {/* Ambient core glow disk */}
-            <circle cx="200" cy="200" r="188" fill="url(#summon-core-grad)" />
-
-            {/* Outer Clockwise Rotating Ring */}
-            <g className="summon-ring-clockwise">
-              <circle cx="200" cy="200" r="190" fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.85" />
-              <circle cx="200" cy="200" r="182" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 6" opacity="0.65" />
-              <circle cx="200" cy="200" r="166" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.75" />
-
-              {/* 16 celestial tick marks along outer rim */}
-              {Array.from({ length: 16 }).map((_, i) => (
-                <line
-                  key={`tick-${i}`}
-                  x1="200"
-                  y1="10"
-                  x2="200"
-                  y2="26"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  opacity="0.85"
-                  transform={`rotate(${i * 22.5} 200 200)`}
-                />
-              ))}
-
-              {/* 8 Cardinal Star Nodes on rim */}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <g key={`node-${i}`} transform={`rotate(${i * 45} 200 200)`}>
-                  <circle cx="200" cy="26" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.9" />
-                  <circle cx="200" cy="26" r="2.5" fill="currentColor" opacity="0.95" />
-                </g>
-              ))}
-
-              {/* Outer Octagram */}
-              <polygon
-                points="200,42 358,200 200,358 42,200"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                opacity="0.75"
-              />
-              <polygon
-                points="200,42 358,200 200,358 42,200"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                opacity="0.75"
-                transform="rotate(45 200 200)"
-              />
-            </g>
-
-            {/* Inner Counter-Clockwise Rotating Ring */}
-            <g className="summon-ring-counter">
-              <circle cx="200" cy="200" r="130" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.85" />
-              <circle cx="200" cy="200" r="120" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 6" opacity="0.6" />
-
-              {/* 12-pointed star pattern */}
-              <polygon
-                points="200,74 238,162 326,200 238,238 200,326 162,238 74,200 162,162"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                opacity="0.65"
-              />
-              <polygon
-                points="200,74 238,162 326,200 238,238 200,326 162,238 74,200 162,162"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                opacity="0.65"
-                transform="rotate(45 200 200)"
-              />
-
-              {/* Inner focus rune ring */}
-              <circle cx="200" cy="200" r="78" fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.9" />
-              <circle cx="200" cy="200" r="68" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 4" opacity="0.5" />
-            </g>
-
-            {/* Central Focal Glyph */}
-            <circle cx="200" cy="200" r="42" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.85" />
-            <circle cx="200" cy="200" r="12" fill="currentColor" opacity="0.75" />
-          </svg>
           <div className="summon-circle-glow" />
+          <SummonPixelCircle stage={stage} still={still} />
         </div>
 
         {/* Floor Contact Shadow Grounding the Chest */}
@@ -312,6 +225,7 @@ export function GachaSummonScene({
 
         {/* Light Pillar shooting upwards as lid fully opens */}
         {stage === 'burst' && <div className="summon-light-pillar" aria-hidden="true" />}
+        {stage === 'burst' && !still && <SummonPixelRing className="summon-floor-wave" />}
 
         {/* Floating Celestial Catalyst (Tanuki Celestial Gem) */}
         {frame < 7 && (
@@ -349,7 +263,7 @@ export function GachaSummonScene({
 
             {/* Energy Shockwave Rings */}
             {(stage === 'resonating' || stage === 'shattering') && (
-              <div className="summon-gem-shockwave-ring" />
+              <SummonPixelRing className="summon-gem-shockwave-ring" />
             )}
 
             {/* Core Tanuki Gem Sprite with Glints */}
@@ -363,8 +277,6 @@ export function GachaSummonScene({
               <div className="summon-gem-glint glint-2" />
             </div>
 
-            {/* Shatter Impact Flash at Chest Lock */}
-            {stage === 'shattering' && <div className="summon-shatter-impact" />}
           </div>
         )}
 
@@ -378,15 +290,25 @@ export function GachaSummonScene({
             <ChestSprite
               kind={kind}
               tier={chestTier}
-              openingDuration={1.6}
+              openingDuration={SUMMON_LID_SECONDS}
               reducedMotion={still}
             />
           </div>
+          {stage === 'opening' && !still && <SummonPixelRing className="summon-shatter-impact" />}
+          {stage === 'burst' && !still && <div className="summon-chest-sparks" aria-hidden="true">
+            {Array.from({length: fire ? 30 : highestTier === 'gold' ? 20 : 14}, (_, i) => {
+              const angle = i * 2.39996;
+              const distance = (fire ? 120 : 75) + i % 5 * 14;
+              return <i key={i} style={{
+                '--spark-x': `${Math.cos(angle) * distance}px`,
+                '--spark-y': `${Math.sin(angle) * distance * .5 - 36}px`,
+                '--spark-size': `${3 + i % 4}px`,
+              } as React.CSSProperties}/>;
+            })}
+          </div>}
         </div>
       </div>
 
-      {/* Screen Soft Glow at moment of final treasure burst */}
-      {stage === 'burst' && <div className="summon-screen-flash" aria-hidden="true" />}
     </div>
   );
 }

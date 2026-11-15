@@ -19,7 +19,8 @@ export const PANEL_ART = {
  inventory,
  material,
  shop: [ui('trading-forest-frame.png'), ...material],
- purchase: [inventory[0]],
+ chestStall: [ui('tanuki-chest-stall-frame.png')],
+ purchase: [material[0]],
 };
 
 type ArtState = 'loading' | 'ready' | 'fallback';
