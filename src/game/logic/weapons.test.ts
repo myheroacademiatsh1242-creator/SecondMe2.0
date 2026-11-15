@@ -76,7 +76,7 @@ test('the engine only changes weapons on the hero screens and only to owned ones
  assert.equal(e.setCharacterWeapon('mage','staff-lightning'),false);
  assert.equal(e.setCharacterWeapon('swordsman','staff-frost'),false);
  assert.equal(e.setCharacterWeapon('mage','staff-frost'),true);
- e.unlockDevMode();
+ e.unlockDevMode();e.grantDevResources();
  assert.equal(canUseWeapon('swordsman','sword-caliburn',e.campaign.ownedWeapons),true);
  assert.equal(canUseWeapon('mage','staff-archmage',e.campaign.ownedWeapons),true);
 });

@@ -5,13 +5,15 @@ import {SHOP_ITEMS} from './shopItems.ts';
 import {GameEngine} from '../GameEngine.ts';
 import {createEnemies} from './enemies.ts';
 import {LEVELS} from './levels.ts';
+import {SHOP_OUTFITS,canWearOutfit} from './outfits.ts';
+import {WEAPONS,canUseWeapon} from './weapons.ts';
 function game(t:TestContext){const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));const g=new GameEngine();g.currentLevelIdx=1;g.tutorialEnabled=false;g.restartLevel();return g;}
 function hit(g:GameEngine){g.invulnerability=0;(g as any).takeDamage(1000);}
 test('catalogue purchases are atomic, bounded by quantity, funds, inventory caps and unlocks',()=>{
  const c=new Campaign();c.coins=100;assert.ok(c.buyShopItem('healSmall',5));assert.equal(c.coins,70);assert.equal(c.supplies.healSmall,5);
  const before=JSON.stringify({coins:c.coins,supplies:c.supplies});for(const qty of [0,-1,1.5,NaN,100,Number.MAX_SAFE_INTEGER])assert.equal(c.buyShopItem('healSmall',qty),false);assert.equal(JSON.stringify({coins:c.coins,supplies:c.supplies}),before);
  assert.equal(c.buyShopItem('aid'),false);c.supplies.healLarge=98;assert.equal(c.buyShopItem('healLarge',2),false);assert.ok(c.buyShopItem('healLarge'));assert.equal(c.supplies.healLarge,99);
- assert.deepEqual(SHOP_ITEMS.slice(0,5).map(i=>[i.price,i.cap]),[[6,99],[10,99],[12,10],[22,2],[0,1]]);
+ assert.deepEqual(SHOP_ITEMS.filter(item=>!['manaSmall','manaLarge'].includes(item.id)).slice(0,5).map(i=>[i.price,i.cap]),[[6,99],[10,99],[12,10],[22,2],[0,1]]);
 });
 test('aid unlock tracks both heroes through all six trials across fresh journeys',()=>{
  const c=new Campaign();for(let id=1;id<=6;id++)c.recordHeroClear('mage',id);c.reset();for(let id=1;id<=5;id++)c.recordHeroClear('swordsman',id);assert.equal(c.aidUnlocked,false);
@@ -44,12 +46,27 @@ test('aid is the other hero, has 15 HP, attacks independently, cannot hold a gat
  g.enemies=[];const p=g.currentLevel.plates[0];g.supportAlly!.x=p.x+25;g.supportAlly!.y=p.y+25;(g as any).update(.01);assert.equal(p.isPressed,false);assert.equal(g.echoes.length,0);
  (g as any).hitSupport(20);assert.equal(g.supportAlly,null);g.campaign.supplies.aid=1;assert.equal(g.useSupply('aid'),false);g.restartLevel();assert.ok(g.useSupply('aid'));
 });
-test('dev mode grants coins and runes while keeping shop purchases available',t=>{
- const g=game(t);g.campaign.supplies.healSmall=7;g.campaign.supplies.healLarge=99;g.campaign.supplies.revive=10;g.campaign.supplies.chances=2;g.campaign.timeItems=99999;g.campaign.limitRings=99999;
- g.unlockDevMode();assert.equal(g.campaign.coins,99999);assert.ok(Object.values(g.campaign.echoRunes).every(n=>n===9999));assert.equal(g.campaign.supplies.healSmall,7);assert.equal(g.campaign.aidUnlocked,true);
- for(const id of ['time','ring','healLarge','revive','chances'] as const)assert.equal(g.campaign.shopStock(id),0);
- g.screen='shop';for(const item of SHOP_ITEMS.filter(i=>i.id!=='aid'))assert.ok(g.buyShopItem(item.id),item.id);
- const stock=g.campaign.timeItems;g.unlockDevMode();assert.equal(g.campaign.timeItems,stock,'ordinary purchases survive repeated code entry');
+test('dev refill grants full stock and survives reload without legacy stock migration',t=>{
+ const old=Object.getOwnPropertyDescriptor(globalThis,'localStorage');const storage=new Map<string,string>();
+ Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:(key:string)=>storage.get(key)??null,setItem:(key:string,value:string)=>storage.set(key,value)}});
+ t.after(()=>old?Object.defineProperty(globalThis,'localStorage',old):Reflect.deleteProperty(globalThis,'localStorage'));
+ const g=game(t);const progress=[...g.campaign.completed];
+ assert.equal(g.grantDevResources(),false);
+ g.unlockDevMode();assert.equal(g.campaign.coins,0);
+ assert.ok(g.grantDevResources());
+ assert.equal(g.campaign.coins,99999);assert.equal(g.campaign.chestKeys,99999);assert.equal(g.campaign.whiteCrystals,99999);assert.equal(g.campaign.mysticCrystals,99999);
+ for(const outfit of SHOP_OUTFITS)assert.equal(canWearOutfit(outfit.hero,outfit.outfit,g.campaign.ownedOutfits),true,outfit.id);
+ for(const weapon of WEAPONS)assert.equal(canUseWeapon(weapon.hero,weapon.id,g.campaign.ownedWeapons),true,weapon.id);
+ for(const item of SHOP_ITEMS)assert.equal(g.campaign.shopStock(item.id),item.cap,item.id);
+ assert.equal(g.campaign.aidUnlocked,true);assert.deepEqual(g.campaign.completed,progress);
+ const loaded=new Campaign();loaded.load();
+ for(const item of SHOP_ITEMS)assert.equal(loaded.shopStock(item.id),item.cap,item.id);
+ assert.equal(loaded.chestKeys,99999);assert.equal(loaded.whiteCrystals,99999);assert.equal(loaded.mysticCrystals,99999);
+ assert.deepEqual(loaded.ownedOutfits,g.campaign.ownedOutfits);
+ assert.deepEqual(loaded.ownedWeapons,g.campaign.ownedWeapons);
+ const next=new GameEngine();assert.equal(next.devUnlocked,true);
+ g.campaign.timeItems=1;g.campaign.chestKeys=3;g.campaign.whiteCrystals=0;g.campaign.mysticCrystals=0;g.campaign.coins=4;g.grantDevResources();
+ assert.equal(g.campaign.timeItems,99);assert.equal(g.campaign.chestKeys,99999);assert.equal(g.campaign.whiteCrystals,99999);assert.equal(g.campaign.coins,99999);
 });
 
 test('legacy supply saves migrate without losing stock, opened revival charges or hero progress',t=>{
@@ -64,3 +81,20 @@ test('legacy supply saves migrate without losing stock, opened revival charges o
  const c=new Campaign();c.load();assert.equal(c.coins,100011);for(const i of SHOP_ITEMS.filter(i=>i.id!=='aid')){assert.equal(c.shopStock(i.id),0);assert.ok(c.buyShopItem(i.id));}
  const next=new Campaign();next.load();assert.equal(next.timeItems,1);assert.equal(next.supplies.revive,1);assert.equal(next.devShopStockMigrated,true);
  });
+
+test('energy potions restore 15 and 55 MP repeatedly, cap at 100 and do not consume when full',t=>{
+ const g=game(t);g.campaign.supplies.manaSmall=2;g.campaign.supplies.manaLarge=2;g.mana.value=0;
+ assert.ok(g.useSupply('manaSmall'));assert.equal(g.mana.value,15);
+ assert.ok(g.useSupply('manaSmall'));assert.equal(g.mana.value,30);
+ assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,85);
+ assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,100);
+ g.campaign.supplies.manaSmall=1;assert.equal(g.useSupply('manaSmall'),false);assert.equal(g.campaign.supplies.manaSmall,1);
+});
+
+test('energy purchases cost 1 and 15 coins and both quantities survive save and reload',t=>{
+ const old=Object.getOwnPropertyDescriptor(globalThis,'localStorage');let data='{}';
+ Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=>data,setItem:(_key:string,value:string)=>{data=value;}}});
+ t.after(()=>old?Object.defineProperty(globalThis,'localStorage',old):Reflect.deleteProperty(globalThis,'localStorage'));
+ const c=new Campaign();c.coins=100;assert.ok(c.buyShopItem('manaSmall',2));assert.ok(c.buyShopItem('manaLarge',2));assert.equal(c.coins,68);
+ const loaded=new Campaign();loaded.load();assert.equal(loaded.supplies.manaSmall,2);assert.equal(loaded.supplies.manaLarge,2);
+});

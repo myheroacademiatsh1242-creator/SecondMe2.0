@@ -43,11 +43,11 @@ test('legacy Frostbound and Ember require separate purchases for each hero while
  for(const hero of ['mage','swordsman'] as const)for(const outfit of ['frost','ember'] as const)assert.equal(canWearOutfit(hero,outfit,c.ownedOutfits),true);
 });
 
-test('shop places owned costumes first and preserves their catalogue order',()=>{
+test('shop sorts outfits by rarity then ascending price regardless of ownership',()=>{
  const ids=(owned:Parameters<typeof orderedShopOutfits>[0])=>orderedShopOutfits(owned).map(o=>o.id);
  const catalogue=SHOP_OUTFITS.map(o=>o.id);
  assert.deepEqual(ids([]),catalogue);
- assert.deepEqual(ids(['void-knight','mage-ember']),['mage-ember','void-knight',...catalogue.filter(id=>id!=='mage-ember'&&id!=='void-knight')]);
+ assert.deepEqual(ids(['void-knight','mage-ember']),catalogue);
  assert.deepEqual(ids([...catalogue].reverse()),catalogue);
 });
 

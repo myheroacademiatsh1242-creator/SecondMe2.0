@@ -8,6 +8,10 @@ export const RARITIES = {
 
 export type Rarity = keyof typeof RARITIES;
 export const RARITY_ORDER: readonly Rarity[] = ['common','refined','deluxe','bespoke','ultimate'];
+/** Group lower rarities first, then show less expensive products first in each group. */
+export function sortShopCatalogue<T extends {rarity:Rarity;price:number}>(items:readonly T[]):T[]{
+  return [...items].sort((a,b)=>RARITY_ORDER.indexOf(a.rarity)-RARITY_ORDER.indexOf(b.rarity)||a.price-b.price);
+}
 export function rarityName(rarity:Rarity,vi:boolean){return RARITIES[rarity][vi?'vi':'en'];}
 export const RARITY_COLORS:Record<Rarity,string> = {
   common:'#76c96b',

@@ -1,8 +1,9 @@
 import {loadDemonSprites} from './rendering/demonBoss.ts';
+import type {ChestKind} from './logic/chest.ts';
 import {createDemonBoss} from './logic/demonBoss.ts';
 import { trailObjective, type TrailAction } from './logic/trailObjective.ts';
 import {restoreWeapons,getWeapons,equipWeapon,cleanOwnedWeapons,canUseWeapon,WEAPONS,DEFAULT_WEAPON,type WeaponHero,type WeaponId} from './logic/weapons.ts';
-import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
+import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,SHOP_OUTFITS,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
 import { SKILL_PICKUPS } from './logic/skillPickups.ts';
 import { ManaPool, MAX_MP, comboManaCost, skillManaCost } from './logic/mana.ts';
 import {SHOP_ITEMS,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
@@ -157,10 +158,12 @@ export interface HUDState {
   timeItems: number;
   limitRings: number;
   chestKeys: number;
+  whiteCrystals: number;
+  mysticCrystals: number;
   echoLimit: number;
   limitRingActive: boolean;
   bestStars: Record<number, number>;
-  lastRating: { stars: number; coins: number; keys?:number } | null;
+  lastRating: { stars: number; coins: number; commonCrystals?:number } | null;
   skillCooldown: number;
   bossArmor: number;
   pillarsRemaining: number;
@@ -336,7 +339,7 @@ export class GameEngine {
   public devUnlocked = false;
   public language: Language = 'vi';
   public characterClass: CharacterClass = 'mage';
-  public lastRating: { stars: number; coins: number; keys?:number } | null = null;
+  public lastRating: { stars: number; coins: number; commonCrystals?:number } | null = null;
   public mana=new ManaPool();
   public skillCooldown = 0;
   public frostZones:FrostZone[]=[];
@@ -436,6 +439,7 @@ export class GameEngine {
       sounds.setMusicVolume(typeof value.musicVolume === 'number' ? value.musicVolume : 1);
       this.reducedMotion = value.reducedMotion === true;
       this.showHints = value.showHints !== false;
+      this.devUnlocked = value.devUnlocked === true;
       this.language = value.language === 'en' ? 'en' : 'vi';
       this.characterClass = MECHANICAL_ENABLED && value.characterClass === 'mechanical' && this.campaign.mechanicalOwned ? 'mechanical' : value.characterClass === 'swordsman' ? 'swordsman' : 'mage';
       setCurrentLanguage(this.language);
@@ -446,7 +450,7 @@ export class GameEngine {
 
   private saveSettings() {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      muted: sounds.getMuted(), volume: sounds.getVolume(), voiceVolume: sounds.getVoiceVolume(), effectsVolume: sounds.getEffectsVolume(), musicVolume: sounds.getMusicVolume(), reducedMotion: this.reducedMotion, showHints: this.showHints, language: this.language, characterClass: this.characterClass,
+      muted: sounds.getMuted(), volume: sounds.getVolume(), voiceVolume: sounds.getVoiceVolume(), effectsVolume: sounds.getEffectsVolume(), musicVolume: sounds.getMusicVolume(), reducedMotion: this.reducedMotion, showHints: this.showHints, language: this.language, characterClass: this.characterClass, devUnlocked: this.devUnlocked,
     })); } catch { /* Ignore unavailable storage. */ }
   }
 
@@ -570,7 +574,7 @@ export class GameEngine {
   public openShop() { if (this.screen !== 'lobby') return; this.screen = 'shop'; document.body.dataset.state = 'shop'; this.notifyHUD(); }
   public openCharacters() { if (this.screen !== 'lobby') return; this.screen = 'characters'; document.body.dataset.state = 'characters'; this.notifyHUD(); }
   public buyTimeItem() { if (this.screen !== 'shop') return; if (this.campaign.buyTimeItem()) this.showBanner('Time potion purchased'); else this.showBanner('Not enough coins'); this.notifyHUD(); }
-  public openChest(count:1|10) { if(this.screen!=='shop')return null;const rewards=this.campaign.openChest(count);this.notifyHUD();return rewards; }
+  public openChest(count:1|10,kind:ChestKind='royal') { if(this.screen!=='shop')return null;const rewards=this.campaign.openChest(count,Math.random,kind);this.notifyHUD();return rewards; }
   public buyLimitRing() { if (this.screen !== 'shop') return; if (this.campaign.buyLimitRing()) this.showBanner(this.language==='vi'?'Đã mua nhẫn tăng giới hạn.':'Limit ring purchased.'); else this.showBanner(this.language==='vi'?'Không đủ xu.':'Not enough coins.'); this.notifyHUD(); }
   public useLimitRing() {
     if (this.screen !== 'playing' || this.guides.blocking || this.exitTravelRemaining>0 || this.bossDeathPending || (this.boss && this.boss.hp<=0) || !this.campaign.useLimitRing()) return false;
@@ -772,20 +776,26 @@ export class GameEngine {
 
   public unlockDevMode() {
     this.devUnlocked = true;
-    if (this.legTimeRemaining === null && !this.isTraining && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12))
-      this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
-    this.campaign.completed = [...new Set([...this.campaign.completed,1,2,3,4,5])].sort((a,b)=>a-b);
+    this.saveSettings();
+    this.showBanner(this.language==='vi'?'DEV · Đã bật công cụ test trong Cài đặt':'DEV · Test tools enabled in Settings');
+    this.notifyHUD();
+  }
+
+  public grantDevResources() {
+    if(!this.devUnlocked)return false;
     this.campaign.mechanicalOwned = true;
     this.campaign.coins = 99999;
-    // Leave shop stock buyable, including saves filled by the previous dev code.
-    // Preserve ordinary purchased quantities; clear only capped developer stock.
+    this.campaign.chestKeys = 99999;
+    this.campaign.whiteCrystals = 99999;
+    this.campaign.mysticCrystals = 99999;
+    this.campaign.devShopStockMigrated = true;
     for(const item of SHOP_ITEMS){
-      if(this.campaign.shopStock(item.id)<item.cap)continue;
-      if(item.id==='time')this.campaign.timeItems=0;
-      else if(item.id==='ring')this.campaign.limitRings=0;
-      else if(item.id!=='aid')this.campaign.supplies[item.id]=0;
+      if(item.id==='time')this.campaign.timeItems=item.cap;
+      else if(item.id==='ring')this.campaign.limitRings=item.cap;
+      else this.campaign.supplies[item.id]=item.cap;
     }
     this.campaign.aidUnlocked=true;
+    this.campaign.ownedOutfits=SHOP_OUTFITS.map(outfit=>outfit.id);
     this.campaign.ownedWeapons=cleanOwnedWeapons(WEAPONS.map(w=>w.id));
     for(const rune of ECHO_RUNES)this.campaign.echoRunes[rune.id]=9999;
     // Keep the developer's selected build, filling only unused slots.
@@ -793,10 +803,10 @@ export class GameEngine {
       if(this.campaign.runeLoadout.length>=4)break;
       if(!this.campaign.runeLoadout.includes(rune.id))this.campaign.runeLoadout.push(rune.id);
     }
-    this.campaign.pendingRuneChoices=[];
     this.campaign.save();
-    this.showBanner(this.language==='vi'?`DEV · MỞ TOÀN BỘ ${LEVELS.length} MÀN`:`DEV · ALL ${LEVELS.length} TRAILS UNLOCKED`);
+    this.showBanner(this.language==='vi'?'DEV · Đã nạp tài nguyên và mở toàn bộ trang bị':'DEV · Resources refilled and all gear unlocked');
     this.notifyHUD();
+    return true;
   }
 
   public buyOutfit(id:ShopOutfitId){
@@ -814,6 +824,7 @@ export class GameEngine {
     if(this.screen!=='playing'||this.guides.blocking||this.health<=0)return false;
     if(id==='chances')return false; // passive, consumed only when an automatic revival starts
     if(this.campaign.supplies[id]<=0)return false;
+    if(id==='manaSmall'||id==='manaLarge')return this.mana.value<MAX_MP;
     if(id==='aid')return this.campaign.aidUnlocked&&!this.usedSupplies.has(id)&&!this.supportAlly;
     return this.health<this.maxHealth;
   }
@@ -822,6 +833,9 @@ export class GameEngine {
     this.campaign.supplies[id]--;
     if(id==='healSmall'||id==='healLarge'){
       this.health=Math.min(this.maxHealth,this.health+(id==='healSmall'?10:50));
+      this.renderer.emitMagic('sparkle',this.player.x,this.player.y,40);
+    }else if(id==='manaSmall'||id==='manaLarge'){
+      this.mana.value=Math.min(MAX_MP,this.mana.value+(id==='manaSmall'?15:55));
       this.renderer.emitMagic('sparkle',this.player.x,this.player.y,40);
     }else if(id==='revive'){
       this.usedSupplies.add(id);this.reviveAt(this.currentLevel.playerSpawn.x,this.currentLevel.playerSpawn.y);
@@ -1797,16 +1811,19 @@ export class GameEngine {
   // --- Input Handling ---
 
   private handleKeyDown = (e: KeyboardEvent) => {
-    if(this.bossIntroduction&&this.screen==='playing')return;
-
-    // Dev replenishment also works while inspecting inventory or editing runes.
-    if(!this.orientationBlocked&&!e.repeat&&(e.code==='KeyY'||e.key.toLowerCase()==='y')) {
+    const editing=typeof HTMLElement!=='undefined'&&e.target instanceof HTMLElement&&!!e.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
+    // Four consecutive presses; holding Y or typing into a field is not the command.
+    if(editing||e.ctrlKey||e.metaKey||e.altKey||this.orientationBlocked){this.devKeyCount=0;return;}
+    if(e.code==='KeyY'||e.key.toLowerCase()==='y') {
+      if(e.repeat)return;
       const now=performance.now();
       this.devKeyCount=now-this.lastDevKeyAt<=2500?this.devKeyCount+1:1;
       this.lastDevKeyAt=now;
       if(this.devKeyCount>=4){this.devKeyCount=0;this.unlockDevMode();}
       return;
     }
+    this.devKeyCount=0;
+    if(this.bossIntroduction&&this.screen==='playing')return;
     if(typeof HTMLElement!=='undefined'&&e.target instanceof HTMLElement){
       if(e.target.closest('input,textarea,select'))return;
       if(['Enter','Space'].includes(e.code)&&e.target.closest('button'))return;
@@ -2674,7 +2691,7 @@ export class GameEngine {
         coins: this.campaign.coins,
         timeItems: this.campaign.timeItems,
         limitRings: this.campaign.limitRings,
-        chestKeys: this.campaign.chestKeys,
+        chestKeys: this.campaign.chestKeys,whiteCrystals:this.campaign.whiteCrystals,mysticCrystals:this.campaign.mysticCrystals,
         echoLimit: this.echoLimit,
         limitRingActive: this.limitRingActive,
         bestStars: { ...this.campaign.bestStars },

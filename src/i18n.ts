@@ -54,7 +54,7 @@ const pairs: [string, string][] = [
   ['Tanuki’s new look', 'Diện mạo Tanuki mới'],
   ['The shopkeeper now has brown fur, a light muzzle and a green leaf on its head. Its greeting animations have been updated to match.', 'Chủ quầy có bộ lông nâu, mõm sáng và chiếc lá xanh trên đầu. Các động tác chào khách cũng được cập nhật đồng bộ.'],
   ['The red chest is here', 'Rương đỏ đã mở'],
-  ['Use 5 keys for one draw or 50 keys for ten. Reward probabilities are shown in the chest.', 'Dùng 5 chìa khóa mở một lượt hoặc 50 chìa khóa mở 10 lượt. Xem tỉ lệ thưởng ngay trong rương.'],
+  ['Use 5 Tanuki crystals for one draw or 50 crystals for ten. Reward probabilities are shown in the chest.', 'Dùng 5 Tanuki phàm tinh thể mở một lượt hoặc 50 tinh thể mở 10 lượt. Xem tỉ lệ thưởng ngay trong rương.'],
   ['Tanuki’s animated stall', 'Quầy Tanuki chuyển động'],
   ['Tanuki and the stall now turn in a new pixel-art animation when you talk.', 'Tanuki và quầy hàng có chuyển động xoay mới theo phong cách pixel khi bạn trò chuyện.'],
   ['The new Tanuki shop', 'Cửa hàng Tanuki mới'],

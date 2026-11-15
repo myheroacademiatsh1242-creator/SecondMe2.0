@@ -7,7 +7,7 @@ import {ICE_BARRAGE} from './iceBarrage.ts';
 import {FROST_STRIKE,makeIceRays,insideIceRay,type IceRay} from './iceMagic.ts';
 export {TIME_ITEM_PRICE,TIME_ITEM_CAP} from './shopItems.ts';
 import {SHOP_ITEMS,emptySupplies,cleanSupplies,type ShopItemId} from './shopItems.ts';
-import {rollChest, CHEST_POOL, type ChestRewardId} from './chest.ts';
+import {isChestAvailable, rollChest, chestReward, CHEST_PRICES, chestBalance, type ChestKind, type ChestRewardId} from './chest.ts';
 import { DAMAGE, damagePoints } from './damage.ts';
 import { ECHO_RUNES, rollEchoRune, rollRuneChoices, cleanRuneChoices, cleanRuneStock, type EchoRuneId, type EchoRuneStock } from './echoRunes.ts';
 import { puzzleBalance } from './balance.ts';
@@ -46,7 +46,10 @@ export class Campaign {
   coins = 0;
   timeItems = 0;
   limitRings = 0;
+  // Legacy save field: this balance holds Tanuki phàm tinh thể.
   chestKeys = 0;
+  whiteCrystals = 0;
+  mysticCrystals = 0;
   lastChestRewards:ChestRewardId[]=[];
   bestStars: Record<number, number> = {};
   load() {
@@ -72,7 +75,9 @@ export class Campaign {
       this.timeItems = Number.isSafeInteger(value.timeItems) && value.timeItems >= 0 ? value.timeItems : 0;
       this.limitRings = Number.isSafeInteger(value.limitRings) && value.limitRings >= 0 ? value.limitRings : 0;
       this.chestKeys=Number.isSafeInteger(value.chestKeys)&&value.chestKeys>=0?value.chestKeys:0;
-      this.lastChestRewards=Array.isArray(value.lastChestRewards)?value.lastChestRewards.filter((id:unknown)=>CHEST_POOL.some(r=>r.id===id)).slice(0,10):[];
+      this.whiteCrystals=Number.isSafeInteger(value.whiteCrystals)&&value.whiteCrystals>=0?value.whiteCrystals:0;
+      this.mysticCrystals=Number.isSafeInteger(value.mysticCrystals)&&value.mysticCrystals>=0?value.mysticCrystals:0;
+      this.lastChestRewards=Array.isArray(value.lastChestRewards)?value.lastChestRewards.filter((id:unknown)=>typeof id==='string'&&Boolean(chestReward(id as ChestRewardId))).slice(0,10):[];
       this.echoRunes=cleanRuneStock(value.echoRunes);
       this.pendingRuneChoices=cleanRuneChoices(value.pendingRuneChoices);
       this.runeLoadout=Array.isArray(value.runeLoadout)?[...new Set(value.runeLoadout.filter((id:unknown)=>typeof id==='string'&&ECHO_RUNES.some(r=>r.id===id)))].slice(0,4) as EchoRuneId[]:ECHO_RUNES.filter(r=>(this.echoRunes[r.id]??0)>0).slice(0,4).map(r=>r.id);
@@ -87,14 +92,14 @@ export class Campaign {
         this.devShopStockMigrated=true;
       }
       if(migrateRunes||legacyDevStock)this.save();
-    } catch { this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+    } catch { this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
   }
   save() {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
       ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
       supplies:this.supplies,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       completed: this.completed, bossDefeated: this.bossDefeated,
-      echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
+      echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
   }
   award(levelId: number): boolean {
@@ -129,24 +134,29 @@ export class Campaign {
     this.lastRuneDrop=null;
     if(levelId>=1&&levelId<=12&&levelId!==6&&this.pendingRuneChoices.length===0)this.pendingRuneChoices=rollRuneChoices();
     const reward = levelRating(seconds,levelId);
-    const keys=(levelId===6||levelId===13)?3+Math.min(2,Math.floor(Math.max(0,random())*3)):levelId>=1&&levelId<=12&&levelId!==6&&reward.stars>0?reward.stars+2:0;
-    this.chestKeys+=keys;
+    const commonCrystals=(levelId===6||levelId===13)?3+Math.min(2,Math.floor(Math.max(0,random())*3)):levelId>=1&&levelId<=12&&levelId!==6&&reward.stars>0?reward.stars+2:0;
+    this.chestKeys+=commonCrystals;
     this.coins += reward.coins;
     this.bestStars[levelId] = Math.max(this.bestStars[levelId] ?? 0, reward.stars);
     this.save();
-    return {...reward,keys};
+    return {...reward,commonCrystals};
   }
-  openChest(count:1|10,random:()=>number=Math.random):ChestRewardId[]|null {
-    if((count!==1&&count!==10)||this.chestKeys<count*5)return null;
-    const rewards=Array.from({length:count},()=>rollChest(random));
-    this.chestKeys-=count*5;
+  openChest(count:1|10,random:()=>number=Math.random,kind:ChestKind='royal'):ChestRewardId[]|null {
+    const price=Object.hasOwn(CHEST_PRICES,kind)?CHEST_PRICES[kind]:null;
+    if((count!==1&&count!==10)||!price||!isChestAvailable(kind))return null;
+    const cost=price.single*count;
+    const balance=chestBalance(price.currency,this);
+    if(!Number.isSafeInteger(balance)||balance<cost)return null;
+    const rewards=Array.from({length:count},()=>rollChest(random,kind));
+    if(price.currency==='coins')this.coins-=cost;else if(price.currency==='whiteCrystals')this.whiteCrystals-=cost;else if(price.currency==='mysticCrystals')this.mysticCrystals-=cost;else this.chestKeys-=cost;
     for(const id of rewards){
-      if(id==='coins5')this.coins+=5;
+      if(id.startsWith('commonCrystals'))this.chestKeys+=Number(id.slice('commonCrystals'.length));
+      else if(id.startsWith('coins'))this.coins+=Number(id.slice(5));
       else if(id==='coins15')this.coins+=15;
       else if(id==='coins30')this.coins+=30;
       else if(id==='coins100')this.coins+=100;
       else if(id==='time')this.timeItems++;
-      else this.supplies[id]++;
+      else if(id in this.supplies)this.supplies[id as keyof typeof this.supplies]++;
     }
     this.lastChestRewards=rewards;this.save();return [...rewards];
   }
@@ -176,7 +186,7 @@ export class Campaign {
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
   get unlockedLevel() { return Math.min(5, this.completed.filter(id=>id<=5).length); }
-  reset() { this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
+  reset() { this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 }
 
 export interface BossState extends BossBehavior {

@@ -278,44 +278,30 @@ test('with the loading screen on, picking a level and the next level go through 
   assert.equal(engine.screen,'playing');
 });
 
-test('pressing Y four times unlocks every trail for the current dev session', t => {
+test('yyyy enables dev tools without granting stock or faking earned progress', t => {
   mockDocument(t);
-  const engine = new GameEngine();
-  engine.screen='lobby';
+  const engine=new GameEngine();engine.screen='lobby';
   const controls=engine as unknown as {handleKeyDown(event:KeyboardEvent):void};
-  const event={key:'y',code:'KeyY',repeat:false,preventDefault(){}} as KeyboardEvent;
-  for(let i=0;i<3;i++)controls.handleKeyDown(event);
+  const press=(key:string,extra={})=>controls.handleKeyDown({key,code:'Key'+key.toUpperCase(),repeat:false,preventDefault(){},...extra} as KeyboardEvent);
+  assert.equal(engine.grantDevResources(),false);
+  press('y');press('y');press('x');press('y');press('y');press('y');
   assert.equal(engine.devUnlocked,false);
-  controls.handleKeyDown(event);
-  assert.equal(engine.devUnlocked,true);
-  assert.equal(engine.campaign.coins,99999);
-  assert.equal(engine.campaign.timeItems,0);
-  assert.equal(engine.campaign.mechanicalOwned,true);
-  assert.equal(engine.campaign.limitRings,0);
-  assert.equal(engine.campaign.chestKeys,0);
+  press('y',{repeat:true});assert.equal(engine.devUnlocked,false);
+  press('y');assert.equal(engine.devUnlocked,true);
+  assert.equal(engine.campaign.coins,0);assert.equal(engine.campaign.chestKeys,0);
+  assert.deepEqual(engine.campaign.completed,[]);
+  engine.grantDevResources();
+  assert.equal(engine.campaign.coins,99999);assert.equal(engine.campaign.chestKeys,99999);
+  assert.equal(engine.campaign.timeItems,99);assert.equal(engine.campaign.limitRings,99999);
   for(const rune of ECHO_RUNES)assert.equal(engine.campaign.echoRunes[rune.id],9999);
-  assert.equal(engine.campaign.runeLoadout.length,4);
-  assert.deepEqual(engine.campaign.pendingRuneChoices,[]);
-  engine.selectClass('mechanical');
-  assert.equal(engine.characterClass,'mage');
-  engine.campaign.coins=12;engine.campaign.timeItems=0;
-  engine.campaign.limitRings=0;engine.campaign.chestKeys=0;engine.campaign.echoRunes.guard=0;
-  engine.setInventoryOpen(true);engine.setRuneEditing(true);
-  engine.campaign.runeLoadout=['guard','power'];engine.campaign.pendingRuneChoices=['call','guard','power'];
-  for(let i=0;i<4;i++)controls.handleKeyDown(event);
-  assert.equal(engine.campaign.coins,99999);
-  assert.equal(engine.campaign.timeItems,0);
-  assert.equal(engine.campaign.limitRings,0);assert.equal(engine.campaign.chestKeys,0);
-  assert.equal(engine.campaign.echoRunes.guard,9999);
+  engine.campaign.runeLoadout=['guard','power'];
+  engine.campaign.pendingRuneChoices=['call','guard','power'];
+  engine.grantDevResources();
   assert.deepEqual(engine.campaign.runeLoadout.slice(0,2),['guard','power']);
-  assert.equal(engine.campaign.runeLoadout.length,4);assert.deepEqual(engine.campaign.pendingRuneChoices,[]);
-  assert.deepEqual(engine.campaign.completed,[1,2,3,4,5]);
-  assert.equal(engine.campaign.unlockedLevel,5);
-  engine.setInventoryOpen(false);engine.setRuneEditing(false);
-  engine.selectLevel(5);
-  assert.equal(engine.currentLevelIdx,5);
-  assert.equal(engine.screen,'playing');
-  for(let i=0;i<LEVELS.length;i++){engine.selectLevel(i);assert.equal(engine.currentLevelIdx,i);assert.equal(engine.currentLevel.id,LEVELS[i].id);}
+  assert.deepEqual(engine.campaign.pendingRuneChoices,['call','guard','power']);
+  assert.deepEqual(engine.campaign.completed,[]);
+  engine.campaign.pendingRuneChoices=[];
+  for(let i=0;i<LEVELS.length;i++){engine.goToLobby();engine.selectLevel(i);assert.equal(engine.currentLevel.id,LEVELS[i].id);}
 });
 
 test('completed campaign can replay any level from lobby',t=>{

@@ -1,16 +1,55 @@
-.shop-reward-chest{position:absolute;left:3%;top:65%;width:16%;padding:0;border:0;background:none;color:#ffdf9d;font-weight:bold;cursor:pointer;z-index:2;image-rendering:pixelated}.shop-reward-chest>span:last-child{display:block;text-shadow:2px 2px #210b08}.chest-backdrop{position:fixed;inset:0;z-index:90;background:#090709eF;display:grid;place-items:center;padding:18px}.chest-panel{width:min(580px,100%);max-height:94dvh;overflow:auto;background:#321b13;border:5px solid #a76939;box-shadow:inset 0 0 0 3px #1d100a;padding:20px;color:#ffe1ad;text-align:center;font-family:system-ui}.chest-panel header{display:flex;align-items:center;justify-content:space-between}.chest-panel h2{margin:0;font-size:24px}.chest-panel button{background:#6d3c20;border:3px solid #a87344;color:#ffe6b9;padding:9px 16px;font-weight:bold;cursor:pointer}.chest-panel button:disabled{opacity:.4;cursor:not-allowed}.chest-display{width:220px;margin:-10px auto -15px;image-rendering:pixelated}.chest-results{min-height:72px}.chest-results ul{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;list-style:none;padding:0}.chest-results li{padding:7px;border:1px solid #ad8141;background:#4a291a}.chest-results .chest-tier-fire{border-color:#ff8436;color:#ffbd79}.chest-draw-buttons{display:flex;justify-content:center;gap:10px}.chest-panel details{margin-top:18px;text-align:left;font-size:13px;color:#d9c09e}.chest-key-balance{color:#f4d776}.chest-panel p{font-size:13px;line-height:1.5}@media(max-width:760px){.shop-reward-chest{top:185px;left:6%;width:100px}.chest-panel{padding:14px}.chest-display{width:180px}.chest-draw-buttons button{padding:9px;font-size:12px}}
+.shop-reward-chest{position:absolute;left:3%;top:65%;width:16%;padding:0;border:0;background:none;outline:none!important;color:#ffdf9d;font-weight:bold;cursor:pointer;z-index:2;image-rendering:pixelated;transform-origin:50% 88%;will-change:transform,filter;-webkit-tap-highlight-color:transparent;animation:chest-tease-hop 2.8s cubic-bezier(0.28,0.84,0.42,1) infinite;transition:transform .16s ease,filter .16s ease}
+.shop-reward-chest:hover{filter:drop-shadow(0 0 16px #ffe285cc) drop-shadow(0 0 28px #ffaa2255) drop-shadow(3px 12px 4px #11211799) brightness(1.18)}
+.shop-reward-chest:active{transform:translateY(2px) scale(0.96)}
+.shop-reward-chest:focus,.shop-reward-chest:focus-visible{outline:none!important;box-shadow:none!important}
+.shop-reward-chest.chest-still{animation:none!important}
+.shop-reward-chest .chest-sparkle{position:absolute;width:9px;height:9px;background:#fff9de;border-radius:1px;box-shadow:0 0 6px #ffe266,0 0 14px #ff9e22;transform:rotate(45deg) scale(0);opacity:0;pointer-events:none;animation:chest-sparkle-burst 2.8s ease-out infinite}
+.shop-reward-chest .sparkle-1{left:34%;top:47%;--sx:-14px;animation-delay:0s}
+.shop-reward-chest .sparkle-2{left:66%;top:43%;--sx:14px;animation-delay:.06s}
+.shop-reward-chest .sparkle-3{left:50%;top:35%;--sx:2px;animation-delay:.12s}
+.shop-reward-chest:hover .chest-sparkle{opacity:.95}
+@media(prefers-reduced-motion:reduce){.shop-reward-chest,.shop-reward-chest .chest-sparkle{animation:none!important;transition:none!important}}
+@keyframes chest-tease-hop{
+  0%{transform:translateY(0) rotate(0deg) scale(1,1);filter:drop-shadow(3px 6px 2px #11211788)}
+  20%{transform:translateY(-2px) rotate(0.6deg) scale(1.01,0.99);filter:drop-shadow(3px 8px 3px #11211777)}
+  40%{transform:translateY(0) rotate(0deg) scale(1,1);filter:drop-shadow(3px 6px 2px #11211788)}
+  45%{transform:translateY(3px) rotate(0deg) scale(1.1,0.9);filter:drop-shadow(3px 3px 2px #112117aa)}
+  52%{transform:translateY(-20px) rotate(-8deg) scale(0.92,1.12);filter:drop-shadow(3px 24px 8px #11211733) drop-shadow(0 0 16px #ffe070aa) brightness(1.15)}
+  58%{transform:translateY(-22px) rotate(7deg) scale(0.96,1.06);filter:drop-shadow(3px 26px 9px #11211722) drop-shadow(0 0 20px #ffcc44cc) brightness(1.2)}
+  65%{transform:translateY(3px) rotate(-3deg) scale(1.12,0.9);filter:drop-shadow(3px 3px 2px #11211799) drop-shadow(0 0 10px #ffaa2266)}
+  72%{transform:translateY(-7px) rotate(4deg) scale(0.97,1.04);filter:drop-shadow(3px 12px 5px #11211755)}
+  78%{transform:translateY(1px) rotate(-2deg) scale(1.04,0.97);filter:drop-shadow(3px 5px 2px #11211788)}
+  84%{transform:translateY(-1px) rotate(1.5deg) scale(1,1)}
+  90%{transform:translateY(0) rotate(-0.5deg) scale(1,1)}
+  100%{transform:translateY(0) rotate(0deg) scale(1,1);filter:drop-shadow(3px 6px 2px #11211788)}
+}
+@keyframes chest-sparkle-burst{
+  0%,46%{opacity:0;transform:translate(0,0) rotate(45deg) scale(0)}
+  52%{opacity:1;transform:translate(0,-6px) rotate(90deg) scale(1.2)}
+  60%{opacity:.85;transform:translate(var(--sx,4px),-18px) rotate(160deg) scale(1)}
+  68%{opacity:0;transform:translate(var(--sx,8px),-26px) rotate(220deg) scale(0.2)}
+  70%,100%{opacity:0;transform:translate(0,0) rotate(45deg) scale(0)}
+}
+.shop-reward-chest>span:last-child{display:block;text-shadow:2px 2px #210b08}.chest-backdrop{position:fixed;inset:0;z-index:90;background:#090709eF;display:grid;place-items:center;padding:18px}.chest-panel{width:min(580px,100%);max-height:94dvh;overflow:auto;background:#321b13;border:5px solid #a76939;box-shadow:inset 0 0 0 3px #1d100a;padding:20px;color:#ffe1ad;text-align:center;font-family:system-ui}.chest-panel header{display:flex;align-items:center;justify-content:space-between}.chest-panel h2{margin:0;font-size:24px}.chest-panel button{background:#6d3c20;border:3px solid #a87344;color:#ffe6b9;padding:9px 16px;font-weight:bold;cursor:pointer}.chest-panel button:disabled{opacity:.4;cursor:not-allowed}.chest-display{width:220px;margin:-10px auto -15px;image-rendering:pixelated}.chest-results{min-height:72px}.chest-results ul{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;list-style:none;padding:0}.chest-results li{padding:7px;border:1px solid #ad8141;background:#4a291a}.chest-results .chest-tier-fire{border-color:#ff8436;color:#ffbd79}.chest-draw-buttons{display:flex;justify-content:center;gap:10px}.chest-panel details{margin-top:18px;text-align:left;font-size:13px;color:#d9c09e}.chest-key-balance{color:#f4d776}.chest-panel p{font-size:13px;line-height:1.5}@media(max-width:760px){.shop-reward-chest{top:185px;left:6%;width:100px}.chest-panel{padding:14px}.chest-display{width:180px}.chest-draw-buttons button{padding:9px;font-size:12px}}
 .chest-key-balance{display:flex;align-items:center;justify-content:center;gap:6px}
-.chest-panel header{justify-content:flex-end}
+.chest-panel-header{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:8px;position:relative;z-index:5}
+.chest-header-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* Keep action and key cost on separate lines with room around the pixel lettering. */
 .chest-draw-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;width:min(420px,100%);margin:12px auto 18px}
 .chest-draw-buttons button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:84px;padding:14px 20px;line-height:1.35}
 .chest-draw-title{font-size:17px;letter-spacing:.04em;white-space:nowrap}
 .chest-draw-cost{display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:400;white-space:nowrap}
 .chest-draw-buttons button:disabled{opacity:.6}
-.chest-results{min-height:60px}
+.chest-summary-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.chest-reopen-rewards-btn{margin-top:6px;background:linear-gradient(180deg,#8b5a2b,#4e2e17)!important;border:2px solid #e5b358!important;color:#fff2cb!important;font-size:14px!important;padding:7px 16px!important;box-shadow:0 0 10px rgba(229,179,88,0.4)!important;border-radius:4px;cursor:pointer;transition:transform .15s ease,filter .15s ease}
+.chest-reopen-rewards-btn:hover{filter:brightness(1.2)!important;transform:scale(1.04)}
+.chest-display.is-opening{filter:drop-shadow(0 0 24px #ffd700) drop-shadow(0 0 40px #ff8c00) brightness(1.25);animation:chest-opening-pulse .8s ease-in-out infinite alternate}
+@keyframes chest-opening-pulse{0%{transform:scale(1)}100%{transform:scale(1.05) translateY(-4px)}}
 @media(max-width:480px){.chest-draw-buttons{gap:12px}.chest-draw-buttons button{padding:12px 8px;min-height:78px}.chest-draw-title{font-size:15px}.chest-draw-cost{font-size:11px;gap:5px}}
-.chest-panel{position:relative;padding-bottom:62px}
-.chest-panel .chest-rate-toggle{position:absolute;left:24px;bottom:16px;padding:6px 11px;font-size:15px;line-height:1.2;white-space:nowrap}
+.chest-panel{position:relative}
+/* Keep the rate control in document flow when rewards make the panel scroll. */
+.chest-panel .chest-rate-toggle,.chest-panel .chest-history-toggle{position:static;display:inline-flex;align-items:center;justify-content:center;gap:4px;width:fit-content;max-width:100%;margin:0;padding:5px 12px;font-size:13px;line-height:1.2;white-space:nowrap;cursor:pointer}
+.chest-panel .chest-close-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;font-size:20px;line-height:1;margin-left:auto;cursor:pointer}
 .chest-backdrop .chest-rates{position:absolute;left:calc(50% - 545px);top:50%;transform:translateY(-50%);width:210px;box-sizing:border-box;padding:14px;background:#211f19;border:2px solid #857651;box-shadow:inset 0 0 0 2px #353b2b;text-align:left;color:#e6d49c;overflow-wrap:anywhere}
 .chest-rates>strong{display:block;font-size:16px;line-height:1.2;margin-bottom:10px}
 .chest-rates ul{list-style:none;padding:0;margin:0 0 9px;display:grid;gap:8px}
@@ -18,3 +57,27 @@
 .chest-rates li b{font-size:16px;color:#f3cf82}
 .chest-rates small{display:block;border-top:1px solid #6a684c;padding-top:8px;font-size:12px;line-height:1.35;color:#c5c6a9}
 @media(max-width:1100px),(max-height:540px){.chest-backdrop .chest-rates{position:fixed;left:12px;top:auto;bottom:12px;transform:none;width:min(220px,calc(100vw - 24px));max-height:45dvh;overflow:auto}}
+/* Four chest choices share the same draw and reward flow. */
+.chest-kind-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px auto 14px;width:min(420px,100%)}
+.chest-panel .chest-kind-buttons button{min-height:42px;padding:8px 10px;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+.chest-panel .chest-kind-buttons button[aria-pressed=true]{outline:2px solid #efcf79;outline-offset:-3px;box-shadow:inset 0 0 18px #ebc55a55}
+.chest-kind-buttons button:focus-visible{outline:3px solid #fff0b8;outline-offset:2px}
+.chest-panel .chest-kind-title{font-size:18px;line-height:1.35;margin:0 0 10px;color:#f4d776}
+/* The 48px stone artwork extends inward past its 18px CSS border.
+   Keep a fixed frame around a separate, clipped scrolling viewport. */
+.chest-panel{box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;padding:30px;max-height:calc(100dvh / var(--trading-scale,1) - 36px)}
+.chest-panel-scroll{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:4px;scroll-padding-block:8px}
+/* Desktop mice/trackpads keep native scrolling without a visible scrollbar.
+   Touch devices retain the existing mobile scrollbar. */
+@media(hover:hover) and (pointer:fine){
+ .chest-panel-scroll{scrollbar-width:none;scrollbar-gutter:auto}
+ .chest-panel-scroll::-webkit-scrollbar{display:none;width:0;height:0}
+}
+@media(max-width:600px),(max-height:480px){.chest-panel{padding:20px}}
+.chest-display{width:180px}
+.chest-results{min-height:52px}
+@media(max-width:480px){.chest-display{width:160px}}
+@media(prefers-reduced-motion:reduce){.chest-display.is-opening{animation:none}}
+.chest-still .chest-sparkle{animation:none!important}
+
+.chest-development-notice{padding:14px;border:2px solid #b99b59;background:#262d24;color:#ead295;text-align:center;max-width:100%;box-sizing:border-box}.chest-development-notice p{margin:0 0 10px;line-height:1.5}.chest-development-notice button{min-height:40px;padding:6px 20px}.chest-rate-toggle:disabled{opacity:.45;cursor:not-allowed}

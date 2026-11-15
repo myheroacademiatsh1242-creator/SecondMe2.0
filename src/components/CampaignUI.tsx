@@ -161,13 +161,14 @@ function CreditsPanel({ vi, close }: { vi: boolean; close: () => void }) {
 }
 
 export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | null; hud: HUDState; close: () => void }) {
-  const [tab,setTab]=useState<'audio'|'display'>('audio');
+  const [tab,setTab]=useState<'audio'|'display'|'dev'>('audio');
   const vi=hud.language==='vi';
+  const tabs: ('audio'|'display'|'dev')[]=hud.devUnlocked?['audio','display','dev']:['audio','display'];
   return localize(<div className="modal-backdrop settings-backdrop"><div className="panel settings-panel settings-clean" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div className="panel-top"><span className="eyebrow gold">CÀI ĐẶT TRÒ CHƠI</span></div>
     <h2 id="settings-title">Điều chỉnh trải nghiệm</h2>
     <div className="settings-tabs" role="tablist" aria-label={vi?'Nhóm cài đặt':'Settings groups'}>
-      {(['audio','display'] as const).map(id=><button key={id} id={`settings-tab-${id}`} type="button" role="tab" aria-selected={tab===id} aria-controls={`settings-${id}`} tabIndex={tab===id?0:-1} onClick={()=>setTab(id)} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?'audio':e.key==='End'?'display':tab==='audio'?'display':'audio';setTab(next);document.getElementById(`settings-tab-${next}`)?.focus();}}}>{id==='audio'?(vi?'Âm thanh':'Audio'):(vi?'Hiển thị & điều khiển':'Display & controls')}</button>)}
+      {tabs.map(id=><button key={id} id={`settings-tab-${id}`} type="button" role="tab" aria-selected={tab===id} aria-controls={`settings-${id}`} tabIndex={tab===id?0:-1} onClick={()=>setTab(id)} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?tabs[0]:e.key==='End'?tabs[tabs.length-1]:tabs[(tabs.indexOf(tab)+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];setTab(next);document.getElementById(`settings-tab-${next}`)?.focus();}}}>{id==='audio'?(vi?'Âm thanh':'Audio'):id==='display'?(vi?'Hiển thị & điều khiển':'Display & controls'):(vi?'DEV · Công cụ test':'DEV · Test tools')}</button>)}
     </div>
     <div className="settings-scroll" key={tab}>
       <div id={`settings-${tab}`} role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
@@ -177,14 +178,19 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
     <label className="setting-row"><span><Zap size={18}/><b>Hiệu ứng (SFX)</b><small>Đòn đánh, kỹ năng, bẫy và môi trường</small></span><input aria-label="Hiệu ứng (SFX)" type="range" min="0" max="1" step="0.05" value={hud.effectsVolume} onChange={e=>engine?.setEffectsVolume(Number(e.target.value))}/><strong>{Math.round(hud.effectsVolume*100)}%</strong></label>
     <label className="setting-row"><span><Volume2 size={18}/><b>Giọng nói</b><small>Lồng tiếng nhân vật và người kể chuyện</small></span><input aria-label="Giọng nói" type="range" min="0" max="1" step="0.05" value={hud.voiceVolume} onChange={e=>engine?.setVoiceVolume(Number(e.target.value))}/><strong>{Math.round(hud.voiceVolume*100)}%</strong></label>
     <label className="setting-row switch-row"><span><VolumeX size={18}/><b>Tắt âm</b><small>Tắt toàn bộ âm thanh trò chơi</small></span><input type="checkbox" checked={hud.isMuted} onChange={()=>engine?.toggleAudio()}/><i/></label>
-      </>:<>
+      </>:tab==='display'?<>
     <div className="setting-row"><span><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true"><rect x="2" y="5" width="20" height="14"/><path d="M15 8h4v4M9 16H5v-4"/></svg><b>{hud.language==='vi'?'Toàn màn hình':'Full screen'}</b><small>F</small></span><FullscreenButton vi={hud.language==='vi'}/></div>
     <label className="setting-row switch-row"><span><SlidersHorizontal size={18}/><b>Giảm chuyển động</b><small>Giảm sương, rung và hiệu ứng lặp</small></span><input type="checkbox" checked={hud.reducedMotion} onChange={e=>engine?.setReducedMotion(e.target.checked)}/><i/></label>
     <label className="setting-row switch-row"><span><Map size={18}/><b>Nhãn trong màn</b><small>Hiện gợi ý rune và nhãn mảnh thời gian</small></span><input type="checkbox" checked={hud.showHints} onChange={e=>engine?.setShowHints(e.target.checked)}/><i/></label>
     <label className="setting-row"><span><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="5.6" ry="9"/><ellipse cx="12" cy="12" rx="2.3" ry="9"/></svg><b>Language</b><small>Choose the game language</small></span><select aria-label="Language" value={hud.language} onChange={e=>engine?.setLanguage(e.target.value as 'en' | 'vi')}><option value="en">English</option><option value="vi">Tiếng Việt</option></select></label>
     <details className="setting-controls"><summary>{hud.language==='vi'?'Xem điều khiển':'View controls'}</summary><p>{hud.language==='vi'?'WASD / phím mũi tên: di chuyển · E: ghi đường đi · Q: gọi Echo · 1–6: chọn Echo · C: tạm dừng / tiếp tục Echo · Shift + Q: hoán đổi · X: thu hồi Echo lâu nhất · R: dùng vật phẩm thời gian · F: bật/tắt toàn màn hình · Chuột trái: tấn công · Chuột phải / Space: kỹ năng · Shift: lướt né · Esc: tạm dừng':'WASD / arrow keys: move · E: record path · Q: summon Echo · 1–6: select Echo · C: pause / resume Echo · Shift + Q: swap · X: recall oldest Echo · R: use time item · F: full screen · Left click: attack · Right click / Space: skill · Shift: dodge · Esc: pause'}</p></details>
-    {hud.devUnlocked&&<div className="dev-supplies"><button className="secondary" onClick={()=>engine?.unlockDevMode()}>{hud.language==='vi'?'DEV · NẠP ĐẦY ĐỒ':'DEV · REFILL ALL ITEMS'}</button><p role="status">{hud.language==='vi'?'Đang sở hữu':'Owned'}: {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/{ECHO_RUNES.length} rune · {hud.chestKeys.toLocaleString()} {hud.language==='vi'?'chìa khóa':'keys'} · {hud.limitRings.toLocaleString()} {hud.language==='vi'?'nhẫn':'rings'}</p></div>}
-      </>}
+      </>:hud.devUnlocked?<div className="dev-supplies">
+        <h3>{vi?'QUYỀN DEVELOPER ĐÃ BẬT':'DEVELOPER ACCESS ENABLED'}</h3>
+        <p>{vi?'Nạp 99.999 vàng, 99.999 Tanuki phàm tinh thể, 99.999 Tanuki thanh tinh thể và 99.999 Tanuki huyền tinh thể; mở toàn bộ trang phục, vũ khí và rune; cấp đầy tất cả vật phẩm theo giới hạn túi đồ. Có thể bấm lại để nạp khi cần.':'Set gold, Tanuki Common Crystals and Tanuki Azure Crystals and Tanuki Mystic Crystals to 99,999, unlock all outfits, weapons and runes, and fill all item stocks to their inventory limits. Refill again whenever needed.'}</p>
+        <button type="button" className="secondary" onClick={()=>engine?.grantDevResources()}>{vi?'DEV · NHẬN TÀI NGUYÊN & MỞ KHÓA TẤT CẢ':'DEV · GRANT RESOURCES & UNLOCK ALL'}</button>
+        <p role="status">{vi?'Đang sở hữu':'Owned'}: {hud.coins.toLocaleString(vi?'vi-VN':'en-US')} {vi?'vàng':'gold'} · {hud.chestKeys.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki phàm tinh thể':'Tanuki Common Crystals'} · {hud.whiteCrystals.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki thanh tinh thể':'Tanuki Azure Crystals'} · {hud.mysticCrystals.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki huyền tinh thể':'Tanuki Mystic Crystals'} · {hud.ownedOutfits?.length??0} {vi?'trang phục':'outfits'} · {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/{ECHO_RUNES.length} rune</p>
+        <p>{vi?'Đã mở toàn bộ màn chơi để chọn tại trại nghỉ. Tiến độ và số sao đã kiếm được vẫn được giữ nguyên.':'All levels are available from camp. Earned progress and star ratings are preserved.'}</p>
+      </div>:null}
       </div>
     </div><button className="primary" onClick={close}>LƯU & ĐÓNG</button>
   </div></div>);
@@ -451,7 +457,7 @@ export function EndScreen({ engine, hud }: { engine: GameEngine | null; hud: HUD
     <div className="finale-story"><span className="finale-kicker">{vi?'THỦ VỆ BĂNG ĐÃ GỤC NGÃ':'THE FROST GUARDIAN HAS FALLEN'}</span><h2 id="finale-title">{vi?'Khu rừng\nđã thức giấc.':'The forest\nawakens.'}</h2><p>{vi?'Bạn và các Echo đã hoàn thành cả sáu thử thách.':'You and your Echoes completed all six trials.'}</p>
     <div className="finale-seals" aria-label={vi?'Đã hoàn thành 6 màn':'All six trials completed'}>{['I','II','III','IV','V','VI'].map(n=><span key={n}>{n}<Check size={12}/></span>)}</div>
     <div className="finale-stats"><span>{vi?'THỜI GIAN ĐẤU BOSS':'BOSS BATTLE'}<b>{hud.elapsedLevelTime.toFixed(1)}s</b></span><span>{vi?'XẾP HẠNG':'RATING'}<b aria-label={`${hud.lastRating?.stars??0} / 3`}>{'★'.repeat(hud.lastRating?.stars??0)}{'☆'.repeat(3-(hud.lastRating?.stars??0))}</b></span></div>
-    <p className="finale-key-reward">+{hud.lastRating?.keys??0} {vi?'CHÌA KHÓA MỞ RƯƠNG':'CHEST KEYS'}</p>
+    <p className="finale-key-reward">+{hud.lastRating?.commonCrystals??0} {vi?'TANUKI PHÀM TINH THỂ':'TANUKI CELESTIAL CRYSTALS'}</p>
     <p className="finale-saved">{vi?'Tiến trình đã lưu · Cả sáu màn đã mở để chơi lại.':'Progress saved · All six trails are open for replay.'}</p></div></div>
     <footer className="finale-actions"><button className="secondary" onClick={()=>engine?.restartLevel()}><RotateCcw size={17}/>{vi?'ĐẤU LẠI BOSS':'REMATCH GUARDIAN'}</button><button className="primary" onClick={()=>engine?.goToLobby()}><Map size={18}/>{vi?'VỀ TRẠI':'BACK TO BASE CAMP'}<ArrowRight size={17}/></button></footer>
   </section></div>;

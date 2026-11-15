@@ -21,7 +21,7 @@ export function RuneRewardFlow({engine,hud}:{engine:GameEngine|null;hud:HUDState
    <p className="reward-intro">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>
    <VictoryStars count={hud.lastRating?.stars??0} vi={vi}/>
    {claimed&&<div className="reward-chosen" role="status" style={{'--rune-glow':claimed.color} as React.CSSProperties}><div className="reward-pedestal"><RuneStone id={claimed.id}/></div><small>{vi?'ẤN ĐÃ NHẬN':'RUNE RECEIVED'}</small><h3>{vi?claimed.vi:claimed.en}</h3><p>{RUNE_SHORT[claimed.id][vi?0:1]}</p></div>}
-   <div className="reward-totals"><span>+{hud.lastRating?.keys??0} {vi?'CHÌA KHÓA':'KEYS'}</span><span>+{hud.lastRating?.coins??0} {vi?'XU':'COINS'}</span><span>{hud.elapsedLevelTime.toFixed(1)}s</span></div>
+   <div className="reward-totals"><span>+{hud.lastRating?.commonCrystals??0} {vi?'TANUKI PHÀM TINH THỂ · ĐẠI TRÀ':'TANUKI COMMON CRYSTALS · COMMON'}</span><span>+{hud.lastRating?.coins??0} {vi?'XU':'COINS'}</span><span>{hud.elapsedLevelTime.toFixed(1)}s</span></div>
    <button className="reward-next" onClick={()=>engine?.nextLevel()}>{engine?.currentLevelIdx===4?(vi?'ĐẾN ĐẤU TRƯỜNG':'ENTER THE ARENA'):(vi?'ĐI TIẾP':'NEXT')} <ArrowRight size={20}/></button>
   </>}</div>
   <footer>{pending?<><button onClick={()=>engine?.goToLobby()}><Home size={17}/>{vi?'VỀ TRẠI':'BACK TO CAMP'}</button></>:<><button onClick={()=>engine?.goToLobby()}><Home size={17}/>{vi?'VỀ TRẠI':'BACK TO CAMP'}</button><button onClick={()=>setBag(true)}><Backpack size={17}/>{vi?'TÚI ĐỒ':'INVENTORY'}</button></>}</footer>

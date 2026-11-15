@@ -1,4 +1,4 @@
-import type {Rarity} from './rarity.ts';
+import {sortShopCatalogue,type Rarity} from './rarity.ts';
 
 export type OutfitHero='mage'|'swordsman';
 export type OutfitId='default'|'frost'|'woodland'|'ember'|'ice-knight'|'void-knight';
@@ -46,10 +46,9 @@ export function characterOutfitRarity(hero:OutfitHero,outfit:OutfitId):Rarity {
 }
 export const isShopOutfit=(id:unknown):id is 'ice-knight'|'void-knight'=>id==='ice-knight'||id==='void-knight';
 export const cleanOwnedOutfits=(value:unknown):ShopOutfitId[]=>Array.isArray(value)?[...new Set(value.filter((id):id is ShopOutfitId=>SHOP_OUTFITS.some(o=>o.id===id)))]:[];
-/** Owned first; the catalogue order is the order outfits were added to the game. */
-export function orderedShopOutfits(owned:readonly ShopOutfitId[]){
- const has=new Set(owned);
- return [...SHOP_OUTFITS.filter(o=>has.has(o.id)),...SHOP_OUTFITS.filter(o=>!has.has(o.id))];
+/** Ownership does not change the order in the shop. */
+export function orderedShopOutfits(_owned:readonly ShopOutfitId[]){
+ return sortShopCatalogue(SHOP_OUTFITS);
 }
 export function canWearOutfit(hero:OutfitHero,id:OutfitId,owned:readonly ShopOutfitId[]){
  if(!OUTFITS.some(o=>o.id===id))return false;

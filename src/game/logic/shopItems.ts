@@ -1,5 +1,7 @@
 export const TIME_ITEM_PRICE=4,TIME_ITEM_CAP=99;
 export const SHOP_ITEMS = [
+ {id:'manaSmall',vi:'Lọ năng lượng nhỏ',en:'Small energy vial',price:1,cap:99,rarity:'common',icon:'manaSmall',detailVi:'Hồi 15 năng lượng. Có thể dùng nhiều lần, tối đa bằng năng lượng tối đa.',detailEn:'Restore 15 MP. Usable repeatedly, up to maximum MP.'},
+ {id:'manaLarge',vi:'Bình năng lượng lớn',en:'Large energy potion',price:15,cap:99,rarity:'common',icon:'manaLarge',detailVi:'Hồi 55 năng lượng. Có thể dùng nhiều lần, tối đa bằng năng lượng tối đa.',detailEn:'Restore 55 MP. Usable repeatedly, up to maximum MP.'},
  {id:'healSmall',vi:'Bình hồi phục nhỏ',en:'Small healing potion',price:6,cap:99,rarity:'common',icon:'heal10',detailVi:'Hồi 10 máu, tối đa bằng máu tối đa. Có thể dùng nhiều bình trong màn.',detailEn:'Restore 10 HP, up to your current maximum. Multiple uses per level.'},
  {id:'healLarge',vi:'Bình hồi phục lớn',en:'Large healing potion',price:10,cap:99,rarity:'common',icon:'heal50',detailVi:'Hồi 50 máu, tối đa bằng máu tối đa. Có thể dùng nhiều bình trong màn.',detailEn:'Restore 50 HP, up to your current maximum. Multiple uses per level.'},
  {id:'revive',vi:'Trục phục sinh',en:'Revival scroll',price:12,cap:10,rarity:'refined',icon:'scroll',detailVi:'Sau khi gục ngã vì hết máu, dùng để hồi sinh đầy máu tại pháp đàn. Một lần mỗi màn; không cứu hết giờ.',detailEn:'After a damage defeat, revive at the starting altar with full HP. Once per level; cannot undo a timeout.'},
@@ -11,7 +13,7 @@ export const SHOP_ITEMS = [
 export type ShopItemId=(typeof SHOP_ITEMS)[number]['id'];
 export type SupplyId=Exclude<ShopItemId,'time'|'ring'>;
 export type Supplies=Record<SupplyId,number>;
-export const emptySupplies=():Supplies=>({healSmall:0,healLarge:0,revive:0,chances:0,aid:0});
+export const emptySupplies=():Supplies=>({healSmall:0,healLarge:0,manaSmall:0,manaLarge:0,revive:0,chances:0,aid:0});
 export function cleanSupplies(value:unknown):Supplies{
  const result=emptySupplies();if(!value||typeof value!=='object')return result;
  for(const item of SHOP_ITEMS){if(item.id==='time'||item.id==='ring')continue;const raw=value as Record<string,unknown>,aliases:Record<string,string>={healSmall:'heal10',healLarge:'heal50',aid:'support'};const n=raw[item.id]??raw[aliases[item.id]];if(typeof n==='number'&&Number.isSafeInteger(n)&&n>=0)result[item.id]=Math.min(item.cap,n);}
