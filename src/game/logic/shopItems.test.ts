@@ -26,26 +26,36 @@ test('new item inventory, partial chance charges and hero clears survive saving;
  save=JSON.stringify({supplies:{healSmall:999,healLarge:-1,revive:1.5,chances:NaN},chanceCharges:50,heroClears:{mage:[1,1,7,'2']}});reload.load();assert.equal(reload.supplies.healSmall,99);assert.equal(reload.supplies.healLarge,0);assert.equal(reload.supplies.revive,0);assert.equal(reload.chanceCharges,3);assert.deepEqual(reload.heroClears.mage,[1]);
 });
 test('healing consumes only when useful, supports multiple uses, and respects the current maximum',t=>{
- const g=game(t);g.campaign.supplies.healSmall=5;g.campaign.supplies.healLarge=2;assert.equal(g.useSupply('healSmall'),false);g.health=g.maxHealth-15;assert.ok(g.useSupply('healSmall'));assert.equal(g.health,g.maxHealth-5);assert.ok(g.useSupply('healSmall'));assert.equal(g.health,HERO_MAX_HP.mage);assert.equal(g.campaign.supplies.healSmall,3);assert.equal(g.useSupply('healSmall'),false);
+ const g=game(t);g.campaign.supplies.healSmall=5;g.campaign.supplies.healLarge=2;for(const id of ['healSmall','healSmall','healLarge'] as const)assert.ok(g.campaign.packItem(id));g.restartLevel();assert.equal(g.useSupply('healSmall'),false);g.health=g.maxHealth-15;assert.ok(g.useSupply('healSmall'));assert.equal(g.health,g.maxHealth-5);assert.ok(g.useSupply('healSmall'));assert.equal(g.health,HERO_MAX_HP.mage);assert.equal(g.campaign.supplies.healSmall,3);assert.equal(g.useSupply('healSmall'),false);
  g.maxHealth=80;g.health=40;assert.ok(g.useSupply('healLarge'));assert.equal(g.health,80);g.screen='paused';g.health=20;assert.equal(g.useSupply('healLarge'),false);
 });
 test('three chances is passive, once per attempt, carries charges and revives with a growing max HP penalty',t=>{
- const g=game(t);g.campaign.supplies.chances=2;const x=g.player.x,y=g.player.y;
+ const g=game(t);g.campaign.supplies.chances=2;assert.ok(g.campaign.packItem('chances'));g.restartLevel();const x=g.player.x,y=g.player.y;
  hit(g);assert.equal(g.screen,'playing');assert.equal(g.health,HERO_MAX_HP.mage);assert.equal(g.maxHealth,HERO_MAX_HP.mage);assert.equal(g.campaign.chanceCharges,2);assert.equal(g.campaign.supplies.chances,1);assert.equal(g.player.x,x);assert.equal(g.player.y,y);
  hit(g);assert.equal(g.screen,'defeat');assert.equal(g.campaign.chanceCharges,2);
  g.restartLevel();hit(g);assert.equal(g.maxHealth,HERO_MAX_HP.mage-10);assert.equal(g.health,HERO_MAX_HP.mage-10);assert.equal(g.campaign.chanceCharges,1);
  g.restartLevel();hit(g);assert.equal(g.maxHealth,HERO_MAX_HP.mage-20);assert.equal(g.health,HERO_MAX_HP.mage-20);assert.equal(g.campaign.chanceCharges,0);
  g.restartLevel();hit(g);assert.equal(g.maxHealth,HERO_MAX_HP.mage);assert.equal(g.campaign.supplies.chances,0);assert.equal(g.campaign.chanceCharges,2);
 });
+test('unpacked revival items are unavailable on defeat even when stock remains', t => {
+ const g = game(t);
+ g.campaign.chanceCharges = 2;
+ g.campaign.supplies.revive = 1;
+ hit(g);
+ assert.equal(g.screen, 'defeat');
+ assert.equal(g.useSupply('revive'), false);
+ assert.equal(g.campaign.chanceCharges, 2);
+ assert.equal(g.campaign.supplies.revive, 1);
+});
 test('scroll revives at altar without resetting enemies, runes or clock; rejects timeout and repeated use',t=>{
- const g=game(t);g.campaign.supplies.revive=2;g.player.x+=50;const enemies=g.enemies,time=g.legTimeRemaining;hit(g);assert.equal(g.screen,'defeat');assert.ok(g.useSupply('revive'));assert.equal(g.health,g.maxHealth);assert.equal(g.player.x,g.currentLevel.playerSpawn.x);assert.equal(g.player.y,g.currentLevel.playerSpawn.y);assert.equal(g.enemies,enemies);assert.equal(g.legTimeRemaining,time);assert.equal(g.campaign.supplies.revive,1);assert.ok(g.invulnerability>0);
+ const g=game(t);g.campaign.supplies.revive=2;assert.ok(g.campaign.packItem('revive'));g.restartLevel();g.player.x+=50;const enemies=g.enemies,time=g.legTimeRemaining;hit(g);assert.equal(g.screen,'defeat');assert.ok(g.useSupply('revive'));assert.equal(g.health,g.maxHealth);assert.equal(g.player.x,g.currentLevel.playerSpawn.x);assert.equal(g.player.y,g.currentLevel.playerSpawn.y);assert.equal(g.enemies,enemies);assert.equal(g.legTimeRemaining,time);assert.equal(g.campaign.supplies.revive,1);assert.ok(g.invulnerability>0);
  hit(g);assert.equal(g.useSupply('revive'),false);g.restartLevel();g.screen='defeat';g.defeatReason='timeout';assert.equal(g.useSupply('revive'),false);
 });
 test('aid is the other hero, has 15 HP, attacks independently, cannot hold a gate rune, and cannot be stacked',t=>{
- const g=game(t);g.campaign.aidUnlocked=true;g.campaign.supplies.aid=1;assert.ok(g.useSupply('aid'));assert.equal(g.supportAlly?.hero,'swordsman');assert.equal(g.supportAlly?.hp,15);assert.equal(g.echoes.length,0);
+ const g=game(t);g.campaign.aidUnlocked=true;g.campaign.supplies.aid=1;assert.ok(g.campaign.packItem('aid'));g.restartLevel();assert.ok(g.useSupply('aid'));assert.equal(g.supportAlly?.hero,'swordsman');assert.equal(g.supportAlly?.hp,15);assert.equal(g.echoes.length,0);
  const enemy=createEnemies(LEVELS[1])[0];enemy.x=g.player.x+35;enemy.y=g.player.y;enemy.hp=30;g.enemies=[enemy];(g as any).updateSupport(.4);assert.equal(enemy.hp,20);
  g.enemies=[];const p=g.currentLevel.plates[0];g.supportAlly!.x=p.x+25;g.supportAlly!.y=p.y+25;(g as any).update(.01);assert.equal(p.isPressed,false);assert.equal(g.echoes.length,0);
- (g as any).hitSupport(20);assert.equal(g.supportAlly,null);g.campaign.supplies.aid=1;assert.equal(g.useSupply('aid'),false);g.restartLevel();assert.ok(g.useSupply('aid'));
+ (g as any).hitSupport(20);assert.equal(g.supportAlly,null);g.campaign.supplies.aid=1;assert.equal(g.useSupply('aid'),false);assert.ok(g.campaign.packItem('aid'));g.restartLevel();assert.ok(g.useSupply('aid'));
 });
 test('dev refill grants full stock and survives reload without legacy stock migration',t=>{
  const old=Object.getOwnPropertyDescriptor(globalThis,'localStorage');const storage=new Map<string,string>();
@@ -84,11 +94,12 @@ test('legacy supply saves migrate without losing stock, opened revival charges o
  });
 
 test('energy potions restore 15 and 55 MP repeatedly, cap at 100 and do not consume when full',t=>{
- const g=game(t);g.campaign.supplies.manaSmall=2;g.campaign.supplies.manaLarge=2;g.mana.value=0;
+ const g=game(t);g.campaign.supplies.manaSmall=2;g.campaign.supplies.manaLarge=2;for(const id of ['manaSmall','manaSmall','manaLarge'] as const)assert.ok(g.campaign.packItem(id));g.restartLevel();g.mana.value=0;
  assert.ok(g.useSupply('manaSmall'));assert.equal(g.mana.value,15);
  assert.ok(g.useSupply('manaSmall'));assert.equal(g.mana.value,30);
  assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,85);
- assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,100);
+ assert.equal(g.useSupply('manaLarge'),false);assert.equal(g.mana.value,85);
+ g.restartLevel();g.mana.value=60;assert.ok(g.useSupply('manaLarge'));assert.equal(g.mana.value,100);
  g.campaign.supplies.manaSmall=1;assert.equal(g.useSupply('manaSmall'),false);assert.equal(g.campaign.supplies.manaSmall,1);
 });
 

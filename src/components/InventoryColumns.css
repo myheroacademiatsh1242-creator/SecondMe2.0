@@ -28,7 +28,35 @@
  scrollbar-color:#b3a26c #2d3227;margin:0;padding:0 6px 4px 0;
 }
 #root .adventure-app .inventory-modal .inventory-supplies{display:flex;flex-direction:column;gap:8px}
+.inventory-pack{padding:10px;border:1px solid #87764e;background:#263126}
+.inventory-pack-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#efd597}
+.inventory-pack-heading>span{white-space:nowrap}
+.inventory-pack-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
+.inventory-pack-slots>*{position:relative;min-width:0;min-height:56px;padding:5px;display:flex;align-items:center;justify-content:center;gap:3px;border:1px solid #85764f;text-align:center;color:#d7c493;font-size:12px;line-height:1.2;overflow-wrap:anywhere}
+.inventory-pack-slots>div:not(.inventory-packed-item){color:#b2af8c;background:#19271f}
+.inventory-pack-slots>.inventory-packed-item{flex-direction:column;padding-inline:12px;background:#394334}
+.inventory-pack-slots .shop-item-icon{width:36px;height:36px;flex:none}
+.inventory-packed-name{min-width:0}
+.inventory-pack-slots .inventory-remove-item{
+ position:absolute;top:2px;right:2px;display:grid;place-items:center;width:18px;height:18px;padding:0;
+ border:1px solid #776b48;background:#342d23;color:#e9cc8d;cursor:pointer;
+}
+.inventory-pack-slots .pack-quantity{
+ display:grid;grid-template-columns:24px minmax(3ch,1fr) 24px;align-items:center;gap:2px;min-width:0;
+ color:#f3dfab;font-variant-numeric:tabular-nums;
+}
+html body #root .inventory-pack-slots .pack-quantity button{
+ display:grid;place-items:center;width:24px;height:26px;padding:0;min-width:0;
+ border:1px solid #a89961;background:#1a281e!important;border-image:none!important;color:#f3dfab!important;
+}
+.pack-quantity output{line-height:1.2;text-align:center;font-size:14px}
+.inventory-pack>p{margin:7px 0 0;line-height:1.3}
 #root .adventure-app .inventory-modal .inventory-supplies article{flex:none;min-height:100px;padding:12px;gap:10px}
+#root .adventure-app .inventory-modal .inventory-supplies [data-inventory-item]{grid-template-columns:56px minmax(0,1fr) auto}
+#root .adventure-app .inventory-modal .inventory-supplies [data-inventory-item]>.supply-icon,
+#root .adventure-app .inventory-modal .inventory-supplies [data-inventory-item] .shop-item-icon{width:54px;height:54px}
+.inventory-supplies [data-inventory-item]>.supply-icon .shop-item-icon[data-item="time"],
+.inventory-pack-slots .shop-item-icon[data-item="time"]{transform:scale(1.65)}
 #root .adventure-app .inventory-modal :is(.inventory-supplies article,.inventory-rune-slots>button,.inventory-rune-description){border-image-slice:100 fill!important;border-image-repeat:round!important}
 #root .adventure-app .inventory-modal .inventory-rune-slots{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 #root .adventure-app .inventory-modal .inventory-rune-slots>button{min-height:116px;padding:14px 5px 8px}
@@ -81,4 +109,70 @@
  background:#34372b!important;
  border-color:#948364!important;
  border-image:none!important;
+}
+
+#root .adventure-app .battle-preparation .inventory-modal.forest-dialog.panel{
+ width:min(1080px,calc(100vw - 48px));
+ max-height:calc(100dvh - 36px);
+}
+#root .adventure-app .battle-preparation .trail-inventory{
+ height:min(790px,calc(100dvh - 112px));
+ max-height:none;
+}
+#root .adventure-app .battle-preparation .inventory-scroll{grid-template-columns:minmax(0,1fr)}
+#root .adventure-app .battle-preparation .inventory-supply-column{
+ grid-template-columns:minmax(0,1fr) minmax(236px,34%);
+ grid-template-rows:32px minmax(0,1fr);
+ column-gap:16px;
+}
+#root .adventure-app .battle-preparation .inventory-section-title{grid-area:1/1;min-height:0}
+#root .adventure-app .battle-preparation .inventory-supplies{grid-area:2/1}
+#root .adventure-app .battle-preparation .inventory-supplies article{min-height:84px}
+#root .adventure-app .battle-preparation .inventory-supplies article>button{min-width:88px}
+#root .adventure-app .battle-preparation .inventory-pack{
+ grid-area:1/2/span 2;
+ align-self:start;
+ min-width:0;
+}
+.battle-preparation .inventory-pack-slots{grid-template-columns:minmax(0,1fr);gap:8px}
+.battle-preparation .inventory-pack-slots>*{min-height:62px;padding-inline:30px}
+.battle-preparation .inventory-pack-slots>.inventory-packed-item{
+ display:grid;grid-template-columns:40px minmax(0,1fr) 78px;text-align:left;gap:6px;padding-inline:18px 22px;
+}
+.battle-preparation .inventory-packed-item>.shop-item-icon{width:40px;height:40px}
+.battle-preparation .inventory-cancel{min-height:42px}
+
+@media(max-height:560px){
+ #root .adventure-app .battle-preparation .inventory-pack{padding:6px}
+ .battle-preparation .inventory-pack-slots{gap:4px;margin-top:4px}
+ .battle-preparation .inventory-pack-slots>*{min-height:34px}
+ .battle-preparation .inventory-pack>p{font-size:13px!important}
+ .battle-preparation .inventory-cancel{min-height:32px}
+}
+@media(max-height:480px){
+ #root .adventure-app .battle-preparation .trail-inventory{height:calc(100dvh - 86px)}
+ .battle-preparation .inventory-pack-slots>*{min-height:30px}
+ .battle-preparation .inventory-pack>p{display:none}
+ .battle-preparation .inventory-pack-slots>.inventory-packed-item{grid-template-columns:28px minmax(0,1fr) 72px;padding-block:3px}
+ .battle-preparation .inventory-packed-item>.shop-item-icon{width:28px;height:28px}
+ #root .adventure-app .battle-preparation .inventory-supplies [data-inventory-item]{grid-template-columns:44px minmax(0,1fr) auto}
+ #root .adventure-app .battle-preparation .inventory-supplies [data-inventory-item]>.supply-icon,
+ #root .adventure-app .battle-preparation .inventory-supplies [data-inventory-item] .shop-item-icon{width:42px;height:42px}
+}
+@media(max-width:720px){
+ #root .adventure-app .battle-preparation .inventory-supply-column{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto 26px minmax(0,1fr);
+  gap:5px;
+ }
+ #root .adventure-app .battle-preparation .inventory-pack{grid-area:1/1}
+ #root .adventure-app .battle-preparation .inventory-section-title{grid-area:2/1}
+ #root .adventure-app .battle-preparation .inventory-supplies{grid-area:3/1}
+ .battle-preparation .inventory-pack-slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .battle-preparation .inventory-pack-slots>*{padding-inline:10px}
+ .battle-preparation .inventory-pack-slots>.inventory-packed-item{
+  grid-template-columns:28px minmax(0,1fr);gap:3px;padding:12px 5px 4px;
+ }
+ .battle-preparation .inventory-packed-item>.shop-item-icon{width:28px;height:28px}
+ .battle-preparation .inventory-packed-item .pack-quantity{grid-column:1/-1;justify-self:center}
 }

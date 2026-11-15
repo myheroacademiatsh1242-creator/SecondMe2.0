@@ -7,9 +7,11 @@ import {createBoss} from './campaign.ts';
 import {sounds} from './sound.ts';
 import {ECHO_RUNES,rollEchoRune} from './echoRunes.ts';
 sounds.setMuted(true);
-function setup(t:TestContext){
+function setup(t:TestContext, packRevive = false){
  const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));
- const g=new GameEngine();g.currentLevelIdx=1;g.restartLevel();g.currentLevel=structuredClone(g.currentLevel);g.currentLevel.walls=[];g.currentLevel.doors=[];g.currentLevel.traps=[];g.enemies=[];g.legTimeRemaining=null;g.tutorialEnabled=false;
+ const g=new GameEngine();
+ if(packRevive){g.campaign.supplies.revive=1;assert.ok(g.campaign.packItem('revive'));}
+ g.currentLevelIdx=1;g.restartLevel();g.currentLevel=structuredClone(g.currentLevel);g.currentLevel.walls=[];g.currentLevel.doors=[];g.currentLevel.traps=[];g.enemies=[];g.legTimeRemaining=null;g.tutorialEnabled=false;
  g.campaign.echoRunes=Object.fromEntries(ECHO_RUNES.map(r=>[r.id,10]));g.campaign.runeLoadout=['call','guard','power','restore'];g.player.x=100;g.player.y=600;
  const summon=(x=400,y=300)=>{const before={x:g.player.x,y:g.player.y};g.player.x=x;g.player.y=y;g.recorder.startRecording(x,y,'right');g.spawnEcho();g.player.x=before.x;g.player.y=before.y;g.echo!.status='finished';return g.echo!;};
  return {g,summon,hit:(e:NonNullable<GameEngine['echo']>,n:number)=>(g as any).hitEcho(e,n),combat:(e:NonNullable<GameEngine['echo']>,dt:number)=>(g as any).updateEchoCombat(e,dt)};
@@ -92,7 +94,7 @@ test('offense build combines power, execution, siphon and splash without retaini
 });
 
 test('support build keeps its equipped slots through revive and clears attempt buffs on retry', t => {
- const {g,summon}=setup(t);
+ const {g,summon}=setup(t,true);
  const loadout=['anchor','regen','swap','guard'] as const;
  g.campaign.runeLoadout=[...loadout];
  const echo=summon();
@@ -105,7 +107,6 @@ test('support build keeps its equipped slots through revive and clears attempt b
  assert.equal((g as unknown as {swapCooldown:number}).swapCooldown,4);
  g.screen='defeat';
  g.defeatReason='damage';
- g.campaign.supplies.revive=1;
  assert.ok(g.useSupply('revive'));
  assert.deepEqual([...g.activeEchoRunes],loadout);
  g.restartLevel();

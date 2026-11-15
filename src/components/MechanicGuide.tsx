@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Clock3, Footprints, Link, Shield, Snowflake, Sparkles, Swords, TriangleAlert } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { GUIDE_TOPICS, QUICK_HINTS, type GuideTopic } from '../game/logic/tutorials.ts';
+import { PANEL_ART, usePanelArt } from './panelArt.ts';
 import './MechanicGuide.css';
 
 const hintIcons = {
@@ -32,6 +33,7 @@ const trailCopy = {
 export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | null; hud: HUDState; touch: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const libraryOpen = hud.guideLibrary === true;
+  const panelArt = usePanelArt(PANEL_ART.inventory);
   const topic = hud.guideTopic;
   const vi = hud.language === 'vi';
   const copy = topic ? GUIDE_TOPICS[topic][vi ? 'vi' : 'en'] : null;
@@ -60,13 +62,13 @@ export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | nul
         event.stopPropagation();
       }
     };
-    ref.current?.querySelector('button')?.focus();
+    if (panelArt !== 'loading') ref.current?.querySelector('button')?.focus({ preventScroll: true });
     window.addEventListener('keydown', key, true);
     return () => {
       window.removeEventListener('keydown', key, true);
       previous?.focus();
     };
-  }, [libraryOpen, topic, engine]);
+  }, [libraryOpen, topic, engine, panelArt]);
 
   if (!libraryOpen) {
     const objective = hud.trailAction ? trailCopy[hud.trailAction] : null;
@@ -85,27 +87,31 @@ export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | nul
   }
 
   return <div className="mechanic-guide-backdrop is-library">
-    <div ref={ref} className="mechanic-guide" role="dialog" aria-modal="true" aria-labelledby="mechanic-guide-title">
-      <header><span><BookOpen size={15}/>{vi ? 'SỔ TAY TIẾNG VỌNG' : 'THE ECHO FIELD GUIDE'}</span></header>
-      <h2 id="mechanic-guide-title">{copy?.[0] ?? (vi ? 'Sổ tay hành trình' : 'Your field guide')}</h2>
-      {copy ? <>
-        <div className="guide-control-note">{hint}</div>
-        <p className="guide-details">{copy[1]}</p>
-      </> : <div className="guide-topic-list">
-        {(Object.keys(GUIDE_TOPICS) as GuideTopic[]).map(id => {
-          const Icon = hintIcons[id];
-          return <button key={id} onClick={() => engine?.replayGuide(id)}>
-            <Icon size={16} aria-hidden="true"/>
-            <span>{GUIDE_TOPICS[id][vi ? 'vi' : 'en'][0]}</span>
-            {engine?.guides.seen.has(id) ? <Check size={14} aria-hidden="true"/> : <ArrowRight size={14} aria-hidden="true"/>}
-          </button>;
-        })}
-      </div>}
+    <div ref={ref} className="mechanic-guide" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="mechanic-guide-title">
+      <header>
+        <span><BookOpen size={15}/>{vi ? 'SỔ TAY TIẾNG VỌNG' : 'THE ECHO FIELD GUIDE'}</span>
+        <h2 id="mechanic-guide-title">{copy?.[0] ?? (vi ? 'Sổ tay hành trình' : 'Your field guide')}</h2>
+      </header>
+      <div className="guide-scroll" key={topic ?? 'topics'}>
+        {copy ? <>
+          <div className="guide-control-note">{hint}</div>
+          <p className="guide-details">{copy[1]}</p>
+        </> : <div className="guide-topic-list">
+          {(Object.keys(GUIDE_TOPICS) as GuideTopic[]).map(id => {
+            const Icon = hintIcons[id];
+            return <button key={id} onClick={() => engine?.replayGuide(id)}>
+              <Icon size={16} aria-hidden="true"/>
+              <span>{GUIDE_TOPICS[id][vi ? 'vi' : 'en'][0]}</span>
+              {engine?.guides.seen.has(id) ? <Check size={14} aria-hidden="true"/> : <ArrowRight size={14} aria-hidden="true"/>}
+            </button>;
+          })}
+        </div>}
+      </div>
       <footer>
         {copy && <button className="guide-library-link" onClick={() => engine?.dismissGuide()}>
           <ArrowLeft size={16}/>{vi ? 'Về mục lục' : 'Back to topics'}
         </button>}
-        <button className="guide-ack" onClick={() => engine?.closeGuide()}>
+        <button className="guide-ack primary" onClick={() => engine?.closeGuide()}>
           {vi ? 'Chơi tiếp' : 'Resume'}<ArrowRight size={16}/>
         </button>
       </footer>

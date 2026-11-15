@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { startPreload, startLevelPreload, type LobbyTheme, type LevelLoadSpec } from '../game/loading/preloader.ts';
 import { LoadingScene, fogTile } from '../game/loading/loadingScene.ts';
 import { layout } from '../game/loading/placement.ts';
+import { gameDevToolsEnabled } from '../game/logic/devAccess.ts';
 
 
 /** Fog texture, made once (pixel clusters) and reused as a CSS background. */
@@ -44,7 +45,7 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
   useEffect(() => {
     if (!canvas.current || !root.current || !percent.current) return;
     const params = new URLSearchParams(location.search);
-    const dev = import.meta.env.DEV;
+    const dev = gameDevToolsEnabled;
     // Dev: ?stress=4 multiplies particle counts to test the frame budget under load.
     const stress = dev ? Math.min(8, Math.max(1, Number(params.get('stress')) || 1)) : 1;
     // Dev: ?holdLoading=1 keeps the screen up after 100%; ?loadDelay=200 delays each file
@@ -106,7 +107,7 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
         <p>{t.caption}</p>
       </div>
       </div>
-      {import.meta.env.DEV && new URLSearchParams(location.search).get('perf') === '1' && <pre ref={perf} className="lv-perf" aria-hidden="true"/>}
+      {gameDevToolsEnabled && new URLSearchParams(location.search).get('perf') === '1' && <pre ref={perf} className="lv-perf" aria-hidden="true"/>}
     </div>
   );
 }

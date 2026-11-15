@@ -130,6 +130,8 @@ test('holding E cannot stop and restart a recording through key repeat', () => {
 test('E records, Q summons, Space uses skill, and R spends one time item', t => {
   mockDocument(t);
   const { engine, controls } = setup();
+  engine.campaign.timeItems=1;
+  assert.ok(engine.campaign.packItem('time'));
   engine.restartLevel();
   const press = (key: string, code: string) => controls.handleKeyDown({key,code,repeat:false,preventDefault(){}} as KeyboardEvent);
   press('e','KeyE');
@@ -140,7 +142,6 @@ test('E records, Q summons, Space uses skill, and R spends one time item', t => 
   assert.ok(engine.echo);
   press(' ','Space');
   assert.ok(engine.skillCooldown > 0);
-  engine.campaign.timeItems=1;
   const before=engine.legTimeRemaining!;
   press('r','KeyR');
   assert.equal(engine.campaign.timeItems,0);
@@ -433,6 +434,7 @@ test('touch stick moves exactly like the keys, at any stick deflection, and keys
 test('sprite effects start with their triggers and end by themselves', t => {
   mockDocument(t);
   const {engine,advance}=setup();
+  engine.campaign.timeItems=1;assert.ok(engine.campaign.packItem('time'));
   engine.currentLevelIdx=5;engine.characterClass='swordsman';engine.restartLevel();engine.beginBossFight();
   const kinds=()=>engine.vfx.map(fx=>fx.kind);
   const collect=(kind:string)=>(engine as unknown as {collectCombatSkill(kind:string):void}).collectCombatSkill(kind);
@@ -444,7 +446,6 @@ test('sprite effects start with their triggers and end by themselves', t => {
   collect('haste');assert.equal(engine.vfx.length,3,'haste is neither: no new sprite');
   engine.useSkill();assert.equal(kinds().at(-1),'healRing','Kael heals in Sanctuary: the ground ring, where he cast it');
   const ring=engine.vfx.at(-1)!;assert.deepEqual([ring.x,ring.y,!!ring.follow],[engine.player.x,engine.player.y,false]);
-  engine.campaign.timeItems=1;
   if(engine.legTimeRemaining===null)engine.legTimeRemaining=10;
   assert.equal(engine.useTimeItem(),true);assert.equal(kinds().at(-1),'clock');assert.equal(engine.vfx.at(-1)!.follow,true);
   advance(2);assert.deepEqual(kinds(),[],'all of them are over within two seconds');

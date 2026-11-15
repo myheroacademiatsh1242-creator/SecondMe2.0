@@ -11,8 +11,8 @@ test('four independent echoes keep unique colors; fifth summon preserves them',t
  for(let i=0;i<4;i++){game.player.x=200+i*30;game.toggleRecording();game.toggleRecording();game.spawnEcho();}
  assert.equal(game.echoes.length,4);assert.equal(new Set(game.echoes.map(e=>e.colorSlot)).size,4);
  const input=game as unknown as {handleKeyDown(event:KeyboardEvent):void};
- const press=(key:string,code:string)=>input.handleKeyDown({key,code,repeat:false,preventDefault(){}} as KeyboardEvent);
- press('2','Digit2');assert.equal(game.selectedEcho,1);
+ const press=(key:string,code:string,shiftKey=false)=>input.handleKeyDown({key,code,shiftKey,repeat:false,preventDefault(){}} as KeyboardEvent);
+ press('@','Digit2',true);assert.equal(game.selectedEcho,1);
  press('c','KeyC');assert.equal(game.echo?.status,'paused');
  press('c','KeyC');assert.equal(game.echo?.status,'replaying');
  const original=[...game.echoes];game.spawnEcho();assert.deepEqual(game.echoes,original);

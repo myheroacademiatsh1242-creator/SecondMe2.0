@@ -6,7 +6,7 @@ import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from 
 import {ICE_BARRAGE} from './iceBarrage.ts';
 import {FROST_STRIKE,makeIceRays,insideIceRay,type IceRay} from './iceMagic.ts';
 export {TIME_ITEM_PRICE,TIME_ITEM_CAP} from './shopItems.ts';
-import {SHOP_ITEMS,emptySupplies,cleanSupplies,type ShopItemId} from './shopItems.ts';
+import {SHOP_ITEMS,ITEM_LOADOUT_LIMIT,carryItemLimit,emptySupplies,cleanSupplies,type PackedItem,type ShopItemId} from './shopItems.ts';
 import {isChestAvailable, rollChest, chestReward, CHEST_PRICES, chestBalance, type ChestKind, type ChestRewardId} from './chest.ts';
 import { DAMAGE, damagePoints } from './damage.ts';
 import { ECHO_RUNES, rollEchoRune, rollRuneChoices, cleanRuneChoices, cleanRuneStock, type EchoRuneId, type EchoRuneStock } from './echoRunes.ts';
@@ -42,6 +42,7 @@ export class Campaign {
   lastRuneDrop:EchoRuneId|null = null;
   pendingRuneChoices:EchoRuneId[]=[];
   supplies=emptySupplies();
+  itemLoadout: PackedItem[] = [];
   chanceCharges=0;
   aidUnlocked=false;
   heroClears:Record<string,number[]>={mage:[],swordsman:[]};
@@ -104,14 +105,16 @@ export class Campaign {
         for(const item of SHOP_ITEMS)if(item.id!=='time'&&item.id!=='ring'&&item.id!=='aid'&&this.supplies[item.id]>=item.cap)this.supplies[item.id]=0;
         this.devShopStockMigrated=true;
       }
+      this.itemLoadout = this.cleanItemLoadout(value.itemLoadout);
       if(migrateRunes||legacyDevStock)this.save();
-    } catch { this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+    } catch { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
 
   }
   save() {
+    this.itemLoadout = this.cleanItemLoadout(this.itemLoadout);
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
       ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
-      supplies:this.supplies,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
+      supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
       completed: this.completed, bossDefeated: this.bossDefeated,
       echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
@@ -208,6 +211,53 @@ export class Campaign {
     return true;
   }
   shopStock(id:ShopItemId){return id==='time'?this.timeItems:id==='ring'?this.limitRings:this.supplies[id];}
+  packableCount(id: ShopItemId) {
+    if (id === 'aid' && !this.aidUnlocked) return 0;
+    return Math.min(carryItemLimit(id), this.shopStock(id) + (id === 'chances' && this.chanceCharges > 0 ? 1 : 0));
+  }
+  hasPackableItems() {
+    return SHOP_ITEMS.some(item => this.packableCount(item.id) > 0);
+  }
+  private cleanItemLoadout(value: unknown): PackedItem[] {
+    if (!Array.isArray(value)) return [];
+    const items = new Map<ShopItemId, number>();
+    for (const entry of value) {
+      // Old saves store one string per copy. Merge them in first-seen order.
+      const item = SHOP_ITEMS.find(item => item.id === (typeof entry === 'string' ? entry : entry?.id));
+      const count = typeof entry === 'string' ? 1 : entry?.count;
+      if (!item || !Number.isSafeInteger(count) || count < 1) continue;
+      if (!items.has(item.id) && items.size === ITEM_LOADOUT_LIMIT) continue;
+      const clamped = Math.min(this.packableCount(item.id), (items.get(item.id) ?? 0) + count);
+      if (clamped > 0) items.set(item.id, clamped);
+    }
+    return Array.from(items, ([id, count]) => ({ id, count }));
+  }
+  canPackItem(id: ShopItemId) {
+    const existing = this.itemLoadout.find(item => item.id === id);
+    return (!!existing || this.itemLoadout.length < ITEM_LOADOUT_LIMIT) &&
+      (existing?.count ?? 0) < this.packableCount(id);
+  }
+  packItem(id: ShopItemId) {
+    if (!SHOP_ITEMS.some(item => item.id === id) || !this.canPackItem(id)) return false;
+    const index = this.itemLoadout.findIndex(item => item.id === id);
+    if (index >= 0) return this.setPackedCount(index, this.itemLoadout[index].count + 1);
+    this.itemLoadout.push({ id, count: 1 });
+    this.save();
+    return true;
+  }
+  setPackedCount(index: number, count: number) {
+    const item = this.itemLoadout[index];
+    if (!item || !Number.isSafeInteger(count) || count < 1 || count > this.packableCount(item.id)) return false;
+    this.itemLoadout[index] = { id: item.id, count };
+    this.save();
+    return true;
+  }
+  unpackItem(index: number) {
+    if (!Number.isInteger(index) || index < 0 || index >= this.itemLoadout.length) return false;
+    this.itemLoadout.splice(index, 1);
+    this.save();
+    return true;
+  }
   buyShopItem(id:ShopItemId,quantity=1){
     const item=SHOP_ITEMS.find(i=>i.id===id);
     if(!item||!Number.isSafeInteger(quantity)||quantity<1||id==='aid'||this.shopStock(id)+quantity>item.cap||this.coins<item.price*quantity)return false;
@@ -226,7 +276,7 @@ export class Campaign {
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
   get unlockedLevel() { return Math.min(5, this.completed.filter(id=>id<=5).length); }
-  reset() { this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
+  reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 
 }
 

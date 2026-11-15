@@ -133,15 +133,17 @@ test('a crusher hit roots the player for a quarter second',t=>{
   advance(.1);assert.ok(game.player.x>x);
 });
 
-test('time items stack up to five per level, including across checkpoints, and reset on retry',t=>{
+test('the three packed time potions are shared across checkpoints and stocked for a retry',t=>{
   const {game,checkpoint}=setup(t);game.campaign.timeItems=7;
+  for(let i=0;i<3;i++)assert.ok(game.campaign.packItem('time'));
+  game.restartLevel();
   const initial=game.legTimeRemaining!;
-  for(let i=0;i<3;i++)assert.equal(game.useTimeItem(),true);
-  assert.equal(game.legTimeRemaining,initial+6);
-  checkpoint(0);
   for(let i=0;i<2;i++)assert.equal(game.useTimeItem(),true);
-  assert.equal(game.useTimeItem(),false);assert.equal(game.campaign.timeItems,2);
-  game.restartLevel();assert.equal(game.useTimeItem(),true);assert.equal(game.campaign.timeItems,1);
+  assert.equal(game.legTimeRemaining,initial+4);
+  checkpoint(0);
+  assert.equal(game.useTimeItem(),true);
+  assert.equal(game.useTimeItem(),false);assert.equal(game.campaign.timeItems,4);
+  game.restartLevel();assert.equal(game.useTimeItem(),true);assert.equal(game.campaign.timeItems,3);
 });
 
 test('levels 7 through 12 start a countdown, refill it at a checkpoint, and time out', t => {

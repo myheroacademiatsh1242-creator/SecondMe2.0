@@ -43,7 +43,7 @@ export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
       <div className="pause-menu-options">
         <button onClick={()=>setSettings(true)}><Settings size={18}/>{vi?'Cài đặt':'Settings'}</button>
         <button onClick={()=>{engine?.resumeGame();engine?.openGuide();}}><BookOpen size={18}/>{vi?'Sổ tay':'Guide'}</button>
-        <button onClick={()=>engine?.restartLevel()}><RotateCcw size={18}/>{vi?'Chơi lại màn':'Retry level'}</button>
+        <button onClick={()=>engine?.requestBattleRetry()}><RotateCcw size={18}/>{vi?'Chơi lại màn':'Retry level'}</button>
         <button onClick={()=>engine?.goToLobby()}><Home size={18}/>{vi?'Về trại':'Back to camp'}</button>
       </div>
       </div>

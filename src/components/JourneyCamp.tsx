@@ -1,4 +1,5 @@
 import {FrostChapter} from './FrostChapter.tsx';
+import { CampSupplyKit } from './InventorySupplies.tsx';
 import {CampHeroCaption, CampHeroUpgrade} from './CampHeroCaption.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ChevronRight, Flame, Lock, Play, Snowflake, Users, Backpack } from 'lucide-react';
@@ -23,7 +24,7 @@ const trailSegments = [
 // Centre of each clearing in the same native coordinates (= the trail ends above).
 const stops = [[215,725],[440,350],[690,630],[920,310],[1200,515],[1355,205]];
 const HERO_KEY = 'secondme.journeyHeroAt';
-export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void}) {
+export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero,onOpenInventory}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void;onOpenInventory:()=>void}) {
   const vi=hud.language==='vi';
   const [frost,setFrost]=useState((engine?.currentLevel.id??1)>=7);
   const [runeEditor,setRuneEditor]=useState(false);
@@ -116,12 +117,18 @@ export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero}:{e
         try{localStorage.setItem(HERO_KEY,String(clampedTarget));}catch{}
         if(enterOnArrive){
           walkTimerRef.current=window.setTimeout(()=>{
+            walkTimerRef.current=0;
             engine?.selectLevel(clampedTarget);
           },140);
         }
       }
     };
     walkRafRef.current=requestAnimationFrame(step);
+  };
+
+  const prepareStop=(index:number)=>{
+    if (walkTimerRef.current || walker.current?.classList.contains('is-walking')) return;
+    engine?.requestBattleStart(() => walkToStop(index, true));
   };
 
   useEffect(()=>{
@@ -134,11 +141,12 @@ export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero}:{e
     return ()=>{
       cancelAnimationFrame(walkRafRef.current);
       window.clearTimeout(walkTimerRef.current);
+      walkTimerRef.current=0;
     };
   },[frost]);
 
   const frostUnlocked=engine?.canSelectLevel(6)??false;
-  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler} onUpgradeHero={onUpgradeHero}/>;
+  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler} onUpgradeHero={onUpgradeHero} onOpenInventory={onOpenInventory}/>;
   const minLive=Math.min(heroStop,selected);
   const maxLive=Math.max(heroStop,selected);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
@@ -151,8 +159,9 @@ export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero}:{e
       </div>
       <CampHeroUpgrade hud={hud} onOpen={onUpgradeHero}/>
       <div className="rest-kit"><div><span>{vi?'BỘ RUNE':'RUNE LOADOUT'}</span><p>{hud.runeLoadout?.length??0} / 4 {vi?'ấn đã chọn':'equipped'}</p></div><button className="rest-prepare" onClick={()=>setRuneEditor(true)}><Backpack size={18}/>{vi?'Đổi rune':'Edit runes'}</button></div>
+      <CampSupplyKit hud={hud} onOpen={onOpenInventory}/>
       <div className="rest-departure"><span>{complete?(vi?'HÀNH TRÌNH MỚI':'ANOTHER JOURNEY'):(vi?'ĐIỂM ĐẾN ĐÃ CHỌN':'SELECTED DESTINATION')}</span><div className="rest-destination"><b>{String(selected+1).padStart(2,'0')}</b><strong>{translate(LEVELS[selected].subtitle,hud.language)}</strong></div>
-        <button className="camp-continue" disabled={!unlocked(selected)} onClick={()=>{if(unlocked(selected))walkToStop(selected,true);}}><Play size={19} fill="currentColor"/><span>{complete?(vi?'KHÁM PHÁ LẠI':'EXPLORE AGAIN'):hud.completed.includes(selected+1)?(vi?'CHƠI LẠI MÀN':'REPLAY TRAIL'):hud.completed.length?(vi?'TIẾP TỤC HÀNH TRÌNH':'CONTINUE JOURNEY'):(vi?'LÊN ĐƯỜNG':'BEGIN JOURNEY')}</span><ArrowRight size={18}/></button>
+        <button className="camp-continue" disabled={!unlocked(selected)} onClick={()=>prepareStop(selected)}><Play size={19} fill="currentColor"/><span>{complete?(vi?'KHÁM PHÁ LẠI':'EXPLORE AGAIN'):hud.completed.includes(selected+1)?(vi?'CHƠI LẠI MÀN':'REPLAY TRAIL'):hud.completed.length?(vi?'TIẾP TỤC HÀNH TRÌNH':'CONTINUE JOURNEY'):(vi?'LÊN ĐƯỜNG':'BEGIN JOURNEY')}</span><ArrowRight size={18}/></button>
       </div>
       <footer className="rest-progress"><div role="progressbar" aria-label={vi?'Tiến độ hành trình':'Journey progress'} aria-valuenow={count} aria-valuemin={0} aria-valuemax={6}>{Array.from({length:6},(_,i)=><i key={i} className={i<count?'explored':i===selected?'next':''}/>)}</div></footer>
     </aside>
@@ -171,7 +180,7 @@ export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero}:{e
           const ready=unlocked(i),done=i<5?hud.completed.includes(i+1):complete,current=i===selected;
           return <button key={item.id} className={`journey-stop ${done?'is-done':''} ${current?'is-current':''} ${i===5?'is-boss':''} ${inspect===i?'is-inspected':''}`} style={{left:`${stops[i][0]/15.36}%`,top:`${stops[i][1]/10.24}%`}} aria-disabled={!ready} onMouseEnter={()=>setInspect(i)} onMouseLeave={()=>{if(touchInspect===null)setInspect(null);}} onFocus={()=>setInspect(i)} onBlur={()=>{setInspect(null);setTouchInspect(null);}} onClick={()=>{
               if(window.matchMedia('(hover: none)').matches&&touchInspect!==i){setTouchInspect(i);setInspect(i);return;}
-              if(ready)walkToStop(i,true);
+              if(ready)prepareStop(i);
             }} aria-label={`${String(i+1).padStart(2,'0')} · ${translate(item.subtitle,hud.language)} · ${done?(vi?'Đã hoàn thành':'Cleared'):ready?(vi?'Sẵn sàng':'Ready'):(vi?'Chưa mở':'Locked')}`}>
             <span className="stop-medallion">{!ready?<Lock size={18}/>:i===5?<Snowflake size={23}/>:<span>{String(i+1).padStart(2,'0')}</span>}</span>
             <span className="stop-caption" data-idle={inspect===null} role="tooltip" hidden={inspect!==i}><small>{i===5?(vi?'THỦ VỆ BĂNG':'FROST GUARDIAN'):`0${i+1}`}</small><strong>{translate(item.subtitle,hud.language)}</strong>{done?<em>{'★'.repeat(hud.bestStars[item.id]??0)}{'☆'.repeat(3-(hud.bestStars[item.id]??0))}</em>:<em>{current&&ready?(vi?'Bắt đầu hành trình':'Begin your journey'):!ready?(vi?'CHƯA MỞ':'LOCKED'):(vi?'SẴN SÀNG':'READY')}</em>}</span>

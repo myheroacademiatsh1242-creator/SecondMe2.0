@@ -4,6 +4,7 @@ import { INTRO, seg, easeInOutCubic } from '../game/logic/introTimeline.ts';
 import { voice, INTRO_VOICE } from '../game/logic/voice.ts';
 import { sounds } from '../game/logic/sound.ts';
 import { music } from '../game/logic/music.ts';
+import { gameDevToolsEnabled } from '../game/logic/devAccess.ts';
 
 const LABEL = {
   en: { skip: 'SKIP INTRO', sound: '♪ Click or press any key to enable sound' },
@@ -32,7 +33,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
     try { director = new Director(lang, reduced); } catch { onDone(); return; }
 
     // Dev-only: ?introAt=18 starts the film at 18s, for checking a scene quickly.
-    const devAt = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('introAt')) || 0 : 0;
+    const devAt = gameDevToolsEnabled ? Number(new URLSearchParams(location.search).get('introAt')) || 0 : 0;
     let start = performance.now() - devAt * 1000;
     let pausedAt:number|null=null;
     let raf = 0, skipAt: number | null = null, frozenT = 0, gestured = false, stopScore: (() => void) | null = null, stopVoice: (() => void) | null = null, finished = false;
@@ -81,7 +82,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
       const t = skipAt !== null ? frozenT : now();
       if (!stopScore && (gestured || sounds.isAudioRunning())) tryAudio(t);
       director!.draw(ctx, t);
-      if (import.meta.env.DEV) { const w = window as unknown as { __introFrames?: number[] }; (w.__introFrames ??= []).push(performance.now()); }
+      if (gameDevToolsEnabled) { const w = window as unknown as { __introFrames?: number[] }; (w.__introFrames ??= []).push(performance.now()); }
       // Reveal the menu only after the film has faded to black, or quickly when skipped.
       // (Fading earlier lets the menu's own logo show through the film's logo, misaligned.)
       const mix = skipAt !== null ? Math.min(1, (now() - skipAt) / 0.5) : easeInOutCubic(seg(t, INTRO.reveal, INTRO.end));

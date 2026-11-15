@@ -12,6 +12,7 @@ import {readLandscapeRequirement,isTouchDevice} from './game/logic/orientation.t
 import { installScreenControls, FullscreenButton } from './components/FullscreenButton.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine, readSavedSettings, type HUDState } from './game/GameEngine.ts';
+import { gameDevToolsEnabled } from './game/logic/devAccess.ts';
 import { Intro, Lobby, Shop, Characters, AdventureHUD, Completion, EndScreen } from './components/CampaignUI.tsx';
 import { CinematicIntro } from './components/CinematicIntro.tsx';
 import { StudioSplash } from './components/StudioSplash.tsx';
@@ -20,6 +21,7 @@ import { flushSync } from 'react-dom';
 import { localize } from './localize.tsx';
 import { BossIntro } from './components/BossIntro.tsx';
 import { MechanicGuide } from './components/MechanicGuide.tsx';
+import { TrailInventory } from './components/TrailInventory.tsx';
 
 const initial: HUDState = { screen:'intro', levelName:'LEVEL 01', levelSubtitle:'ECHO GROVE', recordingStatus:'idle', echoCharges:2, echoStability:0, echoElapsedMs:0, echoDurationMs:0, echoEvents:[], dissonanceSeconds:0,
   recordingTimeRemaining:8000, echoStatus:'none', echoCount:0, isMuted:false, bannerMessage:'', elapsedLevelTime:0,
@@ -52,6 +54,19 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     return()=>{window.removeEventListener('pointerdown',wake,true);window.removeEventListener('touchend',wake,true);window.removeEventListener('keydown',wake,true);document.removeEventListener('visibilitychange',visible);};
   },[]);
   useEffect(() => installScreenControls(), []);
+  useEffect(() => {
+    if (gameDevToolsEnabled) return;
+    const blockDevToolsShortcut = (event: KeyboardEvent) => {
+      const inspectorKey = ['KeyI', 'KeyJ', 'KeyC'].includes(event.code);
+      const opensDevTools = event.key === 'F12' || event.code === 'F12' ||
+        (inspectorKey && ((event.ctrlKey && event.shiftKey) || (event.metaKey && event.altKey)));
+      if (!opensDevTools) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    window.addEventListener('keydown', blockDevToolsShortcut, true);
+    return () => window.removeEventListener('keydown', blockDevToolsShortcut, true);
+  }, []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const ref = useRef<GameEngine | null>(null);
   const [restoreCamp] = useState(shouldRestoreCamp);
@@ -63,7 +78,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     const engine = new GameEngine(); ref.current = engine;
     engine.tutorialEnabled = true;
     engine.levelLoading = true;   // levels open through the loading screen
-    if (import.meta.env.DEV) (window as unknown as { __engine?: GameEngine }).__engine = engine;   // console checks
+    if (gameDevToolsEnabled) (window as unknown as { __engine?: GameEngine }).__engine = engine;
     engine.setOrientationBlocked(readLandscapeRequirement());
     engine.setCanvas(canvas.current);
     let previousScreen: HUDState['screen'] | undefined;
@@ -97,7 +112,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   const engine = ref.current;
   const lang = hud.language === 'vi' ? 'vi' : 'en';
   const bossIntroVisible = hud.screen === 'playing' && hud.bossIntroduction;
-  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
+  return localize(<main className="adventure-app" style={{'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
     {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
     {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
     {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}
@@ -118,6 +133,11 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'paused' && <PauseMenu engine={engine} hud={hud}/>}
 
   </div>
+    {hud.preparingBattle && engine && <div className="modal-backdrop inventory-backdrop battle-preparation" inert={portraitBlocked}>
+      <div className="panel inventory-modal forest-dialog">
+        <TrailInventory preparing engine={engine} hud={hud} close={() => engine.cancelBattleStart()}/>
+      </div>
+    </div>}
     {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
       <BossIntro engine={engine} hud={hud}/>
     </div>}

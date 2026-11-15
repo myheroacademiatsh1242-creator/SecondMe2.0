@@ -86,12 +86,13 @@ test('upgrades affect hero health, attacks, skill MP and revival', t => {
   game.openCharacters();
   game.selectClass('swordsman');
   assert.equal(game.buyHeroUpgrade('swordsman', 'specialty', 0), true);
+  game.campaign.supplies.chances = 1;
+  assert.ok(game.campaign.packItem('chances'));
   game.restartLevel();
   const stats = heroStats('swordsman', game.campaign.heroRanks);
   assert.equal(game.health, 127);
   game['takeDamage'](25);
   assert.equal(game.health, stats.maxHealth - 24);
-  game.campaign.supplies.chances = 1;
   game.invulnerability = 0;
   game['takeDamage'](1000);
   assert.equal(game.health, stats.maxHealth);

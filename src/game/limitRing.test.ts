@@ -21,16 +21,16 @@ test('consumed rings grant two slots and charges for one attempt without stackin
   const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
   Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});
   t.after(()=>previous?Object.defineProperty(globalThis,'document',previous):Reflect.deleteProperty(globalThis,'document'));
-  const game=new GameEngine();game.restartLevel();game.campaign.limitRings=3;
+  const game=new GameEngine();game.campaign.limitRings=3;assert.ok(game.campaign.packItem('ring'));game.restartLevel();
   for(let i=0;i<4;i++){game.recorder.startRecording(game.player.x,game.player.y,'right');game.spawnEcho();}
   assert.equal(game.echoes.length,4);assert.equal(game.echoLimit,4);
   assert.equal(game.useLimitRing(),true);assert.equal(game.echoLimit,6);assert.equal(game.echoCharges,2);
-  assert.equal(game.useLimitRing(),true);assert.equal(game.campaign.limitRings,1);assert.equal(game.echoCharges,2);assert.equal(game.echoLimit,6);
+  assert.equal(game.useLimitRing(),false);assert.equal(game.campaign.limitRings,2);assert.equal(game.echoCharges,2);assert.equal(game.echoLimit,6);
   for(let i=0;i<2;i++){game.recorder.startRecording(game.player.x,game.player.y,'right');game.spawnEcho();}
   assert.equal(game.echoes.length,6);assert.equal(new Set(game.echoes.map(e=>e.colorSlot)).size,6);
   game.recorder.startRecording(game.player.x,game.player.y,'right');game.spawnEcho();assert.equal(game.echoes.length,6);
   const input=game as unknown as {handleKeyDown(event:KeyboardEvent):void};
   input.handleKeyDown({key:'6',code:'Digit6',repeat:false,preventDefault(){}} as KeyboardEvent);assert.equal(game.selectedEcho,5);
-  game.restartLevel();assert.equal(game.echoLimit,4);assert.equal(game.campaign.limitRings,1);assert.equal(game.limitRingActive,false);
-  game.pauseGame();assert.equal(game.useLimitRing(),false);assert.equal(game.campaign.limitRings,1);
+  game.restartLevel();assert.equal(game.echoLimit,4);assert.equal(game.campaign.limitRings,2);assert.equal(game.limitRingActive,false);
+  game.pauseGame();assert.equal(game.useLimitRing(),false);assert.equal(game.campaign.limitRings,2);
 });

@@ -9,6 +9,7 @@ import { FrostAmbience } from './FrostAmbience.tsx';
 import { translate } from '../i18n.ts';
 import './FrostChapter.css';
 import { CampHeroCaption, CampHeroUpgrade } from './CampHeroCaption.tsx';
+import { CampSupplyKit } from './InventorySupplies.tsx';
 
 const STAGES = [...FROST_LEVELS, DEMON_LEVEL];
 
@@ -22,8 +23,8 @@ const trailSegments = [
   'M 445 455 C 490 485, 540 515, 590 535',
   // 10 -> 11: Crosses the suspension bridge onto the rocky plateau at watchtower entrance
   'M 590 535 C 670 565, 760 575, 840 560',
-  // 11 -> 12: Follows path around watchtower and descends rocky steps into the canyon
-  'M 840 560 C 920 590, 990 680, 1060 800',
+  // 11 -> 12: Down the upper stairs, across the landing, then down the lower stairs.
+  'M 840 560 C 860 582, 887 598, 914 606 C 940 615, 956 637, 955 661 L 929 711 Q 921 725, 928 737 Q 943 749, 960 753 Q 969 756, 975 770 L 1008 824 Q 1019 843, 1038 836 Q 1055 827, 1060 800',
   // 12 -> 13: Follows canyon trail past dragon bones, between guardian statues into demon cavern
   'M 1060 800 C 1140 810, 1240 800, 1360 765',
 ];
@@ -46,12 +47,14 @@ export function FrostChapter({
   back,
   traveler,
   onUpgradeHero,
+  onOpenInventory,
 }: {
   engine: GameEngine | null;
   hud: HUDState;
   back: () => void;
   traveler?: React.ReactNode;
   onUpgradeHero: () => void;
+  onOpenInventory: () => void;
 }) {
   const vi = hud.language === 'vi';
   const done = STAGES.filter((l) => hud.completed.includes(l.id)).length;
@@ -158,12 +161,18 @@ export function FrostChapter({
         } catch {}
         if (enterOnArrive) {
           walkTimerRef.current = window.setTimeout(() => {
+            walkTimerRef.current = 0;
             engine?.selectLevel(targetStage.id - 1);
           }, 140);
         }
       }
     };
     walkRafRef.current = requestAnimationFrame(step);
+  };
+
+  const prepareStop = (index: number) => {
+    if (walkTimerRef.current || walker.current?.classList.contains('is-walking')) return;
+    engine?.requestBattleStart(() => walkToStop(index, true));
   };
 
   useEffect(() => {
@@ -232,6 +241,7 @@ export function FrostChapter({
           </button>
         </div>
 
+        <CampSupplyKit hud={hud} onOpen={onOpenInventory}/>
         <div className="rest-departure frost-departure">
           <span>
             {level.id === 13
@@ -251,7 +261,7 @@ export function FrostChapter({
             className="camp-continue frost-continue"
             disabled={!unlocked(level.id)}
             onClick={() => {
-              if (unlocked(level.id)) walkToStop(selectedIdx, true);
+              if (unlocked(level.id)) prepareStop(selectedIdx);
             }}
           >
             <Play size={19} fill="currentColor" />
@@ -358,7 +368,7 @@ export function FrostChapter({
                     setInspect(i);
                     return;
                   }
-                  if (ready) walkToStop(i, true);
+                  if (ready) prepareStop(i);
                 }}
                 aria-label={`${String(item.id).padStart(2, '0')} · ${translate(item.subtitle, hud.language)} · ${
                   isDone ? (vi ? 'Đã hoàn thành' : 'Cleared') : ready ? (vi ? 'Sẵn sàng' : 'Ready') : (vi ? 'Chưa mở' : 'Locked')

@@ -6,7 +6,8 @@ import {restoreWeapons,getWeapons,equipWeapon,cleanOwnedWeapons,canUseWeapon,WEA
 import {restoreOutfits,getOutfits,equipOutfit,canWearOutfit,SHOP_OUTFITS,type ShopOutfitId,type OutfitHero,type OutfitId} from './logic/outfits.ts';
 import { SKILL_PICKUPS } from './logic/skillPickups.ts';
 import { ManaPool, MAX_MP, comboManaCost, skillManaCost } from './logic/mana.ts';
-import {SHOP_ITEMS,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
+import {ITEM_LOADOUT_LIMIT,SHOP_ITEMS,type PackedItem,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
+import { gameDevToolsEnabled } from './logic/devAccess.ts';
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
 import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logic/damage.ts';
 import { ignite, newBurn, stepBurn } from './logic/burn.ts';
@@ -121,6 +122,9 @@ export interface HUDState {
   enemiesRemaining?:number;
   health: number;
   maxHealth?:number;supplies?:Supplies;chanceCharges?:number;aidUnlocked?:boolean;usedSupplies?:SupplyId[];
+  itemLoadout?: readonly PackedItem[];
+  carriedItems?: readonly (PackedItem | null)[];
+  preparingBattle?: boolean;
   bossHp: number;
   bossMaxHp?:number;
   bossKind?:'demon';
@@ -291,6 +295,8 @@ export class GameEngine {
   public maxHealth:number=PLAYER_MAX_HP;
   public health = PLAYER_MAX_HP;
   public usedSupplies=new Set<SupplyId>();
+  private carriedItems: (PackedItem | null)[] = [];
+  private pendingBattleStart: (() => void) | null = null;
   public supportAlly:{x:number;y:number;hp:number;hero:'mage'|'swordsman';direction:'up'|'down'|'left'|'right';isMoving:boolean;cooldown:number;attackFlash:number;target?:{x:number;y:number}}|null=null;
   public hurtFlash = 0;
   /** Set alight by any hit in the Ember Demon fight (logic/burn.ts); drawn by rendering/adventure.ts. */
@@ -334,7 +340,6 @@ export class GameEngine {
   public timePickup: { x: number; y: number } | null = null;
   public pickupSpawnTimer: number = puzzleBalance(1).shardInterval;
   private shardClaimedThisLeg = false;
-  private timeItemsUsedThisLevel = 0;
   public trappedTime = 0;
   public checkpointIndex = 0;
   public readonly discoveredRunes = new Set<string>();
@@ -342,7 +347,9 @@ export class GameEngine {
   public defeatReason: 'timeout' | 'damage' = 'damage';
   public reducedMotion = false;
   public showHints = true;
-  public devUnlocked = false;
+  private devRequested = false;
+  public get devUnlocked() { return gameDevToolsEnabled && this.devRequested; }
+  public set devUnlocked(value: boolean) { this.devRequested = gameDevToolsEnabled && value; }
   public language: Language = 'vi';
   public characterClass: CharacterClass = 'mage';
   public lastRating: { stars: number; coins: number; commonCrystals?:number } | null = null;
@@ -596,9 +603,14 @@ export class GameEngine {
   public buyTimeItem() { if (this.screen !== 'shop') return; if (this.campaign.buyTimeItem()) this.showBanner('Time potion purchased'); else this.showBanner('Not enough coins'); this.notifyHUD(); }
   public openChest(count:1|10,kind:ChestKind='royal') { if(this.screen!=='shop')return null;const rewards=this.campaign.openChest(count,Math.random,kind);this.notifyHUD();return rewards; }
   public buyLimitRing() { if (this.screen !== 'shop') return; if (this.campaign.buyLimitRing()) this.showBanner(this.language==='vi'?'Đã mua nhẫn tăng giới hạn.':'Limit ring purchased.'); else this.showBanner(this.language==='vi'?'Không đủ xu.':'Not enough coins.'); this.notifyHUD(); }
-  public useLimitRing() {
-    if (this.screen !== 'playing' || this.guides.blocking || this.exitTravelRemaining>0 || this.bossDeathPending || (this.boss && this.boss.hp<=0) || !this.campaign.useLimitRing()) return false;
-    if (!this.limitRingActive) { this.limitRingActive=true; this.echoCharges+=2; }
+  public canUseLimitRing() {
+    return this.canUseCombatItems() && !this.limitRingActive && this.carriedSlot('ring') >= 0 && this.campaign.limitRings > 0;
+  }
+  public useLimitRing(slot = this.carriedSlot('ring')) {
+    if (this.carriedItems[slot]?.id !== 'ring' || !this.canUseLimitRing() || !this.campaign.useLimitRing()) return false;
+    this.spendCarriedItem(slot);
+    this.limitRingActive = true;
+    this.echoCharges += 2;
     this.showBanner(this.language==='vi'?'Nhẫn đã dùng · Giới hạn 6 Echo trong màn này.':'Ring used · Echo limit is 6 for this level.');
     this.notifyHUD(); return true;
   }
@@ -622,8 +634,18 @@ export class GameEngine {
     this.notifyHUD();
     return true;
   }
-  public canUseTimeItem() {return !this.orientationBlocked&&this.screen==='playing'&&this.legTimeRemaining!==null&&this.timeItemsUsedThisLevel<5&&this.campaign.timeItems>0&&!this.runeEditing;}
-  public useTimeItem() { if (!this.canUseTimeItem() || !this.campaign.useTimeItem()) return false; this.timeItemsUsedThisLevel++; this.legTimeRemaining = (this.legTimeRemaining??0)+2; this.startVfx('clock',true); this.showBanner(this.language==='vi'?`+2 giây · Thêm một chút (${this.timeItemsUsedThisLevel}/5)`:`+2s · A Little More (${this.timeItemsUsedThisLevel}/5)`); this.notifyHUD(); return true; }
+  public canUseTimeItem() {
+    return this.canUseCombatItems() && this.legTimeRemaining !== null && this.campaign.timeItems > 0 && this.carriedSlot('time') >= 0;
+  }
+  public useTimeItem(slot = this.carriedSlot('time')) {
+    if (this.carriedItems[slot]?.id !== 'time' || !this.canUseTimeItem() || !this.campaign.useTimeItem()) return false;
+    this.spendCarriedItem(slot);
+    this.legTimeRemaining = (this.legTimeRemaining ?? 0) + 2;
+    this.startVfx('clock', true);
+    this.showBanner(this.language === 'vi' ? '+2 giây' : '+2 seconds');
+    this.notifyHUD();
+    return true;
+  }
 
   public stop() {
     if (this.animFrameId !== null) {
@@ -679,6 +701,37 @@ export class GameEngine {
     this.beginLevel();
   }
 
+  public requestBattleStart(start: () => void) {
+    if (this.pendingBattleStart || this.orientationBlocked || this.bossIntroduction) return;
+    if (this.screen === 'playing' && !this.canOpenCombatInventory()) return;
+    this.pendingBattleStart = start;
+    this.heldKeys.clear();
+    this.notifyHUD();
+  }
+  public requestBattleRetry() {
+    if (this.campaign.pendingRuneChoices.length) { this.goToLobby(); return; }
+    this.requestBattleStart(() => this.restartLevel());
+  }
+  public requestNextBattle() {
+    if (this.campaign.pendingRuneChoices.length) return;
+    if (!this.canSelectLevel(this.currentLevelIdx + 1)) { this.nextLevel(); return; }
+    this.requestBattleStart(() => this.nextLevel());
+  }
+  public canConfirmBattleStart() {
+    return !!this.pendingBattleStart && (this.campaign.itemLoadout.length > 0 || !this.campaign.hasPackableItems());
+  }
+  public confirmBattleStart() {
+    const start = this.pendingBattleStart;
+    if (!start || !this.canConfirmBattleStart()) return;
+    this.pendingBattleStart = null;
+    start();
+    this.notifyHUD();
+  }
+  public cancelBattleStart() {
+    this.pendingBattleStart = null;
+    this.notifyHUD();
+  }
+
   /** Fresh state for the current level, without starting play. */
   private buildLevel() {
     this.heldKeys.clear();
@@ -700,7 +753,7 @@ export class GameEngine {
     this.training.reset();
     this.timePickup = null;
     this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
-    this.shardClaimedThisLeg = false; this.timeItemsUsedThisLevel = 0;
+    this.shardClaimedThisLeg = false;
     this.trappedTime = 0;
     this.checkpointIndex = 0;
     this.discoveredRunes.clear();
@@ -741,6 +794,7 @@ export class GameEngine {
   }
 
   private beginLevel() {
+    this.carriedItems = Array.from({length: ITEM_LOADOUT_LIMIT}, (_, slot) => this.campaign.itemLoadout[slot] ?? null);
     this.screen = 'playing';
     document.body.dataset.state = 'playing';
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
@@ -816,6 +870,7 @@ export class GameEngine {
   public setLanguage(value: Language) { this.language = value; setCurrentLanguage(value); voice.lang = value; if (typeof document !== 'undefined') document.title = 'SECOND ME — Vọng Ảnh'; this.saveSettings(); this.notifyHUD(); }
 
   public unlockDevMode() {
+    if (!gameDevToolsEnabled) return;
     this.devUnlocked = true;
     this.saveSettings();
     this.showBanner(this.language==='vi'?'DEV · Đã bật công cụ test trong Cài đặt':'DEV · Test tools enabled in Settings');
@@ -860,17 +915,18 @@ export class GameEngine {
     const bought=this.campaign.buyShopItem(id,quantity);if(bought)this.notifyHUD();return bought;
   }
   public canUseSupply(id:SupplyId){
-    if(this.orientationBlocked||this.runeEditing)return false;
+    if(this.orientationBlocked||this.runeEditing||this.carriedSlot(id)<0)return false;
     if(id==='revive')return this.screen==='defeat'&&this.defeatReason==='damage'&&!this.usedSupplies.has(id)&&this.campaign.supplies.revive>0;
-    if(this.screen!=='playing'||this.guides.blocking||this.health<=0)return false;
+    if(!this.canUseCombatItems())return false;
     if(id==='chances')return false; // passive, consumed only when an automatic revival starts
     if(this.campaign.supplies[id]<=0)return false;
     if(id==='manaSmall'||id==='manaLarge')return this.mana.value<MAX_MP;
     if(id==='aid')return this.campaign.aidUnlocked&&!this.usedSupplies.has(id)&&!this.supportAlly;
     return this.health<this.maxHealth;
   }
-  public useSupply(id:SupplyId){
-    if(!this.canUseSupply(id))return false;
+  public useSupply(id: SupplyId, slot = this.carriedSlot(id)) {
+    if(this.carriedItems[slot]?.id !== id || !this.canUseSupply(id))return false;
+    this.spendCarriedItem(slot);
     this.campaign.supplies[id]--;
     if(id==='healSmall'||id==='healLarge'){
       this.health=Math.min(this.maxHealth,this.health+(id==='healSmall'?10:50));
@@ -894,10 +950,12 @@ export class GameEngine {
     this.renderer.emitMagic('sparkle',x,y,70);
   }
   private autoRevive(){
-    if(this.usedSupplies.has('chances'))return false;
+    const slot = this.carriedSlot('chances');
+    if(slot<0||this.usedSupplies.has('chances'))return false;
     if(this.campaign.chanceCharges===0){if(this.campaign.supplies.chances<=0)return false;this.campaign.supplies.chances--;this.campaign.chanceCharges=3;}
     this.maxHealth=this.heroStats.maxHealth-(3-this.campaign.chanceCharges)*10;
     this.campaign.chanceCharges--;this.usedSupplies.add('chances');
+    this.spendCarriedItem(slot);
     this.reviveAt(this.player.x,this.player.y);this.campaign.save();
     this.showBanner(this.language==='vi'?`3 cơ hội · Đã hồi sinh · ${this.campaign.chanceCharges} lượt còn lại`:`Three chances · Revived · ${this.campaign.chanceCharges} charges left`);
     return true;
@@ -1709,7 +1767,51 @@ export class GameEngine {
   public orientationBlocked=false;
   public setOrientationBlocked(blocked:boolean){this.orientationBlocked=blocked;this.heldKeys.clear();if(blocked)this.player.isMoving=false;}
   public inventoryOpen=false;
+  public canOpenCombatInventory() {
+    return !this.inventoryOpen && this.canUseCombatItems();
+  }
+  private canUseCombatItems() {
+    return this.screen === 'playing' && !this.pendingBattleStart && !this.runeEditing &&
+      !this.orientationBlocked && !this.bossIntroduction && !this.guides.blocking &&
+      !this.bossDeathPending && this.exitTravelRemaining <= 0 && this.health > 0;
+  }
   public setInventoryOpen(open:boolean){this.inventoryOpen=open;this.heldKeys.clear();}
+  public canPackItem(id: ShopItemId) {
+    return (this.screen === 'lobby' || !!this.pendingBattleStart) && this.campaign.canPackItem(id);
+  }
+  public packItem(id: ShopItemId) {
+    if (!this.canPackItem(id) || !this.campaign.packItem(id)) return false;
+    this.notifyHUD();
+    return true;
+  }
+  public setPackedCount(index: number, count: number) {
+    if ((this.screen !== 'lobby' && !this.pendingBattleStart) || !this.campaign.setPackedCount(index, count)) return false;
+    this.notifyHUD();
+    return true;
+  }
+  public unpackItem(index: number) {
+    if ((this.screen !== 'lobby' && !this.pendingBattleStart) || !this.campaign.unpackItem(index)) return false;
+    this.notifyHUD();
+    return true;
+  }
+  public canUseCarriedItem(slot: number) {
+    const id = this.carriedItems[slot]?.id;
+    return !!id && (id === 'time' ? this.canUseTimeItem() : id === 'ring' ? this.canUseLimitRing() : this.canUseSupply(id));
+  }
+  public useCarriedItem(slot: number) {
+    if (!this.canUseCarriedItem(slot)) return false;
+    const id = this.carriedItems[slot]?.id;
+    if (id === 'time') return this.useTimeItem(slot);
+    if (id === 'ring') return this.useLimitRing(slot);
+    return id ? this.useSupply(id, slot) : false;
+  }
+  private carriedSlot(id: ShopItemId) {
+    return this.carriedItems.findIndex(item => item?.id === id);
+  }
+  private spendCarriedItem(slot: number) {
+    const item = this.carriedItems[slot];
+    if (item) this.carriedItems[slot] = item.count > 1 ? { id: item.id, count: item.count - 1 } : null;
+  }
   public runeEditing=false;
   public setRuneEditing(open:boolean){this.runeEditing=open;this.heldKeys.clear();}
   public setRuneSlot(slot:number,id:EchoRuneId|null):boolean{
@@ -1868,7 +1970,7 @@ export class GameEngine {
     const editing=typeof HTMLElement!=='undefined'&&e.target instanceof HTMLElement&&!!e.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
     // Four consecutive presses; holding Y or typing into a field is not the command.
     if(editing||e.ctrlKey||e.metaKey||e.altKey||this.orientationBlocked){this.devKeyCount=0;return;}
-    if(e.code==='KeyY'||e.key.toLowerCase()==='y') {
+    if(gameDevToolsEnabled && (e.code==='KeyY'||e.key.toLowerCase()==='y')) {
       if(e.repeat)return;
       const now=performance.now();
       this.devKeyCount=now-this.lastDevKeyAt<=2500?this.devKeyCount+1:1;
@@ -1882,7 +1984,7 @@ export class GameEngine {
       if(e.target.closest('input,textarea,select'))return;
       if(['Enter','Space'].includes(e.code)&&e.target.closest('button'))return;
     }
-    if(this.orientationBlocked||this.runeEditing||this.inventoryOpen)return;
+    if(this.orientationBlocked||this.runeEditing||this.inventoryOpen||this.pendingBattleStart)return;
     // Prevent default browser scroll on arrow keys / space
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
       e.preventDefault();
@@ -1906,7 +2008,7 @@ export class GameEngine {
       return;
     }
     if (this.screen === 'defeat') {
-      if (code === 'Enter' || code === 'KeyT') this.restartLevel();
+      if (code === 'Enter' || code === 'KeyT') this.requestBattleRetry();
       return;
     }
 
@@ -1925,7 +2027,7 @@ export class GameEngine {
     // Victory screen start next
     if (this.screen === 'victory') {
       if (code === 'Enter' || code === 'Space') {
-        this.nextLevel();
+        this.requestNextBattle();
       }
       return;
     }
@@ -1948,13 +2050,18 @@ export class GameEngine {
 
     // Restart key [T]
     if (key === 't') {
-      this.restartLevel();
+      this.requestBattleRetry();
       return;
     }
 
     // In playing state
     if (this.screen === 'playing') {
-      if (/^(Digit|Numpad)[1-6]$/.test(code)) { this.selectEcho(Number(code.slice(-1)) - 1); return; }
+      if (/^(Digit|Numpad)[1-6]$/.test(code)) {
+        const slot = Number(code.slice(-1)) - 1;
+        if (!e.shiftKey && slot < ITEM_LOADOUT_LIMIT) this.useCarriedItem(slot);
+        else this.selectEcho(slot);
+        return;
+      }
       if (key === 'c') { this.pauseEcho(); return; }
       if (code === 'Space') { this.useSkill(); return; }
       if (key === 'v') { this.useUltimate(); return; }
@@ -2123,7 +2230,7 @@ export class GameEngine {
   }
 
   private update(dt: number) {
-    if (this.screen !== 'playing' || this.bossIntroduction || this.orientationBlocked || this.runeEditing || this.inventoryOpen) return;
+    if (this.screen !== 'playing' || this.bossIntroduction || this.orientationBlocked || this.runeEditing || this.inventoryOpen || this.pendingBattleStart) return;
     if(this.tutorialEnabled){
       const previousTopic=this.guides.active;
       if (this.guides.blocking) return;
@@ -2746,6 +2853,7 @@ export class GameEngine {
         lastReward: this.lastReward,
         lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
+        itemLoadout: [...this.campaign.itemLoadout], carriedItems: [...this.carriedItems], preparingBattle: !!this.pendingBattleStart,
         bossHp: this.boss?.hp ?? 0,bossMaxHp:this.boss?.maxHp??GUARDIAN_HP,bossKind:this.boss?.kind,
         bossPhase: this.boss?.phase ?? 0,
         bossIntroduction:this.bossIntroduction,bossAction:this.boss?.attack,
