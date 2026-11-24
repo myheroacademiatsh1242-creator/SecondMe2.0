@@ -80,3 +80,51 @@
 /* Opens the player guide (guide/PlayerGuide.tsx) from either camp. */
 .rest-heading .camp-guide{display:inline-flex;align-items:center;gap:5px;min-height:36px;margin-left:auto;margin-right:10px;padding:0 10px;font:inherit;font-size:14px;letter-spacing:.5px;color:#2a1d08;background:#e3c46e;border:2px solid #050d08;box-shadow:inset 0 -3px 0 #8a6424;cursor:pointer}
 .rest-heading .camp-guide:focus-visible{outline:2px solid #fff0b0;outline-offset:2px}
+
+.journey-lobby .integrated-camp {
+  container-type: inline-size;
+}
+
+.journey-lobby .integrated-camp .rest-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px 8px;
+}
+
+.rest-heading > span:first-child > svg {
+  flex: none;
+}
+
+.rest-heading > span:last-child,
+.rest-heading .camp-guide {
+  white-space: nowrap;
+}
+
+.rest-heading .camp-guide {
+  margin-inline: 0;
+}
+
+@container (max-width: 265px) {
+  .journey-lobby .journey-camp.integrated-camp .rest-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .rest-heading > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .rest-heading .camp-guide {
+    justify-self: start;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 480px) {
+  .journey-lobby .integrated-camp:not(.christmas-camp) .rest-scene {
+    align-self: stretch;
+    width: auto;
+  }
+
+  .journey-lobby .integrated-camp:not(.christmas-camp) .rest-scene-caption {
+    inset-inline: 0;
+  }
+}
