@@ -116,6 +116,23 @@
   .rest-heading .camp-guide {
     justify-self: start;
   }
+
+  .journey-lobby .journey-camp.integrated-camp .rest-kit p,
+  .journey-lobby .journey-camp.integrated-camp .rest-kit > div > span,
+  .journey-lobby .journey-camp.integrated-camp .rest-prepare {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .journey-lobby .journey-camp.integrated-camp .rest-prepare {
+    min-width: 0;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .rest-prepare > svg {
+    flex: none;
+  }
 }
 
 @media (orientation: landscape) and (max-height: 480px) {
