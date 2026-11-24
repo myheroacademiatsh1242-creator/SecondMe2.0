@@ -547,7 +547,8 @@ body.reduced-motion .christmas-chest-pedestal > i { animation: none; }
   inset: auto 0 -16px;
 }
 .christmas-chest-variant[data-kind='platinum'] .reward-chest-sprite { bottom: -26px; }
-.christmas-chest-variant::after {
+.christmas-chest-variant::after,
+.christmas-chest-panel .chest-display::after {
   content: '';
   position: absolute;
   left: 15px;
@@ -556,7 +557,16 @@ body.reduced-motion .christmas-chest-pedestal > i { animation: none; }
   height: 40px;
   background: url('/assets/ui/noel/santa-hat.png') 48% 54% / 236% 220% no-repeat;
   image-rendering: pixelated;
+  pointer-events: none;
 }
+.christmas-chest-panel .chest-display { position: relative; }
+.christmas-chest-panel .chest-display::after {
+  left: 15%;
+  top: 24%;
+  width: 38%;
+  height: 27%;
+}
+.christmas-chest-panel .chest-display[data-kind='platinum']::after { top: 29%; }
 .christmas-chest-variant[data-kind='platinum']::after { top: 13px; }
 .christmas-chest-mist {
   position: absolute;

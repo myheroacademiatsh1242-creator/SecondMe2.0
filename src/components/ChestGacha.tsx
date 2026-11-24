@@ -131,7 +131,7 @@ export function ChestGacha({engine,hud,christmas=false}:{engine:GameEngine|null;
       {notice&&<div className="chest-development-notice" role="status"><p>{vi?'Rương đang trong quá trình hoàn thiện, chưa có phần thưởng để quay. Vui lòng quay lại sau. Tinh thể của bạn được giữ nguyên.':'This chest is under development. Rewards are not available yet. Please return later. Your crystals are preserved.'}</p><button type="button" onClick={()=>setNotice(false)}>{vi?'Đã hiểu':'Got it'}</button></div>}
       <h2 className="chest-kind-title" aria-live="polite">{vi?selectedChest.vi:selectedChest.en}</h2>
       <p className="chest-key-balance"><ChestCurrencyIcon currency={price.currency} size={28}/> {balance} {currencyName}</p>
-      <div className="chest-display">
+      <div className="chest-display" data-kind={kind}>
         <ChestSprite key={run} kind={kind} tier={showSummonScene ? null : tier} reducedMotion/>
       </div>
       <div className="chest-results" aria-live="polite">{results.length?<div className="chest-summary-wrap"><p>{vi?'Đã nhận vào túi đồ:':'Added to your inventory:'}</p><ul>{pool.map(item=>{const count=results.filter(id=>id===item.id).length;return count?<li key={item.id} className={`chest-tier-${item.tier}`}>{vi?item.vi:item.en} ×{count}</li>:null;})}</ul><button type="button" className="chest-reopen-rewards-btn" onClick={()=>setShowRewardModal(true)}>✨ {vi?'Xem thẻ bài phần thưởng':'View card rewards'}</button></div>:<p>{vi?'Mỗi lượt nhận một phần thưởng.':'One reward per draw.'}</p>}</div>
