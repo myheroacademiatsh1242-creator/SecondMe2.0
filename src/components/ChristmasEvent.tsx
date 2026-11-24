@@ -25,14 +25,74 @@ export function ChristmasLights() {
   </div>;
 }
 
-export function ChristmasSnow({ still = false }: { still?: boolean }) {
+const menuBulbs = [
+  [190, 482, '#ff503b'], [199, 400, '#69d9ff'], [228, 360, '#ff503b'],
+  [284, 335, '#ff523b'], [309, 351, '#ffcf4b'], [337, 348, '#ff503b'],
+  [381, 309, '#ff5338'], [426, 303, '#ffcb56'], [471, 402, '#ffdb52'],
+  [512, 399, '#ff643b'], [521, 428, '#ffd451'], [492, 504, '#ffd157'],
+  [229, 662, '#ff6142'], [235, 611, '#63caff'], [207, 574, '#ff5350'],
+  [256, 502, '#ffe15f'], [1172, 216, '#66dcff'], [1202, 223, '#ffce57'],
+  [1235, 222, '#ff5839'], [1262, 212, '#72deff'], [1380, 208, '#ffd75f'],
+  [1408, 220, '#78d9ff'], [1471, 226, '#ffd252'], [1548, 92, '#ff5344'],
+] as const;
+
+export function ChristmasMenuGlow({ still }: { still: boolean }) {
+  if (still) return null;
+  return <svg className="christmas-menu-glow" viewBox="0 0 1672 941"
+    preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <radialGradient id="winter-bulb-aura">
+        <stop stopColor="white" stopOpacity=".7"/>
+        <stop offset="1" stopColor="white" stopOpacity="0"/>
+      </radialGradient>
+      <radialGradient id="winter-bulb-dim">
+        <stop offset=".25" stopColor="#0b1522" stopOpacity=".96"/>
+        <stop offset=".55" stopColor="#0b1522" stopOpacity=".78"/>
+        <stop offset="1" stopColor="#0b1522" stopOpacity="0"/>
+      </radialGradient>
+    </defs>
+    {menuBulbs.map(([x, y, color], index) => <g key={x}
+      style={{
+        '--blink-delay': `-${index * .67}s`,
+        '--blink-period': `${2.3 + index % 4 * .65}s`,
+        '--reveal-delay': `${.32 + Math.floor(index / 4) * .12}s`,
+        '--steady-delay': `${2.25 + index % 6 * .09}s`,
+      } as CSSProperties}>
+      <circle className="winter-menu-bulb-dim" cx={x} cy={y} r="12" fill="url(#winter-bulb-dim)"/>
+      <g className="winter-menu-bulb">
+        <circle cx={x} cy={y} r="13" fill="url(#winter-bulb-aura)"/>
+        <circle cx={x} cy={y} r="3" fill={color}/>
+      </g>
+    </g>)}
+    <g className="winter-menu-secondary-glow">
+      <circle className="winter-menu-fire" cx="849" cy="590" r="36" fill="url(#winter-bulb-aura)"/>
+      <path className="winter-menu-bell-glint" d="M854 240v14m-7-7h14 M230 240v12m-6-6h12"
+        fill="none" stroke="#fff0a3" strokeWidth="2"/>
+    </g>
+  </svg>;
+}
+
+export function ChristmasOrnaments({ scene, still }: {
+  scene: 'loading' | 'shop' | 'camp';
+  still: boolean;
+}) {
+  const first = scene === 'shop' || scene === 'loading' ? 'stocking' : 'candy';
+  const second = scene === 'camp' ? 'stocking' : 'candy';
+  const root = `${import.meta.env.BASE_URL}assets/ui/noel/`;
+  return <div className={`christmas-ornaments ornaments-${scene}${still ? ' ornaments-still' : ''}`} aria-hidden="true">
+    <img src={`${root}pedestal-${first}.png`} alt="" draggable={false}/>
+    <img src={`${root}pedestal-${second}.png`} alt="" draggable={false}/>
+  </div>;
+}
+
+export function ChristmasSnow({ still = false, count = 20 }: { still?: boolean; count?: number }) {
   return <div className={`christmas-snow${still ? ' christmas-snow--still' : ''}`} aria-hidden="true">
-    {Array.from({ length: 20 }, (_, index) => <i key={index} style={{
+    {Array.from({ length: count }, (_, index) => <i key={index} style={{
       '--x': `${(index * 47 + 5) % 99}%`,
       '--y': `${(index * 29 + 11) % 97}%`,
-      '--size': `${2 + index % 3}px`,
-      '--drift': `${18 + index % 5 * 11}px`,
-      '--fall': `${9 + index % 7}s`,
+      '--size': `${2 + index % 4}px`,
+      '--drift': `${(index % 9 - 4) * 13}px`,
+      '--fall': `${7 + index % 9 * .9}s`,
       '--delay': `-${index * 0.87}s`,
     } as CSSProperties}/>)}
   </div>;

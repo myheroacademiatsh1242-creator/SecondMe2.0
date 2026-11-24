@@ -81,6 +81,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   const [restoreCamp] = useState(shouldRestoreCamp);
   const [hud, setHud] = useState<HUDState>(() => ({ ...initial, ...readSavedSettings(), screen: restoreCamp ? 'loading' : 'intro' }));
   const [introRun, setIntroRun] = useState(restoreCamp ? 0 : 1);
+  const [introFinished, setIntroFinished] = useState(false);
   const [splash, setSplash] = useState(!restoreCamp);
   const [revealLobby, setRevealLobby] = useState(false);
   useEffect(() => {
@@ -137,9 +138,12 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   const bossIntroVisible = hud.screen === 'playing' && hud.bossIntroduction;
   const choosingLobbyRune = hud.screen === 'lobby' && !!hud.pendingRuneChoices?.length;
   return localize(<main className="adventure-app" style={{...touchVars(),'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle || hud.missionBriefing}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
-    {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
-    {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
-    {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}
+    {hud.screen === 'intro' && <Intro engine={engine} hud={hud} afterFilm={introFinished}/>}
+    {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} reducedMotion={hud.reducedMotion} onDone={() => setSplash(false)}/>}
+    {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => {
+      setIntroFinished(true);
+      setIntroRun(0);
+    }}/>}
     {(hud.screen === 'lobby' || (hud.screen === 'loading' && revealLobby)) &&
       <div className="lobby-handoff overlay" inert={hud.screen === 'loading'}><Lobby engine={engine} hud={hud}/></div>}
     {hud.screen === 'loading' && engine && <LoadingScreen key={hud.loadingLevel ?? 'lobby'} language={lang} reducedMotion={hud.reducedMotion} season={engine.devSeasonPreview}

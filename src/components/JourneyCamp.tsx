@@ -25,7 +25,7 @@ const trailSegments = [
 // Centre of each clearing in the same native coordinates (= the trail ends above).
 const stops = [[215,725],[440,350],[690,630],[920,310],[1200,515],[1355,205]];
 const HERO_KEY = 'secondme.journeyHeroAt';
-import { ChristmasLights, ChristmasSnow } from './ChristmasEvent.tsx';
+import { ChristmasLights, ChristmasOrnaments, ChristmasSnow } from './ChristmasEvent.tsx';
 
 export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,onUpgradeHero,onOpenInventory}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;christmas?:boolean;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void;onOpenInventory:()=>void}) {
   const vi=hud.language==='vi';
@@ -157,7 +157,7 @@ export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,o
       {christmas && <div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div>}
       <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><button type="button" className="camp-guide" onClick={openPlayerGuide}><BookOpen size={15} aria-hidden="true"/>{vi?'Sổ tay':'Guide'}</button><span>{count} / 6</span></header>
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
-        {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
+        {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/><ChristmasOrnaments scene="camp" still={hud.reducedMotion}/></>}
         <div className="rest-firelight" aria-hidden="true"/><FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx"/><div className="rest-embers" aria-hidden="true"><i/><i/><i/></div>
         <button className="rest-hero" onClick={()=>engine?.openCharacters()} aria-label={vi?'Đổi nhân vật':'Change character'}><span>{traveler??<Users size={50}/>}</span></button>
         <CampHeroCaption engine={engine} hud={hud}/>

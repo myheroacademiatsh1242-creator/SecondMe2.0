@@ -144,6 +144,7 @@ export interface SceneUI {
 }
 export interface SceneOptions {
   reducedMotion: boolean; stress: number; onFinished: () => void;
+  winter?: boolean;
   /** Mount or build the destination before the fade. */
   onReveal?: () => void;
   /** Dev only: stay on the loading screen after 100% (for profiling). */
@@ -252,7 +253,13 @@ export class LoadingScene {
   private stoneCue: ((fadeS?: number) => void) | null = null;
   private openCue: ((fadeS?: number) => void) | null = null;
 
+  private winterForest: HTMLImageElement | null = null;
+
   constructor(private canvas: HTMLCanvasElement, private load: Preload, private ui: SceneUI, private opts: SceneOptions) {
+    if (opts.winter) {
+      this.winterForest = new Image();
+      this.winterForest.src = `${import.meta.env.BASE_URL}assets/ui/noel/loading-winter.webp`;
+    }
     preloadLoadingArt();
     this.ctx = canvas.getContext('2d', { alpha: true })!;
     const k = Math.max(1, opts.stress);
@@ -327,7 +334,7 @@ export class LoadingScene {
 
   /** The title in the screen's language (null until it is ready). */
   private titleArt(): CanvasImageSource | null {
-    return loadingTitle(this.opts.language ?? 'en');
+    return this.opts.winter ? null : loadingTitle(this.opts.language ?? 'en');
   }
 
   /** Where the frame sits on the forest's canvas: its top-left (device px) and device px per forest px. */
@@ -348,16 +355,23 @@ export class LoadingScene {
     const [ox, oy, s] = this.forestAt;
     // Hidden or not laid out yet (no size, so no scale): nothing to paint until it is.
     if (!el.width || !el.height || !(s > 0) || !Number.isFinite(ox) || !Number.isFinite(oy)) return;
-    const key = `${el.width}x${el.height}:${props}:${props && !!title}`;
+    const winter = ready(this.winterForest) ? this.winterForest : null;
+    const key = `${el.width}x${el.height}:${props}:${props && !!title}:${!!winter}`;
     if (key === this.forestFor) return;
     this.forestFor = key;
     const x0 = Math.floor(-ox / s), y0 = Math.floor(-oy / s);
     const x1 = Math.ceil((el.width - ox) / s), y1 = Math.ceil((el.height - oy) / s);
-    const forest = paintForest(x0, y0, x1 - x0, y1 - y0);
     const ctx = el.getContext('2d')!;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(forest, ox + x0 * s, oy + y0 * s, (x1 - x0) * s, (y1 - y0) * s);
+    if (winter) {
+      const scale = Math.max(el.width / winter.width, el.height / winter.height);
+      const w = winter.width * scale, h = winter.height * scale;
+      ctx.drawImage(winter, (el.width - w) / 2, (el.height - h) / 2, w, h);
+    } else {
+      const forest = paintForest(x0, y0, x1 - x0, y1 - y0);
+      ctx.drawImage(forest, ox + x0 * s, oy + y0 * s, (x1 - x0) * s, (y1 - y0) * s);
+    }
     if (props) {
       const k = s / (ART_W / FOREST_W);
       ctx.setTransform(k, 0, 0, k, ox, oy);
@@ -763,7 +777,7 @@ export class LoadingScene {
     if (z > 0) {
       cam();
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(forestFrame(), 0, 0, ART_W, ART_H);
+      ctx.drawImage(ready(this.winterForest) ? this.winterForest : forestFrame(), 0, 0, ART_W, ART_H);
       ctx.setTransform(kx, 0, 0, ky, 0, 0);
     }
 

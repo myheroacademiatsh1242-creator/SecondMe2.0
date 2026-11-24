@@ -25,7 +25,7 @@ import { IntroEffects } from './IntroEffects.tsx';
 import { MenuVines } from './MenuVines.tsx';
 import { MenuWizard } from './MenuWizard.tsx';
 import { drawSantaHat } from './HeroSantaHat.ts';
-import { ChristmasEvent, ChristmasLights, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
+import { ChristmasEvent, ChristmasLights, ChristmasMenuGlow, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
 import { gameDevToolsEnabled } from '../game/logic/devAccess.ts';
 import credits from '../game/data/credits.json';
 import { ComboPreview } from './ComboShowcase.tsx';
@@ -82,8 +82,15 @@ function SelectedCharacterAvatar({hud,winter=false}:{hud:HUDState;winter?:boolea
     : winter ? <span className="wizard-avatar"><AerisPortrait winter outfit={hud.outfits?.mage}/></span> : <WizardAvatar/>;
 }
 
-export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
+export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine | null; hud: HUDState; afterFilm?: boolean }) {
   const christmas = useChristmas(engine?.devSeasonPreview);
+  const revealChristmas = useRef(false);
+  const filmWasFinished = useRef(false);
+  if (afterFilm && !filmWasFinished.current) {
+    filmWasFinished.current = true;
+    revealChristmas.current = christmas.active && !hud.reducedMotion;
+  }
+  if (!christmas.active || hud.reducedMotion) revealChristmas.current = false;
   const christmasDialog = useRef<HTMLDialogElement>(null);
   const [panel, setPanel] = useState<'none' | 'settings' | 'credits' | 'quit'>('none');
   const vi = hud.language === 'vi';
@@ -130,7 +137,7 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
       if (event.key === 'Escape') setPanel('none');
     }
   }}>
-    <div className={`intro-artwork${christmas.active ? ' christmas-menu' : ''}`}>
+    <div className={`intro-artwork${christmas.active ? ' christmas-menu' : ''}${revealChristmas.current ? ' christmas-menu-reveal' : ''}`}>
     {christmas.active
       ? <svg className="christmas-entrance" viewBox="0 0 1376 768" preserveAspectRatio="none" aria-hidden="true">
           {!hud.reducedMotion && <>
@@ -146,7 +153,7 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
             <g mask="url(#winter-swirl-mask)">
               <g transform="translate(314 426) scale(1 1.6)">
                 <g className="portal-swirl winter-portal-swirl">
-                  <image href="/assets/ui/noel/menu-winter.webp" width="1376" height="768"
+                  <image href={`${import.meta.env.BASE_URL}assets/ui/noel/menu-winter-night.webp`} width="1376" height="768"
                     transform="scale(1 .625) translate(-314 -426)" preserveAspectRatio="none"/>
                 </g>
               </g>
@@ -155,7 +162,11 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
           <MenuWizard winter reducedMotion={hud.reducedMotion}/>
         </svg>
       : <IntroEffects/>}
-    {christmas.active && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
+    {christmas.active && <>
+      <ChristmasSnow still={hud.reducedMotion} count={44}/>
+      {revealChristmas.current && <div className="christmas-menu-blackout" aria-hidden="true"/>}
+      <ChristmasMenuGlow still={hud.reducedMotion}/>
+    </>}
     <h1 className="intro-accessible-title">SECOND ME</h1>
     <div className="intro-localized-tagline tagline-above" lang={vi?'vi':'en'}>{vi?'LỐI MÒN XƯA VẪN NHỚ':'THE ANCIENT PATH REMEMBERS'}</div>
     <div className="intro-localized-tagline tagline-below" lang={vi?'vi':'en'}>{vi?'TIẾNG VỌNG RỪNG SÂU':'ECHOES OF THE WILD'}</div>

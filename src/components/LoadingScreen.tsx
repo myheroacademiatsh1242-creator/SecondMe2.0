@@ -23,7 +23,7 @@ const TEXT = {
  * (src/game/loading/loadingScene.ts), and the progress of real asset loading
  * (src/game/loading/preloader.ts). Once the critical images are ready, fade into the next screen.
  */
-import { ChristmasLights, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
+import { ChristmasLights, ChristmasOrnaments, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
 import type { SeasonPreview } from '../game/logic/christmas.ts';
 
 export function LoadingScreen({ language, reducedMotion, level = null, portal = false, lobbyTheme = 'forest', season, onReveal, onDone }: {
@@ -44,6 +44,7 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
   const reveal = useRef(onReveal);
   reveal.current = onReveal;
   const spec = useRef(level);   // read once at mount: a new load needs a new screen (key)
+  const christmas = useChristmas(season);
 
   useEffect(() => {
     if (!canvas.current || !root.current || !percent.current) return;
@@ -61,7 +62,7 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
       lines: lines.current.filter((l): l is HTMLLIElement => !!l),
       perf: dev ? perf.current : undefined,
       forest: forest.current, dim: dim.current, vignette: vignette.current,
-    }, { reducedMotion, stress, hold, portal, lobby: !spec.current, language, onReveal: () => reveal.current?.(), onFinished: () => done.current() });
+    }, { reducedMotion, stress, hold, portal, winter: christmas.active, lobby: !spec.current, language, onReveal: () => reveal.current?.(), onFinished: () => done.current() });
     if (dev) (window as unknown as { __loadingScene?: LoadingScene }).__loadingScene = scene;
     // How much the 1376:768 frame must grow to cover the whole screen; the portal dive zooms it to that
     // (adventure.css), so screens wider or taller than the frame show no dark bars once the forest fades.
@@ -80,7 +81,6 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
   }, []);
 
   const t = TEXT[language];
-  const christmas = useChristmas(season);
   return (
     <div ref={root} className={`loading-v2 overlay${reducedMotion ? ' still' : ''}${portal ? '' : ' no-portal'}${christmas.active ? ' christmas-loading' : ''}`} data-phase="loading" role="progressbar" aria-label={t.loading} aria-valuemin={0} aria-valuemax={100}>
       {/* The pixel forest (pixelForest.ts), screen-wide, and the layers that darken it as the
@@ -89,7 +89,7 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
       <div ref={dim} className="lv-dim"/>
       <div ref={vignette} className="lv-vignette"/>
       <div className="lv-frame">
-      {christmas.active && <><ChristmasSnow still={reducedMotion}/><ChristmasLights/></>}
+      {christmas.active && <><ChristmasSnow still={reducedMotion}/><ChristmasLights/><ChristmasOrnaments scene="loading" still={reducedMotion}/></>}
       {christmas.active && <div className="christmas-loading-title" aria-hidden="true">
         <small>{language === 'vi' ? 'HOÀI NIỆM LỐI CỔ' : 'MEMORIES OF THE OLD TRAIL'}</small>
         <strong>{language === 'vi' ? 'NHỮNG LỐI ĐI' : 'THE HIDDEN TRAILS'}<br/>{language === 'vi' ? 'BẮT ĐẦU LỘ DIỆN' : 'BEGIN TO EMERGE'}</strong>

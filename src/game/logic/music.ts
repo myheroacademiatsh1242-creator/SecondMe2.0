@@ -4,6 +4,7 @@ import { sounds } from './sound.ts';
  * Background music from public/assets/music. The FILE NAME decides where a track plays, so
  * adding music never needs code: drop an .mp3/.ogg in the folder and name it after its scene.
  *
+ *   christmas-menu  "christmas menu"                              seasonal title screen
  *   boss    name contains "boss" / "bos" / "trùm"                  boss fight
  *   intro   "intro" / "mở đầu" / "cinematic"                        cinematic intro (replaces the synth score)
  *   defeat  "thua" / "defeat" / "game over"                         defeat screen
@@ -19,10 +20,11 @@ import { sounds } from './sound.ts';
  * The folder listing comes from assets/music/index.json, which vite.config.ts serves live in dev
  * and writes at build time.
  */
-export type MusicScene = 'menu' | 'shop' | 'level' | 'boss' | 'intro' | 'defeat' | 'victory' | 'ending';
+export type MusicScene = 'menu' | 'christmas-menu' | 'shop' | 'level' | 'boss' | 'intro' | 'defeat' | 'victory' | 'ending';
 
 const BASE = `${import.meta.env?.BASE_URL ?? "/"}assets/music`;
 const RULES: [MusicScene, RegExp][] = [
+  ['christmas-menu', /\bchristmas menu\b/],
   ['boss', /boss?|trum/],
   ['intro', /intro|mo dau|cinematic/],
   ['defeat', /thua|defeat|game ?over/],
@@ -35,13 +37,14 @@ const RULES: [MusicScene, RegExp][] = [
 const LOCAL_PREFIX = 'local-';
 const BUNDLED_TRACKS = [
   'Theme song.mp3',
+  'Christmas menu carols.ogg',
   'Nhạc intro game.mp3',
   'Nhạc ở các màn.mp3',
   'Nhạc đánh boss.mp3',
   'defeat-fading-echo.wav',
   'victory-ember-rise.wav',
 ];
-const FALLBACK: Partial<Record<MusicScene, MusicScene>> = { ending: 'victory', victory: 'menu', shop: 'menu' };
+const FALLBACK: Partial<Record<MusicScene, MusicScene>> = { ending: 'victory', victory: 'menu', shop: 'menu', 'christmas-menu': 'menu' };
 const LEVEL = 0.55;   // music sits under effects and voice
 const FADE = 1.2;
 /*

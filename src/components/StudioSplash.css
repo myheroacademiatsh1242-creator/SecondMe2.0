@@ -1,9 +1,92 @@
-/* Studio card (StudioSplash.tsx). The screen is the logo picture's own near-black, and the picture's edges are
-   feathered into it, so no rectangle shows around the logo on any screen shape. */
-.studio-splash{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;background:#030a13;cursor:pointer;
-  user-select:none;-webkit-user-select:none;touch-action:none}
-.studio-splash img{width:min(100vw,calc(100dvh * 1376 / 768));height:auto;opacity:0;pointer-events:none;
-  -webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 72%,transparent 100%);
-  mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 72%,transparent 100%);
-  transition:opacity var(--fade-out) ease-in}
-.studio-splash.is-shown img{opacity:1;transition:opacity var(--fade-in) ease-out}
+.studio-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  background: #030a13;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.studio-card {
+  position: relative;
+  isolation: isolate;
+  width: min(100vw, calc(100dvh * 1376 / 768));
+  aspect-ratio: 1376 / 768;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 50% 50% at center, #000 72%, transparent 100%);
+}
+
+.studio-card img,
+.studio-light-sweep {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.studio-emblem {
+  clip-path: inset(0 0 35% 0);
+  transform-origin: 50% 38%;
+}
+
+.studio-wordmark { clip-path: inset(65% 0 0 0); }
+
+.studio-light-sweep {
+  inset: 66% 28% auto;
+  width: 44%;
+  height: 18%;
+  overflow: hidden;
+  mix-blend-mode: screen;
+}
+
+.studio-light-sweep::after {
+  content: '';
+  position: absolute;
+  inset: -30% 0;
+  background: linear-gradient(107deg, transparent 40%, #60dfe455 48%, #ffe4a779 50%, transparent 58%);
+  opacity: 0;
+}
+
+.studio-splash.is-ready .studio-card { animation: studio-card-in 3.5s linear both; }
+.studio-splash.is-ready .studio-emblem { animation: studio-emblem-in 850ms 200ms ease-out both; }
+.studio-splash.is-ready .studio-wordmark { animation: studio-name-in 650ms 760ms ease-out both; }
+.studio-splash.is-ready .studio-light-sweep::after { animation: studio-sweep 820ms 1.4s ease-in-out both; }
+.studio-splash.is-paused :is(.studio-card, .studio-emblem, .studio-wordmark),
+.studio-splash.is-paused .studio-light-sweep::after {
+  animation-play-state: paused !important;
+}
+
+@keyframes studio-card-in {
+  0%, 8% { opacity: 0; }
+  20%, 77% { opacity: 1; }
+  95%, 100% { opacity: 0; }
+}
+@keyframes studio-emblem-in {
+  from { opacity: 0; transform: scale(.86) rotate(-6deg); }
+  75% { opacity: 1; transform: scale(1.025) rotate(.7deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes studio-name-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes studio-sweep {
+  0% { opacity: 0; transform: translateX(-62%); }
+  28%, 68% { opacity: .72; }
+  100% { opacity: 0; transform: translateX(62%); }
+}
+
+.studio-splash.studio-still.is-ready .studio-card { animation: studio-card-in 1.8s linear both !important; }
+.studio-splash.studio-still.is-ready :is(.studio-emblem, .studio-wordmark),
+.studio-splash.studio-still.is-ready .studio-light-sweep::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .studio-splash.is-ready .studio-card { animation: studio-card-in 1.8s linear both !important; }
+  .studio-splash.is-ready :is(.studio-emblem, .studio-wordmark),
+  .studio-splash.is-ready .studio-light-sweep::after { animation: none; }
+}
+.studio-splash.is-ready.is-paused .studio-card { animation-play-state: paused !important; }

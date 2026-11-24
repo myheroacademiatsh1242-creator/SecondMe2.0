@@ -42,7 +42,7 @@ const stops = [
 
 const FROST_HERO_KEY = 'secondme.frostHeroAt';
 
-import { ChristmasLights, ChristmasSnow } from './ChristmasEvent.tsx';
+import { ChristmasLights, ChristmasOrnaments, ChristmasSnow } from './ChristmasEvent.tsx';
 
 export function FrostChapter({
   engine,
@@ -217,7 +217,7 @@ export function FrostChapter({
         </header>
 
         <div className={`rest-scene rest-scene-frost ${hud.reducedMotion ? 'rest-still' : ''}`}>
-          {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
+          {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/><ChristmasOrnaments scene="camp" still={hud.reducedMotion}/></>}
           <div className="rest-firelight frost-firelight" aria-hidden="true" />
           <FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx" />
           <div className="rest-embers frost-snow-drift" aria-hidden="true">

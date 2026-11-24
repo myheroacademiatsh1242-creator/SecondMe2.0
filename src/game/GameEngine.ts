@@ -10,7 +10,7 @@ import { SKILL_PICKUPS } from './logic/skillPickups.ts';
 import { ManaPool, maxMana, comboManaCost, skillManaCost } from './logic/mana.ts';
 import {ITEM_LOADOUT_LIMIT,SHOP_ITEMS,type PackedItem,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
 import { gameDevToolsEnabled } from './logic/devAccess.ts';
-import type { SeasonPreview } from './logic/christmas.ts';
+import { christmasSeason, type SeasonPreview } from './logic/christmas.ts';
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
 import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logic/damage.ts';
 import { ignite, newBurn, stepBurn } from './logic/burn.ts';
@@ -655,6 +655,8 @@ export class GameEngine {
   public openShop() { if (this.screen !== 'lobby'||!this.shopUnlocked) return; this.screen = 'shop'; document.body.dataset.state = 'shop'; this.notifyHUD(); }
   public openCharacters() { if (this.screen !== 'lobby') return; this.screen = 'characters'; document.body.dataset.state = 'characters'; this.notifyHUD(); }
   private seasonPreview: SeasonPreview = 'auto';
+  private christmasMusicDate = false;
+  private nextChristmasMusicCheck = 0;
 
   public get devSeasonPreview(): SeasonPreview {
     return gameDevToolsEnabled && this.devUnlocked ? this.seasonPreview : 'auto';
@@ -664,6 +666,18 @@ export class GameEngine {
     if (!gameDevToolsEnabled || !this.devUnlocked) return;
     this.seasonPreview = value;
     this.notifyHUD();
+  }
+
+  private menuMusicScene(): MusicScene {
+    const season = this.devSeasonPreview;
+    if (season === 'christmas') return 'christmas-menu';
+    if (season === 'none') return 'menu';
+    const now = Date.now();
+    if (now >= this.nextChristmasMusicCheck) {
+      this.christmasMusicDate = christmasSeason(new Date(now)) !== null;
+      this.nextChristmasMusicCheck = now + 1000;
+    }
+    return this.christmasMusicDate ? 'christmas-menu' : 'menu';
   }
 
   public claimChristmasGift() {
@@ -2253,6 +2267,7 @@ export class GameEngine {
   private musicScene(): MusicScene | null {
     if (this.suspendVisuals) return 'intro';
     switch (this.screen) {
+      case 'intro': case 'lobby': case 'characters': return this.menuMusicScene();
       case 'loading': return null;
       case 'shop': return 'shop';
       case 'victory': return 'victory';
