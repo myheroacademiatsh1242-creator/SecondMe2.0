@@ -21,7 +21,8 @@ export function InteractiveCoach({engine,hud,touch}:{engine:GameEngine;hud:HUDSt
      const plate=active.id==='echo.walk'?engine.currentLevel.plates[Math.min(engine.checkpointIndex,engine.currentLevel.plates.length-1)]:[...engine.currentLevel.plates].sort((a,b)=>Math.hypot(a.x-at.x,a.y-at.y)-Math.hypot(b.x-at.x,b.y-at.y))[0];
      if(plate)r=new DOMRect(arena.left+plate.x/1280*arena.width,arena.top+plate.y/720*arena.height,plate.width/1280*arena.width,plate.height/720*arena.height);
    }
-   setSpot(r&&r.width>0&&r.height>0?{x:r.left,y:r.top,width:r.width,height:r.height}:null);
+   const next = r&&r.width>0&&r.height>0?{x:r.left,y:r.top,width:r.width,height:r.height}:null;
+   setSpot(previous => previous && next && previous.x===next.x && previous.y===next.y && previous.width===next.width && previous.height===next.height ? previous : next);
    const playerX=arena?arena.left+engine.player.x/1280*arena.width:innerWidth/2;
    setSide(r&&r.width<innerWidth*.55?(r.left+r.width/2>innerWidth/2?'left':'right'):(playerX<innerWidth/2?'right':'left'));
   };update();const timer=setInterval(update,200);return()=>clearInterval(timer);
@@ -30,8 +31,19 @@ export function InteractiveCoach({engine,hud,touch}:{engine:GameEngine;hud:HUDSt
  const track=TUTORIAL_STEPS.filter(s=>s.track===active?.track);const progress=track.findIndex(s=>s.id===active?.id.replace(/\.recover$/,''))+1;
  const key=touch&&active?.id.endsWith('.recover')?({'record-start':'Chạm Ghi hình','record-save':'Chạm Dừng ghi','echo-summon':'Chạm Gọi Echo','inventory-open':'Chạm Túi đồ','rune-edit':'Chạm Đổi rune'} as Record<string,string>)[active.event]??active.key:touch?({'combat.move':'Kéo joystick','combat.aim':'Đổi hướng joystick','combat.attack':'Chạm Tấn công','combat.combo':'Giữ Tấn công','combat.skill':'Chạm Kỹ năng','combat.dodge':'Chạm Né','echo.record':'Chạm Ghi hình','echo.save':'Chạm Dừng ghi','echo.summon':'Chạm Gọi Echo','echo.pause':'Chạm Dừng / Phát','echo.swap':'Chạm Đổi chỗ','echo.recall':'Chạm Thu Echo','echo.mark':'Đánh dấu → chạm sân','pack.use':'Chạm ô vật phẩm','pack.time':'Chạm bình thời gian','ultimate.use':'Chạm Tuyệt kỹ','menu.pause':'Chạm Tạm dừng'} as Record<string,string>)[active?.id.replace(/\.recover$/,'')??'']??active?.key:active?.key;
  const content=<>
-  {spot&&<div className="tutorial-spotlight" aria-hidden="true" style={{left:spot.x-4,top:spot.y-4,width:spot.width+8,height:spot.height+8}}/>}
-  {active&&<aside ref={card} className={`interactive-coach coach-${side}${touch?' coach-touch':''}`} aria-label="Hướng dẫn tương tác" data-tutorial-step={active.id}>
+  {spot&&<div className={`tutorial-spotlight${touch?' tutorial-spotlight-touch':''}`} aria-hidden="true" style={{left:spot.x-4,top:spot.y-4,width:spot.width+8,height:spot.height+8}}/>}
+  {active&&touch&&<aside className={`interactive-coach coach-${side} coach-touch coach-compact`} aria-label="Hướng dẫn tương tác" data-tutorial-step={active.id}>
+   <div className="coach-progress"><span>HƯỚNG DẪN</span><span>{progress} / {track.length}</span></div>
+   <h2>{active.title}</h2>
+   <div className="coach-compact-action"><span aria-hidden="true">{spot?(side==='left'?'→':'←'):'›'}</span><kbd>{key}</kbd></div>
+   <details key={active.id}>
+    <summary>Chi tiết</summary>
+    <p>{active.text}</p>
+    {engine.tutorialClockPaused&&<small className="coach-clock-note">Đồng hồ chặng tạm dừng trong bước học này.</small>}
+    <footer><button type="button" onClick={()=>tutorial.skip()}>Bỏ qua bước</button><button type="button" onClick={()=>setConfirm(true)}>Bỏ qua toàn bộ</button>{tutorial.replayTrack&&<button type="button" onClick={()=>tutorial.endReplay()}>Dừng xem lại</button>}</footer>
+   </details>
+  </aside>}
+  {active&&!touch&&<aside ref={card} className={`interactive-coach coach-${side}`} aria-label="Hướng dẫn tương tác" data-tutorial-step={active.id}>
    <div className="coach-progress"><span>HƯỚNG DẪN · {active.track.toUpperCase()}</span><span>{progress} / {track.length}</span></div>
    <h2>{active.title}</h2><p aria-live="polite">{active.text}</p><kbd>{touch?key:liveKeyLabel(key??'')}</kbd>{engine.tutorialClockPaused&&<small className="coach-clock-note">Đồng hồ chặng tạm dừng trong bước học này.</small>}
    {spot&&<span className="coach-point" aria-hidden="true">↗ Thao tác ở vùng sáng</span>}
