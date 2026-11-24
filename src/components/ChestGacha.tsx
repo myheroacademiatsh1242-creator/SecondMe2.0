@@ -132,11 +132,7 @@ export function ChestGacha({engine,hud,christmas=false}:{engine:GameEngine|null;
       <h2 className="chest-kind-title" aria-live="polite">{vi?selectedChest.vi:selectedChest.en}</h2>
       <p className="chest-key-balance"><ChestCurrencyIcon currency={price.currency} size={28}/> {balance} {currencyName}</p>
       <div className="chest-display">
-        {christmas && (!tier || showSummonScene)
-          ? kind === 'royal'
-            ? <img className="christmas-chest-sprite" src={`${import.meta.env.BASE_URL}assets/ui/noel/chest-winter.png`} alt="" draggable={false}/>
-            : <span className="christmas-chest-variant" data-kind={kind} aria-hidden="true"><ChestSprite kind={kind}/></span>
-          : <ChestSprite key={run} kind={kind} tier={showSummonScene ? null : tier} reducedMotion/>}
+        <ChestSprite key={run} kind={kind} tier={showSummonScene ? null : tier} reducedMotion/>
       </div>
       <div className="chest-results" aria-live="polite">{results.length?<div className="chest-summary-wrap"><p>{vi?'Đã nhận vào túi đồ:':'Added to your inventory:'}</p><ul>{pool.map(item=>{const count=results.filter(id=>id===item.id).length;return count?<li key={item.id} className={`chest-tier-${item.tier}`}>{vi?item.vi:item.en} ×{count}</li>:null;})}</ul><button type="button" className="chest-reopen-rewards-btn" onClick={()=>setShowRewardModal(true)}>✨ {vi?'Xem thẻ bài phần thưởng':'View card rewards'}</button></div>:<p>{vi?'Mỗi lượt nhận một phần thưởng.':'One reward per draw.'}</p>}</div>
       {!available&&<p role="status">{vi?'Rương đang trong quá trình hoàn thiện.':'This chest is under development.'}</p>}
