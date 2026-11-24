@@ -17,6 +17,10 @@ const standalone = () => typeof window !== 'undefined' && ((navigator as Navigat
   || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
 /** iPhone / iPod Safari: no page full screen (an iPad reports itself as a Mac and has webkit full screen). */
 const iPhoneSafari = () => typeof navigator !== 'undefined' && /iPhone|iPod/.test(navigator.userAgent) && !standalone();
+const isMobileFullscreenDevice = () => typeof navigator !== 'undefined' && (
+  /Android|iPhone|iPad|iPod|Mobile/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
 
 async function enterFullscreen() {
   try {
@@ -53,7 +57,7 @@ export function installScreenControls() {
   window.addEventListener('orientationchange', reset);
   window.addEventListener('keydown', onKey);
   const unbase = () => {window.removeEventListener('game-toggle-fullscreen',toggle); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('orientationchange', reset); window.removeEventListener('keydown', onKey); };
-  if (!canFullscreen() || !isTouchDevice()) return unbase;
+  if (!canFullscreen() || !isMobileFullscreenDevice() || !isTouchDevice()) return unbase;
 
   const landscape = window.matchMedia('(orientation: landscape)');
   let armed = landscape.matches && !fullscreenElement();
@@ -76,6 +80,11 @@ export function installScreenControls() {
 
 /** Toggle between full screen and windowed. Hidden where the browser has no full screen for pages. */
 export function FullscreenButton({ vi, floating = false }: { vi: boolean; floating?: boolean }) {
+  if (!isMobileFullscreenDevice()) return null;
+  return <MobileFullscreenButton vi={vi} floating={floating}/>;
+}
+
+function MobileFullscreenButton({ vi, floating }: { vi: boolean; floating: boolean }) {
   const [full, setFull] = useState(() => typeof document !== 'undefined' && !!fullscreenElement());
   const [hint, setHint] = useState(false);
   useEffect(() => {
