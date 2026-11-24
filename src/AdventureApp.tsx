@@ -135,6 +135,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   const engine = ref.current;
   const lang = hud.language === 'vi' ? 'vi' : 'en';
   const bossIntroVisible = hud.screen === 'playing' && hud.bossIntroduction;
+  const choosingLobbyRune = hud.screen === 'lobby' && !!hud.pendingRuneChoices?.length;
   return localize(<main className="adventure-app" style={{...touchVars(),'--desktop-scale': desktopScale} as React.CSSProperties} lang={hud.language} translate="no">{portraitBlocked&&<LandscapeGate vi={hud.language==='vi'}/>}<div className="game-stage" data-screen={hud.screen} data-level={['playing','paused','victory','defeat','ending'].includes(hud.screen)?'one':undefined} data-touch-controls={touchControls} inert={portraitBlocked || bossIntroVisible || hud.preparingBattle || hud.missionBriefing}><canvas ref={canvas} width={1280} height={720} data-testid="game-canvas"/>
     {hud.screen === 'intro' && <Intro engine={engine} hud={hud}/>}
     {hud.screen === 'intro' && splash && <StudioSplash paused={portraitBlocked} onDone={() => setSplash(false)}/>}
@@ -166,6 +167,6 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
       <BossIntro engine={engine} hud={hud}/>
     </div>}
-    {engine&&!filmPlaying&&!portraitBlocked&&!bossIntroVisible&&!hud.missionBriefing&&<InteractiveCoach engine={engine} hud={hud} touch={touchControls}/>}
+    {engine&&!filmPlaying&&!portraitBlocked&&!bossIntroVisible&&!hud.missionBriefing&&!choosingLobbyRune&&<InteractiveCoach engine={engine} hud={hud} touch={touchControls}/>}
   </main>);
 }
