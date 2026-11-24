@@ -17,6 +17,7 @@ const WINTER_IDLE: [number, number][] = [
 ];
 const WINTER_WAVE: [number, number][] = [[3, 320], [6, 1050], [3, 480]];
 const WINTER_SALE: [number, number][] = [[3, 300], [7, 1450], [3, 400]];
+const WINTER_PRANK: [number, number][] = [[4, 380], [8, 1200], [1, 350], [3, 400]];
 const winterFramePosition = (frame: number) =>
  `${(frame % 4) * 100 / 3}% ${Math.floor(frame / 4) * 100}%`;
 const shopGreetings={
@@ -148,7 +149,8 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   let mounted=true;
   const load=(src:string)=>new Promise<void>(resolve=>{const image=new Image();image.onload=()=>resolve();image.onerror=()=>resolve();image.src=src;if(image.complete)resolve();});
   const sceneAsset = christmas.active ? 'noel/shop-winter.webp' : 'tanuki-market-sunset.png';
-  void Promise.all([load(asset(sceneAsset)),load(asset(merchantSheet))]).then(()=>{if(mounted)setReady(true);});
+  const assets = christmas.active ? [sceneAsset, merchantSheet, 'noel/tanuki-angry.png', 'noel/penguin-prank.png'] : [sceneAsset, merchantSheet];
+  void Promise.all(assets.map(name => load(asset(name)))).then(()=>{if(mounted)setReady(true);});
   return()=>{mounted=false;};
  },[christmas.active,merchantSheet]);
  useEffect(()=>{
@@ -171,16 +173,20 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  useEffect(() => {
   if (!ready || !christmas.active) return;
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const frames = pose === 6 ? WINTER_WAVE : pose === 7 ? WINTER_SALE : WINTER_IDLE;
+  const frames = pose === 8 ? WINTER_PRANK : pose === 6 ? WINTER_WAVE : pose === 7 ? WINTER_SALE : WINTER_IDLE;
   let timer = 0;
   const advance = (step: number) => {
    const [frame, hold] = frames[step];
    setWinterFrame(frame);
-   timer = window.setTimeout(() => advance((step + 1) % frames.length), hold);
+   if (step + 1 < frames.length) {
+    timer = window.setTimeout(() => advance(step + 1), hold);
+   } else if (frames === WINTER_IDLE) {
+    timer = window.setTimeout(() => advance(0), hold);
+   }
   };
   const reset = () => {
    window.clearTimeout(timer);
-   if (hud.reducedMotion || motion.matches) { setWinterFrame(0); return; }
+   if (hud.reducedMotion || motion.matches) { setWinterFrame(pose === 8 ? 8 : 0); return; }
    advance(0);
   };
   reset();
@@ -196,9 +202,18 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   setMessage(vi?`Đã nhận ${quantity} × ${item.vi}. Cảm ơn bạn!`:`Received ${quantity} × ${item.en}. Thank you!`);reactionUntil.current=performance.now()+(christmas.active?2250:1500);setPose(7);setSpeech(true);setGreetingRun(n=>n+1);close();
  };
  const worldScale = fillWinterViewport ? `${fit.x}, ${fit.y}` : String(scale);
+ const angry = christmas.active && winterFrame === 8;
  const merchantPosition = christmas.active
   ? winterFramePosition(winterFrame)
   : `${(pose % 4) * 100 / 3}% ${Math.floor(pose / 4) * 100}%`;
+ const playPrank = () => {
+  if (pose === 8) return;
+  reactionUntil.current = performance.now() + 2400;
+  setPose(8);
+  setMessage(vi ? 'Này, ai chọc tôi đấy? … Lại là cậu à!' : 'Hey, who poked me? … You again!');
+  setSpeech(true);
+  setGreetingRun(run => run + 1);
+ };
  return <div className={`tanuki-trading-shop${christmas.active ? ' christmas-shop' : ''}`} ref={viewport}><div className="trading-world" style={{transform:`translate(-50%,-50%) scale(${worldScale})`,'--trading-scale':scale} as CSSProperties}>
   <img className="trading-background" src={asset('tanuki-market-sunset.png')} alt=""/>
   {christmas.active && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
@@ -253,9 +268,12 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
       </div>
     ))}
   </div>
-  <button className={`trading-merchant ${hud.reducedMotion?'merchant-still':''}`} data-pose={pose} aria-label={vi?'Trò chuyện với Tanuki':'Talk to Tanuki'} onClick={()=>{setMessage('');setGreetingIndex(index=>(index+1+Math.floor(Math.random()*(shopGreetings.vi.length-1)))%shopGreetings.vi.length);setSpeech(true);setGreetingRun(n=>n+1);reactionUntil.current=performance.now()+(christmas.active?1950:1800);setPose(6);}}><span aria-hidden="true" style={{backgroundImage:`url(${asset(merchantSheet)})`,backgroundPosition:merchantPosition,backgroundSize:christmas.active?'400% 200%':undefined}}/></button>
+  <button className={`trading-merchant ${hud.reducedMotion?'merchant-still':''}`} data-pose={pose} aria-label={vi?'Trò chuyện với Tanuki':'Talk to Tanuki'} onClick={()=>{setMessage('');setGreetingIndex(index=>(index+1+Math.floor(Math.random()*(shopGreetings.vi.length-1)))%shopGreetings.vi.length);setSpeech(true);setGreetingRun(n=>n+1);reactionUntil.current=performance.now()+(christmas.active?1950:1800);setPose(6);}}><span aria-hidden="true" style={{backgroundImage:`url(${asset(angry?'noel/tanuki-angry.png':merchantSheet)})`,backgroundPosition:angry?'center':merchantPosition,backgroundSize:angry?'100% 100%':christmas.active?'400% 200%':undefined}}/></button>
   {/* The counter in front of Tanuki: the same painting, cut to the counter, so Tanuki stands behind it. */}
   <div className="trading-counter-front" aria-hidden="true" style={{backgroundImage:`url(${asset('tanuki-market-sunset.png')})`}}/>
+  {christmas.active && ready && <button type="button" className={`winter-penguin${pose===8?' is-pranking':''}${hud.reducedMotion?' penguin-still':''}`} aria-label={vi?'Cho chim cánh cụt chọc Tanuki':'Let the penguin poke Tanuki'} onClick={playPrank}>
+    <img src={asset('noel/penguin-prank.png')} alt="" draggable={false}/>
+  </button>}
   {ready&&speech&&<div className="trading-speech" role="status">{message||(vi?shopGreetings.vi[greetingIndex]:shopGreetings.en[greetingIndex])}</div>}
   {christmas.active && <div className="christmas-chest-pedestal" aria-hidden="true">
     <i className="pedestal-stocking"/><i className="pedestal-candy"/><i className="pedestal-stocking"/>
