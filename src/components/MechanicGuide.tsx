@@ -26,7 +26,7 @@ const trailCopy = {
   exit: ['', '', '', 'Đi vào cổng thoát', 'Enter the exit portal'],
   ward: ['', '', '', 'Hạ lính gác nối với ấn tím để phá phong ấn', 'Defeat the linked sentries to unseal the rune'],
   rhythm: ['', '', '', 'Giữ đủ ấn, qua khi thanh chắn rút', 'Hold the required runes and cross when the barrier retracts'],
-  fight: ['', '', '', 'Hạ hết quái để mở cổng thoát', 'Defeat the remaining enemies to unlock the exit'],
+  fight: ['', 'Tấn công', 'Attack', 'Hạ hết quái để mở cổng thoát', 'Defeat the remaining enemies to unlock the exit'],
 } as const;
 
 export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | null; hud: HUDState; touch: boolean }) {
@@ -37,10 +37,13 @@ export function MechanicGuide({ engine, hud, touch }: { engine: GameEngine | nul
   // The library is the full player guide (guide/PlayerGuide.tsx); play stays frozen while it is open (guides.blocking).
   if (libraryOpen) return <PlayerGuide progress={engine?.campaign} lang={vi ? 'vi' : 'en'} topic={topic} onClose={() => engine?.closeGuide()} onReplayTutorial={track=>{engine?.onboarding.replay(track);engine?.closeGuide();}}/>;
   const objective = hud.trailAction ? trailCopy[hud.trailAction] : null;
+  const objectiveKey = hud.trailAction === 'fight'
+    ? touch ? objective?.[vi ? 1 : 2] : vi ? 'Chuột trái' : 'Left click'
+    : touch ? objective?.[vi ? 1 : 2] : objective?.[0];
   const Icon = topic ? hintIcons[topic] : null;
   return <>
     {objective && <aside className="trail-objective" role="status">
-      {objective[0] ? <kbd>{touch ? objective[vi ? 1 : 2] : objective[0]}</kbd> :
+      {objectiveKey ? <kbd>{objectiveKey}</kbd> :
         <Footprints size={18} aria-hidden="true"/>}
       <span>{objective[vi ? 3 : 4]}</span>
     </aside>}

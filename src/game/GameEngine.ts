@@ -234,7 +234,13 @@ export class GameEngine {
   public markEchoTarget(target:{x:number;y:number}){return this.markTarget(target);}
   public readonly onboarding = new InteractiveTutorial();
   public tutorialUI: (patch: Partial<{chestOpen:boolean;chestAvailable:boolean;chestRates:boolean;chestRewards:boolean;shopConfirm:boolean;heroUpgrade:boolean;resetOpen:boolean}>)=>void = ()=>{};
-  public get tutorialClockPaused(){const s=this.onboarding.active;return this.tutorialEnabled&&!!s&&['combat','echo'].includes(s.track)&&s.id!=='combat.finish';}
+  public get tutorialClockPaused() {
+    if (!this.tutorialEnabled) return false;
+    if (this.onboarding.context && !this.onboarding.disabled && this.showHints &&
+        this.screen === 'playing' && this.currentLevel.id === 1 && !this.finalGateCrossed) return true;
+    const step = this.onboarding.active;
+    return !!step && ['combat', 'echo'].includes(step.track) && step.id !== 'combat.finish';
+  }
   public notifyTutorialHUD(){this.notifyHUD();}
 
   // Screen state

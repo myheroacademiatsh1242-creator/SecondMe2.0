@@ -1,7 +1,7 @@
 /** Persistent, event-driven onboarding. This module never mutates gameplay or currency. */
 export const TUTORIAL_KEY = 'second-me-interactive-tutorial-v1';
 export interface TutorialContext {
- screen: string; level: number; completed: number[]; touch: boolean;
+ screen: string; level: number; completed: number[]; touch: boolean; finalGateCrossed: boolean;
  recording: boolean; recordReady: boolean; echoes: number; canSummon: boolean; canSwap: boolean;
  canSkill: boolean; canDodge: boolean; canUltimate: boolean; canTime: boolean; canItem: boolean;
  hasRunes: boolean; pendingRuneReward:boolean; canRune: boolean; runeEditing: boolean; inventory: boolean; preparing: boolean;
@@ -11,14 +11,14 @@ export interface TutorialContext {
 export type TutorialStep = { id:string; track:string; title:string; text:string; key:string; target:string; event:string; total?:number; ready?:(c:TutorialContext)=>boolean };
 const step=(track:string,id:string,title:string,text:string,key:string,target:string,event:string,ready?:TutorialStep['ready'],total?:number):TutorialStep=>({track,id:track+'.'+id,title,text,key,target,event,ready,total});
 export const TUTORIAL_STEPS:TutorialStep[] = [
- step('combat','move','Bước chân đầu tiên','Di chuyển một đoạn trên sân. Hướng dẫn chỉ tiếp tục khi nhân vật thực sự đổi vị trí.','WASD / ↑ ↓ ← →','.touch-stick-zone','move'),
+ step('combat','move','Tiến vào khu chiến đấu','Di chuyển thêm một đoạn sau khi qua cổng để đến gần quái.','WASD / ↑ ↓ ← →','.touch-stick-zone','move'),
  step('combat','aim','Hướng ngắm','Di chuột trên sân để đổi hướng ngắm. Trên điện thoại, kéo joystick để đổi hướng trước khi đánh.','Chuột / Joystick','[data-testid="game-canvas"]','aim'),
  step('combat','attack','Đòn đánh đầu tiên','Bấm tấn công để thực hiện một đòn thật.','Chuột trái','.action-attack, .skill-attack','attack'),
  step('combat','combo','Nối combo','Bấm tấn công liên tiếp theo nhịp để nối sang đòn thứ hai. Điện thoại có thể giữ nút tấn công.','Chuột trái','.action-attack, .skill-attack','combo'),
  step('combat','skill','Kỹ năng & năng lượng','Dùng kỹ năng riêng. Cần đủ MP và hết hồi chiêu; bấm khi chưa sẵn sàng không được tính.','Space / Chuột phải','.action-skill, .skill-skill','skill',c=>c.canSkill),
  step('combat','dodge','Lướt né','Di chuyển rồi lướt theo hướng đó. Chờ nút sáng nếu đang hồi chiêu.','Shift','.action-dodge, .skill-dodge','dodge',c=>c.canDodge),
  step('combat','hud','Thanh kỹ năng','Các nút trên HUD dùng được trực tiếp. Số đếm là hồi chiêu, MP là năng lượng. Bấm một nút sẵn sàng để thử.','Chạm nút','.combat-action-bar, .touch-skills','hud-action'),
- step('combat','finish','Tự vượt chặng đầu','Tiếp tục giải đố và tới cổng thoát. Mục tiêu trên sân sẽ chỉ đường; bạn có thể quay lại bài Echo trong Sổ tay.','E · Q · X','.trail-objective','level-clear'),
+ step('combat','finish','Tới cổng thoát','Hạ quái còn lại rồi đi vào cổng thoát. Mục tiêu trên sân sẽ chỉ đường.','','.trail-objective','level-clear'),
  step('chest','open','Rương đã mở khóa','Bạn được tặng 15 phàm tinh thể: đủ đúng 3 lượt rương Hoàng Phẩm, cùng xu mua vật phẩm. Vào Shop rồi bấm Rương thưởng.','Shop → Rương','.shop-reward-chest, [data-tutorial="shop"]','chest-open'),
  step('chest','kind','Chọn rương đang hoạt động','Chọn Hoàng Phẩm: mỗi lượt tốn 5 phàm tinh thể. Rương đang phát triển không nằm trong bài tập.','Hoàng Phẩm','.chest-kind-buttons','chest-kind',c=>c.chestOpen),
  step('chest','rates','Xem xác suất','Bấm Xem tỉ lệ để đọc xác suất. Mỗi lượt độc lập, không bảo đảm nhận một món cụ thể.','Xem tỉ lệ','.chest-rate-toggle','chest-rates',c=>c.chestOpen&&c.chestAvailable),
@@ -84,6 +84,8 @@ export class InteractiveTutorial {
  private save(){try{this.storage?.setItem(TUTORIAL_KEY,JSON.stringify({done:[...this.done],skipped:[...this.skipped],disabled:this.disabled}));}catch{}this.emit();}
  private trackAvailable(track:string,c:TutorialContext){
   if(this.replayTrack&&this.replayTrack!==track)return false;
+  // The trail objective guides recording, summoning and crossing before combat lessons.
+  if(c.level===1&&c.screen==='playing'&&!c.finalGateCrossed)return false;
   switch(track){
    case 'combat':return c.level===1&&c.screen==='playing';
    case 'echo':return c.level===2&&c.screen==='playing';

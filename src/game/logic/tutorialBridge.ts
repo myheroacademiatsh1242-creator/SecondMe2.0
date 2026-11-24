@@ -8,7 +8,7 @@ export function connectTutorial(engine:GameEngine,touch=false){
  const tutorial=engine.onboarding;
  const ui={chestOpen:false,chestAvailable:true,chestRates:false,chestRewards:false,shopConfirm:false,heroUpgrade:false,resetOpen:false};
  const internals=engine as unknown as Record<string,any>;
- const context=():TutorialContext=>({screen:engine.screen,level:engine.currentLevel.id,completed:[...engine.campaign.completed],touch,
+ const context=():TutorialContext=>({screen:engine.screen,level:engine.currentLevel.id,completed:[...engine.campaign.completed],touch,finalGateCrossed:engine.finalGateCrossed,
   recording:engine.recorder.getStatus()==='recording',recordReady:engine.recorder.getSamples().length>1,
   echoes:engine.echoes.length,canSummon:engine.echoes.length<engine.echoLimit&&(engine.echoCharges>0||internals.echoFreeSummon),
   canSwap:!!engine.echo&&internals.swapCooldown<=0&&(engine.echo.stability??100)>=(engine.activeEchoRunes.has('swap')?15:30),

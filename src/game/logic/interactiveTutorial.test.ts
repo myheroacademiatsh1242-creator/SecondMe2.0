@@ -6,7 +6,7 @@ import {connectTutorial} from './tutorialBridge.ts';
 import {Campaign} from './campaign.ts';
 import {sounds} from './sound.ts';
 sounds.setMuted(true);
-const base:TutorialContext={screen:'playing',level:1,completed:[],touch:false,recording:false,recordReady:false,echoes:0,canSummon:true,canSwap:false,canSkill:true,canDodge:true,canUltimate:false,canTime:false,canItem:false,hasRunes:false,pendingRuneReward:false,canRune:false,runeEditing:false,inventory:false,preparing:false,chestOpen:false,chestAvailable:true,chestRates:false,chestRewards:false,shopConfirm:false,heroUpgrade:false,resetOpen:false,guide:false};
+const base:TutorialContext={screen:'playing',level:1,completed:[],touch:false,finalGateCrossed:true,recording:false,recordReady:false,echoes:0,canSummon:true,canSwap:false,canSkill:true,canDodge:true,canUltimate:false,canTime:false,canItem:false,hasRunes:false,pendingRuneReward:false,canRune:false,runeEditing:false,inventory:false,preparing:false,chestOpen:false,chestAvailable:true,chestRates:false,chestRewards:false,shopConfirm:false,heroUpgrade:false,resetOpen:false,guide:false};
 function store(){let data='{}';return {getItem:()=>data,setItem:(_k:string,v:string)=>{data=v;},read:()=>JSON.parse(data)};}
 test('progress requires the expected successful event and persists without replaying completed steps',()=>{
  const storage=store(),t=new InteractiveTutorial(storage);t.update({...base});
@@ -44,7 +44,9 @@ function engineFor(t:test.TestContext){
  const e=new GameEngine();e.tutorialEnabled=true;e.restartLevel();const stop=connectTutorial(e);t.after(stop);return {e,tick:stop.tick};
 }
 test('blocked movement, rejected attacks/skills and insufficient swap stability never complete actions',t=>{
- const {e,tick}=engineFor(t);tick();assert.equal(e.onboarding.active?.id,'combat.move');tick();assert.equal(e.onboarding.active?.id,'combat.move');
+ const {e,tick}=engineFor(t);const active=()=>e.onboarding.active?.id;tick();assert.equal(active(),undefined);
+ e.onboarding.event('attack');assert.equal(e.onboarding.done.has('combat.attack'),false);
+ e.finalGateCrossed=true;tick();assert.equal(e.onboarding.active?.id,'combat.move');tick();assert.equal(e.onboarding.active?.id,'combat.move');
  e.player.x+=30;tick();assert.ok(e.onboarding.done.has('combat.move'));
  e.onboarding.done.add('combat.aim');e.onboarding.update({...e.onboarding.context!});e.inventoryOpen=true;e.attack();assert.equal(e.onboarding.done.has('combat.attack'),false);
  e.inventoryOpen=false;e.orientationBlocked=true;e.attack();assert.equal(e.onboarding.done.has('combat.attack'),false);
