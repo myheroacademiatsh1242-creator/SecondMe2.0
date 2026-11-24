@@ -32,7 +32,10 @@ export function EchoRuneStock({hud,engine,compact=false,summaryOnly=false}:{hud:
  </section>;
 }
 
+import {ChristmasPanelTrim,useChristmas} from './ChristmasEvent.tsx';
+
 export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:HUDState;engine:GameEngine|null;close:()=>void;initialSlot?:number}){
+ const winter = useChristmas(engine?.devSeasonPreview).active;
  const panelArt=usePanelArt(PANEL_ART.inventory);
  const {closing,close}=useDialogClose(onClose);
  const vi=hud.language==='vi',selected=(hud.runeLoadout??[]).slice(0,4),[slot,setSlot]=useState(Math.min(initialSlot,selected.length,3)),owned=ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0);
@@ -57,7 +60,8 @@ export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:
  const focused=ECHO_RUNES.find(r=>r.id===selected[slot]);
  const previewRef=useRef<HTMLDivElement>(null);
  useEffect(()=>{if(previewRef.current)previewRef.current.scrollTop=0;},[slot,focused?.id]);
- return createPortal(<div lang={vi ? 'vi' : 'en'} className={`modal-backdrop rune-loadout-backdrop forest-dialog-backdrop ${closing?'is-leaving':''}`} onClick={close}><section className="panel rune-loadout-editor forest-dialog" data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-label={vi?'Đổi rune':'Change runes'} onClick={e=>e.stopPropagation()}>
+ return createPortal(<div lang={vi ? 'vi' : 'en'} className={`modal-backdrop rune-loadout-backdrop forest-dialog-backdrop ${closing?'is-leaving':''}`} onClick={close}><section className={`panel rune-loadout-editor forest-dialog${winter?' christmas-rune-editor':''}`} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-label={vi?'Đổi rune':'Change runes'} onClick={e=>e.stopPropagation()}>
+  {winter&&<ChristmasPanelTrim still={hud.reducedMotion}/>}
   <div className="loadout-scenery" aria-hidden="true"><i/><i/><i/><i/></div>
   <div className="loadout-equipped">
    <header><small>{vi?`ĐÃ CHỌN ${selected.length}/4 RUNE`:`${selected.length}/4 RUNES EQUIPPED`}</small><h2>{vi?'Chọn 4 rune mang theo':'Choose your four runes'}</h2></header>

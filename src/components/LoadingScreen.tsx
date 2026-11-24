@@ -23,10 +23,13 @@ const TEXT = {
  * (src/game/loading/loadingScene.ts), and the progress of real asset loading
  * (src/game/loading/preloader.ts). Once the critical images are ready, fade into the next screen.
  */
-export function LoadingScreen({ language, reducedMotion, level = null, portal = false, lobbyTheme = 'forest', onReveal, onDone }: {
+import { ChristmasLights, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
+import type { SeasonPreview } from '../game/logic/christmas.ts';
+
+export function LoadingScreen({ language, reducedMotion, level = null, portal = false, lobbyTheme = 'forest', season, onReveal, onDone }: {
   language: 'en' | 'vi'; reducedMotion: boolean; level?: Omit<LevelLoadSpec, 'delayMs'> | null;
   /** End with the portal transition (loads started from the main menu); otherwise fade into the level. */
-  portal?: boolean; lobbyTheme?: LobbyTheme; onReveal?: () => void; onDone: () => void;
+  portal?: boolean; lobbyTheme?: LobbyTheme; season?: SeasonPreview; onReveal?: () => void; onDone: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -77,14 +80,20 @@ export function LoadingScreen({ language, reducedMotion, level = null, portal = 
   }, []);
 
   const t = TEXT[language];
+  const christmas = useChristmas(season);
   return (
-    <div ref={root} className={`loading-v2 overlay${reducedMotion ? ' still' : ''}${portal ? '' : ' no-portal'}`} data-phase="loading" role="progressbar" aria-label={t.loading} aria-valuemin={0} aria-valuemax={100}>
+    <div ref={root} className={`loading-v2 overlay${reducedMotion ? ' still' : ''}${portal ? '' : ' no-portal'}${christmas.active ? ' christmas-loading' : ''}`} data-phase="loading" role="progressbar" aria-label={t.loading} aria-valuemin={0} aria-valuemax={100}>
       {/* The pixel forest (pixelForest.ts), screen-wide, and the layers that darken it as the
           portal wakes; the scene paints and drives them. */}
       <canvas ref={forest} className="lv-forest" aria-hidden="true"/>
       <div ref={dim} className="lv-dim"/>
       <div ref={vignette} className="lv-vignette"/>
       <div className="lv-frame">
+      {christmas.active && <><ChristmasSnow still={reducedMotion}/><ChristmasLights/></>}
+      {christmas.active && <div className="christmas-loading-title" aria-hidden="true">
+        <small>{language === 'vi' ? 'HOÀI NIỆM LỐI CỔ' : 'MEMORIES OF THE OLD TRAIL'}</small>
+        <strong>{language === 'vi' ? 'NHỮNG LỐI ĐI' : 'THE HIDDEN TRAILS'}<br/>{language === 'vi' ? 'BẮT ĐẦU LỘ DIỆN' : 'BEGIN TO EMERGE'}</strong>
+      </div>}
       <div className="lv-world">
         {/* Slow ambient layers: compositor-animated (opacity / transform only). The wrappers
             fade them out during the transition (their own animations own `opacity`). */}

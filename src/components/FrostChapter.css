@@ -126,18 +126,6 @@
   box-shadow: inset 3px 3px 0 #0c181e, inset -3px -3px 0 #4d8294;
 }
 
-.journey-lobby .frost-stage-desc {
-  font-size: 11px;
-  line-height: 1.45;
-  color: #a4c9d4;
-  margin: 6px 0 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-shadow: 1px 1px 0 var(--px-ink);
-}
-
 /* Primary continue button */
 .journey-lobby.journey-lobby .frost-camp .camp-continue {
   border: 3px solid var(--px-ink);

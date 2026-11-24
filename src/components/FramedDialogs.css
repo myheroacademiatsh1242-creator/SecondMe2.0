@@ -50,7 +50,8 @@ html body .settings-panel.settings-panel .setting-row select{background:#444735!
 /* Two equal-height, independently scrolling rune columns. */
 html body .modal-backdrop.modal-backdrop .rune-loadout-editor.panel.panel.panel{
  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr) auto auto;
- gap:14px 18px;padding:24px;overflow:hidden;
+ box-sizing:border-box;min-width:0;min-height:0;margin:auto;
+ gap:14px 18px;padding:24px;overflow:hidden!important;
  width:min(1080px,calc(100vw - 40px));height:min(760px,calc(100dvh - 40px));max-height:calc(100dvh - 40px);
 }
 html body .rune-loadout-editor :is(.loadout-equipped,.loadout-library){
@@ -61,7 +62,13 @@ html body .rune-loadout-editor :is(.loadout-equipped,.loadout-library){
 html body .rune-loadout-editor .loadout-equipped>header{flex:none;min-height:80px;padding:0 4px 12px}
 html body .rune-loadout-editor .loadout-equipped header h2{font-size:25px!important;line-height:1.25!important}
 html body .rune-loadout-editor .loadout-library{border-left:1px solid transparent}
-html body .rune-loadout-editor .loadout-list-heading{flex:none;min-height:80px;margin:0 0 12px;padding:0 4px;border:0;border-image:none!important;background:transparent!important}
+html body .rune-loadout-editor .loadout-list-heading{
+ box-sizing:border-box;min-width:0;flex:none;min-height:64px;margin:0 0 12px;
+ padding:12px 14px;border:0;border-image:none!important;background:transparent!important;
+}
+html body .rune-loadout-editor :is(.loadout-list-heading > *, .loadout-equipped > header > *, .loadout-preview > :is(h3,p,small),.loadout-note){
+ min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;
+}
 html body .rune-loadout-editor .loadout-slots{grid-template-columns:repeat(4,minmax(0,1fr));margin:8px 0 0;gap:6px}
 html body .rune-loadout-editor .loadout-slots>button{
  height:96px;min-height:96px;grid-template-rows:44px 30px;
@@ -84,7 +91,8 @@ html body .rune-loadout-editor .loadout-owned{flex:none;overflow:visible;min-hei
 .loadout-comparison button{justify-self:start;padding:5px 10px}
 html body .rune-loadout-editor :is(.loadout-slots>button,.loadout-preview,.loadout-owned>button){border-image:var(--forest-card) 100 fill / 10px / 0 round!important;clip-path:none}
 html body .rune-loadout-editor .loadout-preview{display:flex;flex:none;min-height:200px;padding:16px;margin-top:12px;overflow:visible}
-html body .rune-loadout-editor>footer{grid-column:1/-1;padding-top:10px;margin:0}
+html body .rune-loadout-editor>footer{grid-column:1/-1;min-width:0;padding-top:10px;margin:0}
+html body .rune-loadout-editor>footer>button{min-width:0;white-space:normal}
 html body .rune-loadout-editor>.loadout-note{grid-column:1/-1;margin:0;text-align:center;font-size:12px!important;line-height:1.4;white-space:normal}
 html body .rune-loadout-editor .loadout-close{right:2px;top:2px;width:28px;height:28px}
 @media(max-height:480px),(max-width:600px){
@@ -97,10 +105,13 @@ html body .rune-loadout-editor .loadout-close{right:2px;top:2px;width:28px;heigh
 }
 @media(max-width:760px){
  html body .modal-backdrop.modal-backdrop .rune-loadout-editor.panel.panel.panel{
-  grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;gap:8px;
+  grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr) auto auto;gap:8px;
  }
  html body .rune-loadout-editor .loadout-equipped>header{min-height:0}
  html body .rune-loadout-editor .loadout-preview{display:none}
+}
+@media(max-width:420px){
+ html body .rune-loadout-editor .loadout-slots{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 html body .modal-backdrop.modal-backdrop .settings-panel.panel.panel.panel>.primary{
  background:linear-gradient(#dfc985,#b2934e)!important;border:2px solid #dcc282!important;border-image:none!important;

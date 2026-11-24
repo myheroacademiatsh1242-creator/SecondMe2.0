@@ -10,6 +10,7 @@ import { SKILL_PICKUPS } from './logic/skillPickups.ts';
 import { ManaPool, maxMana, comboManaCost, skillManaCost } from './logic/mana.ts';
 import {ITEM_LOADOUT_LIMIT,SHOP_ITEMS,type PackedItem,type ShopItemId,type SupplyId,type Supplies} from './logic/shopItems.ts';
 import { gameDevToolsEnabled } from './logic/devAccess.ts';
+import type { SeasonPreview } from './logic/christmas.ts';
 import {enemyWaypoint} from './logic/enemyNavigation.ts';
 import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logic/damage.ts';
 import { ignite, newBurn, stepBurn } from './logic/burn.ts';
@@ -653,6 +654,26 @@ export class GameEngine {
   public get shopUnlocked(){return !this.tutorialEnabled||this.onboarding.disabled||this.devUnlocked||this.campaign.completed.includes(1);}
   public openShop() { if (this.screen !== 'lobby'||!this.shopUnlocked) return; this.screen = 'shop'; document.body.dataset.state = 'shop'; this.notifyHUD(); }
   public openCharacters() { if (this.screen !== 'lobby') return; this.screen = 'characters'; document.body.dataset.state = 'characters'; this.notifyHUD(); }
+  private seasonPreview: SeasonPreview = 'auto';
+
+  public get devSeasonPreview(): SeasonPreview {
+    return gameDevToolsEnabled && this.devUnlocked ? this.seasonPreview : 'auto';
+  }
+
+  public setDevSeasonPreview(value: SeasonPreview) {
+    if (!gameDevToolsEnabled || !this.devUnlocked) return;
+    this.seasonPreview = value;
+    this.notifyHUD();
+  }
+
+  public claimChristmasGift() {
+    if (this.devSeasonPreview !== 'auto') return false;
+    if (!this.campaign.claimChristmasGift()) return false;
+    sounds.playFeedback('purchase');
+    this.notifyHUD();
+    return true;
+  }
+
   public buyTimeItem() { if (this.screen !== 'shop') return; if (this.campaign.buyTimeItem()) this.showBanner('Time potion purchased'); else this.showBanner('Not enough coins'); this.notifyHUD(); }
   public openChest(count:1|10,kind:ChestKind='royal') { if(this.screen!=='shop')return null;const rewards=this.campaign.openChest(count,Math.random,kind);this.notifyHUD();return rewards; }
   public buyLimitRing() { if (this.screen !== 'shop') return; if (this.campaign.buyLimitRing()) this.showBanner(this.language==='vi'?'Đã mua nhẫn tăng giới hạn.':'Limit ring purchased.'); else this.showBanner(this.language==='vi'?'Không đủ xu.':'Not enough coins.'); this.notifyHUD(); }
@@ -2292,8 +2313,8 @@ export class GameEngine {
     }
     music.set(this.musicScene(), this.screen === 'paused' || (this.bossIntroduction && this.boss?.kind === 'demon' && !this.demonRevealed));
 
-    // Check throttled HUD update
-    if (this.screen !== 'intro' && !this.suspendVisuals && timestamp - this.lastHUDNotify >= 80) {
+    // Menus publish HUD changes through their actions; polling is only needed for live state.
+    if ((this.screen === 'playing' || this.screen === 'loading') && !this.suspendVisuals && timestamp - this.lastHUDNotify >= 80) {
       this.lastHUDNotify = timestamp;
       this.notifyHUD();
     }

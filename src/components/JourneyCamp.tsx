@@ -25,7 +25,9 @@ const trailSegments = [
 // Centre of each clearing in the same native coordinates (= the trail ends above).
 const stops = [[215,725],[440,350],[690,630],[920,310],[1200,515],[1355,205]];
 const HERO_KEY = 'secondme.journeyHeroAt';
-export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero,onOpenInventory}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void;onOpenInventory:()=>void}) {
+import { ChristmasLights, ChristmasSnow } from './ChristmasEvent.tsx';
+
+export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,onUpgradeHero,onOpenInventory}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;christmas?:boolean;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void;onOpenInventory:()=>void}) {
   const vi=hud.language==='vi';
   const [frost,setFrost]=useState((engine?.currentLevel.id??1)>=7);
   const [runeEditor,setRuneEditor]=useState(false);
@@ -147,13 +149,15 @@ export function JourneyCamp({engine,hud,complete,next,traveler,onUpgradeHero,onO
   },[frost]);
 
   const frostUnlocked=engine?.canSelectLevel(6)??false;
-  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} back={()=>setFrost(false)} traveler={traveler} onUpgradeHero={onUpgradeHero} onOpenInventory={onOpenInventory}/>;
+  if(frost&&frostUnlocked)return <FrostChapter engine={engine} hud={hud} christmas={christmas} back={()=>setFrost(false)} traveler={traveler} onUpgradeHero={onUpgradeHero} onOpenInventory={onOpenInventory}/>;
   const minLive=Math.min(heroStop,selected);
   const maxLive=Math.max(heroStop,selected);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
-    <aside className="journey-camp integrated-camp"><button className="frost-back frost-forward" disabled={!frostUnlocked} onClick={()=>setFrost(true)}><span>{frostUnlocked?(vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'):(vi?'HẠ THỦ VỆ BĂNG ĐỂ MỞ CHƯƠNG 2':'DEFEAT THE FROST GUARDIAN TO UNLOCK CHAPTER 2')}</span>{frostUnlocked?<ChevronRight size={18}/>:<Lock size={16}/>}</button>
+    <aside className={`journey-camp integrated-camp${christmas ? ' christmas-camp' : ''}`}><button className="frost-back frost-forward" disabled={!frostUnlocked} onClick={()=>setFrost(true)}><span>{frostUnlocked?(vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'):(vi?'HẠ THỦ VỆ BĂNG ĐỂ MỞ CHƯƠNG 2':'DEFEAT THE FROST GUARDIAN TO UNLOCK CHAPTER 2')}</span>{frostUnlocked?<ChevronRight size={18}/>:<Lock size={16}/>}</button>
+      {christmas && <div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div>}
       <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><button type="button" className="camp-guide" onClick={openPlayerGuide}><BookOpen size={15} aria-hidden="true"/>{vi?'Sổ tay':'Guide'}</button><span>{count} / 6</span></header>
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
+        {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
         <div className="rest-firelight" aria-hidden="true"/><FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx"/><div className="rest-embers" aria-hidden="true"><i/><i/><i/></div>
         <button className="rest-hero" onClick={()=>engine?.openCharacters()} aria-label={vi?'Đổi nhân vật':'Change character'}><span>{traveler??<Users size={50}/>}</span></button>
         <CampHeroCaption engine={engine} hud={hud}/>

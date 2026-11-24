@@ -23,6 +23,10 @@ import { JourneyCamp } from './JourneyCamp.tsx';
 import { MechanicalPortrait } from './MechanicalPortrait.tsx';
 import { IntroEffects } from './IntroEffects.tsx';
 import { MenuVines } from './MenuVines.tsx';
+import { MenuWizard } from './MenuWizard.tsx';
+import { drawSantaHat } from './HeroSantaHat.ts';
+import { ChristmasEvent, ChristmasLights, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
+import { gameDevToolsEnabled } from '../game/logic/devAccess.ts';
 import credits from '../game/data/credits.json';
 import { ComboPreview } from './ComboShowcase.tsx';
 import { WeaponPreview } from './WeaponPreview.tsx';
@@ -41,31 +45,46 @@ import { LEVELS } from '../game/logic/levels.ts';
 
 function CoinIcon() { return <img className="raccoon-coin" src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt="" aria-hidden="true"/>; }
 
-function AerisPortrait({outfit,direction='down'}:{outfit?:OutfitId;direction?:'up'|'down'|'left'|'right'}={}) {
+type PortraitProps = {outfit?:OutfitId;direction?:'up'|'down'|'left'|'right';winter?:boolean};
+function AerisPortrait({outfit,direction='down',winter=false}:PortraitProps={}) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const draw = () => { const ctx = ref.current?.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, 70, 70); drawWizardSprite(ctx, 35, 55, direction, false, false, 0,outfit); } };
+    const draw = () => {
+      const ctx = ref.current?.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, 70, 70);
+      const drawn = drawWizardSprite(ctx, 35, winter ? 66 : 55, direction, false, false, 0, outfit);
+      if (winter && drawn) drawSantaHat(ctx, 35, direction === 'up' ? 22 : 19, 34, direction === 'left');
+    };
     draw(); const timer = window.setInterval(draw, 250); return () => window.clearInterval(timer);
-  }, [outfit,direction]);
+  }, [outfit,direction,winter]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Aeris"/>;
 }
-function WizardAvatar({className=''}:{className?:string}) { return <span className={`wizard-avatar ${className}`}><AerisPortrait/></span>; }
-function KaelPortrait({outfit,direction='down'}:{outfit?:OutfitId;direction?:'up'|'down'|'left'|'right'}={}) {
+function WizardAvatar({className='',winter=false}:{className?:string;winter?:boolean}) { return <span className={`wizard-avatar ${className}`}><AerisPortrait winter={winter}/></span>; }
+function KaelPortrait({outfit,direction='down',winter=false}:PortraitProps={}) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const draw = () => { const ctx = ref.current?.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, 70, 70); drawSoldierSprite(ctx, 35, 55, direction, false, false, 0,false,0,outfit); } };
+    const draw = () => {
+      const ctx = ref.current?.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, 70, 70);
+      drawSoldierSprite(ctx, 35, winter ? 66 : 55, direction, false, false, 0, false, 0, outfit);
+      if (winter) drawSantaHat(ctx, 37, direction === 'up' ? 21 : 18, 28, direction === 'left');
+    };
     draw(); const timer = window.setInterval(draw, 250); return () => window.clearInterval(timer);
-  }, [outfit,direction]);
+  }, [outfit,direction,winter]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Kael"/>;
 }
-function SelectedCharacterAvatar({hud}:{hud:HUDState}) {
+function SelectedCharacterAvatar({hud,winter=false}:{hud:HUDState;winter?:boolean}) {
   if(hud.characterClass==='mechanical')return <MechanicalPortrait/>;
   return hud.characterClass==='swordsman'
-    ? <span className="selected-soldier-avatar"><KaelPortrait/></span>
-    : <WizardAvatar/>;
+    ? <span className="selected-soldier-avatar"><KaelPortrait winter={winter} outfit={winter ? hud.outfits?.swordsman : undefined}/></span>
+    : winter ? <span className="wizard-avatar"><AerisPortrait winter outfit={hud.outfits?.mage}/></span> : <WizardAvatar/>;
 }
 
 export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
+  const christmas = useChristmas(engine?.devSeasonPreview);
+  const christmasDialog = useRef<HTMLDialogElement>(null);
   const [panel, setPanel] = useState<'none' | 'settings' | 'credits' | 'quit'>('none');
   const vi = hud.language === 'vi';
   const hasProgress = hud.completed.length > 0;
@@ -76,7 +95,8 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     { label: vi ? 'TIẾP TỤC' : 'CONTINUE', disabled: !hasProgress, act: () => engine?.continueGame() },
     { label: vi ? 'CÀI ĐẶT' : 'SETTINGS', disabled: false, act: () => setPanel('settings') },
     { label: vi ? 'TÁC GIẢ' : 'CREDITS', disabled: false, act: () => setPanel('credits') },
-    { label: vi ? 'THOÁT' : 'QUIT', disabled: false, act: () => setPanel('quit') },
+    ...(christmas.active ? [{ label: vi ? 'SỰ KIỆN NOEL' : 'CHRISTMAS EVENT', disabled: false, act: () => christmasDialog.current?.showModal(), slab: 3 }] : []),
+    { label: vi ? 'THOÁT' : 'QUIT', disabled: false, act: () => setPanel('quit'), slab: 4 },
   ];
   const [selected, setSelected] = useState(-1);
   // Stone tick whenever the highlight lands on a slab, by mouse or arrow keys.
@@ -88,14 +108,15 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     // Capture phase, so Enter opens the chosen item instead of the engine's "Enter = start".
     const onKey = (event: KeyboardEvent) => {
       const m = menu.current;
-      if (m.panel !== 'none' || document.querySelector('.cinematic-intro, .studio-splash')) return;
+      if (m.panel !== 'none' || document.querySelector('.cinematic-intro, .studio-splash')
+        || (event.target instanceof Element && event.target.closest('.christmas-entry'))) return;
       const step = event.key === 'ArrowDown' || event.key === 's' ? 1 : event.key === 'ArrowUp' || event.key === 'w' ? -1 : 0;
       if (step) {
         event.preventDefault();
         let i = m.selected < 0 ? (step > 0 ? -1 : 0) : m.selected;
         do i = (i + step + m.items.length) % m.items.length; while (m.items[i].disabled);
         setSelected(i);
-      } else if ((event.key === 'Enter' || event.key === ' ') && m.selected >= 0) {
+      } else if ((event.key === 'Enter' || event.key === ' ') && m.items[m.selected] && !m.items[m.selected].disabled) {
         event.preventDefault(); event.stopPropagation();
         sounds.playStoneClick(); m.items[m.selected].act();
       }
@@ -109,8 +130,13 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
       if (event.key === 'Escape') setPanel('none');
     }
   }}>
-    <div className="intro-artwork">
-    <IntroEffects/>
+    <div className={`intro-artwork${christmas.active ? ' christmas-menu' : ''}`}>
+    {christmas.active
+      ? <svg className="christmas-entrance" viewBox="0 0 1376 768" preserveAspectRatio="none" aria-hidden="true">
+          <MenuWizard winter reducedMotion={hud.reducedMotion}/>
+        </svg>
+      : <IntroEffects/>}
+    {christmas.active && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
     <h1 className="intro-accessible-title">SECOND ME</h1>
     <div className="intro-localized-tagline tagline-above" lang={vi?'vi':'en'}>{vi?'LỐI MÒN XƯA VẪN NHỚ':'THE ANCIENT PATH REMEMBERS'}</div>
     <div className="intro-localized-tagline tagline-below" lang={vi?'vi':'en'}>{vi?'TIẾNG VỌNG RỪNG SÂU':'ECHOES OF THE WILD'}</div>
@@ -123,13 +149,14 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     <nav className="intro-menu" aria-label={vi ? 'Menu chính' : 'Main menu'}>
       {items.map((item, i) => (
         // A stone slab (mainMenu.css): its face, carrying the label, rises when selected.
-        <button key={i} type="button" className={`intro-menu-item${i === selected ? ' selected' : ''}`} disabled={item.disabled}
-          style={{ '--slab': i } as React.CSSProperties}
+        <button key={item.label} type="button" className={`intro-menu-item${i === selected ? ' selected' : ''}`} disabled={item.disabled}
+          style={{ '--slab': 'slab' in item ? item.slab : i } as React.CSSProperties}
           onMouseEnter={() => !item.disabled && setSelected(i)} onMouseLeave={() => setSelected(-1)} onClick={() => press(item)}>
           <span className="intro-menu-face"><span className="intro-menu-label">{item.label}</span><MenuVines active={i === selected && !item.disabled} reducedMotion={hud.reducedMotion}/></span>
         </button>
       ))}
     </nav>
+    <ChristmasEvent engine={engine} hud={hud} event={christmas} menuDialog={christmasDialog}/>
     </div>
     {panel === 'settings' && <SettingsPanel engine={engine} hud={hud} close={() => setPanel('none')}/>}
     {panel === 'credits' && <CreditsPanel vi={vi} close={() => setPanel('none')}/>}
@@ -175,8 +202,7 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
   const tabs: ('audio'|'display'|'controls'|'dev')[]=hud.devUnlocked?['audio','display','controls','dev']:['audio','display','controls'];
   return localize(<div className="modal-backdrop settings-backdrop"><div className="panel settings-panel settings-clean" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-labelledby="settings-title">
 
-    <div className="panel-top"><span className="eyebrow gold">CÀI ĐẶT TRÒ CHƠI</span></div>
-    <h2 id="settings-title">Điều chỉnh trải nghiệm</h2>
+    <h2 id="settings-title">{vi?'Cài đặt':'Settings'}</h2>
     <div className="settings-tabs" role="tablist" aria-label={vi?'Nhóm cài đặt':'Settings groups'}>
       {tabs.map(id=><button key={id} id={`settings-tab-${id}`} type="button" role="tab" aria-selected={tab===id} aria-controls={`settings-${id}`} tabIndex={tab===id?0:-1} onClick={()=>setTab(id)} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?tabs[0]:e.key==='End'?tabs[tabs.length-1]:tabs[(tabs.indexOf(tab)+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];setTab(next);document.getElementById(`settings-tab-${next}`)?.focus();}}}>{id==='audio'?(vi?'Âm thanh':'Audio'):id==='display'?(vi?'Hiển thị':'Display'):id==='controls'?(vi?'Tùy chỉnh nút':'Controls'):(vi?'DEV · Công cụ test':'DEV · Test tools')}</button>)}
     </div>
@@ -209,6 +235,18 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
     </details>
       </>:tab==='controls'?<ControlSettingsPanel engine={engine}/>:hud.devUnlocked?<div className="dev-supplies">
         <h3>{vi?'QUYỀN DEVELOPER ĐÃ BẬT':'DEVELOPER ACCESS ENABLED'}</h3>
+        {gameDevToolsEnabled && <div className="setting-row dev-season-setting">
+          <label htmlFor="settings-dev-season">{vi?'Chọn theo mùa':'Season preview'}</label>
+          <select id="settings-dev-season" aria-describedby="settings-dev-season-hint" value={engine?.devSeasonPreview ?? 'auto'} onChange={event => {
+            const value = event.currentTarget.value;
+            if (value === 'auto' || value === 'none' || value === 'christmas') engine?.setDevSeasonPreview(value);
+          }}>
+            <option value="auto">{vi?'Tự động theo lịch':'Automatic by date'}</option>
+            <option value="none">{vi?'Giao diện thường':'Default theme'}</option>
+            <option value="christmas">{vi?'Xem thử Noel':'Preview Christmas'}</option>
+          </select>
+          <small id="settings-dev-season-hint">{vi?'Xem thử giao diện theo mùa trong phiên này.':'Preview the seasonal theme for this session.'}</small>
+        </div>}
         <p>{vi?'Nạp 99.999 vàng, 99.999 Tanuki phàm tinh thể, 99.999 Tanuki thanh tinh thể và 99.999 Tanuki huyền tinh thể; mở toàn bộ trang phục, vũ khí và rune; cấp đầy tất cả vật phẩm theo giới hạn túi đồ. Có thể bấm lại để nạp khi cần.':'Set gold, Tanuki Common Crystals and Tanuki Azure Crystals and Tanuki Mystic Crystals to 99,999, unlock all outfits, weapons and runes, and fill all item stocks to their inventory limits. Refill again whenever needed.'}</p>
         <button type="button" className="secondary" onClick={()=>engine?.grantDevResources()}>{vi?'DEV · NHẬN TÀI NGUYÊN & MỞ KHÓA TẤT CẢ':'DEV · GRANT RESOURCES & UNLOCK ALL'}</button>
         <p role="status">{vi?'Đang sở hữu':'Owned'}: {hud.coins.toLocaleString(vi?'vi-VN':'en-US')} {vi?'vàng':'gold'} · {hud.chestKeys.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki phàm tinh thể':'Tanuki Common Crystals'} · {hud.whiteCrystals.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki thanh tinh thể':'Tanuki Azure Crystals'} · {hud.mysticCrystals.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki huyền tinh thể':'Tanuki Mystic Crystals'} · {hud.ownedOutfits?.length??0} {vi?'trang phục':'outfits'} · {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/{ECHO_RUNES.length} rune</p>
@@ -241,6 +279,7 @@ export function Notifications({ close }: { close: () => void }) {
 }
 
 export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
+  const christmas = useChristmas(engine?.devSeasonPreview);
   const [panel, setPanel] = useState<'none'|'news'|'settings'|'heroUpgrades'>('none');
   const [bag, setBag] = useState(false);
   const complete = engine?.campaign.bossDefeated === true;
@@ -252,8 +291,8 @@ export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panel, bag, engine, hud.screen]);
-  return localize(<div className="lobby-screen overlay journey-lobby"><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button data-tutorial="bag" onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button disabled={!engine?.shopUnlocked} data-tutorial="shop" onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
-    <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} traveler={<SelectedCharacterAvatar hud={hud}/>} onNews={()=>setPanel('news')} onUpgradeHero={()=>setPanel('heroUpgrades')} onOpenInventory={()=>setBag(true)}/>
+  return localize(<div className={`lobby-screen overlay journey-lobby${christmas.active ? ' christmas-lobby' : ''}`}><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud} winter={christmas.active}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button data-tutorial="bag" onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button disabled={!engine?.shopUnlocked} data-tutorial="shop" onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
+    <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} christmas={christmas.active} traveler={<SelectedCharacterAvatar hud={hud} winter={christmas.active}/>} onNews={()=>setPanel('news')} onUpgradeHero={()=>setPanel('heroUpgrades')} onOpenInventory={()=>setBag(true)}/>
     {panel==='heroUpgrades' && isUpgradeHero(hud.characterClass) && <HeroUpgrades engine={engine} hud={hud} hero={hud.characterClass} close={()=>setPanel('none')}/>}
     {bag&&<div className="modal-backdrop inventory-backdrop" onClick={()=>document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e=>e.stopPropagation()}><Inventory engine={engine} hud={hud} close={()=>setBag(false)}/></div></div>}
     <RuneChoiceDialog engine={engine} hud={hud}/>{panel==='news'&&<Notifications close={()=>setPanel('none')}/>} {panel==='settings'&&<SettingsPanel engine={engine} hud={hud} close={()=>setPanel('none')}/>}</div>);
@@ -268,6 +307,7 @@ export function Inventory({ hud, close,engine }: { hud: HUDState; close: () => v
 type SelectableCharacter = 'mage' | 'swordsman' | 'mechanical';
 
 export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDState}) {
+  const christmas = useChristmas(engine?.devSeasonPreview);
   const vi = hud.language === 'vi';
   const [selected, setSelected] = useState<SelectableCharacter>(hud.characterClass);
   const grid = useRef<HTMLDivElement>(null);
@@ -282,7 +322,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     ...(MECHANICAL_ENABLED && hud.mechanicalOwned ? [{id:'mechanical' as const, name:'Rivet-07', roleVi:'Cơ giới', roleEn:'Mechanic'}] : []),
   ];
   const choice = roster.find(c => c.id === selected) ?? roster[0];
-  const portrait = (id: SelectableCharacter,outfit?:OutfitId) => id === 'mage' ? <AerisPortrait outfit={outfit}/> : id === 'swordsman' ? <KaelPortrait outfit={outfit}/> : <MechanicalPortrait/>;
+  const portrait = (id: SelectableCharacter,outfit?:OutfitId) => id === 'mage' ? <AerisPortrait outfit={outfit} winter={christmas.active}/> : id === 'swordsman' ? <KaelPortrait outfit={outfit} winter={christmas.active}/> : <MechanicalPortrait/>;
   const outfit=choice.id==='mechanical'?'default':draftOutfits[choice.id];
   const outfitInfo=OUTFITS.find(o=>o.id===outfit)!;
   const hero=choice.id==='mechanical'?null:choice.id;
@@ -294,8 +334,10 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     ? (vi ? `${maxHealth} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${maxHealth} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
   const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
-  return <div className="characters-screen overlay hero-select-screen">
+  return <div className={`characters-screen overlay hero-select-screen${christmas.active ? ' christmas-heroes' : ''}`}>
+    {christmas.active && <ChristmasSnow still={hud.reducedMotion}/>}
     <div className="hero-select-scene has-outfit-selector" role="dialog" aria-modal="true" aria-labelledby="hero-select-title">
+      {christmas.active && <ChristmasLights/>}
       <h1 id="hero-select-title" className="hero-select-title">{vi ? 'CHỌN NHÂN VẬT' : 'CHOOSE YOUR HERO'}</h1>
       <button className="hero-select-back" onClick={() => engine?.goToLobby()} aria-label={vi ? 'Về sảnh' : 'Back to lobby'}>{vi ? 'VỀ SẢNH' : 'BACK'}</button>
       <div className="hero-outfit-workspace">
@@ -305,14 +347,14 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
          {hero && <button type="button" className="hero-upgrade-trigger" onClick={()=>setUpgradeOpen(true)} disabled={!engine}>
            <ChevronsUp size={16} aria-hidden="true"/>{vi?'Nâng cấp':'Upgrades'}
          </button>}
-         <div>{choice.id==='mage'?<AerisPortrait outfit={outfit} direction={previewDirection}/>:choice.id==='swordsman'?<KaelPortrait outfit={outfit} direction={previewDirection}/>:<MechanicalPortrait/>}</div>
+         <div>{choice.id==='mage'?<AerisPortrait outfit={outfit} direction={previewDirection} winter={christmas.active}/>:choice.id==='swordsman'?<KaelPortrait outfit={outfit} direction={previewDirection} winter={christmas.active}/>:<MechanicalPortrait/>}</div>
          <nav className="outfit-rotation-controls" aria-label={vi?'Xoay hướng xem':'Rotate preview'}>{(['down','left','up','right'] as const).map((direction,index)=><button type="button" key={direction} aria-pressed={previewDirection===direction} onClick={()=>setPreviewDirection(direction)}>{vi?['Trước','Trái','Sau','Phải'][index]:['Front','Left','Back','Right'][index]}</button>)}</nav>
          <strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong>
        </div>
        <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header><small>{vi?'Chọn trang phục':'Choose outfit'}</small></header><div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div></section>
       </div>
       <section className="hero-select-info" aria-live="polite">
-        <div className="hero-info-portrait">{choice.id === 'mage' || choice.id === 'swordsman' ? <ComboPreview key={choice.id} hero={choice.id} outfit={outfit}/> : portrait(choice.id)}</div>
+        <div className="hero-info-portrait">{choice.id === 'mage' || choice.id === 'swordsman' ? <ComboPreview key={choice.id} hero={choice.id} outfit={outfit} winter={christmas.active} reducedMotion={hud.reducedMotion}/> : portrait(choice.id)}</div>
         <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small><span style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
         <div className="hero-info-action"><span>{choice.id === hud.characterClass ? (vi ? 'ĐANG CHỌN' : 'CURRENT HERO') : (vi ? 'NHÂN VẬT SẴN SÀNG' : 'HERO READY')}</span><button type="button" onClick={confirm} disabled={!engine}>{vi ? 'TRANG BỊ & CHỌN' : 'EQUIP & CONFIRM'}</button></div>
       </section>

@@ -141,7 +141,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'intro' && !splash && introRun > 0 && <CinematicIntro key={introRun} lang={hud.language} reducedMotion={hud.reducedMotion} paused={portraitBlocked} onDone={() => setIntroRun(0)}/>}
     {(hud.screen === 'lobby' || (hud.screen === 'loading' && revealLobby)) &&
       <div className="lobby-handoff overlay" inert={hud.screen === 'loading'}><Lobby engine={engine} hud={hud}/></div>}
-    {hud.screen === 'loading' && engine && <LoadingScreen key={hud.loadingLevel ?? 'lobby'} language={lang} reducedMotion={hud.reducedMotion}
+    {hud.screen === 'loading' && engine && <LoadingScreen key={hud.loadingLevel ?? 'lobby'} language={lang} reducedMotion={hud.reducedMotion} season={engine.devSeasonPreview}
       level={hud.loadingLevel == null ? null : { levelId: hud.loadingLevel, character: hud.characterClass, lang }} portal={!!hud.loadingFromMenu} lobbyTheme={(engine?.currentLevel.id ?? 1) >= 7 && engine?.canSelectLevel(6) ? 'frost' : 'forest'}
       onReveal={() => { if (hud.loadingLevel == null) flushSync(() => setRevealLobby(true)); else engine?.revealLoadedLevel(); }}
       onDone={() => { engine?.finishLoading(); setRevealLobby(false); }}/>}

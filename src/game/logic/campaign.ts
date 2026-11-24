@@ -1,4 +1,5 @@
 import { GUARDIAN_HP } from './balance.ts';
+import { CHRISTMAS_COINS, christmasSeason } from './christmas.ts';
 import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
 import {SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
 import {cleanOwnedWeapons,type WeaponId} from './weapons.ts';
@@ -55,6 +56,7 @@ export class Campaign {
   heroClears:Record<string,number[]>={mage:[],swordsman:[]};
   devShopStockMigrated = false;
   coins = 0;
+  christmasGiftYear = 0;
   timeItems = 0;
   limitRings = 0;
   // Legacy save field: this balance holds Tanuki phàm tinh thể.
@@ -94,6 +96,7 @@ export class Campaign {
       this.bossDefeated = this.completed.filter(id=>id<=5).length === 5 && value.bossDefeated === true;
       this.mechanicalOwned = value.mechanicalOwned === true;
       this.coins = Number.isSafeInteger(value.coins) && value.coins >= 0 ? value.coins : 0;
+      this.christmasGiftYear = Number.isSafeInteger(value.christmasGiftYear) && value.christmasGiftYear > 0 ? value.christmasGiftYear : 0;
       this.timeItems = Number.isSafeInteger(value.timeItems) && value.timeItems >= 0 ? value.timeItems : 0;
       this.limitRings = Number.isSafeInteger(value.limitRings) && value.limitRings >= 0 ? value.limitRings : 0;
       this.chestKeys=Number.isSafeInteger(value.chestKeys)&&value.chestKeys>=0?value.chestKeys:0;
@@ -122,11 +125,20 @@ export class Campaign {
     this.itemLoadout = this.cleanItemLoadout(this.itemLoadout);
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
       ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
+      christmasGiftYear:this.christmasGiftYear,
       supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
       tutorialWelcomeClaimed:this.tutorialWelcomeClaimed, completed: this.completed, bossDefeated: this.bossDefeated,
       echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
+  }
+  claimChristmasGift(now = new Date()) {
+    const year = christmasSeason(now);
+    if (year === null || year <= this.christmasGiftYear || !Number.isSafeInteger(this.coins + CHRISTMAS_COINS)) return false;
+    this.christmasGiftYear = year;
+    this.coins += CHRISTMAS_COINS;
+    this.save();
+    return true;
   }
   award(levelId: number): boolean {
     if (levelId < 1 || (levelId > 13 || levelId===6) || this.completed.includes(levelId)) return false;

@@ -3,6 +3,7 @@ import type {OutfitId} from '../game/logic/outfits.ts';
 import React, { useEffect, useRef } from 'react';
 import sprites from '../game/data/comboSprites.json';
 import { COMBO_HITS, type ComboHero } from '../game/logic/combo.ts';
+import { drawSantaHat, readySantaHat } from './HeroSantaHat.ts';
 
 /** How much slower than in battle the showcase plays, so each swing can be followed. */
 const SLOW = 1.35;
@@ -11,6 +12,13 @@ const IDLE_BEFORE = 0.55, REST_AFTER = 0.9;
 const GHOST_S = 0.11;
 interface Sheet { file: string; frameW: number; frameH: number; anims: Record<string, number[]> }
 const SHEETS: Record<ComboHero, Sheet> = { swordsman: sprites.kael, mage: sprites.aeris };
+// Crown positions in the original combo sheets, indexed by frame.
+const CROWNS: Record<ComboHero, [number, number][]> = {
+  swordsman: [[44,5],[44,6],[44,8],[44,6],[44,8],[44,8],[44,7],[44,4],[44,5],
+    [44,4],[44,3],[44,5],[44,8],[44,7],[44,8],[44,13],[44,5]],
+  mage: [[48,15],[50,16],[50,16],[52,15],[51,17],[51,16],[51,16],[51,16],[51,17],
+    [51,11],[50,12],[52,11],[52,12],[39,10],[51,12],[51,12],[51,13],[51,10]],
+};
 
 /**
  * The loop: idle, the four hits, a rest. Frames are not evenly timed: the wind-up before the
@@ -36,10 +44,11 @@ function timeline(hero: ComboHero) {
  * nearest-neighbour), for the character screen.
  * Draws only when something changes (a new frame, or the previous one still fading).
  */
-export function ComboPreview({ hero, outfit, reducedMotion=false }: { hero: ComboHero;outfit?:OutfitId;reducedMotion?:boolean }) {
+export function ComboPreview({ hero, outfit, reducedMotion=false, winter=false }: { hero: ComboHero;outfit?:OutfitId;reducedMotion?:boolean;winter?:boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const s = SHEETS[hero];
   const scale = Math.max(2, Math.floor(380 / s.frameW));
+  const headroom = winter ? 13 : 0;
 
   useEffect(() => {
     const cv = canvas.current, ctx = cv?.getContext('2d');
@@ -52,11 +61,13 @@ export function ComboPreview({ hero, outfit, reducedMotion=false }: { hero: Comb
     let raf = 0, current = -1, previous = -1, changedAt = 0, ghostDone = true;
     const draw = (f: number, alpha: number) => {
       ctx.globalAlpha = alpha;
-      ctx.drawImage(outfitSheet(img,hero,outfit), f * s.frameW, 0, s.frameW, s.frameH, 0, 0, s.frameW * scale, s.frameH * scale);
+      ctx.drawImage(outfitSheet(img,hero,outfit), f * s.frameW, 0, s.frameW, s.frameH, 0, headroom * scale, s.frameW * scale, s.frameH * scale);
+      const crown = CROWNS[hero][f];
+      if (winter && crown) drawSantaHat(ctx, crown[0] * scale, (crown[1] + headroom) * scale, (hero === 'mage' ? 29 : 26) * scale);
     };
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
-      if (!img.complete || !img.naturalWidth) return;
+      if (!img.complete || !img.naturalWidth || (winter && !readySantaHat())) return;
       let t = reducedMotion?0:((now - t0) / 1000) % total, i = 0;
       while (t >= steps[i].dur) { t -= steps[i].dur; i++; }
       const st = steps[i];
@@ -72,7 +83,7 @@ export function ComboPreview({ hero, outfit, reducedMotion=false }: { hero: Comb
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [hero,outfit,reducedMotion]);
+  }, [hero,outfit,reducedMotion,winter,headroom,s,scale]);
 
-  return <canvas ref={canvas} className="combo-preview" width={s.frameW * scale} height={s.frameH * scale} aria-hidden="true"/>;
+  return <canvas ref={canvas} className="combo-preview" width={s.frameW * scale} height={(s.frameH + headroom) * scale} aria-hidden="true"/>;
 }

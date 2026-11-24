@@ -1,0 +1,730 @@
+.christmas-menu .intro-menu {
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+}
+
+.christmas-lights {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  justify-content: space-around;
+  height: 12px;
+  pointer-events: none;
+}
+
+.christmas-menu > .christmas-lights {
+  inset: 20.8% 11.3% auto 67.3%;
+}
+
+.christmas-shop .trading-world > .christmas-lights {
+  inset: 46px 46px auto 815px;
+}
+
+.christmas-lights::before {
+  content: '';
+  position: absolute;
+  inset: 0 4% -9px;
+  background: #304d37;
+  clip-path: polygon(0 0, 20% 0, 20% 19%, 38% 19%, 38% 33%, 62% 33%, 62% 19%, 80% 19%, 80% 0, 100% 0, 100% 11%, 82% 11%, 82% 30%, 64% 30%, 64% 44%, 36% 44%, 36% 30%, 18% 30%, 18% 11%, 0 11%);
+}
+
+.christmas-lights i {
+  position: relative;
+  margin-top: 1px;
+  width: clamp(2px, .35vw, 6px);
+  height: clamp(3px, .45vw, 8px);
+  background: #e6bc72;
+  box-shadow: 0 0 6px currentColor;
+  color: #e6bc72;
+}
+
+.christmas-lights i:nth-child(2), .christmas-lights i:nth-child(6) { margin-top: 3px; }
+.christmas-lights i:nth-child(3), .christmas-lights i:nth-child(5) { margin-top: 6px; }
+.christmas-lights i:nth-child(4) { margin-top: 8px; }
+
+.christmas-lights i:nth-child(3n + 2) {
+  background: #c77b62;
+  color: #c77b62;
+}
+
+.christmas-lights i:nth-child(3n) {
+  background: #a8bd80;
+  color: #a8bd80;
+}
+
+.christmas-shop .trading-world > .christmas-entry {
+  position: absolute;
+  z-index: 10;
+  left: 191px;
+  top: 25px;
+}
+
+.christmas-shop:has([aria-modal="true"]) .trading-world > .christmas-entry { visibility: hidden; }
+
+.christmas-shop .trading-background,
+.christmas-shop .trading-counter-front {
+  filter: saturate(.83) brightness(.88);
+}
+
+.christmas-shop .trading-falling-leaves,
+.christmas-shop .trading-sunrise-ambient { visibility: hidden; }
+
+.adventure-app .christmas-shop .christmas-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 165px;
+  height: 49px;
+  padding: 0 16px;
+  border: 0;
+  background: url('/assets/ui/trading-wood-button.svg') center / 100% 100% no-repeat;
+  color: #f1dfaf;
+  text-shadow: 2px 2px #2b2a19;
+  white-space: nowrap;
+}
+
+.adventure-app .christmas-shop .christmas-trigger:hover { filter: brightness(1.2); }
+
+.adventure-app .christmas-claim {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 13px;
+  min-height: 38px;
+  background: #662d34;
+  color: #fff0cb;
+  border: 2px solid #d3aa69;
+  box-shadow: inset 0 0 0 2px #421f26, 3px 3px #111a15;
+  white-space: nowrap;
+}
+
+.adventure-app .christmas-claim:enabled:hover { background: #813b43; }
+.adventure-app .christmas-claim:disabled { background: #304b3d; color: #e3eccf; }
+.adventure-app :is(.christmas-trigger, .christmas-close, .christmas-claim):focus-visible {
+  outline: 2px solid #fff8d0;
+  outline-offset: 3px;
+}
+
+.christmas-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(430px, calc(100vw - 32px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 24px 22px 20px;
+  background: linear-gradient(155deg, #244636, #13271f 70%);
+  border: 3px solid #c49b60;
+  box-shadow: inset 0 0 0 4px #102219, 5px 5px #0d1914;
+  color: #fff0d1;
+  text-align: center;
+  font: 500 16px/1.45 system-ui, sans-serif;
+}
+
+.christmas-dialog::backdrop { background: #06100ddd; }
+.christmas-dialog > .christmas-lights { inset: 4px 8px auto; }
+.christmas-dialog h2 { font: 700 clamp(20px, 5vw, 28px)/1.15 'Second Me Serif', Georgia, serif; }
+.christmas-dialog p { margin: 10px 0; }
+.christmas-dialog .christmas-dates { color: #f1cd95; font-size: 13px; }
+.christmas-dialog .christmas-preview { color: #d1e2ce; font-size: 13px; }
+.christmas-dialog .christmas-claim { margin-top: 5px; }
+.christmas-close {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  top: 17px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  color: #fff0d1;
+  background: #193225;
+  border: 1px solid #ad8e61;
+}
+
+.christmas-gift {
+  position: relative;
+  margin: 10px auto 0;
+  width: 48px;
+  height: 35px;
+  border: 3px solid #3b1d21;
+  background: linear-gradient(90deg, #a94046 39%, #f5c375 39% 61%, #8f343e 61%);
+  box-shadow: 3px 4px #111d17, inset 0 -4px #0003;
+}
+
+.christmas-gift::before {
+  content: '';
+  position: absolute;
+  inset: -5px -6px auto;
+  height: 13px;
+  border: 3px solid #3b1d21;
+  background: linear-gradient(90deg, #c4584d 40%, #ffdf8f 40% 60%, #c4584d 60%);
+}
+
+.christmas-gift i::before,
+.christmas-gift i::after {
+  content: '';
+  position: absolute;
+  top: -13px;
+  width: 12px;
+  height: 9px;
+  border: 3px solid #f1b963;
+}
+
+.christmas-gift i::before { right: 50%; transform: skew(20deg); }
+.christmas-gift i::after { left: 50%; transform: skew(-20deg); }
+
+.christmas-snow {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.christmas-snow i {
+  position: absolute;
+  left: var(--x);
+  top: -8px;
+  width: var(--size);
+  height: var(--size);
+  background: #e9f6ef;
+  box-shadow: 1px 1px #8bb5bb77;
+  opacity: .75;
+  animation: christmas-fall var(--fall) var(--delay) linear infinite;
+}
+
+.christmas-snow i:nth-child(4n) {
+  clip-path: polygon(33% 0, 66% 0, 66% 33%, 100% 33%, 100% 66%, 66% 66%, 66% 100%, 33% 100%, 33% 66%, 0 66%, 0 33%, 33% 33%);
+}
+
+@keyframes christmas-fall {
+  to { transform: translate3d(var(--drift), var(--snow-distance, 100dvh), 0); }
+}
+
+.christmas-lights i { animation: christmas-glow 3.8s ease-in-out infinite alternate; }
+.christmas-lights i:nth-child(3n + 2) { animation-delay: -1.4s; }
+.christmas-lights i:nth-child(3n) { animation-delay: -2.7s; }
+
+@keyframes christmas-glow {
+  from { opacity: .58; }
+  to { opacity: 1; }
+}
+
+.christmas-snow--still i,
+body.reduced-motion .christmas-snow i { animation: none; top: var(--y); opacity: .4; }
+body.reduced-motion .christmas-lights i { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .christmas-snow i { animation: none; top: var(--y); opacity: .4; }
+  .christmas-lights i { animation: none; }
+}
+
+/* Seasonal illustration sits behind the live interface. */
+.christmas-menu.intro-artwork {
+  background: #102321 url('/assets/ui/noel/menu-winter.webp') center / 100% 100% no-repeat;
+}
+.christmas-entrance {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.menu-wizard-hat { image-rendering: pixelated; }
+.christmas-menu .intro-menu {
+  inset: 28% auto auto 67.4%;
+  width: 22.4%;
+  height: 47%;
+  padding: 1% 1.1%;
+}
+.christmas-menu .intro-menu::after { content: none; }
+.christmas-menu .intro-language {
+  top: 24.7%;
+  left: 73.2%;
+  width: 10%;
+  min-height: 4%;
+}
+.christmas-menu > .christmas-lights { inset: 24% 11.4% auto 68.6%; }
+
+.christmas-menu .intro-menu-face::before,
+.christmas-heroes .outfit-options button::after,
+.christmas-camp .rest-scene::before,
+.christmas-shop .trading-catalogue > .trading-tabs::before {
+  content: '';
+  position: absolute;
+  inset: 0 5% auto;
+  height: 14%;
+  background: url('/assets/ui/noel/snow-edge.png') top center / auto 100% repeat-x;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.christmas-menu .intro-menu-item:disabled .intro-menu-face::before { opacity: .55; }
+
+.christmas-heroes .hero-select-scene {
+  background: #102e30 url('/assets/ui/noel/heroes-winter.webp') center / 100% 100% no-repeat;
+}
+.christmas-heroes > .christmas-snow { z-index: 2; }
+.christmas-heroes .hero-select-scene > .christmas-lights { inset: 23% 22% auto 57%; }
+.christmas-heroes .hero-select-info { background: none; }
+.christmas-heroes .outfit-options button::after { height: 10%; }
+
+@media (min-width:721px), (orientation:landscape) {
+  .christmas-heroes .hero-select-scene.has-outfit-selector .hero-outfit-workspace {
+    top: 26.5%;
+    height: 37%;
+  }
+}
+
+.christmas-loading .lv-frame {
+  background: url('/assets/ui/noel/loading-winter.webp') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+.christmas-loading .lv-frame > .christmas-lights { inset: 15% 76% auto 4%; }
+.christmas-loading-title {
+  position: absolute;
+  z-index: 1;
+  inset: 10% 22% auto;
+  text-align: center;
+  color: #ffe5a0;
+  text-shadow: 2px 3px #5d2e1e;
+  pointer-events: none;
+}
+.christmas-loading-title small { display: block; color: #f3e9cc; font-size: 2.1cqw; margin-bottom: 1cqw; }
+.christmas-loading-title strong { display: block; font-size: 4.4cqw; line-height: 1.1; }
+.christmas-loading[data-phase]:not([data-phase='loading']) :is(.christmas-loading-title, .christmas-lights) { opacity: 0; }
+
+html body .adventure-app .journey-lobby .christmas-camp.frost-camp .rest-scene {
+  background-image: url('/assets/ui/noel/camp-winter.webp')!important;
+}
+.christmas-camp .rest-scene > .christmas-lights { inset: 5px 7% auto; }
+.christmas-camp .rest-scene > .christmas-snow { --snow-distance: 460px; }
+.christmas-camp .rest-scene::before { z-index: 6; inset-inline: 0; height: 12px; }
+.christmas-camp .rest-hero:focus-visible { outline: 2px solid #f0d58c; }
+.journey-lobby .christmas-camp :is(.frost-back,.rest-heading,.rest-kit,.rest-departure) {
+  position: relative;
+}
+.christmas-camp :is(.frost-back,.rest-heading,.rest-kit,.rest-departure)::before {
+  content: '';
+  position: absolute;
+  inset: -3px 3% auto;
+  height: 9px;
+  background: url('/assets/ui/noel/snow-edge.png') top center / auto 100% repeat-x;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 1;
+}
+.christmas-camp :is(.rest-heading,.rest-kit,.rest-departure)::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 2px;
+  width: 52px;
+  height: 17px;
+  background: url('/assets/ui/noel/camp-garland.png') center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 1;
+}
+html body .adventure-app .journey-lobby .christmas-camp .camp-continue {
+  color: #fff0ca!important;
+  background: #902d31!important;
+  border-color: #c4885d!important;
+  box-shadow: inset 3px 3px #c76c51, inset -3px -6px #561f29!important;
+}
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .camp-continue:hover:not(:disabled) { filter: brightness(1.14); }
+.journey-lobby .integrated-camp.christmas-camp .camp-continue > span { text-shadow: 1px 1px #572029; }
+html body .adventure-app .journey-lobby .christmas-camp :is(.rest-kit,.rest-departure) {
+  border-color: #7c4539;
+  background: linear-gradient(#25382a,#17281f);
+}
+
+/* The seasonal camp skin follows the stacked layout in the reference. */
+.adventure-app .christmas-lobby .lobby-header {
+  background: linear-gradient(100deg,#1d443a,#133429);
+  border-bottom: 3px solid #a5c0b4;
+}
+.adventure-app .journey-lobby .integrated-camp.christmas-camp {
+  position: relative;
+  gap: 10px;
+  padding-inline: clamp(13px, 1.7vw, 22px);
+  background: repeating-linear-gradient(0deg,#122e27 0 2px,transparent 2px 38px),#183c32;
+  box-shadow: inset 3px 0 #5d825e, inset -3px 0 #5d825e;
+}
+.adventure-app .christmas-camp :is(.frost-back,.rest-heading,.rest-kit,.rest-departure) {
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
+  margin-inline: 0;
+  border: 2px solid #953e38;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 2px #9e98635c,0 3px #10261d;
+}
+.adventure-app .christmas-camp :is(.frost-back,.rest-heading) {
+  background: #19382b;
+  color: #ffebbc;
+}
+.adventure-app .christmas-camp .rest-heading {
+  padding: 10px 8px;
+  gap: 5px;
+  grid-template-columns: minmax(0,1fr) auto auto;
+}
+.christmas-camp .rest-heading > span:last-child { white-space: nowrap; }
+.adventure-app .journey-lobby .integrated-camp.christmas-camp .rest-scene {
+  flex: none;
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 3 / 2;
+  margin: 2px 0 34px;
+  background-size: cover;
+  background-position: center;
+  border-block: 2px solid #63815b;
+}
+.adventure-app .journey-lobby .integrated-camp.christmas-camp .rest-scene-caption {
+  inset: 100% 0 auto;
+  transform: none;
+  min-height: 34px;
+  padding: 3px 4px;
+  background: #19382b;
+}
+html body .adventure-app .journey-lobby .christmas-camp .rest-kit {
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 6px;
+  min-height: 66px;
+  padding: 9px 8px;
+  background: repeating-linear-gradient(0deg,#64372655 0 2px,transparent 2px 18px),
+    linear-gradient(105deg,#8b573b,#75432f);
+}
+.christmas-camp .rest-kit > div { min-width: 0; }
+.christmas-camp .rest-kit > div > span { display: inline; color: #ffdf9a; }
+.christmas-camp .rest-kit p { color: #fff1ce; line-height: 1.25; }
+.adventure-app .christmas-camp .rest-kit .rest-prepare {
+  width: auto;
+  max-width: 122px;
+  padding-inline: 7px;
+  white-space: normal;
+  color: #ffe8ae;
+  background: #27543c;
+  border-color: #9f9261;
+  box-shadow: inset 0 2px #74a16b, 0 2px #263629;
+}
+.adventure-app .christmas-camp .rest-departure { padding: 13px 9px 10px; }
+.adventure-app .christmas-camp .frost-departure { margin-top: 0; }
+.christmas-camp .camp-continue {
+  position: relative;
+  min-height: 45px;
+  clip-path: none!important;
+}
+.christmas-camp .camp-continue::before,
+.christmas-camp .camp-continue::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  height: 66%;
+  width: 13px;
+  pointer-events: none;
+  background: #a84136;
+  clip-path: polygon(0 0,100% 17%,100% 83%,0 100%,27% 50%);
+}
+.christmas-camp .camp-continue::before { right: 100%; }
+.christmas-camp .camp-continue::after { left: 100%; transform: scaleX(-1); }
+.christmas-camp-rails {
+  position: absolute;
+  inset: 14% 2px 14%;
+  z-index: 2;
+  pointer-events: none;
+}
+.christmas-camp-rails .christmas-lights {
+  flex-direction: column;
+  width: 6px;
+  height: auto;
+  inset: 0 auto 0 0;
+}
+.christmas-camp-rails .christmas-lights + .christmas-lights { inset: 0 0 0 auto; }
+.christmas-camp-rails .christmas-lights::before { content: none; }
+
+.tanuki-trading-shop.christmas-shop {
+  background: #233a43 url('/assets/ui/noel/shop-winter.webp') center / cover no-repeat;
+}
+.christmas-shop::before,
+.christmas-shop .trading-world::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.christmas-shop::before {
+  background: inherit;
+  filter: blur(18px) brightness(.65);
+  transform: scale(1.05);
+}
+.christmas-shop .trading-world::before {
+  background: url('/assets/ui/noel/shop-winter.webp') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+.christmas-shop :is(.trading-background,.trading-counter-front) { visibility: hidden; }
+.christmas-shop .trading-merchant { left: 498px; top: 278px; width: 240px; height: 191px; }
+.christmas-shop .trading-merchant > span { width: 240px; height: 240px; }
+.christmas-shop .trading-merchant > .merchant-frame-out { animation: merchant-frame-out 36ms ease-out both; }
+.christmas-shop .trading-merchant > .merchant-frame-in { animation: merchant-frame-in 36ms ease-out both; }
+@keyframes merchant-frame-out { to { opacity: 0; } }
+@keyframes merchant-frame-in { from { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) {
+  .christmas-shop .trading-merchant > .merchant-frame-out { display: none; }
+  .christmas-shop .trading-merchant > .merchant-frame-in { animation: none; }
+}
+.christmas-shop .trading-world > .christmas-entry { left: 40%; top: 18px; }
+.christmas-shop .trading-world > .christmas-lights { inset: 12px 64% auto 21%; }
+.christmas-shop .trading-world > .christmas-snow { --snow-distance: 720px; z-index: 4; }
+.christmas-shop .trading-catalogue > .trading-tabs::before { inset: -12px 5% auto; height: 13px; }
+.christmas-shop .trading-merchant:hover { background: radial-gradient(ellipse,#ffdf871a,transparent 65%); }
+.christmas-shop .trading-world .shop-reward-chest { left: 129px; top: 383px; width: 147px; height: 112px; }
+.christmas-chest-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.christmas-shop .trading-world .shop-reward-chest:focus-visible { outline: 2px dashed #f6dc8d!important; }
+.christmas-chest-pedestal {
+  position: absolute;
+  z-index: 2;
+  left: 123px;
+  top: 500px;
+  width: 164px;
+  height: 73px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 3px #12251ca6);
+}
+.christmas-chest-pedestal::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 43px;
+  background: url('/assets/ui/noel/camp-garland.png') center / 100% 100% no-repeat;
+}
+.christmas-chest-pedestal > i {
+  position: absolute;
+  top: 25px;
+  left: 28px;
+  width: 29px;
+  height: 38px;
+  background: url('/assets/ui/noel/pedestal-stocking.png') center / contain no-repeat;
+  transform-origin: 55% 3px;
+  animation: pedestal-sway 3.2s ease-in-out infinite alternate;
+}
+.christmas-chest-pedestal > .pedestal-candy {
+  top: 30px;
+  left: 69px;
+  background-image: url('/assets/ui/noel/pedestal-candy.png');
+  animation-delay: -1.4s;
+}
+.christmas-chest-pedestal > i:last-child { left: 109px; animation-delay: -.8s; }
+@keyframes pedestal-sway {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(5deg); }
+}
+body.reduced-motion .christmas-chest-pedestal > i { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .christmas-chest-pedestal > i { animation: none; }
+}
+.christmas-chest-variant {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.christmas-chest-variant .reward-chest-sprite {
+  position: absolute;
+  inset: auto 0 -16px;
+}
+.christmas-chest-variant[data-kind='platinum'] .reward-chest-sprite { bottom: -26px; }
+.christmas-chest-variant::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 6px;
+  width: 57px;
+  height: 40px;
+  background: url('/assets/ui/noel/santa-hat.png') 48% 54% / 236% 220% no-repeat;
+  image-rendering: pixelated;
+}
+.christmas-chest-variant[data-kind='platinum']::after { top: 13px; }
+.christmas-chest-mist {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.christmas-chest-mist i {
+  position: absolute;
+  bottom: 9%;
+  left: 10%;
+  width: 7px;
+  height: 5px;
+  background: #eff9ef;
+  box-shadow: 5px -2px #d8f3efaa, -4px 2px #b6d9de99;
+  opacity: 0;
+  animation: christmas-chest-mist 2.8s linear infinite;
+}
+.christmas-chest-mist i:nth-child(2) { left: 82%; animation-delay: -.9s; }
+.christmas-chest-mist i:nth-child(3) { left: 89%; animation-delay: -1.8s; }
+@keyframes christmas-chest-mist {
+  20% { opacity: .65; }
+  to { transform: translate(8px,-25px) scale(1.6); opacity: 0; }
+}
+.chest-still .christmas-chest-mist i { animation: none; }
+
+.christmas-shop .chest-panel.christmas-chest-panel::before { content: none; }
+.christmas-shop .chest-panel.christmas-chest-panel::after {
+  background-image: url('/assets/ui/noel/chest-stall-winter.webp');
+}
+.christmas-chest-panel .chest-panel-content { inset: 31% 24% 9%; }
+.christmas-chest-panel .chest-panel-content::before { content: none; }
+.christmas-chest-panel > .christmas-snow { --snow-distance: 700px; z-index: 3; }
+.christmas-chest-panel > .christmas-lights { inset: 28.5% 24% auto; z-index: 2; }
+.christmas-chest-panel > .christmas-lights::before { content: none; }
+.christmas-chest-panel .chest-panel-header { margin-bottom: 4px; }
+.christmas-chest-panel .chest-kind-buttons { margin-bottom: 4px; }
+.christmas-chest-panel .chest-kind-buttons button {
+  position: relative;
+}
+.christmas-chest-panel .chest-kind-buttons button::before,
+.christmas-chest-panel .chest-draw-buttons button::before {
+  content: '';
+  position: absolute;
+  inset: -4px 6% auto;
+  height: 10px;
+  pointer-events: none;
+  background: url('/assets/ui/noel/snow-edge.png') top center / auto 100% repeat-x;
+  image-rendering: pixelated;
+}
+.christmas-chest-panel .chest-draw-buttons { grid-auto-rows: 61px; }
+.christmas-chest-panel .chest-draw-buttons button {
+  position: relative;
+  background: linear-gradient(#a33d35,#731f26);
+  border: 2px solid #d3a86c;
+  box-shadow: inset 0 0 0 2px #b95d44,0 3px #422219;
+}
+.christmas-chest-panel .chest-display:has(.christmas-chest-sprite,.christmas-chest-variant) {
+  position: relative;
+  width: 145px;
+  height: 110px;
+  margin: 2px auto;
+}
+
+:is(.christmas-inventory,.christmas-rune-editor) { position: relative; }
+.christmas-panel-trim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background: var(--winter-dialog-frame) center / 100% 100% no-repeat;
+}
+.christmas-inventory { --winter-dialog-frame: url('/assets/ui/noel/inventory-frame-winter.webp'); }
+.christmas-rune-editor { --winter-dialog-frame: url('/assets/ui/noel/runes-frame-winter.webp'); }
+html body #root .adventure-app .inventory-backdrop .inventory-modal.forest-dialog.panel:has(> .christmas-inventory) {
+  border: 0!important;
+  border-image: none!important;
+  background: radial-gradient(ellipse at 45% 25%,#454638,#34382d 80%) center / 91% 93% no-repeat!important;
+  box-shadow: none!important;
+}
+#root .adventure-app .inventory-modal .christmas-inventory
+  :is(.inventory-heading,.inventory-subtitle,.inventory-scroll,.inventory-footer) { padding-inline: 7%; }
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-heading { padding-top: 42px; }
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-footer { padding-bottom: 32px; }
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-footer,
+html body .rune-loadout-editor.christmas-rune-editor>footer {
+  position: relative;
+  z-index: 6;
+}
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-footer { padding-inline-end: 9%; }
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.christmas-rune-editor.panel.panel.panel {
+  padding: 56px clamp(30px,7.2vw,84px) 46px;
+  border: 0!important;
+  border-image: none!important;
+  background: radial-gradient(ellipse at 45% 25%,#454638,#34382d 80%) center / 91% 93% no-repeat!important;
+  box-shadow: none!important;
+}
+.christmas-panel-trim > .christmas-lights { inset: 3.5% 17% auto; }
+.christmas-panel-trim > .christmas-lights::before { content: none; }
+.christmas-panel-trim .christmas-snow i { opacity: .58; }
+:is(.christmas-inventory,.christmas-rune-editor)
+  :is(.inventory-supply-column,.inventory-rune-column,.inventory-rune-slots>button,.inventory-supplies>article,.inventory-rune-description,.loadout-equipped,.loadout-library,.loadout-slots>button,.loadout-preview) {
+  position: relative;
+}
+:is(.christmas-inventory,.christmas-rune-editor)
+  :is(.inventory-supply-column,.inventory-rune-column,.inventory-rune-slots>button,.inventory-supplies>article,.inventory-rune-description,.loadout-equipped,.loadout-library,.loadout-slots>button,.loadout-preview)::after {
+  content: '';
+  position: absolute;
+  inset: -3px 3% auto;
+  height: 9px;
+  z-index: 2;
+  pointer-events: none;
+  background: url('/assets/ui/noel/snow-edge.png') center top / auto 100% repeat-x;
+  image-rendering: pixelated;
+}
+#root .adventure-app .inventory-modal .christmas-inventory :is(.inventory-supply-column,.inventory-rune-column),
+html body .rune-loadout-editor.christmas-rune-editor :is(.loadout-equipped,.loadout-library) {
+  position: relative;
+  border: 2px solid #5b7c58!important;
+  border-image: none!important;
+  background: radial-gradient(ellipse at top,#4c4f3e,#35382e 75%)!important;
+  box-shadow: inset 0 0 0 2px #292e24!important;
+}
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-rune-column,
+html body .rune-loadout-editor.christmas-rune-editor .loadout-library {
+  border-color: #a34c42!important;
+}
+#root .adventure-app .inventory-modal .christmas-inventory :is(.inventory-supply-column,.inventory-rune-column)::after {
+  display: block;
+}
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-rune-slots>button,
+html body .rune-loadout-editor.christmas-rune-editor .loadout-slots>button {
+  border: 2px solid #5a7751!important;
+  border-image: none!important;
+}
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-rune-slots>button:nth-child(odd),
+html body .rune-loadout-editor.christmas-rune-editor .loadout-slots>button:nth-child(odd) {
+  border-color: #a24a3e!important;
+}
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-rune-slots>button[aria-pressed='true'],
+html body .rune-loadout-editor.christmas-rune-editor .loadout-slots>button[aria-pressed='true'] {
+  outline: 1px solid #ebce80;
+  outline-offset: -4px;
+}
+html body .rune-loadout-editor.christmas-rune-editor .loadout-preview,
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-rune-description {
+  border: 2px solid #8e4c3f!important;
+  border-image: none!important;
+  background: #343a2f!important;
+}
+html body .modal-backdrop.rune-loadout-backdrop .rune-loadout-editor.christmas-rune-editor.panel.panel>footer>button:last-child,
+#root .adventure-app .inventory-modal .christmas-inventory .inventory-done {
+  border: 2px solid #d0a26d!important;
+  border-image: none!important;
+  background: linear-gradient(#a84137,#732725)!important;
+  color: #fff0c4!important;
+}
+@media (max-height:520px) {
+  .christmas-panel-trim > .christmas-lights { top: 5px; }
+  .christmas-panel-trim .christmas-snow i:nth-child(n+11) { display: none; }
+  #root .adventure-app .inventory-modal .christmas-inventory .inventory-heading { padding-top: 21px; }
+  #root .adventure-app .inventory-modal .christmas-inventory .inventory-footer { padding-bottom: 19px; }
+  html body .modal-backdrop.modal-backdrop .rune-loadout-editor.christmas-rune-editor.panel.panel.panel {
+    padding: 29px clamp(24px,6.5vw,55px) 29px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .christmas-chest-mist i { animation: none; }
+}
+
+/* Bulbs already have a painted cable in these illustrations. */
+:is(.christmas-menu,.christmas-shop,.christmas-loading,.christmas-heroes) .christmas-lights::before { content: none; }

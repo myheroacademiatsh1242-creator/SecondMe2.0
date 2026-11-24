@@ -42,9 +42,12 @@ const stops = [
 
 const FROST_HERO_KEY = 'secondme.frostHeroAt';
 
+import { ChristmasLights, ChristmasSnow } from './ChristmasEvent.tsx';
+
 export function FrostChapter({
   engine,
   hud,
+  christmas = false,
   back,
   traveler,
   onUpgradeHero,
@@ -52,6 +55,7 @@ export function FrostChapter({
 }: {
   engine: GameEngine | null;
   hud: HUDState;
+  christmas?: boolean;
   back: () => void;
   traveler?: React.ReactNode;
   onUpgradeHero: () => void;
@@ -196,7 +200,8 @@ export function FrostChapter({
     <div className="journey-layout frost-chapter">
       {runeEditor && <RuneLoadoutEditor hud={hud} engine={engine} close={() => setRuneEditor(false)} />}
 
-      <aside className="journey-camp integrated-camp frost-camp">
+      <aside className={`journey-camp integrated-camp frost-camp${christmas ? ' christmas-camp' : ''}`}>
+        {christmas && <div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div>}
         <button className="frost-back" onClick={back} aria-label={vi ? 'Về Chương I · Rừng Vọng Âm' : 'Back to Chapter I · Echo Forest'}>
           <ChevronLeft size={18} />
           {vi ? 'CHƯƠNG I · RỪNG VỌNG ÂM' : 'CHAPTER I · ECHO FOREST'}
@@ -212,6 +217,7 @@ export function FrostChapter({
         </header>
 
         <div className={`rest-scene rest-scene-frost ${hud.reducedMotion ? 'rest-still' : ''}`}>
+          {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
           <div className="rest-firelight frost-firelight" aria-hidden="true" />
           <FxCanvas name="campfire" still={hud.reducedMotion} className="rest-fx" />
           <div className="rest-embers frost-snow-drift" aria-hidden="true">
@@ -258,7 +264,6 @@ export function FrostChapter({
             <b>{String(level.id).padStart(2, '0')}</b>
             <strong>{translate(level.subtitle, hud.language)}</strong>
           </div>
-          <p className="frost-stage-desc">{translate(level.description, hud.language)}</p>
           <button
             className="camp-continue frost-continue"
             disabled={!unlocked(level.id)}

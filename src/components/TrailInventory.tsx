@@ -11,9 +11,11 @@ import {ChestKeyIcon} from './ChestKeyIcon.tsx';
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
 import {ECHO_RUNES} from '../game/logic/echoRunes.ts';
 import {RuneLoadoutEditor,RuneStone} from './EchoRunes.tsx';
+import {ChristmasPanelTrim,useChristmas} from './ChristmasEvent.tsx';
 import './TrailInventory.css';
 import './ForestInventory.css';
 export function TrailInventory({engine,hud,close:onClose,preparing=false}:{engine:GameEngine|null;hud:HUDState;close:()=>void;preparing?:boolean}){
+ const winter = useChristmas(engine?.devSeasonPreview).active && !preparing;
  const panelArt=usePanelArt(PANEL_ART.material);
  const {closing,close}=useDialogClose(onClose);
  const vi=hud.language==='vi',[inspect,setInspect]=useState(0),[editing,setEditing]=useState(false),root=useRef<HTMLDivElement>(null),closeRef=useRef(close);closeRef.current=close;
@@ -33,7 +35,8 @@ export function TrailInventory({engine,hud,close:onClose,preparing=false}:{engin
   (root.current?.querySelector<HTMLButtonElement>(first) ?? root.current?.querySelector<HTMLButtonElement>('.inventory-cancel'))?.focus({preventScroll:true});
  },[panelArt,preparing]);
  const emptyStock = preparing && !engine?.campaign.hasPackableItems();
- return <div className={`trail-inventory ${closing?'is-leaving':''}`} ref={root} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="inventory-heading">
+ return <div className={`trail-inventory${winter?' christmas-inventory':''}${closing?' is-leaving':''}`} ref={root} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="inventory-heading">
+  {winter&&<ChristmasPanelTrim still={hud.reducedMotion}/>}
   {editing&&<RuneLoadoutEditor engine={engine} hud={hud} close={()=>setEditing(false)}/>}
   <header className="inventory-heading"><span className="inventory-emblem"><Backpack size={25}/></span><div><small>{vi?'HÀNH TRANG ECHO':'ECHO TRAVEL KIT'}</small><h2 id="inventory-heading">{preparing?(vi?'CHỌN VẬT PHẨM VÀO TRẬN':'PACK ITEMS FOR BATTLE'):(vi?'KHO ĐỒ':'INVENTORY')}</h2></div>{!preparing&&<div className="inventory-wallet"><img src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt=""/><b>{number(hud.coins)}</b><small>{vi?'XU · ĐẠI TRÀ':'COINS · COMMON'}</small></div>}</header>
   <p className="inventory-subtitle">{preparing
