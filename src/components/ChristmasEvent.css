@@ -233,6 +233,7 @@ body.reduced-motion .christmas-lights i { animation: none; }
   pointer-events: none;
   overflow: hidden;
 }
+.portal-swirl.winter-portal-swirl { animation-duration: 10s; }
 .menu-wizard-hat { image-rendering: pixelated; }
 .christmas-menu .intro-menu {
   inset: 28% auto auto 67.4%;

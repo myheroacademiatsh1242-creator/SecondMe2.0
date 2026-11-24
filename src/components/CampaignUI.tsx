@@ -133,6 +133,25 @@ export function Intro({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     <div className={`intro-artwork${christmas.active ? ' christmas-menu' : ''}`}>
     {christmas.active
       ? <svg className="christmas-entrance" viewBox="0 0 1376 768" preserveAspectRatio="none" aria-hidden="true">
+          {!hud.reducedMotion && <>
+            <defs>
+              <radialGradient id="winter-swirl-fade">
+                <stop offset=".84" stopColor="white"/>
+                <stop offset="1" stopColor="white" stopOpacity="0"/>
+              </radialGradient>
+              <mask id="winter-swirl-mask" maskUnits="userSpaceOnUse" x="230" y="290" width="168" height="272">
+                <ellipse cx="314" cy="426" rx="84" ry="134" fill="url(#winter-swirl-fade)"/>
+              </mask>
+            </defs>
+            <g mask="url(#winter-swirl-mask)">
+              <g transform="translate(314 426) scale(1 1.6)">
+                <g className="portal-swirl winter-portal-swirl">
+                  <image href="/assets/ui/noel/menu-winter.webp" width="1376" height="768"
+                    transform="scale(1 .625) translate(-314 -426)" preserveAspectRatio="none"/>
+                </g>
+              </g>
+            </g>
+          </>}
           <MenuWizard winter reducedMotion={hud.reducedMotion}/>
         </svg>
       : <IntroEffects/>}
