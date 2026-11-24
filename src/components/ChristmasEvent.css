@@ -507,15 +507,6 @@ html body .adventure-app .journey-lobby .christmas-camp .rest-kit {
 .christmas-shop .trading-catalogue > .trading-tabs::before { inset: -12px 5% auto; height: 13px; }
 .christmas-shop .trading-merchant:hover { background: radial-gradient(ellipse,#ffdf871a,transparent 65%); }
 .christmas-shop .trading-world .shop-reward-chest { left: 129px; top: 383px; width: 147px; height: 112px; }
-.christmas-chest-sprite {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center bottom;
-  image-rendering: pixelated;
-  pointer-events: none;
-}
 .christmas-shop .trading-world .shop-reward-chest:focus-visible { outline: 2px dashed #f6dc8d!important; }
 .christmas-chest-pedestal {
   position: absolute;
@@ -590,7 +581,7 @@ body.reduced-motion .christmas-chest-pedestal > i { animation: none; }
   height: 27%;
 }
 .christmas-chest-panel .chest-display[data-kind='platinum']::after { top: 29%; }
-.christmas-chest-variant[data-kind='platinum']::after { top: 13px; }
+.christmas-chest-variant:is([data-kind='platinum'], [data-kind='royal'])::after { top: 13px; }
 .christmas-chest-mist {
   position: absolute;
   inset: 0;

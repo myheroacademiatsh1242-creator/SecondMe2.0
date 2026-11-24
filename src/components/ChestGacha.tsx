@@ -105,9 +105,7 @@ export function ChestGacha({engine,hud,christmas=false}:{engine:GameEngine|null;
       onClick={(e) => { e.currentTarget.blur(); warmRoyalSummon(); setOpen(true); }}
     >
       {christmas
-        ? <>{kind === 'royal'
-              ? <img className="christmas-chest-sprite" src={`${import.meta.env.BASE_URL}assets/ui/noel/chest-winter.png`} alt="" draggable={false}/>
-              : <span className="christmas-chest-variant" data-kind={kind} aria-hidden="true"><ChestSprite kind={kind}/></span>}
+        ? <><span className="christmas-chest-variant" data-kind={kind} aria-hidden="true"><ChestSprite kind={kind}/></span>
             <span className="christmas-chest-mist" aria-hidden="true"><i/><i/><i/></span></>
         : <ChestSprite kind={kind}/>}
       <i className="chest-sparkle sparkle-1" aria-hidden="true" />
