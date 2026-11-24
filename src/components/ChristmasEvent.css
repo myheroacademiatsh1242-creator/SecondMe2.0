@@ -470,14 +470,6 @@ html body .adventure-app .journey-lobby .christmas-camp .rest-kit {
 .christmas-shop :is(.trading-background,.trading-counter-front) { visibility: hidden; }
 .christmas-shop .trading-merchant { left: 498px; top: 278px; width: 240px; height: 191px; }
 .christmas-shop .trading-merchant > span { width: 240px; height: 240px; }
-.christmas-shop .trading-merchant > .merchant-frame-out { animation: merchant-frame-out 36ms ease-out both; }
-.christmas-shop .trading-merchant > .merchant-frame-in { animation: merchant-frame-in 36ms ease-out both; }
-@keyframes merchant-frame-out { to { opacity: 0; } }
-@keyframes merchant-frame-in { from { opacity: .65; } }
-@media (prefers-reduced-motion: reduce) {
-  .christmas-shop .trading-merchant > .merchant-frame-out { display: none; }
-  .christmas-shop .trading-merchant > .merchant-frame-in { animation: none; }
-}
 .christmas-shop .trading-world > .christmas-entry { left: 40%; top: 18px; }
 .christmas-shop .trading-world > .christmas-lights { inset: 12px 64% auto 21%; }
 .christmas-shop .trading-world > .christmas-snow { --snow-distance: 720px; z-index: 4; }
