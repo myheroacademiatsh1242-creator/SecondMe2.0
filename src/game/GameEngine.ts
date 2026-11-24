@@ -659,11 +659,11 @@ export class GameEngine {
   private nextChristmasMusicCheck = 0;
 
   public get devSeasonPreview(): SeasonPreview {
-    return gameDevToolsEnabled && this.devUnlocked ? this.seasonPreview : 'auto';
+    return this.devUnlocked ? this.seasonPreview : 'auto';
   }
 
   public setDevSeasonPreview(value: SeasonPreview) {
-    if (!gameDevToolsEnabled || !this.devUnlocked) return;
+    if (!this.devUnlocked) return;
     this.seasonPreview = value;
     this.notifyHUD();
   }

@@ -26,7 +26,6 @@ import { MenuVines } from './MenuVines.tsx';
 import { MenuWizard } from './MenuWizard.tsx';
 import { drawSantaHat } from './HeroSantaHat.ts';
 import { ChristmasEvent, ChristmasLights, ChristmasMenuGlow, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
-import { gameDevToolsEnabled } from '../game/logic/devAccess.ts';
 import credits from '../game/data/credits.json';
 import { ComboPreview } from './ComboShowcase.tsx';
 import { WeaponPreview } from './WeaponPreview.tsx';
@@ -265,7 +264,7 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
     </details>
       </>:tab==='controls'?<ControlSettingsPanel engine={engine}/>:hud.devUnlocked?<div className="dev-supplies">
         <h3>{vi?'QUYỀN DEVELOPER ĐÃ BẬT':'DEVELOPER ACCESS ENABLED'}</h3>
-        {gameDevToolsEnabled && <div className="setting-row dev-season-setting">
+        <div className="setting-row dev-season-setting">
           <label htmlFor="settings-dev-season">{vi?'Chọn theo mùa':'Season preview'}</label>
           <select id="settings-dev-season" aria-describedby="settings-dev-season-hint" value={engine?.devSeasonPreview ?? 'auto'} onChange={event => {
             const value = event.currentTarget.value;
@@ -276,7 +275,7 @@ export function SettingsPanel({ engine, hud, close }: { engine: GameEngine | nul
             <option value="christmas">{vi?'Xem thử Noel':'Preview Christmas'}</option>
           </select>
           <small id="settings-dev-season-hint">{vi?'Xem thử giao diện theo mùa trong phiên này.':'Preview the seasonal theme for this session.'}</small>
-        </div>}
+        </div>
         <p>{vi?'Nạp 99.999 vàng, 99.999 Tanuki phàm tinh thể, 99.999 Tanuki thanh tinh thể và 99.999 Tanuki huyền tinh thể; mở toàn bộ trang phục, vũ khí và rune; cấp đầy tất cả vật phẩm theo giới hạn túi đồ. Có thể bấm lại để nạp khi cần.':'Set gold, Tanuki Common Crystals and Tanuki Azure Crystals and Tanuki Mystic Crystals to 99,999, unlock all outfits, weapons and runes, and fill all item stocks to their inventory limits. Refill again whenever needed.'}</p>
         <button type="button" className="secondary" onClick={()=>engine?.grantDevResources()}>{vi?'DEV · NHẬN TÀI NGUYÊN & MỞ KHÓA TẤT CẢ':'DEV · GRANT RESOURCES & UNLOCK ALL'}</button>
         <p role="status">{vi?'Đang sở hữu':'Owned'}: {hud.coins.toLocaleString(vi?'vi-VN':'en-US')} {vi?'vàng':'gold'} · {hud.chestKeys.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki phàm tinh thể':'Tanuki Common Crystals'} · {hud.whiteCrystals.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki thanh tinh thể':'Tanuki Azure Crystals'} · {hud.mysticCrystals.toLocaleString(vi?'vi-VN':'en-US')} {vi?'Tanuki huyền tinh thể':'Tanuki Mystic Crystals'} · {hud.ownedOutfits?.length??0} {vi?'trang phục':'outfits'} · {ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length}/{ECHO_RUNES.length} rune</p>
