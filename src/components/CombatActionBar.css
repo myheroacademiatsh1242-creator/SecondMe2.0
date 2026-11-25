@@ -15,3 +15,45 @@
 .action-ultimate.is-ready{border-color:#d9a8ff;color:#f3e2ff;animation:ultimate-ready 1s ease-in-out infinite alternate}
 @keyframes ultimate-ready{to{box-shadow:inset 0 0 0 2px #102217,0 0 14px #b57cff}}
 @media(prefers-reduced-motion:reduce){.action-ultimate.is-ready{animation:none;box-shadow:inset 0 0 0 2px #102217,0 0 14px #b57cff}}
+.combat-input-caps {
+  display: flex;
+  grid-column: 1;
+  justify-self: center;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.adventure-app .game-stage .combat-action .combat-input-caps kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  gap: 1px;
+}
+
+.combat-input-caps svg {
+  display: block;
+  width: 10px;
+  height: 12px;
+}
+
+.christmas-combat :is(.level-one-left, .level-one-right) {
+  position: relative;
+}
+
+.christmas-combat :is(.level-one-left, .level-one-right, .hud-tools)::before {
+  content: '';
+  position: absolute;
+  inset: -4px 4px auto;
+  height: 9px;
+  z-index: 3;
+  background: url('/assets/ui/noel/snow-edge.png') top center / auto 100% repeat-x;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.christmas-combat .combat-action-track > i {
+  background-color: #93d9e4;
+}

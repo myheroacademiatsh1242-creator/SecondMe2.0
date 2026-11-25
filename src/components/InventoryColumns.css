@@ -23,6 +23,7 @@
 #root .adventure-app .inventory-modal .inventory-runes-title{gap:8px;justify-content:space-between}
 #root .adventure-app .inventory-modal .inventory-runes-title .inventory-section-title{font-size:15px!important}
 #root .adventure-app .inventory-modal .inventory-runes-title>button{font-size:12px!important;padding:6px;flex:none}
+#root .adventure-app .inventory-modal .inventory-runes-title>button:has(>.new-dot){padding-inline-end:18px}
 #root .adventure-app .inventory-modal :is(.inventory-supplies,.inventory-rune-content){
  min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;
  scrollbar-color:#b3a26c #2d3227;margin:0;padding:0 6px 4px 0;
@@ -218,3 +219,110 @@ html body #root .inventory-pack-slots .pack-quantity button{
 #root .adventure-app .battle-preparation .inventory-pack-slots kbd{position:absolute;top:4px;left:4px;width:auto;min-width:14px;padding:0 2px}
 #root .adventure-app .battle-preparation .inventory-empty-slot{position:relative}
 @media(max-width:720px){#root .adventure-app .battle-preparation .inventory-pack-slots>.inventory-packed-item{grid-template-columns:28px minmax(0,1fr);gap:4px;padding:20px 7px 7px}#root .adventure-app .battle-preparation .inventory-packed-name{font-size:12px}}
+.inventory-pane-switch {
+ display:none;
+}
+
+#root .adventure-app .inventory-backdrop.modal-backdrop {
+ backdrop-filter:none;
+ background:#06120eeb;
+}
+
+#root .adventure-app .inventory-modal .inventory-heading .inventory-close {
+ width:36px;
+ height:36px;
+ margin-left:4px;
+ font-size:22px;
+}
+
+#root .adventure-app .inventory-modal .inventory-subtitle:empty {
+ display:none;
+}
+
+#root .adventure-app .inventory-modal .inventory-scroll[data-inventory-pane] .inventory-supplies article {
+ min-height:76px;
+}
+
+#root .adventure-app .inventory-modal .inventory-scroll[data-inventory-pane] .inventory-rune-slots > button {
+ min-height:94px;
+ padding-block:11px 7px;
+}
+
+@media(max-width:760px) {
+ #root .adventure-app .inventory-modal .inventory-pane-switch {
+  flex:none;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+  padding:4px 12px 6px;
+ }
+ .inventory-pane-switch > button {
+  min-height:36px;
+  border:1px solid #81916b;
+  background:#1e3325;
+  color:#e5d7ac;
+ }
+ .inventory-pane-switch > button[aria-pressed='true'] {
+  border-color:#e2c479;
+  background:#3a4932;
+  box-shadow:inset 0 -2px #e2c479;
+ }
+ #root .adventure-app .inventory-modal .inventory-scroll[data-inventory-pane] {
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto;
+  overflow-y:auto;
+ }
+ #root .adventure-app .inventory-modal .inventory-scroll[data-inventory-pane] :is(.inventory-supply-column,.inventory-rune-column) {
+  grid-template-rows:auto auto;
+ }
+ #root .adventure-app .inventory-modal .inventory-scroll[data-inventory-pane] :is(.inventory-supplies,.inventory-rune-content) {
+  overflow:visible;
+ }
+ #root .adventure-app .inventory-modal :is([data-inventory-pane='supplies'] > .inventory-rune-column,[data-inventory-pane='runes'] > .inventory-supply-column) {
+  display:none;
+ }
+ #root .adventure-app .inventory-modal .inventory-scroll[data-inventory-pane] .inventory-supplies article {
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+ }
+ #root .adventure-app .inventory-modal .inventory-footer > span {
+  max-width:55%;
+ }
+}
+.inventory-rune-overview {
+ margin-top:12px;
+ padding:12px 14px;
+ border:1px solid #787350;
+ background:#1d2720;
+ box-shadow:inset 0 0 0 2px #111c16;
+}
+.inventory-rune-overview h3 {
+ margin:0 0 7px;
+ color:#e5ca89;
+ font-size:14px;
+ line-height:1.35;
+}
+.inventory-rune-overview dl {margin:0}
+.inventory-rune-overview dl > div {
+ display:grid;
+ grid-template-columns:minmax(0, 1fr) minmax(0, 1.75fr);
+ gap:3px 12px;
+ padding:5px 0;
+ border-top:1px solid #a99e6740;
+ font-size:13px;
+ line-height:1.4;
+}
+.inventory-rune-overview dd {margin:0;color:#e2ddc2}
+.inventory-rune-overview dd small {
+ display:block;
+ color:#c9bf9a;
+}
+.inventory-rune-overview p {
+ margin:6px 0 0;
+ color:#c0bfa4;
+ font-size:12px;
+ line-height:1.4;
+}
+@media(max-width:420px) {
+ .inventory-rune-overview dl > div {grid-template-columns:minmax(0,1fr)}
+}

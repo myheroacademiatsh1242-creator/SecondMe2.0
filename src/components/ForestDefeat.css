@@ -146,7 +146,8 @@
 }
 
 .forest-defeat .defeat-revive { font-size: clamp(11px, 1.9dvh, 15px); }
-.forest-defeat .defeat-return { align-self: center; min-height: clamp(23px, 3.8dvh, 34px); }
+.defeat-secondary-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
+.forest-defeat .defeat-return { margin:0; min-height: clamp(23px, 3.8dvh, 34px); }
 .forest-defeat button:hover { filter: brightness(1.15); }
 .forest-defeat button:focus-visible { outline: 2px solid #fff0b0; outline-offset: 2px; }
 .forest-defeat button svg { flex-shrink: 0; }

@@ -16,7 +16,25 @@ test('closing nested rune editing keeps the inventory pause and does not consume
  g.goToLobby();assert.equal(g.canUseTimeItem(),false);assert.equal(g.useTimeItem(),false);assert.equal(g.campaign.timeItems,2);
 });
 
-test('the limit is three types, and each type can carry multiple copies up to stock', t => {
+test('the shared nine-item limit applies to adding, resizing and saving a loadout', () => {
+ const campaign = new Campaign();
+ campaign.timeItems = 20;
+ campaign.supplies.healSmall = 20;
+ campaign.supplies.manaSmall = 20;
+ assert.ok(campaign.packItem('time'));
+ assert.ok(campaign.packItem('healSmall'));
+ assert.ok(campaign.setPackedCount(0, 8));
+ assert.equal(campaign.packItem('manaSmall'), false);
+ assert.equal(campaign.setPackedCount(1, 2), false);
+ assert.ok(campaign.setPackedCount(0, 7));
+ assert.ok(campaign.packItem('manaSmall'));
+ campaign.itemLoadout = [{id:'time',count:4},{id:'healSmall',count:8},{id:'manaSmall',count:1}];
+ campaign.save();
+ assert.deepEqual(campaign.itemLoadout, [{id:'time',count:4},{id:'healSmall',count:5}]);
+ assert.equal(campaign.supplies.healSmall, 20);
+});
+
+test('three types can carry multiple copies within stock and the total limit', t => {
  const g = setup(t);
  g.goToLobby();
  g.campaign.supplies.healSmall = 4;
@@ -26,10 +44,10 @@ test('the limit is three types, and each type can carry multiple copies up to st
  assert.ok(g.packItem('manaSmall'));
  assert.equal(g.packItem('healLarge'), false);
  assert.ok(g.packItem('healSmall'));
- assert.ok(g.setPackedCount(2, 10));
- assert.equal(g.setPackedCount(2, 11), false);
+ assert.ok(g.setPackedCount(2, 5));
+ assert.equal(g.setPackedCount(2, 6), false);
  assert.deepEqual(g.campaign.itemLoadout, [
-   {id: 'time', count: 2}, {id: 'healSmall', count: 2}, {id: 'manaSmall', count: 10},
+   {id: 'time', count: 2}, {id: 'healSmall', count: 2}, {id: 'manaSmall', count: 5},
  ]);
  assert.equal(g.campaign.supplies.healSmall, 4);
  g.restartLevel();
@@ -76,33 +94,47 @@ test('packed items survive reload and legacy saves keep all stock without a load
  assert.equal(reloaded.limitRings, 2);
 });
 
-test('entering a battle requires confirming equipment when an item is available', t => {
+test('starting a battle skips preparation and allows an empty loadout with items in stock', t => {
  const g = setup(t);
  g.campaign.completed = [1, 2];
  g.goToLobby();
- g.unpackItem(1);
  g.unpackItem(0);
  let entries = 0;
  const enter = () => { entries++; };
  g.requestBattleStart(enter);
  assert.equal(g.canConfirmBattleStart(), false);
  g.confirmBattleStart();
- assert.equal(entries, 0);
- assert.ok(g.packItem('time'));
- assert.equal(g.canConfirmBattleStart(), true);
- g.confirmBattleStart();
- g.confirmBattleStart();
  assert.equal(entries, 1);
- g.unpackItem(0);
- g.campaign.timeItems = 0;
- g.requestBattleStart(enter);
+ assert.equal(g.campaign.timeItems, 2);
+ g.requestBattleStart(enter, true);
  assert.equal(g.canConfirmBattleStart(), true);
  g.cancelBattleStart();
  g.confirmBattleStart();
  assert.equal(entries, 1);
- g.requestBattleStart(enter);
+ g.requestBattleStart(enter, true);
+ assert.equal(g.canConfirmBattleStart(), true);
+ g.confirmBattleStart();
  g.confirmBattleStart();
  assert.equal(entries, 2);
+});
+
+test('retry from pause or defeat works with an empty loadout and leaves supplies in stock', t => {
+ const g = setup(t);
+ g.campaign.completed = [1, 2];
+ g.campaign.itemLoadout = [];
+ for (const screen of ['paused', 'defeat'] as const) {
+  g.screen = screen;
+  g.health = 1;
+  g.requestBattleRetry(true);
+  assert.equal(g.canConfirmBattleStart(), true);
+  g.cancelBattleStart();
+  assert.equal(g.screen, screen);
+  g.requestBattleRetry();
+  assert.equal(g.screen, 'playing');
+  assert.equal(g.health, g.maxHealth);
+  assert.equal(g.campaign.timeItems, 2);
+  assert.equal(g.canConfirmBattleStart(), false);
+ }
 });
 
 test('number shortcuts spend one copy without shifting the other item types', t => {
@@ -139,12 +171,12 @@ test('battle preparation is hidden until trail two is completed, including on re
  let entries = 0;
  for (const completed of [[], [1]]) {
   g.campaign.completed = completed;
-  g.requestBattleStart(() => { entries++; });
+  g.requestBattleStart(() => { entries++; }, true);
   assert.equal(g.canConfirmBattleStart(), false);
  }
  assert.equal(entries, 2);
  g.campaign.completed = [1, 2];
- g.requestBattleStart(() => { entries++; });
+ g.requestBattleStart(() => { entries++; }, true);
  assert.equal(entries, 2);
  assert.equal(g.canConfirmBattleStart(), true);
  g.confirmBattleStart();

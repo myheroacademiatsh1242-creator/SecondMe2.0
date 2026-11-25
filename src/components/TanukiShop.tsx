@@ -16,8 +16,12 @@ const WINTER_IDLE: [number, number][] = [
  [0, 2700], [1, 160], [2, 140], [1, 160], [0, 3800],
  [4, 900], [0, 4600], [1, 300], [5, 850], [1, 350],
 ];
-const WINTER_WAVE: [number, number][] = [[3, 320], [6, 1050], [3, 480]];
-const WINTER_SALE: [number, number][] = [[3, 300], [7, 1450], [3, 400]];
+const WINTER_GREETINGS: { vi: string; en: string; frames: [number, number][]; prop?: string }[] = [
+ { vi: 'Giáng sinh vui vẻ! Ghé lại sưởi ấm nhé.', en: 'Merry Christmas! Come in and warm up.', frames: [[3, 250], [6, 560], [2, 740], [3, 400]] },
+ { vi: 'Kẹo gậy đây! Một chút ngọt ngào cho ngày tuyết rơi.', en: 'A candy cane! Something sweet for a snowy day.', frames: [[4, 320], [6, 820], [2, 520], [3, 290]], prop: 'pedestal-candy.png' },
+ { vi: 'Treo chiếc tất này nhé. Biết đâu sáng mai có quà!', en: 'Hang this stocking up. There might be a gift in it tomorrow!', frames: [[3, 300], [6, 760], [4, 360], [2, 530]], prop: 'pedestal-stocking.png' },
+];
+const WINTER_SALE: [number, number][] = [[3, 240], [7, 650], [2, 460], [7, 600], [3, 300]];
 const winterFramePosition = (frame: number) =>
  `${(frame % 4) * 100 / 3}% ${Math.floor(frame / 4) * 100}%`;
 const shopGreetings={
@@ -122,14 +126,15 @@ const FALLING_LEAF_TRACKS = [
 export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  const christmas = useChristmas(engine?.devSeasonPreview);
  const merchantSheet = christmas.active ? 'noel/tanuki-merchant-winter-v2.png' : 'tanuki-merchant-expressions.png';
- const catalogueArt=usePanelArt(PANEL_ART.shop);
+ const catalogueArt=usePanelArt(christmas.active ? PANEL_ART.shopWinter : PANEL_ART.shop);
  const purchaseArt=usePanelArt(PANEL_ART.purchase);
  const vi=hud.language==='vi',viewport=useRef<HTMLDivElement>(null),dialog=useRef<HTMLFormElement>(null),buyButton=useRef<HTMLButtonElement>(null),reactionUntil=useRef(0);
  const [ready,setReady]=useState(false),[greetingRun,setGreetingRun]=useState(0),[greetingIndex,setGreetingIndex]=useState(0),[selected,setSelected]=useState<ShopItemId>('time'),[tab,setTab]=useState<'items'|'outfits'>('items'),[confirm,setConfirm]=useState(false),[quantity,setQuantity]=useState(1),[message,setMessage]=useState(''),[pose,setPose]=useState(0),[speech,setSpeech]=useState(true);
  const [fit, setFit] = useState({ x: 1, y: 1 });
  const [winterFrame, setWinterFrame] = useState(0);
+ const [winterGreeting, setWinterGreeting] = useState(0);
+ const seasonalGreeting = WINTER_GREETINGS[winterGreeting];
  const scale = Math.min(fit.x, fit.y);
- const fillWinterViewport = christmas.active && Math.max(fit.x, fit.y) <= scale * 1.4;
  const [hovered,setHovered]=useState<ShopItemId|null>(null);
  const item=SHOP_ITEMS.find(i=>i.id===selected)!;
  const preview=SHOP_ITEMS.find(i=>i.id===(hovered??selected))!;
@@ -155,6 +160,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  },[christmas.active,merchantSheet]);
  useEffect(()=>{
   if(!ready)return;
+  setWinterGreeting(0);
   setSpeech(true);setGreetingRun(n=>n+1);reactionUntil.current=performance.now()+(christmas.active?1950:1800);
   setPose(hud.reducedMotion||window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:6);
  },[ready,christmas.active]);
@@ -173,7 +179,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  useEffect(() => {
   if (!ready || !christmas.active) return;
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const frames = pose === 6 ? WINTER_WAVE : pose === 7 ? WINTER_SALE : WINTER_IDLE;
+  const frames = pose === 6 ? seasonalGreeting.frames : pose === 7 ? WINTER_SALE : WINTER_IDLE;
   let timer = 0;
   const advance = (step: number) => {
    const [frame, hold] = frames[step];
@@ -192,7 +198,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   reset();
   motion.addEventListener('change', reset);
   return () => { window.clearTimeout(timer); motion.removeEventListener('change', reset); };
- }, [ready, christmas.active, pose, greetingRun, hud.reducedMotion]);
+ }, [ready, christmas.active, pose, greetingRun, hud.reducedMotion, seasonalGreeting]);
  useEffect(()=>{if(!ready||!speech)return;const timeout=window.setTimeout(()=>setSpeech(false),7000);return()=>window.clearTimeout(timeout);},[ready,speech,message,greetingRun]);
  useEffect(()=>{if(!confirm||purchaseArt==='loading')return;dialog.current?.querySelector<HTMLButtonElement>('button')?.focus();const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}else if(e.key==='Tab'){const nodes=Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input')??[]),first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}};window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);},[confirm,purchaseArt]);
  const select=(id:ShopItemId)=>{setSelected(id);engine?.onboarding.event('shop-select');setQuantity(1);setMessage('');};
@@ -201,11 +207,22 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   if(selected==='aid'||!unlocked||quantity<1||quantity>maxQuantity||!engine?.buyShopItem(selected,quantity)){setMessage(vi?'Không thể mua. Kiểm tra xu và chỗ trống trong túi.':'Cannot purchase. Check your coins and inventory capacity.');setSpeech(true);setGreetingRun(n=>n+1);return;}
   setMessage(vi?`Đã nhận ${quantity} × ${item.vi}. Cảm ơn bạn!`:`Received ${quantity} × ${item.en}. Thank you!`);reactionUntil.current=performance.now()+(christmas.active?2250:1500);setPose(7);setSpeech(true);setGreetingRun(n=>n+1);close();
  };
- const worldScale = fillWinterViewport ? `${fit.x}, ${fit.y}` : String(scale);
  const merchantPosition = christmas.active
   ? winterFramePosition(winterFrame)
   : `${(pose % 4) * 100 / 3}% ${Math.floor(pose / 4) * 100}%`;
- return <div className={`tanuki-trading-shop${christmas.active ? ' christmas-shop' : ''}`} ref={viewport}><div className="trading-world" style={{transform:`translate(-50%,-50%) scale(${worldScale})`,'--trading-scale':scale} as CSSProperties}>
+ const greet = () => {
+  setMessage('');
+  if (christmas.active) {
+   setWinterGreeting(index => index === 1 ? 2 : 1);
+  } else {
+   setGreetingIndex(index => (index + 1 + Math.floor(Math.random() * (shopGreetings.vi.length - 1))) % shopGreetings.vi.length);
+  }
+  setSpeech(true);
+  setGreetingRun(run => run + 1);
+  reactionUntil.current = performance.now() + (christmas.active ? 1950 : 1800);
+  setPose(6);
+ };
+ return <div className={`tanuki-trading-shop${christmas.active ? ' christmas-shop' : ''}`} ref={viewport}><div className="trading-world" style={{transform:`translate(-50%,-50%) scale(${scale})`,'--trading-scale':scale} as CSSProperties}>
   <img className="trading-background" src={asset('tanuki-market-sunset.png')} alt=""/>
   {christmas.active && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/><ChristmasOrnaments scene="shop" still={hud.reducedMotion}/></>}
   {/* Atmospheric Sunrise / Dawn System behind Torii Gate */}
@@ -259,10 +276,15 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
       </div>
     ))}
   </div>
-  <button className={`trading-merchant ${hud.reducedMotion?'merchant-still':''}`} data-pose={pose} aria-label={vi?'Trò chuyện với Tanuki':'Talk to Tanuki'} onClick={()=>{setMessage('');setGreetingIndex(index=>(index+1+Math.floor(Math.random()*(shopGreetings.vi.length-1)))%shopGreetings.vi.length);setSpeech(true);setGreetingRun(n=>n+1);reactionUntil.current=performance.now()+(christmas.active?1950:1800);setPose(6);}}><span aria-hidden="true" style={{backgroundImage:`url(${asset(merchantSheet)})`,backgroundPosition:merchantPosition,backgroundSize:christmas.active?'400% 200%':undefined}}/></button>
+  <button className={`trading-merchant ${hud.reducedMotion?'merchant-still':''}`} data-pose={pose} aria-label={vi?'Trò chuyện với Tanuki':'Talk to Tanuki'} onClick={greet}>
+   <span aria-hidden="true" style={{backgroundImage:`url(${asset(merchantSheet)})`,backgroundPosition:merchantPosition,backgroundSize:christmas.active?'400% 200%':undefined}}/>
+   {christmas.active && pose === 6 && seasonalGreeting.prop && <img key={greetingRun} className="trading-merchant-gift" src={asset(`noel/${seasonalGreeting.prop}`)} alt=""/>}
+   {christmas.active && winterFrame === 5 && <i className="trading-merchant-breath" aria-hidden="true"/>}
+   {christmas.active && winterFrame === 7 && <i className="trading-merchant-sparkle" aria-hidden="true"/>}
+  </button>
   {/* The counter in front of Tanuki: the same painting, cut to the counter, so Tanuki stands behind it. */}
   <div className="trading-counter-front" aria-hidden="true" style={{backgroundImage:`url(${asset('tanuki-market-sunset.png')})`}}/>
-  {ready&&speech&&<div className="trading-speech" role="status">{message||(vi?shopGreetings.vi[greetingIndex]:shopGreetings.en[greetingIndex])}</div>}
+  {ready&&speech&&<div className="trading-speech" role="status">{message||(christmas.active ? seasonalGreeting[vi?'vi':'en'] : shopGreetings[vi?'vi':'en'][greetingIndex])}</div>}
   {christmas.active && <div className="christmas-chest-pedestal" aria-hidden="true">
     <i className="pedestal-stocking"/><i className="pedestal-candy"/><i className="pedestal-stocking"/>
   </div>}

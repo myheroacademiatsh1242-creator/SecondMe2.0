@@ -18,7 +18,9 @@ function setup(t:TestContext, packRevive = false){
 }
 test('Calling replenishes charges up to six with a ring and does not consume at the cap',t=>{
  const {g}=setup(t);g.limitRingActive=true;g.echoCharges=3;
- assert.ok(g.useEchoRune('call'));assert.equal(g.echoCharges,4);assert.ok(g.useEchoRune('call'));assert.equal(g.echoCharges,5);
+ g.campaign.runeLoadout=['call','call'];
+ assert.ok(g.useEchoRune('call',0));assert.equal(g.echoCharges,4);assert.equal(g.useEchoRune('call',0),false);
+ assert.ok(g.useEchoRune('call',1));assert.equal(g.echoCharges,5);
  assert.equal(g.useEchoRune('call'),false);assert.equal(g.campaign.echoRunes.call,8);
 });
 test('Endurance protects existing and newly summoned Echoes, but does not buff hero health',t=>{
@@ -32,6 +34,7 @@ test('Endurance reduces paused drain; swapping retains its fixed 30 point cost',
 });
 test('Restoration heals all current Echoes, caps at 100, does not revive and cannot waste stock',t=>{
  const {g,summon,hit}=setup(t);const a=summon(),b=summon(700,300),c=summon(800,300);a.stability=20;b.stability=85;hit(c,100);
+ g.campaign.runeLoadout=['restore','restore'];
  assert.ok(g.useEchoRune('restore'));assert.equal(a.stability,70);assert.equal(b.stability,100);assert.equal(g.echoes.length,2);assert.equal(g.campaign.echoRunes.restore,9);
  g.useEchoRune('restore');assert.equal(a.stability,100);assert.equal(g.useEchoRune('restore'),false);assert.equal(g.campaign.echoRunes.restore,8);
 });
@@ -57,8 +60,13 @@ test('every rune is usable only in trails 2–6 and cannot spend inventory outsi
   g.screen=screen;for(const id of ids)assert.equal(g.useEchoRune(id),false,screen+':'+id);
  }
  for(let index=0;index<6;index++){
-  g.currentLevelIdx=index;g.restartLevel();g.currentLevel.walls=[];g.currentLevel.doors=[];g.echoCharges=1;const echo=summon();echo.stability=40;
-  for(const id of ids){g.campaign.runeLoadout=[id];const before=g.campaign.echoRunes[id]!;assert.equal(g.useEchoRune(id),index>0,`level ${index+1}: ${id}`);assert.equal(g.campaign.echoRunes[id],before-(index>0?1:0));}
+  for(const id of ids){
+   g.campaign.runeLoadout=[id];g.currentLevelIdx=index;g.restartLevel();g.currentLevel.walls=[];g.currentLevel.doors=[];
+   g.echoCharges=1;summon().stability=40;
+   const before=g.campaign.echoRunes[id]!;
+   assert.equal(g.useEchoRune(id),index>0,`level ${index+1}: ${id}`);
+   assert.equal(g.campaign.echoRunes[id],before-(index>0?1:0));
+  }
  }
 });
 test('older saves preserve individual rune counts and pending choices',()=>{
@@ -71,7 +79,7 @@ test('single rune rolls reach all twelve runes with equally-sized random interva
  assert.deepEqual(ECHO_RUNES.map((_,i)=>rollEchoRune(()=>(i+.5)/ECHO_RUNES.length)),ECHO_RUNES.map(r=>r.id));
 });
 
-test('offense build combines power, execution, siphon and splash without retaining removed buffs', t => {
+test('offense build combines its buffs and cannot swap runes during the attempt', t => {
  const {g,summon,combat}=setup(t);
  const echo=summon();
  const template=createEnemies(g.currentLevel)[0];
@@ -86,10 +94,10 @@ test('offense build combines power, execution, siphon and splash without retaini
  assert.equal(target.hp,.625);
  assert.equal(neighbor.hp,92.2);
  assert.equal(echo.stability,64);
- assert.ok(g.setRuneSlot(0,'rapid'));
- assert.equal(g.activeEchoRunes.has('power'),false);
+ assert.equal(g.setRuneSlot(0,'rapid'),false);
+ assert.equal(g.activeEchoRunes.has('power'),true);
  assert.equal(g.useEchoRune('power'),false);
- assert.ok(g.useEchoRune('rapid'));
+ assert.equal(g.useEchoRune('rapid'),false);
  assert.equal(g.activeEchoRunes.size,4);
 });
 

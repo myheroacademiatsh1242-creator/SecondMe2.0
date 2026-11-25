@@ -70,6 +70,8 @@
  font-size: 18px !important;
 }
 #root .pause-menu--pixel .pause-menu-options { margin: 0 }
+#root .pause-menu--pixel .pause-menu-options { grid-auto-rows: 1fr }
+#root .pause-menu--pixel .pause-menu-options:has(> button:nth-child(5)) > button:last-child { grid-column: 1 / -1 }
 
 @media (min-width: 720px) {
  #root .adventure-app .pause-menu.pause-menu--pixel {
@@ -100,6 +102,23 @@
  #root .pause-menu--pixel .pause-quests { grid-column: 2; grid-row: 1 }
  #root .pause-menu--pixel :is(.pause-menu-resume, .pause-menu-options) { grid-column: 1 / -1 }
  #root .pause-menu--pixel .pause-menu-options { grid-template-columns: repeat(4, minmax(0, 1fr)) }
+ #root .pause-menu--pixel .pause-menu-options:has(> button:nth-child(5)) { grid-template-columns: repeat(6, minmax(0, 1fr)) }
+ #root .pause-menu--pixel .pause-menu-options:has(> button:nth-child(5)) > button { grid-column: span 2 }
+ #root .pause-menu--pixel .pause-menu-options > button:nth-child(4):has(+ button) { grid-column: 2 / span 2 }
+ #root .pause-menu--pixel .pause-menu-options:has(> button:nth-child(5)) > button:last-child { grid-column: 4 / span 2 }
+}
+
+@media (min-width: 720px) and (min-height: 620px) {
+ #root .adventure-app .pause-menu.pause-menu--pixel {
+  width: min(800px, calc(100vw / var(--desktop-scale, 1) - 32px), calc((100dvh / var(--desktop-scale, 1) - 32px) * 4 / 3));
+  aspect-ratio: 4 / 3;
+  justify-content: center;
+ }
+ #root .pause-menu--pixel[data-panel-art='ready']::before {
+  border-image: none;
+  background: url('/assets/ui/pause-forest-frame.png') center / contain no-repeat;
+ }
+ #root .pause-menu--pixel[data-panel-art='ready'] .pause-menu-crest { top: 7.92%; }
 }
 
 @media (max-height: 520px) {

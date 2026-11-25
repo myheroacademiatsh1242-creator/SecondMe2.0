@@ -29,11 +29,12 @@ test('rewards add to stock even when all four slots are full',()=>{
  c.pendingRuneChoices=['cleave'];assert.equal(c.chooseRune('cleave'),true);assert.equal(c.echoRunes.cleave,2);assert.deepEqual(c.runeLoadout,before);
  c.reset();assert.deepEqual(c.runeLoadout,[]);
 });
-test('editing freezes combat and timers, leaves active buffs intact, then gameplay resumes',t=>{
+test('the loadout stays locked during play and pause and can change at camp',t=>{
  const old=Object.getOwnPropertyDescriptor(globalThis,'document');Object.defineProperty(globalThis,'document',{configurable:true,value:{body:{dataset:{}}}});t.after(()=>old?Object.defineProperty(globalThis,'document',old):Reflect.deleteProperty(globalThis,'document'));
  const g=new GameEngine();g.currentLevelIdx=1;g.restartLevel();g.tutorialEnabled=false;g.campaign.echoRunes.guard=2;g.activeEchoRunes.add('guard');const time=g.legTimeRemaining;
- g.setRuneEditing(true);(g as any).update(1);assert.equal(g.legTimeRemaining,time);assert.ok(g.setRuneSlot(0,'guard'));assert.ok(g.activeEchoRunes.has('guard'));assert.equal(g.campaign.echoRunes.guard,2);assert.equal(g.useEchoRune('guard'),false);
- g.setRuneEditing(false);(g as any).update(.1);assert.ok(g.legTimeRemaining!<time!);
+ assert.equal(g.setRuneSlot(0,'guard'),false);assert.ok(g.activeEchoRunes.has('guard'));assert.equal(g.campaign.echoRunes.guard,2);
+ g.pauseGame();assert.equal(g.setRuneSlot(0,'guard'),false);assert.equal(g.legTimeRemaining,time);
+ g.goToLobby();assert.ok(g.setRuneSlot(0,'guard'));
 });
 
 

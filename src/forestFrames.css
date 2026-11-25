@@ -45,7 +45,7 @@ html body .adventure-app .inventory-modal .inventory-rune-slots>button.inspectin
 html body .adventure-app .inventory-modal .inventory-section-title{color:#e3cc8c!important}
 html body .adventure-app .inventory-modal :is(.inventory-heading,.inventory-scroll,.inventory-footer){padding-inline:32px}
 /* Existing illustrated frames remain; their inset surfaces now share the stone palette. */
-html body :is(.reward-flow,.forest-defeat)::after{background:#34372bf2!important}
+html body .forest-defeat::after{background:#34372bf2!important}
 html body .trading-catalogue::after{background:#34372b!important}
 html body .trading-outfits{background:#34372b;color:#e7d29a}
 html body .trading-items>button{border-width:1px}

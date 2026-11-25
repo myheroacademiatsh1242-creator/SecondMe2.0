@@ -33,7 +33,7 @@
 .adventure-app .inventory-modal .inventory-supplies small{font-size:13px!important;line-height:1.4}
 .adventure-app .inventory-modal .inventory-supplies article>button{grid-column:3;grid-row:1;min-width:60px;align-self:center;padding:8px}
 .adventure-app .inventory-modal .inventory-runes-title{position:static;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 14px;height:auto}
-.adventure-app .inventory-modal .inventory-runes-title>button{position:static;font-size:14px!important;white-space:nowrap}
+.adventure-app .inventory-modal .inventory-runes-title>button{position:relative;font-size:14px!important;white-space:nowrap}
 .adventure-app .inventory-modal .inventory-rune-slots{position:static;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;height:auto}
 .adventure-app .inventory-modal .inventory-rune-slots>button{min-width:0;min-height:130px;height:auto;padding:16px 6px 10px;background:#1b3022!important;border:1px solid #63764f!important;box-shadow:none!important;gap:6px}
 .adventure-app .inventory-modal .inventory-rune-slots>button.inspecting{background:#35432a!important;border-color:#dbc27d!important}

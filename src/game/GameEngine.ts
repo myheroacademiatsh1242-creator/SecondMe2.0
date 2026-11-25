@@ -53,7 +53,7 @@ import {
   updateSecurityDoors,
   checkExitReached,
 } from './logic/puzzle.ts';
-import { LEVELS, levelAt, TRAINING_IDX, TRAINING_LEVEL_ID } from './logic/levels.ts';
+import { LEVELS, levelAt, TRAINING_IDX, TRAINING_LEVEL_ID, CHRISTMAS_TRAIL_IDX } from './logic/levels.ts';
 import { TrainingStats } from './logic/training.ts';
 import { sounds } from './logic/sound.ts';
 import { GameRenderer } from './rendering/renderer.ts';
@@ -131,6 +131,9 @@ export interface HUDState {
   echoRunes?:EchoRuneStock;
   runeLoadout?:EchoRuneId[];
   activeEchoRunes?:EchoRuneId[];
+  spentRuneSlots?:number[];
+  newItems?:boolean;
+  newRunes?:boolean;
   pendingRuneChoices?:EchoRuneId[];
   enemiesRemaining?:number;
   health: number;
@@ -409,6 +412,7 @@ export class GameEngine {
   public lastReward: number | null = null;
   public lastRuneReward:EchoRuneId|null=null;
   public activeEchoRunes=new Set<EchoRuneId>();
+  private spentRuneSlots=new Set<number>();
   public enemies:Enemy[]=[];
   /** Damage readout of the dev training ground (logic/training.ts). */
   public training = new TrainingStats();
@@ -672,7 +676,13 @@ export class GameEngine {
   }
 
   public goToLobby() {
+    if(this.christmasReturn){
+      this.currentLevelIdx=this.christmasReturn.index;
+      this.currentLevel=this.christmasReturn.level;
+      this.christmasReturn=null;
+    }
     this.activeEchoRunes.clear();
+    this.spentRuneSlots.clear();
     voice.stopAll();
     this.screen = 'lobby';
     this.heldKeys.clear();
@@ -722,6 +732,19 @@ export class GameEngine {
     if (!this.campaign.claimChristmasGift()) return false;
     sounds.playFeedback('purchase');
     this.notifyHUD();
+    return true;
+  }
+
+  private christmasReturn: {index:number;level:LevelData}|null=null;
+  public get isChristmasTrail(){return this.currentLevelIdx===CHRISTMAS_TRAIL_IDX;}
+  public get canPlayChristmasTrail(){
+    return this.campaign.bossDefeated && !this.campaign.pendingRuneChoices.length &&
+      (this.devSeasonPreview==='christmas'||(this.devSeasonPreview==='auto'&&christmasSeason()!==null));
+  }
+  public startChristmasTrail(){
+    if(!this.canPlayChristmasTrail||this.orientationBlocked||!['intro','lobby','shop'].includes(this.screen))return false;
+    this.christmasReturn={index:this.currentLevelIdx,level:this.currentLevel};
+    this.enterLevel(CHRISTMAS_TRAIL_IDX);
     return true;
   }
 
@@ -785,6 +808,8 @@ export class GameEngine {
   public startGame() {
     if(this.campaign.pendingRuneChoices.length){this.goToLobby();return;}
     this.campaign.reset();
+    this.lootSnapshot = undefined;
+    this.newLoot = { items:false, runes:false };
     this.currentLevelIdx = 0;
     this.screen = 'playing';
     document.body.dataset.state = 'playing';
@@ -829,30 +854,32 @@ export class GameEngine {
     this.beginLevel();
   }
 
-  public requestBattleStart(start: () => void) {
+  public get battlePreparationUnlocked() { return this.campaign.completed.includes(2); }
+
+  public requestBattleStart(start: () => void, prepare = false) {
     if (this.pendingBattleStart || this.orientationBlocked || this.bossIntroduction) return;
     if (this.screen === 'playing' && !this.canOpenCombatInventory()) return;
-    // Let new players learn the first two trails before introducing equipment.
-    if (!this.campaign.completed.includes(2)) { start(); this.notifyHUD(); return; }
+    if (!prepare || !this.battlePreparationUnlocked) { start(); this.notifyHUD(); return; }
     this.pendingBattleStart = start;
     this.heldKeys.clear();
     this.notifyHUD();
   }
-  public requestBattleRetry() {
+  public requestBattleRetry(prepare = false) {
     if (this.campaign.pendingRuneChoices.length) { this.goToLobby(); return; }
-    this.requestBattleStart(() => this.restartLevel());
+    this.requestBattleStart(() => this.restartLevel(), prepare);
   }
   public requestNextBattle() {
+    if(this.isChristmasTrail){this.goToLobby();return;}
     if (this.campaign.pendingRuneChoices.length) return;
     if (!this.canSelectLevel(this.currentLevelIdx + 1)) { this.nextLevel(); return; }
     this.requestBattleStart(() => this.nextLevel());
   }
   public canConfirmBattleStart() {
-    return !!this.pendingBattleStart && (this.campaign.itemLoadout.length > 0 || !this.campaign.hasPackableItems());
+    return !!this.pendingBattleStart;
   }
   public confirmBattleStart() {
     const start = this.pendingBattleStart;
-    if (!start || !this.canConfirmBattleStart()) return;
+    if (!start) return;
     this.pendingBattleStart = null;
     start();
     this.notifyHUD();
@@ -923,6 +950,7 @@ export class GameEngine {
     this.bossStepDistance = 0;
     this.bossDeathPending = false;
     this.lastReward = null;this.lastRuneReward=null;this.activeEchoRunes.clear();
+    this.spentRuneSlots.clear();
   }
 
   private beginLevel() {
@@ -2080,7 +2108,7 @@ export class GameEngine {
   public runeEditing=false;
   public setRuneEditing(open:boolean){this.runeEditing=open;this.heldKeys.clear();}
   public setRuneSlot(slot:number,id:EchoRuneId|null):boolean{
-    if(!['lobby','playing','paused','victory'].includes(this.screen))return false;
+    if(this.screen!=='lobby')return false;
     if(!this.campaign.setRuneSlot(slot,id))return false;
     sounds.playFeedback('rune');
     for (const active of this.activeEchoRunes) {
@@ -2092,15 +2120,19 @@ export class GameEngine {
     if(!['victory','lobby'].includes(this.screen)||!this.campaign.chooseRune(id))return false;
     sounds.playFeedback('rune');this.lastRuneReward=id;this.notifyHUD();return true;
   }
-  public canUseEchoRune(id:EchoRuneId):boolean {
-    if(!this.campaign.runeLoadout.includes(id))return false;
+  private nextRuneSlot(id:EchoRuneId):number {
+    return this.campaign.runeLoadout.findIndex((rune,slot)=>rune===id&&!this.spentRuneSlots.has(slot));
+  }
+  public canUseEchoRune(id:EchoRuneId,slot=this.nextRuneSlot(id)):boolean {
+    if(slot<0||slot>=4||this.campaign.runeLoadout[slot]!==id||this.spentRuneSlots.has(slot))return false;
     if(this.orientationBlocked||this.runeEditing||this.screen!=='playing'||this.currentLevel.id<2||(this.boss&&this.boss.hp<=0)||this.bossDeathPending||this.exitTravelRemaining>0||this.guides.blocking||!((this.campaign.echoRunes[id]??0)>0))return false;
     if(id==='call')return this.echoCharges+(this.echoFreeSummon?1:0)<this.echoLimit;
     if(id==='restore')return this.echoes.some(e=>(e.stability??100)<100);
     return !this.activeEchoRunes.has(id);
   }
-  public useEchoRune(id:EchoRuneId):boolean {
-    if(!ECHO_RUNES.some(r=>r.id===id)||!this.canUseEchoRune(id)||!this.campaign.spendRune(id))return false;
+  public useEchoRune(id:EchoRuneId,slot=this.nextRuneSlot(id)):boolean {
+    if(!ECHO_RUNES.some(r=>r.id===id)||!this.canUseEchoRune(id,slot)||!this.campaign.spendRune(id))return false;
+    this.spentRuneSlots.add(slot);
     if(id==='call')this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);
     else if(id==='restore')for(const echo of this.echoes){
       const before = echo.stability ?? 100;
@@ -2296,8 +2328,8 @@ export class GameEngine {
 
     // Movement is held in heldKeys; one-shot actions must run once per press.
     if (e.repeat) return;
-    if(this.tutorialEnabled&&this.guides.blocking){
-      if(e.code==='Escape'){if(this.guides.active)this.dismissGuide();else this.closeGuide();}
+    if(this.guides.blocking){
+      if(e.code==='Escape')this.closeGuide();
       return;
     }
     if (this.bossDeathPending && this.boss?.kind !== 'demon') return;
@@ -3110,10 +3142,12 @@ export class GameEngine {
   private handleVictory() {
     if(this.screen!=='playing')return;
     if(this.isTraining){this.goToLobby();return;}   // no rating, reward or progress
-    this.campaign.recordHeroClear(this.characterClass,this.currentLevel.id);
+    if(!this.isChristmasTrail){
+      this.campaign.recordHeroClear(this.characterClass,this.currentLevel.id);
       this.lastRating = this.campaign.completeLevel(this.currentLevel.id, this.elapsedLevelTime);
-    this.lastRuneReward=this.campaign.lastRuneDrop;
-    this.lastReward = this.campaign.award(this.currentLevel.id) ? this.currentLevel.id : null;
+      this.lastRuneReward=this.campaign.lastRuneDrop;
+      this.lastReward = this.campaign.award(this.currentLevel.id) ? this.currentLevel.id : null;
+    }
     this.screen = 'victory';
     document.body.dataset.state = 'gameover';
     sounds.playVictory();
@@ -3165,8 +3199,28 @@ export class GameEngine {
     finishPixelFrame(this.ctx,this.canvas);
   }
 
+  private lootSnapshot: { items:number[]; runes:number[] } | undefined;
+  private newLoot = { items:false, runes:false };
+
+  public markLootSeen(group: 'items' | 'runes') {
+    if (!this.newLoot[group]) return;
+    this.newLoot[group] = false;
+    this.notifyHUD();
+  }
+
   private notifyHUD() {
     if (this.onHUDChange) {
+      const loot = {
+        items: [...SHOP_ITEMS.map(({id})=>this.campaign.shopStock(id)),this.campaign.chestKeys,this.campaign.whiteCrystals,this.campaign.mysticCrystals],
+        runes: ECHO_RUNES.map(({id})=>this.campaign.echoRunes[id]??0),
+      };
+      const previousLoot = this.lootSnapshot;
+      if (previousLoot) {
+        for (const group of ['items','runes'] as const) {
+          if (loot[group].some((count,index)=>count>previousLoot[group][index])) this.newLoot[group]=true;
+        }
+      }
+      this.lootSnapshot = loot;
       const finalGate = this.currentLevel.doors.at(-1);
       const echoState: EchoStatus = this.echo?.status??'none';
 
@@ -3197,7 +3251,8 @@ export class GameEngine {
         elapsedLevelTime: this.elapsedLevelTime,
         completed: [...this.campaign.completed],
         lastReward: this.lastReward,
-        lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
+        newItems:this.newLoot.items,newRunes:this.newLoot.runes,
+        lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],spentRuneSlots:[...this.spentRuneSlots],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
         itemLoadout: [...this.campaign.itemLoadout], carriedItems: [...this.carriedItems], preparingBattle: !!this.pendingBattleStart,
         bossHp: this.boss?.hp ?? 0,bossMaxHp:this.boss?.maxHp??GUARDIAN_HP,bossKind:this.boss?.kind,

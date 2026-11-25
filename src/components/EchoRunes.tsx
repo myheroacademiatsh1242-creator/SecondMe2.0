@@ -8,23 +8,31 @@ import './EchoRunes.css';
 import {RuneRewardRoll} from './RuneRewardRoll.tsx';
 import './RuneLoadout.css';
 export function EchoRuneStock({hud,engine,compact=false,summaryOnly=false}:{hud:HUDState;engine?:GameEngine|null;compact?:boolean;summaryOnly?:boolean}){
- const vi=hud.language==='vi',boss=(engine?.currentLevel.id??1)>=2&&hud.screen==='playing';
+ const vi=hud.language==='vi';
  const [editing,setEditing]=useState(false);
- const [editSlot,setEditSlot]=useState(0);
+ const editingAllowed=hud.screen==='lobby';
  const [peek,setPeek]=useState<{id:EchoRuneId;left:number;top:number;bottom:number;width:number}|null>(null);
  const preview=(id:EchoRuneId,element:HTMLButtonElement)=>{const rect=element.getBoundingClientRect();setPeek({id,left:rect.left,top:rect.top,bottom:rect.bottom,width:rect.width});};
  useEffect(()=>{const hide=()=>setPeek(null);const outside=(event:PointerEvent)=>{if(!(event.target as Element)?.closest('.echo-rune'))hide();};window.addEventListener('resize',hide);window.addEventListener('scroll',hide,true);window.addEventListener('pointerdown',outside);return()=>{window.removeEventListener('resize',hide);window.removeEventListener('scroll',hide,true);window.removeEventListener('pointerdown',outside);};},[]);
  const info=peek&&ECHO_RUNES.find(r=>r.id===peek.id),tipWidth=Math.min(340,typeof window==='undefined'?340:window.innerWidth-24),above=!!peek&&peek.top>=140;
 
- const runes=(hud.runeLoadout??[]).slice(0,4).map((id,slot)=>({rune:ECHO_RUNES.find(r=>r.id===id)!,slot})).filter(({rune:r})=>r&&((hud.echoRunes?.[r.id]??0)>0||hud.activeEchoRunes?.includes(r.id)));
+ const loadout=(hud.runeLoadout??[]).slice(0,4);
+ const runes=Array.from({length:compact?4:loadout.length},(_,slot)=>({rune:ECHO_RUNES.find(r=>r.id===loadout[slot]),slot}));
  if(!hud.completed.includes(1)&&!hud.devUnlocked)return null;
  return <section className={compact?'echo-runes quick-runes':'echo-runes'} aria-label={vi?'Ấn nâng Echo':'Echo upgrade runes'}>
-  <p>{vi?'ẤN ĐÃ CHỌN · 4 Ô':'CHOSEN RUNES · 4 SLOTS'} <button className="rune-edit-link" onClick={()=>{setPeek(null);setEditing(true);}}>{vi?'ĐỔI RUNE':'CHANGE RUNES'}</button></p>{editing&&<RuneLoadoutEditor hud={hud} engine={engine??null} initialSlot={editSlot} close={()=>setEditing(false)}/>}
+  <p>{compact?(vi?'ẤN ECHO':'ECHO RUNES'):(vi?'ẤN ĐÃ CHỌN · 4 Ô':'CHOSEN RUNES · 4 SLOTS')} {editingAllowed&&<button className="rune-edit-link" onClick={()=>{setPeek(null);setEditing(true);}}>{vi?'ĐỔI RUNE':'CHANGE RUNES'}</button>}</p>{editingAllowed&&editing&&<RuneLoadoutEditor hud={hud} engine={engine??null} close={()=>setEditing(false)}/>}
   <div className="echo-rune-list">{runes.map(({rune:r,slot})=>{
-   const count=hud.echoRunes?.[r.id]??0,active=hud.activeEchoRunes?.includes(r.id),available=engine?.canUseEchoRune(r.id)??false;
+   if(!r)return compact?<div key={slot} className="echo-rune empty-rune" aria-label={vi?`Ô rune trống ${slot+1}`:`Empty rune slot ${slot+1}`}><span aria-hidden="true">–</span></div>:null;
+   const count=hud.echoRunes?.[r.id]??0;
+   const spent=!!hud.spentRuneSlots?.includes(slot);
+   const active=spent&&hud.activeEchoRunes?.includes(r.id);
+   const available=engine?.canUseEchoRune(r.id,slot)??false;
+   if(!compact&&!count&&!active)return null;
    const detail=vi?r.detailVi:r.detailEn,name=vi?r.vi:r.en;
-   return <button key={`${r.id}-${slot}`} type="button" className={`echo-rune ${active?'rune-active':''}`} disabled={!compact&&!summaryOnly&&!available} style={{color:r.color}} title={summaryOnly?undefined:compact&&!available?`${vi?'Bấm để đổi Rune':'Click to change rune'}: ${name}. ${detail}`:`${name}: ${detail}${!boss?(vi?' Chỉ dùng trong màn 2–12.':' Levels 2–12 only.'):''}`} aria-describedby={summaryOnly&&peek?.id===r.id?'rune-function':undefined} onMouseEnter={e=>{if(summaryOnly)preview(r.id,e.currentTarget);}} onMouseLeave={()=>{if(summaryOnly)setPeek(null);}} onFocus={e=>{if(summaryOnly)preview(r.id,e.currentTarget);}} onBlur={()=>setPeek(null)} aria-label={`${r.glyph} ${name} ×${count}. ${detail}${active?(vi?' Đang hiệu lực.':' Active.'):''}`} onClick={e=>{if(summaryOnly)preview(r.id,e.currentTarget);else if(available)engine?.useEchoRune(r.id);else if(compact){setEditSlot(slot);setEditing(true);}}}>
-    <span className="stock-rune-stone"><RuneStone id={r.id}/></span><strong>{name}</strong><small>{active?(vi?'ĐANG HIỆU LỰC':'ACTIVE'):`× ${count}`}</small>{!compact&&!summaryOnly&&<em>{detail}</em>}
+   const state=active?(vi?'Đang hiệu lực.':'Active.'):spent?(vi?'Đã dùng.':'Spent.'):!available&&compact?(vi?'Chưa thể dùng.':'Unavailable right now.'):'';
+   const label=`${name}${compact?'':` ×${count}`}. ${detail} ${state}`.trim();
+   return <button key={slot} type="button" className={`echo-rune${active?' rune-active':''}${spent?' rune-spent':''}`} disabled={!compact&&!summaryOnly&&!available} aria-disabled={compact&&!available?true:undefined} style={{color:r.color}} title={summaryOnly?undefined:label} aria-describedby={summaryOnly&&peek?.id===r.id?'rune-function':undefined} onMouseEnter={e=>{if(summaryOnly)preview(r.id,e.currentTarget);}} onMouseLeave={()=>{if(summaryOnly)setPeek(null);}} onFocus={e=>{if(summaryOnly)preview(r.id,e.currentTarget);}} onBlur={()=>setPeek(null)} aria-label={label} onClick={e=>{if(summaryOnly)preview(r.id,e.currentTarget);else if(available)engine?.useEchoRune(r.id,slot);}}>
+    <span className="stock-rune-stone"><RuneStone id={r.id}/></span>{!compact&&<strong>{name}</strong>}{compact?(spent&&<small aria-hidden="true">{active?'✓':'–'}</small>):<small>× {count}</small>}{!compact&&!summaryOnly&&<em>{detail}</em>}
    </button>;
   })}</div>
   {summaryOnly&&peek&&info&&createPortal(<div lang={vi?'vi':'en'} className="rune-function-tip" id="rune-function" role="tooltip" style={{width:tipWidth,left:Math.max(12,Math.min(window.innerWidth-tipWidth-12,peek.left+peek.width/2-tipWidth/2)),top:above?peek.top-9:peek.bottom+9,transform:above?'translateY(-100%)':undefined,maxHeight:above?peek.top-20:window.innerHeight-peek.bottom-20}}><strong style={{color:info.color}}>{vi?info.vi:info.en}</strong><p>{vi?info.detailVi:info.detailEn}</p><small>{vi?'Chỉ xem công năng · Không tiêu hao ấn':'Preview only · No rune consumed'}</small></div>,document.body)}
@@ -39,6 +47,7 @@ export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:
  const winter = useChristmas(engine?.devSeasonPreview).active;
  const panelArt=usePanelArt(PANEL_ART.inventory);
  const {closing,close}=useDialogClose(onClose);
+ useEffect(()=>engine?.markLootSeen('runes'),[engine]);
  const vi=hud.language==='vi',selected=(hud.runeLoadout??[]).slice(0,4),[slot,setSlot]=useState(Math.min(initialSlot,selected.length,3)),owned=ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0);
  useEffect(()=>{engine?.setRuneEditing(true);const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}};window.addEventListener('keydown',key,true);return()=>{engine?.setRuneEditing(false);window.removeEventListener('keydown',key,true);};},[engine,close]);
  const [notice,setNotice]=useState('');
@@ -101,14 +110,13 @@ export function RuneStone({id}:{id:string}){
 
 
 export const RUNE_SHORT:Record<EchoRuneId,[string,string]>={
- call:['+1 lượt gọi Echo','+1 Echo summon'],guard:['Echo chịu ít hơn 35% sát thương','Echo takes 35% less damage'],power:['Echo +30% sát thương','Echo damage +30%'],lure:['Echo truy đuổi nhanh hơn 25%','Echo pursuit speed +25%'],restore:['Mọi Echo +50 ổn định','All Echoes: +50 stability'],rapid:['Echo đánh nhanh hơn 20%','Echo attack cooldown −20%'],vamp:['Đánh trúng: Echo +4 ổn định','Echo hit: +4 stability'],cleave:['Lan 40% sát thương, tối đa 2 địch','40% splash to up to 2 foes'],anchor:['Echo giữ rune khi giao chiến','Echo holds its rune in combat'],regen:['Ngoài giao chiến: +2 ổn định/giây','Out of combat: +2 stability/sec'],swap:['Hoán đổi: 15 ổn định, hồi 4 giây','Swap: 15 stability, 4 sec cooldown'],execute:['+25% sát thương khi địch ≤30% HP','+25% damage against foes ≤30% HP']
+ call:['+1 lượt gọi Echo','+1 Echo summon'],guard:['−35% sát thương nhận và hao ổn định khi tạm dừng','−35% damage taken and paused stability drain'],power:['Echo +30% sát thương','Echo damage +30%'],lure:['Echo truy đuổi nhanh hơn 25%','Echo pursuit speed +25%'],restore:['Mọi Echo +50 ổn định','All Echoes: +50 stability'],rapid:['−20% hồi đòn tự đánh của Echo','Echo auto-attack cooldown −20%'],vamp:['Đánh trúng: Echo +4 ổn định','Echo hit: +4 stability'],cleave:['Lan 40% sát thương, tối đa 2 địch','40% splash to up to 2 foes'],anchor:['Echo giữ rune khi giao chiến','Echo holds its rune in combat'],regen:['Ngoài giao chiến: +2 ổn định/giây','Out of combat: +2 stability/sec'],swap:['Hoán đổi: 15 ổn định, hồi 4 giây','Swap: 15 stability, 4 sec cooldown'],execute:['+25% sát thương khi địch ≤30% HP','+25% damage against foes ≤30% HP']
 };
 
 export function RuneChoicePicker({hud,engine}:{hud:HUDState;engine:GameEngine|null}){
  const vi=hud.language==='vi';
  if(!hud.pendingRuneChoices?.length){const rune=ECHO_RUNES.find(r=>r.id===hud.lastRuneReward);return <div className="rune-claimed" role="status">{rune&&<span style={{color:rune.color}}><RuneStone id={rune.id}/></span>}<div><small>{vi?'ĐÃ NHẬN ẤN':'RUNE CLAIMED'}</small><h3>{rune?(vi?rune.vi:rune.en):(vi?'Phần thưởng đã nhận':'Reward collected')}</h3><p>{vi?'Đã cất vào túi · Dùng trong màn 2–12':'Added to inventory · Use in levels 2–12'}</p></div><b>✓</b></div>;}
- return <section className="rune-choice" aria-label={vi?'Chọn một ấn nâng Echo':'Choose one Echo rune'}>
-  <h3>{vi?'PHẦN THƯỞNG RUNE':'RUNE REWARD'}</h3>
+ return <section aria-label={vi?'Chọn một ấn nâng Echo':'Choose one Echo rune'}>
   <RuneRewardRoll choices={hud.pendingRuneChoices} vi={vi} reducedMotion={hud.reducedMotion} choose={id=>engine?.chooseRune(id)} renderRune={id=><RuneStone id={id}/>}/>
  </section>;
 }
@@ -117,6 +125,12 @@ export function RuneChoiceDialog({hud,engine}:{hud:HUDState;engine:GameEngine|nu
  return <PendingRuneDialog hud={hud} engine={engine}/>;
 }
 function PendingRuneDialog({hud,engine}:{hud:HUDState;engine:GameEngine|null}){
- const panelArt=usePanelArt(PANEL_ART.material);
- return <div className="modal-backdrop rune-choice-dialog"><div className="panel rune-choice-panel" data-panel-art={panelArt} role="dialog" aria-modal="true" aria-label={hud.language==='vi'?'Phần thưởng đang chờ':'Unclaimed rune reward'}><RuneChoicePicker hud={hud} engine={engine}/></div></div>;
+ const panelArt=usePanelArt(PANEL_ART.reward);
+ const vi=hud.language==='vi';
+ return <div className="modal-backdrop reward-flow-backdrop">
+  <section className="reward-flow" data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="pending-rune-title">
+   <header className="reward-flow-header"><h2 id="pending-rune-title">{vi?'Phần thưởng rune':'Rune reward'}</h2></header>
+   <div className="reward-flow-body"><RuneChoicePicker hud={hud} engine={engine}/></div>
+  </section>
+ </div>;
 }

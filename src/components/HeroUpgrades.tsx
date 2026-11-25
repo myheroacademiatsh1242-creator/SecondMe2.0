@@ -13,7 +13,8 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
   const format = new Intl.NumberFormat(vi ? 'vi-VN' : 'en-US');
   const spent = hud.heroUpgradeSpent?.[hero] ?? 0;
   const resetQuote = resetSpent === null ? null : heroResetQuote(resetSpent);
-  const heroName = hero === 'mage' ? 'Aeris' : 'Kael';
+  const heroName = hero === 'mage' ? 'Aeris' : hero === 'assassin' ? 'Crimson Veil' : 'Kael';
+  const role = hero === 'mage' ? (vi ? 'Pháp sư' : 'Mage') : hero === 'assassin' ? (vi ? 'Xạ thủ' : 'Marksman') : (vi ? 'Kiếm sĩ' : 'Swordsman');
   const coins = (amount: number) => `${format.format(amount)} ${vi ? 'xu' : 'coins'}`;
   useEffect(() => { dialog.current?.showModal(); }, []);
 
@@ -23,6 +24,8 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
     attack: { label: vi ? 'Sát thương cộng thêm' : 'Bonus damage', value: (s: ReturnType<typeof heroStats>) => `+${s.attackBonus}%` },
     specialty: mage
       ? { label: vi ? 'MP dùng Gai Băng' : 'Ice Spike MP cost', value: (s: ReturnType<typeof heroStats>) => `${skillManaCost(hero) - s.skillManaDiscount} MP` }
+      : hero === 'assassin'
+      ? { label: vi ? 'Chí mạng và hồi chiêu' : 'Crit and skill cooldown', value: (s: ReturnType<typeof heroStats>) => `+${Math.round(s.assassinCritBonus * 100)}% · −${s.assassinSkillCooldownDiscount.toLocaleString(vi?'vi-VN':'en-US',{maximumFractionDigits:2})}s` }
       : { label: vi ? 'Giảm sát thương nhận' : 'Damage reduction', value: (s: ReturnType<typeof heroStats>) => `${s.damageReduction}%` },
   };
   const current = heroStats(hero, ranks);
@@ -30,6 +33,8 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
     attack: vi ? 'Cấp 10 · Đòn thường hạ quái màn 1–2 trong một phát.' : 'Rank 10 · Basic attacks defeat enemies in levels 1–2 in one hit.',
     specialty: mage
       ? (vi ? 'Cấp 5 / 10 · Bán kính Gai Băng tăng 15 / 30 px.' : 'Rank 5 / 10 · Ice Spike radius grows by 15 / 30 px.')
+      : hero === 'assassin'
+      ? (vi ? 'Mỗi cấp thêm 1% tỉ lệ chí mạng và giảm 0,08 giây hồi Bóng Ma Đỏ.' : 'Each rank adds 1% crit chance and reduces Crimson Phantom cooldown by 0.08 sec.')
       : (vi ? 'Cấp 5 / 10 · Pháp trận kéo dài 7 / 9 giây.' : 'Rank 5 / 10 · Sanctuary lasts 7 / 9 seconds.'),
   };
 
@@ -42,7 +47,7 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
       <span aria-live="polite">{format.format(hud.coins)} {vi ? 'xu' : 'coins'}</span>
       <button type="button" className="icon-close" aria-label={vi ? 'Đóng' : 'Close'} onClick={close}><X size={18}/></button>
     </header>
-    <h3 className="hero-upgrade-name">{mage ? (vi ? 'Aeris · Pháp sư' : 'Aeris · Mage') : (vi ? 'Kael · Kiếm sĩ' : 'Kael · Swordsman')}</h3>
+    <h3 className="hero-upgrade-name">{heroName} · {role}</h3>
     <div className="hero-upgrade-list">
       {HERO_UPGRADE_STATS.map(key => {
         const stat = stats[key];
