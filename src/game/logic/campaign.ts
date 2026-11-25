@@ -10,7 +10,7 @@ export {TIME_ITEM_PRICE,TIME_ITEM_CAP} from './shopItems.ts';
 import {SHOP_ITEMS,ITEM_LOADOUT_LIMIT,carryItemLimit,emptySupplies,cleanSupplies,type PackedItem,type ShopItemId} from './shopItems.ts';
 import {isChestAvailable, rollChest, chestReward, CHEST_PRICES, chestBalance, type ChestKind, type ChestRewardId} from './chest.ts';
 import { DAMAGE, damagePoints } from './damage.ts';
-import { ECHO_RUNES, rollEchoRune, rollRuneChoices, cleanRuneChoices, cleanRuneStock, type EchoRuneId, type EchoRuneStock } from './echoRunes.ts';
+import { ECHO_RUNES, RUNE_STOCK_MAX, rollEchoRune, rollRuneChoices, runesBelowCap, cleanRuneChoices, cleanRuneStock, type EchoRuneId, type EchoRuneStock } from './echoRunes.ts';
 import { puzzleBalance } from './balance.ts';
 import { cleanHeroRanks, heroResetQuote, heroUpgradeCost, HERO_UPGRADE_PRICES, HERO_UPGRADE_STATS, isUpgradeHero, type HeroUpgradeStat } from './heroUpgrades.ts';
 // Temporarily unavailable while its art and gameplay are revised. Ownership is retained.
@@ -147,11 +147,11 @@ export class Campaign {
     return true;
   }
   grantRune(random:()=>number=Math.random):EchoRuneId {
-    const id=rollEchoRune(random);this.echoRunes[id]=Math.min(9999,(this.echoRunes[id]??0)+1);this.autoSlotRune(id);return id;
+    const id=rollEchoRune(random,runesBelowCap(this.echoRunes));this.echoRunes[id]=Math.min(RUNE_STOCK_MAX,(this.echoRunes[id]??0)+1);this.autoSlotRune(id);return id;
   }
   chooseRune(id:EchoRuneId):boolean {
     if(!ECHO_RUNES.some(r=>r.id===id)||!this.pendingRuneChoices.includes(id))return false;
-    this.echoRunes[id]=Math.min(9999,(this.echoRunes[id]??0)+1);this.autoSlotRune(id);this.lastRuneDrop=id;this.pendingRuneChoices=[];this.save();return true;
+    this.echoRunes[id]=Math.min(RUNE_STOCK_MAX,(this.echoRunes[id]??0)+1);this.autoSlotRune(id);this.lastRuneDrop=id;this.pendingRuneChoices=[];this.save();return true;
   }
   private autoSlotRune(id:EchoRuneId){if(this.runeLoadout.length<4&&!this.runeLoadout.includes(id))this.runeLoadout.push(id);}
   setRuneSlot(slot:number,id:EchoRuneId|null):boolean{
@@ -172,7 +172,7 @@ export class Campaign {
   }
   completeLevel(levelId: number, seconds: number, random:()=>number=Math.random) {
     this.lastRuneDrop=null;
-    if(levelId>=1&&levelId<=12&&levelId!==6&&this.pendingRuneChoices.length===0)this.pendingRuneChoices=rollRuneChoices();
+    if(levelId>=1&&levelId<=12&&levelId!==6&&this.pendingRuneChoices.length===0)this.pendingRuneChoices=rollRuneChoices(Math.random,this.echoRunes);
     const reward = levelRating(seconds,levelId);
     // A slow clear still earns coins, including when replaying a completed trail.
     if (Number.isInteger(levelId) && levelId >= 1 && levelId <= 13) {

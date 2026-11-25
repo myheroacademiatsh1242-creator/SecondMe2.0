@@ -1,4 +1,5 @@
 import { ENEMY_TIME_BONUS, SHARD_BONUS } from './balance.ts';
+import type { LevelData } from './types.ts';
 export const GUIDE_TOPICS = {
   ward:{vi:['Phá phong ấn','Viền tím và số lính gác cho biết ấn đang bị khóa. Đường nét đứt nối ấn với lính gác còn sống. Hạ hết lính được nối, rồi để Echo đứng trên ấn để giữ cổng.','Theo đường tím và hạ lính gác của ấn.'],en:['Unseal a rune','A purple ring and guard count mark a sealed rune. Dashed lines connect it to the living guards. Defeat those guards, then leave an Echo on the rune to hold the gate.','Follow the purple lines and defeat the linked guards.']},
   release:{vi:['Để trống ấn được chỉ định','Khi cổng hiện “Nhả ấn I”, hãy rời ấn I hoặc thu Echo đang giữ nó. Phím X thu Echo lâu nhất trên sân. “Ấn I trống” nghĩa là điều kiện này đã đạt. Các ấn có số cạnh cổng vẫn cần được giữ.','Rời ấn hoặc nhấn X để thu Echo cũ nhất.'],en:['Leave the marked rune empty','When a gate says “Release I”, step off rune I or recall the Echo holding it. X recalls the oldest active Echo. “Rune I empty” confirms this condition is met. Keep holding the runes numbered by the gate.','Step off the rune or press X to recall the oldest Echo.']},
@@ -46,7 +47,8 @@ export const QUICK_HINTS: Record<GuideTopic, readonly [string, string]> = {
 };
 
 const KEY = 'second-me-mechanics-guide-v1';
-const HINT_SECONDS = 4;
+/** Seconds a "new here" card stays up: long enough to read a title and one line. */
+const HINT_SECONDS = 6;
 
 export class TutorialDirector {
   active: GuideTopic | null = null;
@@ -112,4 +114,21 @@ export class TutorialDirector {
 
   replay(topic: GuideTopic) { this.active = topic; }
   closeLibrary() { this.reset(); }
+}
+
+/**
+ * The mechanics a level contains, for the "new here" card shown on entering it. The director only
+ * shows the ones the player has not seen yet, so each is introduced on the first level that has it.
+ */
+export function levelMechanicTopics(level: LevelData, hasEnemies: boolean): GuideTopic[] {
+  const topics: GuideTopic[] = [];
+  if (hasEnemies) topics.push('enemies');
+  if (level.doors.some(d => d.requiredPlates.length > 1)) topics.push('multi');
+  if (level.plates.some(p => p.wardLocked)) topics.push('ward');
+  if (level.doors.some(d => d.pulse)) topics.push('rhythm');
+  if (level.doors.some(d => d.releasedPlate)) topics.push('release');
+  for (const kind of ['vines', 'crusher', 'spikes', 'rocks'] as const) {
+    if (level.traps?.some(t => t.kind === kind)) topics.push(kind);
+  }
+  return topics;
 }

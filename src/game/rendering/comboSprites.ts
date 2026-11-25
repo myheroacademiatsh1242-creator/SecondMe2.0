@@ -168,7 +168,7 @@ export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine
     const y = t.y - k * 26;
     ctx.lineWidth = 4; ctx.strokeStyle = '#120b06';
     ctx.strokeText(t.text, t.x, y);
-    ctx.fillStyle = t.heavy ? '#ffd76a' : t.blocked ? '#9fb7c4' : '#fff4e0';
+    ctx.fillStyle = t.color ?? (t.heavy ? '#ffd76a' : t.blocked ? '#9fb7c4' : '#fff4e0');
     ctx.fillText(t.text, t.x, y);
   }
   ctx.restore();

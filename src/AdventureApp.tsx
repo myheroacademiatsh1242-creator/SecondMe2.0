@@ -1,8 +1,8 @@
 import {controls,touchVars} from './game/logic/controlSettings.ts';
 import {startGamepadControls} from './game/logic/gamepadControls.ts';
 import {MissionBriefing} from './components/MissionBriefing.tsx';
-import {connectTutorial} from './game/logic/tutorialBridge.ts';
-import {InteractiveCoach} from './components/InteractiveCoach.tsx';
+import './components/StoneFrame.css';
+import {KeyPromptLayer} from './components/KeyPromptLayer.tsx';
 import {PANEL_ART,warmPanelArt} from './components/panelArt.ts';
 
 import {sounds} from './game/logic/sound.ts';
@@ -87,7 +87,9 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
   useEffect(() => {
     const engine = new GameEngine(); ref.current = engine;
     engine.tutorialEnabled = true;
-    engine.missionBriefingEnabled = true;
+    // In-match help is the key prompt by the hero and the "new here" card (KeyPromptLayer); no blocking briefing or coach pop-ups.
+    engine.missionBriefingEnabled = false;
+    engine.touchControls = touchControls;
     engine.levelLoading = true;   // levels open through the loading screen
     if (gameDevToolsEnabled) (window as unknown as { __engine?: GameEngine }).__engine = engine;
     engine.setOrientationBlocked(readLandscapeRequirement());
@@ -102,11 +104,11 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
       setHud({ ...state });
     };
     engine.start(false, restoreCamp);
-    const disconnectTutorial=connectTutorial(engine,touchControls);
+
     const stopGamepad=startGamepadControls(engine);
     const unbindControls=controls.subscribe(()=>engine.clearControlInput());
     prepare?.(engine);
-    return () => {stopGamepad();unbindControls();disconnectTutorial();engine.stop();};
+    return () => {stopGamepad();unbindControls();engine.stop();};
   }, []);
   useEffect(()=>{
     const update=()=>{const blocked=readLandscapeRequirement();ref.current?.setOrientationBlocked(blocked);setPortraitBlocked(blocked);};update();
@@ -158,7 +160,10 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'victory' && <Completion engine={engine} hud={hud}/>}
     {(hud.screen === 'ending' || hud.screen === 'defeat') && <EndScreen engine={engine} hud={hud}/>}
     {!['lobby', 'playing', 'paused', 'loading', 'shop'].includes(hud.screen) && <FullscreenButton floating vi={hud.language === 'vi'}/>}
-    {hud.screen === 'paused' && !hud.missionBriefing && <PauseMenu engine={engine} hud={hud}/>}
+    {/* Retry from pause opens battle preparation; the pause menu (inert while it is open) must not cover it. */}
+    {hud.screen === 'paused' && !hud.missionBriefing && !hud.preparingBattle && <PauseMenu engine={engine} hud={hud}/>}
+    {/* The New card sits inside the stage, under the top bar, so it scales and stays with the arena. */}
+    {engine&&!filmPlaying&&!portraitBlocked&&!bossIntroVisible&&hud.screen==='playing'&&<KeyPromptLayer engine={engine} hud={hud} touch={touchControls}/>}
 
   </div>
     {hud.missionBriefing&&engine&&!portraitBlocked&&<MissionBriefing engine={engine} hud={hud} touch={touchControls}/>}
@@ -171,6 +176,5 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {bossIntroVisible && <div className="boss-intro-viewport" data-boss={hud.bossKind ?? 'guardian'} inert={portraitBlocked}>
       <BossIntro engine={engine} hud={hud}/>
     </div>}
-    {engine&&!filmPlaying&&!portraitBlocked&&!bossIntroVisible&&!hud.missionBriefing&&!choosingLobbyRune&&<InteractiveCoach engine={engine} hud={hud} touch={touchControls}/>}
   </main>);
 }

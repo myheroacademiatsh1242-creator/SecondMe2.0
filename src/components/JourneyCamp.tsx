@@ -26,6 +26,7 @@ const trailSegments = [
 const stops = [[215,725],[440,350],[690,630],[920,310],[1200,515],[1355,205]];
 const HERO_KEY = 'secondme.journeyHeroAt';
 import { ChristmasLights, ChristmasOrnaments, ChristmasSnow } from './ChristmasEvent.tsx';
+import { NewDot } from './FeatureIntro.tsx';
 
 export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,onUpgradeHero,onOpenInventory}:{engine:GameEngine|null;hud:HUDState;complete:boolean;next:number;christmas?:boolean;traveler?:React.ReactNode;onNews?:()=>void;onUpgradeHero:()=>void;onOpenInventory:()=>void}) {
   const vi=hud.language==='vi';
@@ -163,7 +164,7 @@ export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,o
         <CampHeroCaption engine={engine} hud={hud}/>
       </div>
       <CampHeroUpgrade hud={hud} onOpen={onUpgradeHero}/>
-      {(hud.completed.includes(1)||hud.devUnlocked)&&<div className="rest-kit"><div><span>{vi?'BỘ RUNE':'RUNE LOADOUT'}</span><p>{hud.runeLoadout?.length??0} / 4 {vi?'ấn đã chọn':'equipped'}</p></div><button className="rest-prepare" onClick={()=>setRuneEditor(true)}><Backpack size={18}/>{vi?'Đổi rune':'Edit runes'}</button></div>}
+      {(hud.completed.includes(1)||hud.devUnlocked)&&<div className="rest-kit"><div><span>{vi?'BỘ RUNE':'RUNE LOADOUT'}</span><p>{hud.runeLoadout?.length??0} / 4 {vi?'ấn đã chọn':'equipped'}</p></div><button className="rest-prepare" onClick={()=>setRuneEditor(true)}><Backpack size={18}/>{vi?'Đổi rune':'Edit runes'}<NewDot feature="runes"/></button></div>}
       <CampSupplyKit hud={hud} onOpen={onOpenInventory}/>
       <div className="rest-departure"><span>{complete?(vi?'HÀNH TRÌNH MỚI':'ANOTHER JOURNEY'):(vi?'ĐIỂM ĐẾN ĐÃ CHỌN':'SELECTED DESTINATION')}</span><div className="rest-destination"><b>{String(selected+1).padStart(2,'0')}</b><strong>{translate(LEVELS[selected].subtitle,hud.language)}</strong></div>
         <button className="camp-continue" disabled={!unlocked(selected)} onClick={()=>prepareStop(selected)}><Play size={19} fill="currentColor"/><span>{complete?(vi?'KHÁM PHÁ LẠI':'EXPLORE AGAIN'):hud.completed.includes(selected+1)?(vi?'CHƠI LẠI MÀN':'REPLAY TRAIL'):hud.completed.length?(vi?'TIẾP TỤC HÀNH TRÌNH':'CONTINUE JOURNEY'):(vi?'LÊN ĐƯỜNG':'BEGIN JOURNEY')}</span><ArrowRight size={18}/></button>

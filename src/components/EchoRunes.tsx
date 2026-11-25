@@ -33,6 +33,7 @@ export function EchoRuneStock({hud,engine,compact=false,summaryOnly=false}:{hud:
 }
 
 import {ChristmasPanelTrim,useChristmas} from './ChristmasEvent.tsx';
+import { FirstTip } from './FeatureIntro.tsx';
 
 export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:HUDState;engine:GameEngine|null;close:()=>void;initialSlot?:number}){
  const winter = useChristmas(engine?.devSeasonPreview).active;
@@ -64,7 +65,7 @@ export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:
   {winter&&<ChristmasPanelTrim still={hud.reducedMotion}/>}
   <div className="loadout-scenery" aria-hidden="true"><i/><i/><i/><i/></div>
   <div className="loadout-equipped">
-   <header><small>{vi?`ĐÃ CHỌN ${selected.length}/4 RUNE`:`${selected.length}/4 RUNES EQUIPPED`}</small><h2>{vi?'Chọn 4 rune mang theo':'Choose your four runes'}</h2></header>
+   <header><small>{vi?`ĐÃ CHỌN ${selected.length}/4 RUNE`:`${selected.length}/4 RUNES EQUIPPED`}</small><h2>{vi?'Chọn 4 rune mang theo':'Choose your four runes'}</h2></header><FirstTip feature="runes" vi={vi}/>
    <div className="loadout-slots">{Array.from({length:4},(_,i)=>{const r=ECHO_RUNES.find(r=>r.id===selected[i]);return <button key={i} aria-pressed={slot===i} onClick={()=>{setSlot(Math.min(i,selected.length));setSlotChosen(true);setNotice('');engine?.onboarding.event('rune-slot');}}><small>{i+1}</small>{r?<span className="slot-stone" style={{color:r.color}}><RuneStone id={r.id}/></span>:<span className="empty-socket" aria-hidden="true"><svg viewBox="0 0 48 56" shapeRendering="crispEdges"><path d="M9 4H39V10H43V46H37V52H11V46H5V10H9Z" fill="#171d18" stroke="#68725a" strokeWidth="2"/><path d="M24 15L34 28L24 41L14 28Z" fill="none" stroke="#58634d" strokeWidth="2"/><path d="M24 23V33M19 28H29" stroke="#75805f" strokeWidth="2"/></svg></span>}<span title={r?(vi?r.vi:r.en):undefined}>{r?(vi?r.vi:({restore:'Restore',power:'Amplify',guard:'Endure'} as Record<string,string>)[r.id]??r.en):(vi?'Trống':'Empty')}</span></button>;})}</div>
    <p className={`loadout-instruction ${notice?'loadout-warning':''}`} role="status" aria-live="polite">{notice||(vi?`Chọn ô ${slot+1}, rồi bấm rune muốn thay ở danh sách. Đổi ô không tiêu hao ấn.`:`Select slot ${slot+1}, then pick a rune from the library. Changing slots spends no runes.`)}</p>
    {compare&&<div className="loadout-comparison" aria-live="polite">

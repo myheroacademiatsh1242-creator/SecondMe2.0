@@ -42,6 +42,7 @@ import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, S
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { MECHANICAL_ENABLED } from '../game/logic/campaign.ts';
 import { LEVELS } from '../game/logic/levels.ts';
+import { NewDot } from './FeatureIntro.tsx';
 
 function CoinIcon() { return <img className="raccoon-coin" src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt="" aria-hidden="true"/>; }
 
@@ -327,7 +328,7 @@ export function Lobby({ engine, hud }: { engine: GameEngine | null; hud: HUDStat
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panel, bag, engine, hud.screen]);
-  return localize(<div className={`lobby-screen overlay journey-lobby${christmas.active ? ' christmas-lobby' : ''}`}><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud} winter={christmas.active}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button data-tutorial="bag" onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/></button><button disabled={!engine?.shopUnlocked} data-tutorial="shop" onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
+  return localize(<div className={`lobby-screen overlay journey-lobby${christmas.active ? ' christmas-lobby' : ''}`}><div className="lobby-canopy"/><header className="lobby-header"><button className="camp-brand" onClick={()=>engine?.goToMainMenu()} aria-label={hud.language==='vi'?'Về menu chính':'Back to main menu'}><SelectedCharacterAvatar hud={hud} winter={christmas.active}/><span><b>SECOND ME</b><small>ECHOES OF THE WILD</small></span></button><nav aria-label={hud.language==='vi'?'Tiện ích trại nghỉ':'Camp utilities'}><FullscreenButton vi={hud.language==='vi'}/><button data-tutorial="bag" onClick={()=>setBag(true)} aria-label={hud.language==='vi'?'Túi đồ':'Inventory'} title={hud.language==='vi'?'Túi đồ':'Inventory'}><Backpack size={22}/><NewDot feature="bag" show={hud.completed.includes(2)}/></button><button disabled={!engine?.shopUnlocked} data-tutorial="shop" onClick={()=>engine?.openShop()} aria-label={hud.language==='vi'?'Cửa hàng':'Shop'} title={hud.language==='vi'?'Cửa hàng':'Shop'}><ShoppingBasket size={22}/><NewDot feature="shop" show={!!engine?.shopUnlocked}/></button><button onClick={()=>setPanel('settings')} aria-label={hud.language==='vi'?'Cài đặt':'Settings'} title={hud.language==='vi'?'Cài đặt':'Settings'}><Settings size={22}/></button></nav></header>
     <JourneyCamp engine={engine} hud={hud} complete={complete} next={next} christmas={christmas.active} traveler={<SelectedCharacterAvatar hud={hud} winter={christmas.active}/>} onNews={()=>setPanel('news')} onUpgradeHero={()=>setPanel('heroUpgrades')} onOpenInventory={()=>setBag(true)}/>
     {panel==='heroUpgrades' && isUpgradeHero(hud.characterClass) && <HeroUpgrades engine={engine} hud={hud} hero={hud.characterClass} close={()=>setPanel('none')}/>}
     {bag&&<div className="modal-backdrop inventory-backdrop" onClick={()=>document.dispatchEvent(new Event('close-trail-inventory'))}><div className="panel inventory-modal forest-dialog" onClick={e=>e.stopPropagation()}><Inventory engine={engine} hud={hud} close={()=>setBag(false)}/></div></div>}
@@ -481,10 +482,21 @@ function LevelOneHUD({ engine, hud, openBag, inventory }: { engine: GameEngine |
     <aside className="level-one-left">
       <div className="level-one-sidebar-content">
         <div className="level-one-stat"><small>{vi ? 'MÀN CHƠI' : 'LEVEL'}</small><strong>{hud.training ? 'DEV' : <>{String(engine?.currentLevel.id ?? 1).padStart(2, '0')} <em>/ {String(LEVELS.length).padStart(2, '0')}</em></>}</strong></div>
-        <div className="level-one-stat"><small>{vi ? 'THỜI GIAN' : 'ELAPSED'}</small><strong>{time}</strong></div>
+        {/* One clock, in the same card style as the level: the leg countdown on timed levels, elapsed time otherwise. */}
+        {hud.legTimeRemaining !== null
+          ? <div className="level-one-stat level-one-clock" role="timer" aria-label={vi ? 'Thời gian còn lại' : 'Time remaining'}><small>{vi ? 'CÒN LẠI' : 'TIME LEFT'}</small><strong className={hud.legTimeRemaining <= 5 ? 'urgent' : undefined}>{hud.legTimeRemaining.toFixed(1)}<em>s</em></strong></div>
+          : <div className="level-one-stat"><small>{vi ? 'THỜI GIAN' : 'ELAPSED'}</small><strong>{time}</strong></div>}
         {boss && (
           <div className="level-one-stat"><small>{vi ? 'MÁU BOSS' : 'BOSS HP'}</small><strong>{hud.bossHp} <em>/ {hud.bossMaxHp ?? 240}</em></strong></div>
         )}
+        <div className="level-one-vitals">
+          <div className="vital vital-hp" role="meter" aria-label="HP" aria-valuenow={Math.ceil(hud.health)} aria-valuemin={0} aria-valuemax={hud.maxHealth ?? 100}>
+            <span><b>HP</b>{Math.ceil(hud.health)}/{hud.maxHealth ?? 100}</span><i><i style={{ width: `${Math.max(0, hud.health / (hud.maxHealth ?? 100) * 100)}%` }}/></i>
+          </div>
+          <div className="vital vital-mp" role="meter" aria-label="MP" aria-valuenow={Math.floor(hud.mana ?? 100)} aria-valuemin={0} aria-valuemax={hud.maxMana ?? 100}>
+            <span><b>MP</b>{Math.floor(hud.mana ?? 100)}/{hud.maxMana ?? 100}</span><i><i style={{ width: `${Math.max(0, (hud.mana ?? 100) / (hud.maxMana ?? 100) * 100)}%` }}/></i>
+          </div>
+        </div>
         <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
         <CombatItemSlots engine={engine} hud={hud}/>
       </div>
@@ -496,10 +508,6 @@ function LevelOneHUD({ engine, hud, openBag, inventory }: { engine: GameEngine |
     </aside>
     <header className="level-one-top">
       <div className="level-one-heading"><strong>{hud.levelSubtitle}</strong></div>
-      {hud.legTimeRemaining !== null && <div className="level-one-countdown" role="timer" aria-label={vi ? 'Thời gian còn lại' : 'Time remaining'}>
-        <span>{vi ? 'CÒN LẠI' : 'TIME LEFT'}</span>
-        <strong className={hud.legTimeRemaining <= 2 ? 'urgent' : undefined}>{hud.legTimeRemaining.toFixed(1)}s</strong>
-      </div>}
     </header>
     <div className="level-one-arena-overlay">
       {boss && <div className="boss-bar"><div><span>{hud.bossKind === 'demon' ? 'QUỶ TÂM HỎA' : 'THỦ VỆ BĂNG'}</span><small>{hud.bossHp} / {hud.bossMaxHp ?? 240} · {translate('GIAI ĐOẠN', hud.language)} {hud.bossPhase} / 3</small></div><div className="health-track boss-segments" role="progressbar" aria-label="Máu boss" aria-valuenow={hud.bossHp} aria-valuemin={0} aria-valuemax={hud.bossMaxHp ?? 240}><i style={{ width: `${hud.bossHp / (hud.bossMaxHp ?? 240) * 100}%` }}/>{[1, 2, 3].map(k => <b key={k} className={hud.bossHp > k * (hud.bossMaxHp ?? 240) / 4 ? '' : 'spent'} style={{ left: `${k * 25}%` }}/>)}</div><p className="boss-armor">{hud.bossKind === 'demon' ? (hud.demonStunned ? (vi ? 'SƠ HỞ CHOÁNG · SÁT THƯƠNG ×2.5 · ĐÁNH NGAY!' : 'STUNNED · 2.5× DAMAGE · STRIKE NOW!') : hud.demonRitual ? (vi ? 'TẾ LỄ NGUYÊN TỐ · ĐỨNG LÊN TRỤ ĐỂ PHONG ẤN!' : 'RITUAL · STAND ON CORE TO SEAL!') : hud.demonHeatShield ? (vi ? 'GIÁP KHÁNG HỎA · DỤ BOSS HÚC VÀO TRỤ TẢN NHIỆT!' : 'HEAT SHIELD · BAIT BOSS INTO COOLING VENT!') : hud.bossVulnerable ? (vi ? 'SƠ HỞ · PHẢN CÔNG +35%' : 'OPENING · DAMAGE +35%') : (vi ? 'NÉ VÙNG CAM · DỤ BOSS ĐÁNH ECHO' : 'EVADE ORANGE ZONES · BAIT ATTACKS ON ECHO')) : hud.pillarsRemaining > 0 ? (vi ? `PHÁ ${hud.pillarsRemaining} TRỤ · GIÁP ${hud.bossArmor}` : `BREAK ${hud.pillarsRemaining} PILLARS · ARMOR ${hud.bossArmor}`) : hud.bossVulnerable ? (vi ? 'SƠ HỞ · SÁT THƯƠNG +35%' : 'OPENING · DAMAGE +35%') : (hud.bossShieldAt ?? 0) > 0 ? (vi ? `KHIÊN KẾ TIẾP · ${hud.bossShieldAt} HP` : `NEXT SHIELD · ${hud.bossShieldAt} HP`) : (vi ? 'ĐOẠN MÁU CUỐI' : 'FINAL HEALTH BAR')}</p></div>}

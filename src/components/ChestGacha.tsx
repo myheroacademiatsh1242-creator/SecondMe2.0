@@ -11,6 +11,7 @@ import {GachaSummonScene,warmRoyalSummon} from './GachaSummonScene.tsx';
 import {ChestHistoryModal} from './ChestHistoryModal.tsx';
 import {addChestHistory} from '../game/logic/chestHistory.ts';
 import './chestGacha.css';
+import { FirstTip } from './FeatureIntro.tsx';
 
 const chestKinds: {id:ChestKind;vi:string;en:string}[]=[
   {id:'wood',vi:'PHÀM PHẨM',en:'COMMON'},
@@ -115,6 +116,7 @@ export function ChestGacha({engine,hud,christmas=false}:{engine:GameEngine|null;
     {open&&<div className="chest-backdrop" onClick={close}><section className={`chest-panel${christmas ? ' christmas-chest-panel' : ''}`} data-panel-art={christmas ? undefined : panelArt} role="dialog" aria-modal="true" aria-label={vi?'Rương thưởng':'Reward chest'} onClick={e=>e.stopPropagation()}>
       {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/></>}
       <div className="chest-panel-content">
+      <FirstTip feature="chest" vi={vi}/>
       <header className="chest-panel-header">
         <div className="chest-header-left">
           <button className="chest-rate-toggle" type="button" disabled={!available} aria-expanded={showRates} aria-controls="chest-rates" onClick={()=>setShowRates(value=>!value)}>{vi?(showRates?'Ẩn tỉ lệ':'Xem tỉ lệ'):(showRates?'Hide rates':'View rates')}</button>

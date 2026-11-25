@@ -14,9 +14,32 @@ export const ECHO_RUNES = [
 ] as const;
 export type EchoRuneId = typeof ECHO_RUNES[number]['id'];
 export type EchoRuneStock = Partial<Record<EchoRuneId,number>>;
-/** Independent uniform rolls: no level/rarity weighting, duplicate protection or pity. */
-export function rollEchoRune(random:()=>number=Math.random):EchoRuneId {
- return ECHO_RUNES[Math.min(ECHO_RUNES.length-1,Math.max(0,Math.floor(random()*ECHO_RUNES.length)))].id;
+/** Short on-screen callout for each rune, shown over Echoes when it is activated or takes effect. */
+export const RUNE_CUE:Record<EchoRuneId,{vi:string;en:string}> = {
+ call:{vi:'+1 lượt Echo',en:'+1 Echo charge'},
+ guard:{vi:'-35% sát thương nhận',en:'-35% damage taken'},
+ power:{vi:'+30% sát thương',en:'+30% damage'},
+ lure:{vi:'+25% tốc độ truy kích',en:'+25% chase speed'},
+ restore:{vi:'+50 ổn định',en:'+50 stability'},
+ rapid:{vi:'+20% tốc đánh',en:'+20% attack speed'},
+ vamp:{vi:'Hút sinh lực',en:'Siphon'},
+ cleave:{vi:'Đòn lan',en:'Splash'},
+ anchor:{vi:'Giữ ấn',en:'Hold rune'},
+ regen:{vi:'Tự hồi ổn định',en:'Regenerating'},
+ swap:{vi:'Hoán đổi 15 · 4s',en:'Swap 15 · 4s'},
+ execute:{vi:'Kết liễu',en:'Execution'},
+};
+/** Most of one rune type a player can hold: one for each of the 4 loadout slots. */
+export const RUNE_STOCK_MAX = 4;
+const ALL_RUNE_IDS: readonly EchoRuneId[] = ECHO_RUNES.map(r => r.id);
+/** Rune types the stock can still take; every type once all are full, so a reward roll always has a pool. */
+export function runesBelowCap(stock:EchoRuneStock={}):readonly EchoRuneId[] {
+ const open = ALL_RUNE_IDS.filter(id => (stock[id] ?? 0) < RUNE_STOCK_MAX);
+ return open.length ? open : ALL_RUNE_IDS;
+}
+/** Independent uniform rolls over the pool: no level/rarity weighting, duplicate protection or pity. */
+export function rollEchoRune(random:()=>number=Math.random,pool:readonly EchoRuneId[]=ALL_RUNE_IDS):EchoRuneId {
+ return pool[Math.min(pool.length-1,Math.max(0,Math.floor(random()*pool.length)))];
 }
 export function cleanRuneStock(value:unknown):EchoRuneStock {
  const stock:EchoRuneStock={};
@@ -24,15 +47,16 @@ export function cleanRuneStock(value:unknown):EchoRuneStock {
  for (const rune of ECHO_RUNES) {
   const count = (value as Record<string, unknown>)[rune.id];
   if (typeof count === 'number' && Number.isSafeInteger(count) && count > 0) {
-   stock[rune.id] = Math.min(9999, count);
+   stock[rune.id] = Math.min(RUNE_STOCK_MAX, count);
   }
  }
  return stock;
 }
 
-/** Three independent uniform rolls, with replacement: duplicate choices are intentional. */
-export function rollRuneChoices(random:()=>number=Math.random):EchoRuneId[]{
- return Array.from({length:3},()=>rollEchoRune(random));
+/** Three independent uniform rolls, with replacement: duplicate choices are intentional. Types already at the cap are left out. */
+export function rollRuneChoices(random:()=>number=Math.random,stock:EchoRuneStock={}):EchoRuneId[]{
+ const pool=runesBelowCap(stock);
+ return Array.from({length:3},()=>rollEchoRune(random,pool));
 }
 export function cleanRuneChoices(value:unknown):EchoRuneId[]{
  if(!Array.isArray(value)||value.length!==3)return [];

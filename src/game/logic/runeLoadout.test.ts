@@ -16,7 +16,8 @@ test('loadout allows duplicate slots only up to owned copies and rejects a fifth
 });
 test('old stock and pending rewards retain their original types',t=>{
  const m=storage(t);m.set('second-me-campaign-v3',JSON.stringify({echoRunes:{call:1,lure:2,rapid:3,vamp:4,anchor:5},runeLoadout:['lure','power','call','vamp','guard'],pendingRuneChoices:['rapid','vamp','anchor']}));
- const c=new Campaign();c.load();assert.deepEqual(c.echoRunes,{call:1,lure:2,rapid:3,vamp:4,anchor:5});
+ // Types are kept; a save holding more than the 4-per-type cap is trimmed to 4.
+ const c=new Campaign();c.load();assert.deepEqual(c.echoRunes,{call:1,lure:2,rapid:3,vamp:4,anchor:4});
  assert.deepEqual(c.runeLoadout,['lure','power','call','vamp']);assert.equal(c.pendingRuneChoices.length,3);
  assert.ok(c.pendingRuneChoices.every(id=>ECHO_RUNES.some(r=>r.id===id)));assert.ok(c.chooseRune(c.pendingRuneChoices[0]));
  c.save();const reload=new Campaign();reload.load();assert.deepEqual(reload.echoRunes,c.echoRunes);

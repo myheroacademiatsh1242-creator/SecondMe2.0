@@ -18,7 +18,7 @@ export const PANEL_ART = {
  pause: [ui('pause-pixel-prototype.png'), ui('pause-forest-frame.png')],
  inventory,
  material,
- shop: [ui('trading-forest-frame.png'), ...material],
+ shop: [ui('trading-forest-frame-warm.png'), ...material],
  chestStall: [ui('tanuki-chest-stall-frame.png')],
  purchase: [material[0]],
 };

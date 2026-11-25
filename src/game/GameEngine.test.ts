@@ -1,5 +1,5 @@
 import { puzzleBalance } from './logic/balance.ts';
-import {ECHO_RUNES} from './logic/echoRunes.ts';
+import {ECHO_RUNES,RUNE_STOCK_MAX} from './logic/echoRunes.ts';
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { GameEngine } from './GameEngine.ts';
@@ -39,6 +39,9 @@ function mockDocument(t: TestContext) {
   return document;
 }
 
+/** Where recordToPlate() ends: on the level 1 rune. */
+const ECHO_END = { x: 925, y: 160 };
+
 function setup() {
   const engine = new GameEngine();
   engine.screen = 'playing';
@@ -61,10 +64,14 @@ function setup() {
     controls.heldKeys.delete(code);
     advance(0.05);
   }
+  // Level 1 is the practice ground: start at the dodge station, below and left of the rune, clear of
+  // its traps and dummies, then walk right and up onto the rune (ending at ECHO_END).
   function recordToPlate() {
+    engine.enemies = []; engine.currentLevel.traps = [];
+    engine.player.x = 690; engine.player.y = 300;
     engine.toggleRecording();
-    walk('KeyW', 0.775);
-    walk('KeyD', 1.225);
+    walk('KeyD', 1.175);
+    walk('KeyW', 0.7);
   }
   return { engine, controls, advance, walk, recordToPlate };
 }
@@ -78,8 +85,8 @@ test('E stops on the plate: walking away cannot extend the saved path', () => {
   engine.spawnEcho();
   advance(5);
   assert.deepEqual(engine.recorder.getSamples(), saved);
-  assert.ok(Math.abs(engine.echo!.x - 465) < 0.001);
-  assert.ok(Math.abs(engine.echo!.y - 205) < 0.001);
+  assert.ok(Math.abs(engine.echo!.x - ECHO_END.x) < 0.001);
+  assert.ok(Math.abs(engine.echo!.y - ECHO_END.y) < 0.001);
   assert.equal(engine.echo!.status, 'finished');
   assert.equal(engine.currentLevel.plates[0].isPressed, true);
   assert.equal(engine.currentLevel.doors[0].openProgress, 1);
@@ -92,7 +99,7 @@ test('Q finishes an active recording before the player walks away', () => {
   assert.equal(engine.recorder.getStatus(), 'recorded');
   walk('KeyS', 0.6);
   advance(5);
-  assert.ok(Math.abs(engine.echo!.y - 205) < 0.001);
+  assert.ok(Math.abs(engine.echo!.y - ECHO_END.y) < 0.001);
   assert.equal(engine.currentLevel.plates[0].isPressed, true);
 });
 
@@ -106,7 +113,7 @@ test('an existing Echo holds its original destination during a new recording', (
   walk('KeyS', 0.6);
   engine.toggleRecording();
   advance(5);
-  assert.ok(Math.abs(engine.echo!.y - 205) < 0.001);
+  assert.ok(Math.abs(engine.echo!.y - ECHO_END.y) < 0.001);
   assert.equal(engine.echo!.status, 'finished');
   assert.equal(engine.echo!.isMoving, false);
   assert.equal(engine.currentLevel.plates[0].isPressed, true);
@@ -295,7 +302,7 @@ test('yyyy enables dev tools without granting stock or faking earned progress', 
   engine.grantDevResources();
   assert.equal(engine.campaign.coins,99999);assert.equal(engine.campaign.chestKeys,99999);
   assert.equal(engine.campaign.timeItems,99);assert.equal(engine.campaign.limitRings,99999);
-  for(const rune of ECHO_RUNES)assert.equal(engine.campaign.echoRunes[rune.id],9999);
+  for(const rune of ECHO_RUNES)assert.equal(engine.campaign.echoRunes[rune.id],RUNE_STOCK_MAX);
   engine.campaign.runeLoadout=['guard','power'];
   engine.campaign.pendingRuneChoices=['call','guard','power'];
   engine.grantDevResources();

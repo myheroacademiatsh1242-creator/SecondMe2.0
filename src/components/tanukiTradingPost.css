@@ -221,3 +221,32 @@ html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list
 
 /* Keep both stock lists full-width while retaining native wheel and touch scrolling. */
 .trading-catalogue :is(.trading-items,.outfit-shop-list)::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* Tanuki's catalogue: the forest UI's mossy stone and vines, regraded for the sunset shop
+   (tools/assets/prepare_shop_frame.py): amber runes like the lanterns, warm brown wells, stone in
+   evening light. Same painting, so it matches the rest of the game's art. */
+html body .adventure-app .trading-catalogue:before{background-image:url('/assets/ui/trading-forest-frame-warm.png')!important}
+html body .adventure-app .trading-actions>.trading-leave{background-image:url('/assets/ui/trading-forest-frame-warm.png')!important;color:#fff1c2;text-shadow:2px 2px #2a190d}
+html body .adventure-app .trading-catalogue .trading-tabs>button{color:#e9cf9c;text-shadow:2px 2px #2a190d}
+html body .adventure-app .trading-catalogue .trading-tabs>button[aria-selected=true]{color:#fff1c2;text-shadow:0 0 7px #f0b85a99,2px 2px #2a190d}
+html body .adventure-app .trading-catalogue .trading-tabs>button:hover{color:#fff6d6}
+html body .adventure-app .trading-actions>.trading-buy,html body .adventure-app .trading-actions>.trading-buy:disabled{color:#fff1c2;text-shadow:0 0 5px #f0b85a77,1px 2px #2a190d}
+html body .adventure-app .trading-actions>.trading-buy:disabled{color:#c9a978}
+html body .adventure-app .trading-actions>.trading-buy:not(:disabled):hover{color:#fff;filter:drop-shadow(0 0 4px #f0b85a)}
+html body .adventure-app .trading-product-info strong{color:#ffe3a3}
+html body .adventure-app .trading-product-info small{color:#d4b98a}
+html body .adventure-app .trading-product-info p{color:#f1e2c4}
+/* Rows: carved stone slabs in the same warm light; forestFrames.css thins row borders to 1px, so set them here. */
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button{
+  border:6px solid transparent!important;border-image:url('/assets/ui/stone-card-pixel.png') 86 / 6px stretch!important;
+  background:linear-gradient(180deg,#4b4335,#322b21)!important;box-shadow:0 2px 0 #140f0a!important;
+  padding:0 6px!important;color:#f6e7c8;image-rendering:pixelated;
+}
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:hover,
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:focus-visible{background:linear-gradient(180deg,#5a5040,#3c3427)!important;outline:none}
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:is(.selected,[aria-pressed=true]){
+  outline:none;background:linear-gradient(180deg,#665638,#46392a)!important;
+  box-shadow:inset 0 0 0 2px #f0c870,inset 0 0 14px #f0b85a66!important;
+}
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button>span>small{color:#d4b98a}
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button>b{color:#ffd76a}

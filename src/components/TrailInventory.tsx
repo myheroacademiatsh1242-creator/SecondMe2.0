@@ -14,6 +14,7 @@ import {RuneLoadoutEditor,RuneStone} from './EchoRunes.tsx';
 import {ChristmasPanelTrim,useChristmas} from './ChristmasEvent.tsx';
 import './TrailInventory.css';
 import './ForestInventory.css';
+import { FirstTip } from './FeatureIntro.tsx';
 export function TrailInventory({engine,hud,close:onClose,preparing=false}:{engine:GameEngine|null;hud:HUDState;close:()=>void;preparing?:boolean}){
  const winter = useChristmas(engine?.devSeasonPreview).active && !preparing;
  const panelArt=usePanelArt(PANEL_ART.material);
@@ -38,7 +39,7 @@ export function TrailInventory({engine,hud,close:onClose,preparing=false}:{engin
  return <div className={`trail-inventory${winter?' christmas-inventory':''}${closing?' is-leaving':''}`} ref={root} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="inventory-heading">
   {winter&&<ChristmasPanelTrim still={hud.reducedMotion}/>}
   {editing&&<RuneLoadoutEditor engine={engine} hud={hud} close={()=>setEditing(false)}/>}
-  <header className="inventory-heading"><span className="inventory-emblem"><Backpack size={25}/></span><div><small>{vi?'HÀNH TRANG ECHO':'ECHO TRAVEL KIT'}</small><h2 id="inventory-heading">{preparing?(vi?'CHỌN VẬT PHẨM VÀO TRẬN':'PACK ITEMS FOR BATTLE'):(vi?'KHO ĐỒ':'INVENTORY')}</h2></div>{!preparing&&<div className="inventory-wallet"><img src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt=""/><b>{number(hud.coins)}</b><small>{vi?'XU · ĐẠI TRÀ':'COINS · COMMON'}</small></div>}</header>
+  <header className="inventory-heading"><span className="inventory-emblem"><Backpack size={25}/></span><div><small>{vi?'HÀNH TRANG ECHO':'ECHO TRAVEL KIT'}</small><h2 id="inventory-heading">{preparing?(vi?'CHỌN VẬT PHẨM VÀO TRẬN':'PACK ITEMS FOR BATTLE'):(vi?'KHO ĐỒ':'INVENTORY')}</h2></div>{!preparing&&<div className="inventory-wallet"><img src={`${import.meta.env.BASE_URL}assets/ui/raccoon-coin.png`} alt=""/><b>{number(hud.coins)}</b><small>{vi?'XU · ĐẠI TRÀ':'COINS · COMMON'}</small></div>}</header><FirstTip feature="bag" vi={vi}/>
   <p className="inventory-subtitle">{preparing
    ? (emptyStock ? (vi?'Kho chưa có vật phẩm. Bạn có thể vào màn tay không.':'Your inventory is empty. You can enter without items.') : (vi?'Chọn 1–3 loại vật phẩm. Trong trận, dùng phím 1–3 theo từng ô.':'Pack 1–3 item types. Use the corresponding keys 1–3 in battle.'))
    : (vi?'Quản lý vật phẩm và bộ rune mang theo':'Manage your supplies and equipped Echo runes')}</p>

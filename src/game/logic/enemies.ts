@@ -26,7 +26,8 @@ export const LURE_MEMORY = 2;
 /** How far from home an Echo can lead an enemy: its lure range plus this (px). */
 export const LURE_LEASH = 120;
 export const encounters:Record<number,[EnemyKind,number,number][]>= {
- 1:[['goblin',1090,570]],
+ // Practice ground: two training dummies at the attack station (never move, attack or die).
+ 1:[['dummy',470,270],['dummy',470,450]],
  2:[['goblin',450,580],['shaman',1040,220]],
  3:[['goblin',830,130],['bear',420,120],['shaman',440,580]],
  4:[['goblin',1140,400],['bear',850,580],['shaman',510,235],['skull',230,500]],

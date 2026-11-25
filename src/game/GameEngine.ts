@@ -16,12 +16,13 @@ import { PLAYER_MAX_HP, DAMAGE, SHIELD, applyDamage, damagePoints } from './logi
 import { ignite, newBurn, stepBurn } from './logic/burn.ts';
 import { FROST_PRELUDE_KILLS, PILLAR_SUMMON, newPillarClocks, stepPillarSummons } from './logic/pillarSummon.ts';
 import { createCaveSlimes, createEnemies, ENEMY_STATS, EMBER_SLIME_ID, updateEnemies, type Enemy } from './logic/enemies.ts';
-import { ECHO_RUNES, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
+import { ECHO_RUNES, RUNE_CUE, RUNE_STOCK_MAX, type EchoRuneId, type EchoRuneStock } from './logic/echoRunes.ts';
 import { segmentCircle, segmentWall } from './logic/combatGeometry.ts';
 import {ICE_MAGIC,ENEMY_CHILL,FROST_STRIKE,insideIceRay,type FrostZone} from './logic/iceMagic.ts';
 import { puzzleBalance, SHARD_BONUS, ENEMY_TIME_BONUS, PUZZLE_HINTS, GUARDIAN_HP, BOSS_PLAYER_DAMAGE, SWORD_WAVE_RANGE, encounterBalance } from './logic/balance.ts';
 import { heroStats, type HeroRanks, type HeroUpgradeStat } from './logic/heroUpgrades.ts';
-import { TutorialDirector, type GuideTopic } from './logic/tutorials.ts';
+import { TutorialDirector, levelMechanicTopics, type GuideTopic } from './logic/tutorials.ts';
+import { PracticeProgress, PRACTICE_LEVEL_ID } from './logic/practiceGround.ts';
 import { crossedGateTowardExit, isPuzzleExitOpen } from './logic/puzzle.ts';
 /**
  * @license
@@ -69,7 +70,9 @@ import { vfxSeconds, type Vfx, type VfxKind } from './rendering/vfx.ts';
 /** A spell from Aeris's combo in flight: it moves, and strikes what it touches. */
 export interface ComboShot { x: number; y: number; vx: number; vy: number; life: number; radius: number; amount: number; heavy: boolean; pierce: boolean; group: Set<object> }
 export interface ComboFx { kind: 'arc' | 'spin' | 'impact' | 'nova' | 'charge'; x: number; y: number; angle: number; radius: number; life: number; max: number; heavy?: boolean; flip?: boolean }
-export interface DamageText { x: number; y: number; text: string; life: number; max: number; heavy: boolean; blocked?: boolean }
+export interface DamageText { x: number; y: number; text: string; life: number; max: number; heavy: boolean; blocked?: boolean; color?: string }
+/** Expanding ring drawn where a rune was activated (player and each Echo), in the rune's colour. */
+export interface RunePulse { x: number; y: number; color: string; life: number; max: number }
 /** Hit circles of the combat targets (game px), for sword arcs and spells. */
 const PILLAR_R = 26, BOSS_R = 44, ENEMY_R = 26;
 // The game has no physical metre scale; 40 world units approximate one metre.
@@ -333,6 +336,22 @@ export class GameEngine {
   }
   public campaign = new Campaign();
   public readonly guides = new TutorialDirector();
+  /** What the player has practised on level 1 (logic/practiceGround.ts); kept across retries this session. */
+  public readonly practice = new PracticeProgress();
+  private practiceLast = { x: 0, y: 0, attack: 0, skill: 0, dodge: 0 };
+  /** Set by the UI on touch screens: key hints then show the verb only (rendering/keyPrompt.ts). */
+  public touchControls = false;
+  /** Level 1, the practice ground: no clock, no death. Only with tutorials on (the app); tests and tutorial-off play keep it a timed trial. */
+  public get isPracticeGround() { return this.tutorialEnabled && this.currentLevel.id === PRACTICE_LEVEL_ID; }
+  /** Count what the player did this frame on the practice ground: distance walked, and each new attack, skill or dash (a cooldown that went up). */
+  private trackPractice() {
+    const last = this.practiceLast, me = this.player;
+    this.practice.moved += Math.min(40, Math.hypot(me.x - last.x, me.y - last.y));
+    if (this.attackCooldown > last.attack) this.practice.attack++;
+    if (this.skillCooldown > last.skill) this.practice.skill++;
+    if (this.dodgeTime > last.dodge) this.practice.dodge++;
+    this.practiceLast = { x: me.x, y: me.y, attack: this.attackCooldown, skill: this.skillCooldown, dodge: this.dodgeTime };
+  }
   public tutorialEnabled = false;
   public dismissGuide(){this.guides.dismiss();this.heldKeys.clear();this.notifyHUD();}
   public openGuide(){this.guides.openLibrary();this.heldKeys.clear();this.notifyHUD();}
@@ -439,6 +458,9 @@ export class GameEngine {
   public comboShots: ComboShot[] = [];
   public comboFx: ComboFx[] = [];
   public damageTexts: DamageText[] = [];
+  public runePulses: RunePulse[] = [];
+  /** Per Echo and rune: seconds until that rune's on-hit callout may show again, so hits do not spam text. */
+  private runeCueCooldown = new Map<string, number>();
   private lunge = { time: 0, vx: 0, vy: 0 };
   public droppedDarts: {x:number;y:number;life:number;angle:number}[] = [];
   private recoverableDarts = new WeakSet<object>();
@@ -859,7 +881,7 @@ export class GameEngine {
     this.pingTarget = null; this.targetMarkArmed = 0;
     this.recorder.clear();
     this.elapsedLevelTime = 0;
-    this.legTimeRemaining = !this.isTraining && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) ? puzzleBalance(this.currentLevel.id).legSeconds : null;
+    this.legTimeRemaining = !this.isTraining && !this.isPracticeGround && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) ? puzzleBalance(this.currentLevel.id).legSeconds : null;
     this.training.reset();
     this.timePickup = null;
     this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
@@ -885,7 +907,7 @@ export class GameEngine {
     this.enemies=createEnemies(this.currentLevel);
     if(this.currentLevel.id===13)this.enemies.push(...createCaveSlimes());
     this.magicShots = [];
-    this.combo?.cancel(); this.comboShots = []; this.comboFx = []; this.damageTexts = []; this.lunge.time = 0; this.hitFeel.reset(); this.pfx = []; this.rage.reset(); this.delayedHits = []; this.ultBeam = null; this.timeStop = 0;
+    this.combo?.cancel(); this.comboShots = []; this.comboFx = []; this.damageTexts = []; this.runePulses = []; this.runeCueCooldown.clear(); this.lunge.time = 0; this.hitFeel.reset(); this.pfx = []; this.rage.reset(); this.delayedHits = []; this.ultBeam = null; this.timeStop = 0;
     preloadComboSprites(); preloadPfx(['hit-spark', 'crit-hit', 'shield-block', ...(this.characterClass === 'mage' ? ['icicle-fall', 'spell-charge', 'arcane-beam', 'time-stop'] as const : [])]);
     if(this.currentLevel.id===6){   // after this.pfx is cleared, so their snowflake bursts play as the level opens
       preloadPfx(['ice-crystal','snowflake-burst','ice-shatter']);
@@ -912,10 +934,15 @@ export class GameEngine {
     if(this.currentLevel.id===13)this.showBanner(this.language==='vi'?'Hang Tâm Hỏa':'Ember Cave',3);
     else if(this.currentLevel.id===6)this.showBanner(this.language==='vi'?`Pha Lê Băng thấy bạn khắp bản đồ · Đập vỡ ${FROST_PRELUDE_KILLS} con!`:`Frost Crystals see you anywhere · Shatter ${FROST_PRELUDE_KILLS} of them!`,5);
     else if(this.currentLevel.id>=7)this.showBanner(translate(this.currentLevel.description,this.language),8);
+    else if(this.isPracticeGround)this.showBanner(this.language==='vi'?'Bãi tập · Đi qua từng trạm, làm theo gợi ý trên đầu nhân vật':'Practice ground · Walk through each station and follow the hint over your hero',6);
     else if(this.currentLevel.id<=5)this.showBanner(this.language==='vi'?PUZZLE_HINTS[this.currentLevel.id-1]:this.currentLevel.description,6);
     if(this.missionBriefingEnabled){
       this.missionBriefing=true;this.screen='paused';document.body.dataset.state='paused';this.heldKeys.clear();
     }else this.voiceLevelStart();
+    // "New here": queue a card for each mechanic this level brings that the player has not met yet.
+    if(this.tutorialEnabled&&!this.isPracticeGround&&!this.isTraining)
+      for(const topic of levelMechanicTopics(this.currentLevel,this.enemies.some(e=>e.kind!=='dummy')))this.guides.offer(topic);
+    this.practiceLast={x:this.player.x,y:this.player.y,attack:this.attackCooldown,skill:this.skillCooldown,dodge:this.dodgeTime};
     this.notifyHUD();
   }
 
@@ -1012,7 +1039,7 @@ export class GameEngine {
     this.campaign.aidUnlocked=true;
     this.campaign.ownedOutfits=SHOP_OUTFITS.map(outfit=>outfit.id);
     this.campaign.ownedWeapons=cleanOwnedWeapons(WEAPONS.map(w=>w.id));
-    for(const rune of ECHO_RUNES)this.campaign.echoRunes[rune.id]=9999;
+    for(const rune of ECHO_RUNES)this.campaign.echoRunes[rune.id]=RUNE_STOCK_MAX;
     // Keep the developer's selected build, filling only unused slots.
     for(const rune of ECHO_RUNES){
       if(this.campaign.runeLoadout.length>=4)break;
@@ -1254,10 +1281,26 @@ export class GameEngine {
     this.finishBossHit(); return true;
   }
 
-  private addDamageText(x: number, y: number, amount: number, heavy: boolean, label?: string) {
-    const max = heavy ? 1.1 : 0.8;
-    this.damageTexts.push({ x: x + (Math.random() - 0.5) * 14, y, text: label ?? String(Math.round(amount)), life: max, max, heavy, blocked: !!label });
+  private addDamageText(x: number, y: number, amount: number, heavy: boolean, label?: string, color?: string) {
+    const max = heavy ? 1.1 : color ? 1.2 : 0.8;
+    this.damageTexts.push({ x: x + (Math.random() - 0.5) * 14, y, text: label ?? String(Math.round(amount)), life: max, max, heavy, blocked: !!label && !color, color });
     if (this.damageTexts.length > 24) this.damageTexts.shift();
+  }
+
+  /** A rune taking effect on one Echo: a coloured callout above it, at most once per `every` seconds per Echo and rune. */
+  private runeCue(id: EchoRuneId, echo: { x: number; y: number; colorSlot?: number }, text?: string, every = 1.2) {
+    const key = `${id}:${echo.colorSlot ?? 0}`;
+    if ((this.runeCueCooldown.get(key) ?? 0) > 0) return;
+    this.runeCueCooldown.set(key, every);
+    const rune = ECHO_RUNES.find(r => r.id === id)!;
+    this.addRuneText(echo.x, echo.y - 58, `${rune.glyph} ${text ?? RUNE_CUE[id][this.language === 'vi' ? 'vi' : 'en']}`, rune.color);
+  }
+
+  /** Coloured rune text, stacked above any rune text still showing at the same spot so several callouts never overlap. */
+  private addRuneText(x: number, y: number, text: string, color: string) {
+    const stacked = this.damageTexts.filter(t => t.color && Math.abs(t.x - x) < 40 && t.y <= y + 2 && t.y > y - 120).length;
+    this.addDamageText(x, y - stacked * 20, 0, false, text, color);
+    this.damageTexts[this.damageTexts.length - 1].x = x;
   }
 
   /** Living targets with their hit radius: enemies, then the boss's pillars and the boss. */
@@ -1631,6 +1674,9 @@ export class GameEngine {
     this.comboFx = this.comboFx.filter(f => f.life > 0);
     for (const t of this.damageTexts) t.life -= dt;
     this.damageTexts = this.damageTexts.filter(t => t.life > 0);
+    for (const p of this.runePulses) p.life -= dt;
+    this.runePulses = this.runePulses.filter(p => p.life > 0);
+    for (const [key, left] of this.runeCueCooldown) this.runeCueCooldown.set(key, left - dt);
   }
 
   private spendMana(cost:number){
@@ -1806,6 +1852,7 @@ export class GameEngine {
     sounds.playImpact(result.dealt===0);
     if(result.dealt===0){this.invulnerability=.3;this.notifyHUD();return;}
     this.health=result.hp;this.hurtFlash=.28;this.rage.gain(RAGE.HURT);
+    if(this.isPracticeGround)this.health=Math.max(1,this.health);   // practice ground: hits still show, but never kill
     this.invulnerability = this.characterClass === 'assassin' ? .55 : 1.3;
     this.combo?.cancel(); this.lunge.time = 0;           // staggered: the combo is lost
     this.renderer.particles.emit(this.player.x, this.player.y, 18, '#fb7185', 75, 4, 0.6);
@@ -2063,7 +2110,15 @@ export class GameEngine {
     else this.activeEchoRunes.add(id);
     const rune=ECHO_RUNES.find(r=>r.id===id)!;
     this.renderer.emitMagic('sparkle', this.player.x, this.player.y, 22);
-    sounds.playStoneClick();
+    // Make the activation readable: a ring in the rune's colour from the hero and from every Echo it affects, plus its effect over each Echo.
+    this.runePulses.push({x:this.player.x,y:this.player.y,color:rune.color,life:.7,max:.7});
+    for(const echo of this.echoes){
+      this.runePulses.push({x:echo.x,y:echo.y,color:rune.color,life:.9,max:.9});
+      this.renderer.emitMagic('sparkle', echo.x, echo.y, 26);
+      this.runeCueCooldown.delete(`${id}:${echo.colorSlot??0}`);this.runeCue(id,echo);
+    }
+    if(!this.echoes.length)this.addRuneText(this.player.x,this.player.y-58,`${rune.glyph} ${RUNE_CUE[id][this.language==='vi'?'vi':'en']}`,rune.color);
+    sounds.playFeedback('rune');
     this.showBanner(`${rune.glyph} ${this.language==='vi'?rune.vi:rune.en} · ${this.language==='vi'?'Đã dùng 1 ấn':'1 rune consumed'}`);
     this.notifyHUD();return true;
   }
@@ -2071,8 +2126,10 @@ export class GameEngine {
   /** Incoming damage consumes stability; Endurance reduces the actual amount lost. */
   private hitEcho(echo: NonNullable<GameEngine['echoShape']>, stabilityLoss: number, applyGuard = true) {
     if (!this.echoes.includes(echo)) return;
-    const result=applyDamage(echo.stability??100,stabilityLoss*(applyGuard && this.activeEchoRunes.has('guard')?.65:1));
+    const guarded=applyGuard && this.activeEchoRunes.has('guard');
+    const result=applyDamage(echo.stability??100,stabilityLoss*(guarded?.65:1));
     echo.stability=result.hp;
+    if(guarded&&stabilityLoss>0)this.runeCue('guard',echo,this.language==='vi'?'Chặn 35%':'Blocked 35%');
     if (echo.stability <= 0) {
       const selected = this.echo;
       this.echoes = this.echoes.filter(e => e !== echo);
@@ -2084,14 +2141,24 @@ export class GameEngine {
   /** One Echo hit: rune multipliers, bounded wall-aware splash, and on-hit sustain. */
   private strikeWithEcho(echo:NonNullable<GameEngine['echoShape']>,target:CombatTarget,base:number){
     let amount=base*(this.activeEchoRunes.has('power')?1.3:1);
-    if(this.activeEchoRunes.has('execute')&&target.hp<=target.maxHp*.3)amount*=1.25;
+    const executing=this.activeEchoRunes.has('execute')&&target.hp<=target.maxHp*.3;
+    if(executing)amount*=1.25;
     if(!this.strike(target,amount,false,echo))return false;
-    if(this.activeEchoRunes.has('vamp'))echo.stability=Math.min(100,(echo.stability??100)+4);
+    // Callouts show each rune actually working, throttled per Echo so steady combat stays readable.
+    const vi=this.language==='vi';
+    if(executing)this.runeCue('execute',echo,vi?'Kết liễu +25%':'Execute +25%',.8);
+    else if(this.activeEchoRunes.has('power'))this.runeCue('power',echo,`+${Math.round(amount-base)} (+30%)`,1.5);
+    if(this.activeEchoRunes.has('vamp')&&(echo.stability??100)<100){echo.stability=Math.min(100,(echo.stability??100)+4);this.runeCue('vamp',echo,vi?'+4 ổn định':'+4 stability',1);}
     if(this.activeEchoRunes.has('cleave')){
       const walls=getActiveObstacles(this.currentLevel.walls,this.currentLevel.doors);
       const nearby=this.combatTargets().filter(({t})=>t!==target&&Math.hypot(t.x-target.x,t.y-target.y)<=55&&!walls.some(w=>segmentWall(echo,t,w,0)!==null))
         .sort((a,b)=>Math.hypot(a.t.x-target.x,a.t.y-target.y)-Math.hypot(b.t.x-target.x,b.t.y-target.y)).slice(0,2);
       for(const {t} of nearby){const splash=base*.4*(this.activeEchoRunes.has('power')?1.3:1)*(this.activeEchoRunes.has('execute')&&t.hp<=t.maxHp*.3?1.25:1);this.strike(t,splash,false,echo);}
+      if(nearby.length){
+        const color=ECHO_RUNES.find(r=>r.id==='cleave')!.color;
+        for(const {t} of nearby)this.runePulses.push({x:t.x,y:t.y,color,life:.35,max:.35});
+        this.runeCue('cleave',echo,vi?`Lan ×${nearby.length}`:`Splash ×${nearby.length}`,.8);
+      }
     }
     return true;
   }
@@ -2476,6 +2543,7 @@ export class GameEngine {
       return;
     }
     if (this.screen !== 'playing' || this.bossIntroduction || this.orientationBlocked || this.runeEditing || this.inventoryOpen || this.pendingBattleStart) return;
+    if (this.isPracticeGround) this.trackPractice();
     if(this.tutorialEnabled){
       const previousTopic=this.guides.active;
       if (this.guides.blocking) return;
@@ -2826,7 +2894,7 @@ export class GameEngine {
       this.discoveredRunes.has(this.currentLevel.plates[this.checkpointIndex].id)) this.checkpointIndex++;
     if (this.checkpointIndex > previousCheckpoint) {
       this.echoCharges = Math.min(this.echoLimit - (this.echoFreeSummon ? 1 : 0), this.echoCharges + this.checkpointIndex - previousCheckpoint);
-      this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
+      if (!this.isPracticeGround) this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
       this.shardClaimedThisLeg = false; this.timePickup = null;
       this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
       this.showBanner(this.checkpointIndex < this.currentLevel.plates.length

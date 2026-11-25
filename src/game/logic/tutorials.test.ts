@@ -30,7 +30,7 @@ test('automatic hints expire while movement and the timer continue; only the lib
  internals.update(.1);
  assert.equal(game.guides.active,'links');assert.ok(game.legTimeRemaining<10);
  assert.ok(internals.elapsedLevelTime>0);assert.ok(game.player.x>x);assert.ok(internals.heldKeys.has('KeyD'));
- game.guides.advance(4);assert.equal(game.guides.active,null);assert.ok(game.guides.seen.has('links'));
+ game.guides.advance(6);assert.equal(game.guides.active,null);assert.ok(game.guides.seen.has('links'));
  game.openGuide();const remaining=game.legTimeRemaining;internals.update(2);assert.equal(game.legTimeRemaining,remaining);
  game.closeGuide();internals.update(.1);assert.ok(game.legTimeRemaining!<remaining!);
 });
@@ -43,6 +43,9 @@ test('the first trail follows recording, reaching the rune, playback, crossing a
   const [plate] = game.currentLevel.plates;
   const [door] = game.currentLevel.doors;
   const action = () => trailObjective(game)?.action;
+  // Level 1 is the practice ground: begin at its Echo station, straight below the rune.
+  game.enemies = []; game.currentLevel.traps = [];
+  game.player.x = plate.x + plate.width / 2; game.player.y = 360;
   assert.equal(action(), 'record');
   game.toggleRecording();
   assert.equal(action(), 'reach');

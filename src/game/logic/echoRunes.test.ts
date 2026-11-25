@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Campaign } from './campaign.ts';
-import { ECHO_RUNES, rollRuneChoices } from './echoRunes.ts';
+import { ECHO_RUNES, RUNE_STOCK_MAX, cleanRuneStock, rollRuneChoices } from './echoRunes.ts';
 import { GameEngine } from '../GameEngine.ts';
 import { sounds } from './sound.ts';
 sounds.setMuted(true);
@@ -54,4 +54,22 @@ test('Amplification increases only Echo replay damage against trail enemies',t=>
 
 test('three matching choices still grant only one copy and cannot be claimed twice',()=>{
  const c=new Campaign();c.pendingRuneChoices=['power','power','power'];assert.ok(c.chooseRune('power'));assert.equal(c.echoRunes.power,1);assert.equal(c.chooseRune('power'),false);assert.equal(c.echoRunes.power,1);
+});
+
+test('each rune type is capped at four, one per loadout slot', () => {
+ assert.equal(RUNE_STOCK_MAX, 4);
+ assert.deepEqual(cleanRuneStock({ call: 9999, power: 3 }), { call: 4, power: 3 });
+ const c = new Campaign();
+ c.echoRunes.call = 4;
+ c.pendingRuneChoices = ['call', 'call', 'call'];
+ assert.equal(c.chooseRune('call'), true);
+ assert.equal(c.echoRunes.call, 4);
+});
+
+test('reward rolls skip rune types that are already full', () => {
+ const full = Object.fromEntries(ECHO_RUNES.map(r => [r.id, 4]));
+ delete full.execute;
+ for (let i = 0; i < 20; i++) assert.deepEqual(rollRuneChoices(Math.random, full), ['execute', 'execute', 'execute']);
+ const allFull = Object.fromEntries(ECHO_RUNES.map(r => [r.id, 4]));
+ assert.equal(rollRuneChoices(() => 0, allFull).length, 3);
 });
