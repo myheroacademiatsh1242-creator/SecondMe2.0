@@ -9,7 +9,7 @@ export function CampHeroCaption({engine, hud}: {
   const vi = hud.language === 'vi';
   const hero = hud.characterClass;
   return <div className="rest-scene-caption">
-    <strong>{hero === 'swordsman' ? 'Kael' : hero === 'mechanical' ? 'Rivet' : 'Aeris'}</strong>
+    <strong>{hero === 'swordsman' ? 'Kael' : hero === 'assassin' ? 'Crimson Veil' : hero === 'mechanical' ? 'Rivet' : 'Aeris'}</strong>
     <button type="button" onClick={() => engine?.openCharacters()}>{vi ? 'Đổi nhân vật' : 'Change hero'} <ArrowRight size={14}/></button>
   </div>;
 }

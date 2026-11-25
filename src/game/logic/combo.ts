@@ -22,7 +22,7 @@ import { HERO_COMBO_ATTACK } from './balance.ts';
  */
 import type { CharacterClass } from './campaign.ts';
 
-export type ComboHero = Extract<CharacterClass, 'swordsman' | 'mage'>;
+export type ComboHero = Extract<CharacterClass, 'swordsman' | 'mage' | 'assassin'>;
 
 export interface ComboHit {
   name: string;
@@ -63,6 +63,11 @@ export const COMBO_HITS: Record<ComboHero, ComboHit[]> = {
     { name: 'Arcane Burst', vi: 'Bùng nổ bí thuật', anim: 'arcaneBurst', multiplier: 0.9, frames: 4, frameTime: 0.08, hitFrame: 2, window: 0.45 },
     { name: 'Magic Orbit', vi: 'Quỹ đạo phép', anim: 'magicOrbit', multiplier: 1.1, frames: 4, frameTime: 0.09, hitFrame: 3, window: 0.45 },
     { name: 'Arcane Nova', vi: 'Tân tinh bí thuật', anim: 'arcaneNova', multiplier: 2.2, frames: 5, frameTime: 0.1, hitFrame: 3, window: 0, heavy: true },
+  ],
+  assassin: [
+    { name: 'Quick Dart', vi: 'Phi tiêu nhanh', anim: 'quickDart', multiplier: 1, frames: 3, frameTime: .055, hitFrame: 1, window: .7 },
+    { name: 'Twin Cross', vi: 'Song phi tiêu', anim: 'twinCross', multiplier: .7, frames: 4, frameTime: .05, hitFrame: 1, window: .7 },
+    { name: 'Fan Finisher', vi: 'Quạt kết liễu', anim: 'fanFinisher', multiplier: .65, frames: 5, frameTime: .054, hitFrame: 2, window: 0, heavy: true },
   ],
 };
 

@@ -99,3 +99,15 @@ Intro mới, nền minh họa và thời điểm voice tương ứng đã đư�
 Đây là bản có cơ chế chơi và kiểm tra hồi quy; chưa phải bản phát hành đã cân bằng bằng số liệu người chơi diện rộng. Quái dùng AI đuổi/đánh có giới hạn, chưa có tìm đường A*. Cần kiểm thử thêm toàn bộ chiến dịch bằng người chơi, hoàn thiện điều khiển cảm ứng, rà bản quyền/nguồn asset trước phát hành thương mại, và bổ sung voice còn thiếu. Một số nhãn/hướng dẫn cũ vẫn cần rà đồng bộ sau thay đổi luật chơi.
 
 
+
+## Crimson Veil local asset
+
+The supplied `Crimson_Source_Poster.png` is the visual source for Crimson's idle, run, three attacks, skill, hurt, kneel, death, and steel dart. `tools/assets/extract_crimson_poster.py` cuts those exact poses and removes the poster's grid background. The default character has no redrawn body or generated substitute.
+
+| Asset | Size in game | Path | Source |
+|---|---:|---|---|
+| Crimson pose PNGs | about 50–60 px tall | `public/assets/crimson/*.png` | supplied Gemini poster |
+| Steel dart PNG | about 31×13 px | `public/assets/crimson/dart.png` | supplied Gemini poster |
+| Original poster | 2730×1536 px, source only | `tools/assets/source/crimson/Crimson_Source_Poster.png` | user supplied |
+
+The poster contains one right facing side view. The game flips that view for leftward motion. Up/down use the available side pose because the source has no rear or front frames. Other outfits for Crimson are hidden until matching source assets exist.

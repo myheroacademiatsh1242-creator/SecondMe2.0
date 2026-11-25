@@ -11,19 +11,21 @@ import sprites from '../data/comboSprites.json';
 import type { GameEngine } from '../GameEngine.ts';
 import { COMBO_HITS, type ComboHero } from '../logic/combo.ts';
 import { drawSlash } from './vfx.ts';
+import {drawAssassinDart} from './assassinSprite.ts';
 
 interface Sheet { file: string; frameW: number; frameH: number; anchorX: number; anchorY: number; anims: Record<string, number[]> }
-const SHEETS: Record<ComboHero, Sheet> = { swordsman: sprites.kael, mage: sprites.aeris };
+const SHEETS: Partial<Record<ComboHero, Sheet>> = { swordsman: sprites.kael, mage: sprites.aeris };
 const images: Partial<Record<ComboHero, HTMLImageElement>> = {};
 /** Where the hero's feet are relative to his position (as his walk sprite). */
 const FEET_Y = 7;
 
 function image(hero: ComboHero) {
+  if (hero === 'assassin') return null;
   if (typeof Image === 'undefined') return null;
   let img = images[hero];
   if (!img) {
     img = new Image();
-    img.src = `${import.meta.env.BASE_URL}assets/combat/${SHEETS[hero].file}`;
+    img.src = `${import.meta.env.BASE_URL}assets/combat/${SHEETS[hero]!.file}`;
     images[hero] = img;
   }
   return img.complete && img.naturalWidth ? img : null;
@@ -60,7 +62,7 @@ export function comboPose(game: GameEngine): { hero: ComboHero; index: number } 
   const combo = game.combo;
   if (!combo || game.player.isMoving || (game.characterClass !== 'swordsman' && game.characterClass !== 'mage')) return null;
   const hero = game.characterClass;
-  const anims = SHEETS[hero].anims;
+  const anims = SHEETS[hero]!.anims;
   if (combo.active) {
     const hit = COMBO_HITS[hero][combo.step];
     return { hero, index: anims[hit.anim][combo.frame] };
@@ -74,7 +76,7 @@ export function drawComboHero(ctx: CanvasRenderingContext2D, game: GameEngine): 
   if (!pose) return false;
   const img = image(pose.hero);
   if (!img) return false;
-  const s = SHEETS[pose.hero];
+  const s = SHEETS[pose.hero]!;
   const left = game.comboAim.x < game.player.x;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -142,6 +144,10 @@ export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine
   for (const shot of game.comboShots) {
     const back = Math.hypot(shot.vx, shot.vy) * 0.045;
     const ux = shot.vx / Math.hypot(shot.vx, shot.vy), uy = shot.vy / Math.hypot(shot.vx, shot.vy);
+    if (game.characterClass === 'assassin') {
+      drawAssassinDart(ctx,shot.x,shot.y,Math.atan2(shot.vy,shot.vx));
+      continue;
+    }
     ctx.strokeStyle = 'rgba(178,110,255,.45)'; ctx.lineWidth = shot.radius * 1.2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(shot.x, shot.y); ctx.lineTo(shot.x - ux * back, shot.y - uy * back); ctx.stroke();
     if (orb) { drawArcaneOrb(ctx, orb, shot, time, game.reducedMotion); continue; }

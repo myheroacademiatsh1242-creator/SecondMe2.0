@@ -86,7 +86,7 @@ const KAEL_SWINGS = [
 const FINISHER_DASH = 42;                     // px Kael lunges during the finisher's dash frames
 
 export type CombatSkill = 'fire' | 'lightning' | 'stone' | 'haste' | 'armor' | 'wave';
-export const CLASS_SKILLS: Record<CharacterClass, CombatSkill[]> = { mage: ['fire','lightning','stone'], swordsman: ['haste','armor','wave'], mechanical: ['fire','armor','haste'] };
+export const CLASS_SKILLS: Record<CharacterClass, CombatSkill[]> = { mage: ['fire','lightning','stone'], swordsman: ['haste','armor','wave'], assassin: ['haste','armor','wave'], mechanical: ['fire','armor','haste'] };
 
 export interface HUDState {
   missionBriefing?:boolean;
@@ -440,6 +440,14 @@ export class GameEngine {
   public comboFx: ComboFx[] = [];
   public damageTexts: DamageText[] = [];
   private lunge = { time: 0, vx: 0, vy: 0 };
+  public droppedDarts: {x:number;y:number;life:number;angle:number}[] = [];
+  private recoverableDarts = new WeakSet<object>();
+  private phantomAim: { x: number; y: number } | null = null;
+  public assassinDeathAge = -1;
+  public get phantomDashing(){return this.phantomAim!==null;}
+  public phantomTrail: { x: number; y: number; life: number }[] = [];
+  private recoil = { distance: 0, x: 0, y: 0 };
+  private assassinVelocity = { x: 0, y: 0 };
   public skillDrop: { kind: CombatSkill; x: number; y: number; fall: number } | null = null;
   public skillDropTimer = 5;
   public stoneShield = 0;
@@ -502,9 +510,9 @@ export class GameEngine {
 
   constructor() {
     this.campaign.load();restoreOutfits();
-    for(const hero of ['mage','swordsman'] as const)if(!canWearOutfit(hero,getOutfits()[hero],this.campaign.ownedOutfits))equipOutfit(hero,'default');
+    for(const hero of ['mage','swordsman','assassin'] as const)if(!canWearOutfit(hero,getOutfits()[hero],this.campaign.ownedOutfits))equipOutfit(hero,'default');
     restoreWeapons();
-    for(const hero of ['mage','swordsman'] as const)if(!canUseWeapon(hero,getWeapons()[hero],this.campaign.ownedWeapons))equipWeapon(hero,DEFAULT_WEAPON[hero],[]);
+    for(const hero of ['mage','swordsman','assassin'] as const)if(!canUseWeapon(hero,getWeapons()[hero],this.campaign.ownedWeapons))equipWeapon(hero,DEFAULT_WEAPON[hero],[]);
     this.loadSettings();
     setCurrentLanguage(this.language);
     if (typeof document !== 'undefined') document.title = 'SECOND ME — Vọng Ảnh';
@@ -525,7 +533,8 @@ export class GameEngine {
       this.showHints = value.showHints !== false;
       this.devUnlocked = value.devUnlocked === true;
       this.language = value.language === 'en' ? 'en' : 'vi';
-      this.characterClass = MECHANICAL_ENABLED && value.characterClass === 'mechanical' && this.campaign.mechanicalOwned ? 'mechanical' : value.characterClass === 'swordsman' ? 'swordsman' : 'mage';
+      this.characterClass = MECHANICAL_ENABLED && value.characterClass === 'mechanical' && this.campaign.mechanicalOwned ? 'mechanical' : value.characterClass === 'swordsman' ? 'swordsman' : value.characterClass === 'assassin' ? 'assassin' : 'mage';
+      this.player.speed = this.characterClass === 'assassin' ? 290 : 200;
       setCurrentLanguage(this.language);
       voice.lang = this.language;
       if (typeof document !== 'undefined') document.body.classList.toggle('reduced-motion', this.reducedMotion);
@@ -710,7 +719,7 @@ export class GameEngine {
   }
   public setCharacterWeapon(hero:WeaponHero,id:WeaponId){if(!['characters','shop'].includes(this.screen))return false;const ok=equipWeapon(hero,id,this.campaign.ownedWeapons);if(ok)this.notifyHUD();return ok;}
   public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
-  public selectClass(value: CharacterClass) { if (this.screen !== 'lobby' && this.screen !== 'characters') return; if(value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return; this.characterClass = value; this.saveSettings(); this.notifyHUD(); }
+  public selectClass(value: CharacterClass) { if (this.screen !== 'lobby' && this.screen !== 'characters') return; if(value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return; this.characterClass = value; this.player.speed = value === 'assassin' ? 290 : 200; this.saveSettings(); this.notifyHUD(); }
   public get weapon(): 'staff' | 'sword' { return this.characterClass === 'mage' ? 'staff' : 'sword'; }
   private get heroStats() { return heroStats(this.characterClass, this.campaign.heroRanks); }
   private get personalSkillManaCost() { return skillManaCost(this.characterClass) - this.heroStats.skillManaDiscount; }
@@ -864,7 +873,7 @@ export class GameEngine {
     this.maxHealth=this.heroStats.maxHealth;this.usedSupplies.clear();this.supportAlly=null;
     this.health = this.maxHealth;
     this.hurtFlash=0;this.incomingHits=[];this.burn=newBurn();
-    this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;
+    this.invulnerability = this.attackCooldown = this.attackFlash = this.dodgeCooldown = this.dodgeTime = 0;this.assassinDeathAge=-1;this.recoil.distance=0;this.droppedDarts=[];this.phantomAim=null;
     this.combatHits = [];
     this.summonEffects = []; this.vfx = []; this.exitTravelRemaining = 0; this.finalGateCrossed = false; this.exitOpenedAt = null;
     this.boss = null;   // level 6: the Guardian forms from the crystals (updateFrostPrelude); level 13: from the slimes
@@ -1269,6 +1278,7 @@ export class GameEngine {
   /** A combo hit that landed: hold the fight a moment, push a living enemy back (not the dummy, not the boss). */
   private landHit(t: CombatTarget, from: { x: number; y: number }, heavy: boolean) {
     this.hitFeel.land(heavy);
+    if(this.characterClass==='assassin')this.hitFeel.stop=heavy?.055:.02;
     this.rage.gain(heavy ? RAGE.HEAVY : RAGE.HIT);
     // The spark flies along the blow from the near side of the target; the critical burst stands on its ground.
     const a = Math.atan2(t.y - from.y, t.x - from.x);
@@ -1388,7 +1398,7 @@ export class GameEngine {
   }
 
   private comboHero(): ComboHero | null {
-    return this.characterClass === 'swordsman' || this.characterClass === 'mage' ? this.characterClass : null;
+    return this.characterClass === 'swordsman' || this.characterClass === 'mage' || this.characterClass === 'assassin' ? this.characterClass : null;
   }
 
   /** The combo for the current hero (a new one when the hero changes). */
@@ -1403,6 +1413,7 @@ export class GameEngine {
   private get comboSpeed() { return this.hasteTime > 0 || this.overdrive > 0 ? 2 : 1; }
 
   public attack(target?: { x: number; y: number }) {
+    if(this.assassinDeathAge>=0)return;
     if(this.orientationBlocked||this.bossIntroduction||this.inventoryOpen||this.runeEditing||this.guides.blocking)return;
     if (this.screen !== 'playing' || (this.bossDeathPending && this.boss?.kind !== 'demon') || this.exitTravelRemaining > 0) return;
     const combo = this.comboFor();
@@ -1448,11 +1459,22 @@ export class GameEngine {
   private startComboHit(step: number) {
     const hero = this.comboHero();
     if (!hero) return;
+    if(hero==='assassin' && step===2 && this.mana.value<comboManaCost(hero,2)){
+      this.combo?.cancel();
+      const first=this.combo?.press();
+      if(first===0)this.startComboHit(0);
+      return;
+    }
     if(!this.spendMana(comboManaCost(hero, step))){this.combo?.cancel();this.attackCooldown=0;return;}
     const hit = COMBO_HITS[hero][step];
+    if (hero === 'assassin') {
+      this.attackFlash = hitDuration(hit);
+      const dx = this.comboAim.x-this.player.x, dy = this.comboAim.y-this.player.y;
+      if (Math.hypot(dx,dy)>1) this.player.direction = Math.abs(dx)>Math.abs(dy) ? (dx<0?'left':'right') : (dy<0?'up':'down');
+    }
     this.recorder.recordEvent({kind:'attack',x:this.player.x,y:this.player.y,targetX:this.comboAim.x,targetY:this.comboAim.y});
     voice.say(this.voiceRole, 'attack');
-    if (hero === 'swordsman') sounds.playSlash(); else sounds.playSpell();
+    if (hero === 'swordsman' || hero === 'assassin') sounds.playSlash(); else sounds.playSpell();
     this.attackCooldown = hitDuration(hit) / this.comboSpeed;      // the HUD's "recovering" hint
     const dx = this.comboAim.x - this.player.x, dy = this.comboAim.y - this.player.y, d = Math.hypot(dx, dy) || 1;
     if (hero === 'swordsman' && hit.heavy) {
@@ -1488,6 +1510,22 @@ export class GameEngine {
       if (step === 2) this.comboFx.push({ kind: 'spin', x: px, y: py + 8, angle, radius: sw.radius, life: 0.3, max: 0.3 });
       else this.comboFx.push({ kind: 'arc', x: px + ux * 18, y: py + uy * 18, angle, radius: sw.radius * 0.75, life: 0.3, max: 0.3, heavy: hit.heavy, flip: step === 1 });
       if (hit.heavy) { this.comboFx.push({ kind: 'impact', x: cx, y: cy, angle, radius: 46, life: 0.35, max: 0.35 }); sounds.playFinisher(); }
+    } else if (hero === 'assassin') {
+      const count = step === 1 ? 3 : 1;
+      for (let i = 0; i < count; i++) {
+        const off = (i - (count - 1) / 2) * .07;
+        const a = angle + off;
+        this.comboShots.push({ x: px + ux * 15, y: py + uy * 15, vx: Math.cos(a) * 780, vy: Math.sin(a) * 780,
+          life: .52, radius: 5, amount, heavy: step === 2, pierce: false, group: new Set<object>() });
+      }
+      this.comboFx.push({ kind: 'impact', x: px + ux * 26, y: py + uy * 26, angle, radius: 13, life: .16, max: .16 });
+      if (step === 2) {
+        const reach = 15 + 780 * .52;
+        const aimDistance = Math.hypot(this.comboAim.x - px, this.comboAim.y - py);
+        this.recoil = { distance: Math.max(0, Math.min(144, reach - aimDistance - 8)), x: -ux, y: -uy };
+        this.assassinVelocity = { x: 0, y: 0 };
+        sounds.playFinisher();
+      }
     } else {
       const shot = (a: number, speed: number, radius: number, pierce: boolean, fromX = px + Math.cos(a) * 18, fromY = py - 4 + Math.sin(a) * 18) =>
         this.comboShots.push({ x: fromX, y: fromY, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: 460 / speed, radius, amount, heavy: false, pierce, group });
@@ -1512,13 +1550,49 @@ export class GameEngine {
 
   /** Moves spells, Kael's dash, effects and numbers; runs the combo's clock. */
   private updateCombo(dt: number) {
+    for(const dart of this.droppedDarts){
+      dart.life-=dt;
+      if(this.characterClass==='assassin' && Math.hypot(dart.x-this.player.x,dart.y-this.player.y)<19){
+        dart.life=0;
+        this.mana.value=Math.min(this.mana.max,this.mana.value+8);
+        this.skillCooldown=Math.max(0,this.skillCooldown-.4);
+        this.notifyHUD();
+      }
+    }
+    this.droppedDarts=this.droppedDarts.filter(d=>d.life>0);
+    for (const ghost of this.phantomTrail) ghost.life -= dt;
+    this.phantomTrail = this.phantomTrail.filter(ghost=>ghost.life>0);
     this.combo?.update(dt * this.comboSpeed, s => this.startComboHit(s), s => this.landComboHit(s));
     if (this.lunge.time > 0) {
       const step = Math.min(dt, this.lunge.time);
       this.lunge.time -= step;
       const obstacles = getActiveObstacles(this.currentLevel.walls, this.currentLevel.doors);
-      const r = resolveMovement(this.player.x, this.player.y, this.player.x + this.lunge.vx * step, this.player.y + this.lunge.vy * step, 24, 24, obstacles);
-      this.player.x = r.x; this.player.y = r.y;
+      const segments=Math.max(1,Math.ceil(Math.hypot(this.lunge.vx,this.lunge.vy)*step/6));
+      for(let i=0;i<segments;i++){
+        const tx=this.player.x+this.lunge.vx*step/segments,ty=this.player.y+this.lunge.vy*step/segments;
+        const r=resolveMovement(this.player.x,this.player.y,tx,ty,24,24,obstacles);
+        this.player.x=r.x;this.player.y=r.y;
+        if(Math.abs(r.x-tx)+Math.abs(r.y-ty)>.01){this.lunge.time=0;break;}
+      }
+      if (this.phantomAim) {
+        this.phantomTrail.push({x:this.player.x,y:this.player.y,life:.22});
+        if(this.phantomTrail.length>8)this.phantomTrail.shift();
+        this.comboFx.push({kind:'impact',x:this.player.x,y:this.player.y-18,angle:0,radius:8,life:.12,max:.12});
+        if (this.lunge.time <= 0) {
+          const aim = this.phantomAim;
+          this.phantomAim = null;
+          const target = aim;
+          const angle = Math.atan2(target.y-this.player.y+18,target.x-this.player.x);
+          for(let i=0;i<5;i++){
+            const a=angle+(i-2)*.30;
+            this.comboShots.push({x:this.player.x,y:this.player.y-18,vx:Math.cos(a)*850,vy:Math.sin(a)*850,life:.24+i*.025,radius:5,amount:11,heavy:true,pierce:true,group:new Set<object>()});
+            this.recoverableDarts.add(this.comboShots[this.comboShots.length-1]);
+          }
+          this.recoil={distance:144,x:-Math.cos(angle),y:-Math.sin(angle)};
+          this.comboFx.push({kind:'impact',x:this.player.x,y:this.player.y-18,angle,radius:28,life:.3,max:.3});
+          sounds.playFinisher();
+        }
+      }
     }
     // Spells sweep their path each frame, so they cannot skip a target or pass through a wall.
     const walls = this.comboShots.length ? getActiveObstacles(this.currentLevel.walls, this.currentLevel.doors) : [];
@@ -1534,13 +1608,22 @@ export class GameEngine {
         .sort((p, q) => p.at - q.at);
       for (const { t, at } of hits) {
         shot.group.add(t);
-        if (this.strike(t, shot.amount, shot.heavy)) this.landHit(t, a, shot.heavy);
+        const crit = this.characterClass === 'assassin' && Math.random() < (shot.heavy ? .4 : .25) + this.heroStats.assassinCritBonus;
+        if (this.strike(t, shot.amount * (crit ? 1.8 : 1), shot.heavy || crit)) this.landHit(t, a, shot.heavy || crit);
         this.renderer.emitMagic('sparkle', a.x + (b.x - a.x) * at, a.y + (b.y - a.y) * at, 36);
         if (!shot.pierce) { shot.life = 0; break; }
       }
       if (wallAt < Infinity && shot.life > 0) {
+        shot.x=a.x+(b.x-a.x)*Math.max(0,wallAt-.04);
+        shot.y=a.y+(b.y-a.y)*Math.max(0,wallAt-.04);
         shot.life = 0;
         this.renderer.emitMagic('sparkle', a.x + (b.x - a.x) * wallAt, a.y + (b.y - a.y) * wallAt, 14);
+      }
+    }
+    for(const shot of this.comboShots){
+      if(shot.life<=0 && this.recoverableDarts.has(shot)){
+        this.droppedDarts.push({x:shot.x,y:shot.y,life:10,angle:Math.atan2(shot.vy,shot.vx)});
+        this.recoverableDarts.delete(shot);
       }
     }
     this.comboShots = this.comboShots.filter(s => s.life > 0);
@@ -1629,11 +1712,27 @@ export class GameEngine {
   }
 
   public useSkill(_target?: { x: number; y: number }) {
+    if(this.assassinDeathAge>=0)return;
     if(this.orientationBlocked)return;
     if (this.screen !== 'playing' || (this.bossDeathPending && this.boss?.kind !== 'demon') || this.exitTravelRemaining > 0 || this.skillCooldown > 0) return;
     if(this.bossIntroduction||this.inventoryOpen||this.runeEditing||this.guides.blocking)return;
     if(!this.spendMana(this.personalSkillManaCost))return;
-    if (this.characterClass === 'mage') {
+    if (this.characterClass === 'assassin') {
+      this.combo?.cancel();
+      this.recoil.distance=0;
+      this.assassinVelocity={x:0,y:0};
+      const aim = _target ?? this.combatAim() ?? this.cursorTarget ?? { x: this.player.x + 150, y: this.player.y };
+      const dx = aim.x - this.player.x, dy = aim.y - this.player.y, d = Math.hypot(dx, dy) || 1;
+      const travel = Math.max(0, d-42);
+      this.lunge = { time: .15, vx: dx / d * travel / .15, vy: dy / d * travel / .15 };
+      this.invulnerability = Math.max(this.invulnerability, .2);
+      this.skillCooldown = Math.max(3.5,4.5-this.heroStats.assassinSkillCooldownDiscount);
+      this.attackFlash = .15;
+      this.recorder.recordEvent({kind:'skill',x:this.player.x,y:this.player.y,targetX:aim.x,targetY:aim.y});
+      sounds.playDodge();
+      this.phantomAim = aim;
+      this.phantomTrail = [];
+    } else if (this.characterClass === 'mage') {
       const enemy=this.enemies.filter(e=>e.hp>0).sort((a,b)=>Math.hypot(a.x-this.player.x,a.y-this.player.y)-Math.hypot(b.x-this.player.x,b.y-this.player.y))[0];
       const aim=this.boss&&this.boss.hp>0?this.boss:enemy??_target??this.cursorTarget??this.player;
       this.recorder.recordEvent({kind:'skill',x:this.player.x,y:this.player.y,targetX:aim.x,targetY:aim.y});
@@ -1707,7 +1806,7 @@ export class GameEngine {
     sounds.playImpact(result.dealt===0);
     if(result.dealt===0){this.invulnerability=.3;this.notifyHUD();return;}
     this.health=result.hp;this.hurtFlash=.28;this.rage.gain(RAGE.HURT);
-    this.invulnerability = 1.3;
+    this.invulnerability = this.characterClass === 'assassin' ? .55 : 1.3;
     this.combo?.cancel(); this.lunge.time = 0;           // staggered: the combo is lost
     this.renderer.particles.emit(this.player.x, this.player.y, 18, '#fb7185', 75, 4, 0.6);
     if (this.boss?.kind === 'demon' && this.health > 0 && ignite(this.burn)) this.showBanner(this.language === 'vi' ? 'Đang cháy!' : 'You are burning!', 1.4);
@@ -1721,6 +1820,12 @@ export class GameEngine {
     this.burn = newBurn();
     if (this.autoRevive()) return;
     this.defeatReason = 'damage';
+    if(this.characterClass==='assassin'){
+      this.assassinDeathAge=0;
+      this.heldKeys.clear();
+      voice.say(this.voiceRole,'defeat');
+      return;
+    }
     this.screen = 'defeat'; this.heldKeys.clear(); document.body.dataset.state = 'gameover';
     voice.say(this.voiceRole, 'defeat');
     if (this.boss) voice.say('guardian', 'victory', { delay: 2.2 });
@@ -2365,6 +2470,11 @@ export class GameEngine {
   }
 
   private update(dt: number) {
+    if(this.assassinDeathAge>=0){
+      this.assassinDeathAge+=dt;
+      if(this.assassinDeathAge>=.65){this.assassinDeathAge=-1;this.recoil.distance=0;this.droppedDarts=[];this.phantomAim=null;this.screen='defeat';document.body.dataset.state='gameover';this.notifyHUD();}
+      return;
+    }
     if (this.screen !== 'playing' || this.bossIntroduction || this.orientationBlocked || this.runeEditing || this.inventoryOpen || this.pendingBattleStart) return;
     if(this.tutorialEnabled){
       const previousTopic=this.guides.active;
@@ -2536,7 +2646,31 @@ export class GameEngine {
       moveX *= 3.6; moveY *= 3.6;
     }
 
+    if(this.phantomDashing){moveX=0;moveY=0;}
     if (this.trappedTime > 0) { moveX = 0; moveY = 0; }
+    if (this.characterClass === 'assassin' && this.dodgeTime <= 0) {
+      const rate = (moveX || moveY) ? .06 : .08;
+      const blend = 1 - Math.exp(-dt / rate);
+      this.assassinVelocity.x += (moveX - this.assassinVelocity.x) * blend;
+      this.assassinVelocity.y += (moveY - this.assassinVelocity.y) * blend;
+      moveX = Math.abs(this.assassinVelocity.x) < .01 ? 0 : this.assassinVelocity.x;
+      moveY = Math.abs(this.assassinVelocity.y) < .01 ? 0 : this.assassinVelocity.y;
+    }
+    if (this.recoil.distance > 0) {
+      moveX = moveY = 0;
+      const obstacles = getActiveObstacles(this.currentLevel.walls, this.currentLevel.doors);
+      let travel = Math.min(this.recoil.distance, 900 * dt);
+      this.recoil.distance -= travel;
+      while (travel > 0) {
+        const step = Math.min(6, travel);
+        const tx = this.player.x + this.recoil.x * step, ty = this.player.y + this.recoil.y * step;
+        const next = resolveMovement(this.player.x, this.player.y, tx, ty, 24, 24, obstacles);
+        if (Math.abs(next.x-tx) + Math.abs(next.y-ty) > .01) { this.recoil.distance = 0; break; }
+        this.player.x = tx;
+        this.player.y = ty;
+        travel -= step;
+      }
+    }
     const isMoving = moveX !== 0 || moveY !== 0;
     this.player.isMoving = isMoving;
 
