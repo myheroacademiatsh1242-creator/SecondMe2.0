@@ -5,7 +5,7 @@ coverage/
 .DS_Store
 *.log
 .env*
-!.env.example
+
 
 # Local tool state and scratch output
 .claude/
