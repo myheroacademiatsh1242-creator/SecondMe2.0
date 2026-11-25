@@ -9,6 +9,7 @@ import {rarityName,RARITY_COLORS,sortShopCatalogue} from '../game/logic/rarity.t
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
 import './tanukiTradingPost.css';
 import { ChristmasEvent, ChristmasLights, ChristmasOrnaments, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
+import { FirstTip } from './FeatureIntro.tsx';
 const displayItems=sortShopCatalogue(SHOP_ITEMS.filter(item=>item.id!=='aid'));
 // Frames hold long enough to read the expression before returning to idle.
 const WINTER_IDLE: [number, number][] = [
@@ -266,6 +267,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
     <i className="pedestal-stocking"/><i className="pedestal-candy"/><i className="pedestal-stocking"/>
   </div>}
   <ChestGacha engine={engine} hud={hud} christmas={christmas.active}/>
+  <div className="trading-first-tip"><FirstTip feature="shop" vi={vi}/></div>
   <div className="trading-wallet"><img src={asset('raccoon-coin.png')} alt=""/><span>{vi?'XU':'GOLD'}: <b>{hud.coins.toLocaleString(vi?'vi-VN':'en-US')}</b></span></div>
   <section className="trading-catalogue" data-panel-art={catalogueArt} aria-label={vi?'Quầy hàng Tanuki':'Tanuki’s shop'}>
    <div className="trading-tabs" role="tablist"><button role="tab" aria-selected={tab==='items'} onClick={()=>{setTab('items');engine?.onboarding.event('shop-tab');}}>{vi?'VẬT PHẨM':'ITEMS'} <ShopItemIcon id="healSmall"/></button><button role="tab" aria-selected={tab==='outfits'} onClick={()=>{setTab('outfits');engine?.onboarding.event('shop-tab');}}>{vi?'TRANG PHỤC':'OUTFITS'} <Shirt className="trading-tab-outfit-icon" size={26} strokeWidth={2.2} aria-hidden="true"/></button></div>

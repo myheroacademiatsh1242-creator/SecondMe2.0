@@ -1,0 +1,48 @@
+/*
+ * The one in-match frame: flat pixel stone, the same as the HUD side rails.
+ * Use .stone-frame on any panel, card or banner shown during play. Big menus (pause, defeat,
+ * battle preparation) keep their vine-dressed art; everything smaller uses this.
+ */
+:root{
+  --stone-frame-image:url('/assets/ui/stone-card-pixel.png') 86 fill / 6px stretch;
+  --stone-frame-bg:linear-gradient(115deg,#293427,#1c281f);
+  --stone-text:#e9dda9;
+  --stone-text-dim:#c5cba6;
+  --stone-accent:#e7cd8d;
+  --stone-new:#ffd76a;
+}
+.stone-frame{
+  box-sizing:border-box;
+  border:6px solid transparent;
+  border-image:var(--stone-frame-image);
+  background:var(--stone-frame-bg);
+  color:var(--stone-text);
+  box-shadow:0 3px 0 #0b140c;
+  image-rendering:pixelated;
+  text-shadow:1px 2px #101810;
+}
+/* A key cap inside stone UI: light stone face, dark glyph. */
+.stone-key{
+  display:inline-block;min-width:1.6em;padding:1px 6px;box-sizing:border-box;text-align:center;
+  background:#d9d2b4;color:#1d2419;border:2px solid #6f7a55;box-shadow:0 2px 0 #3a4430;
+  font-size:.85em;line-height:1.2;text-shadow:none;white-space:nowrap;
+}
+/* "New" badge: a small glowing dot on buttons whose feature the player has not opened yet. */
+.new-dot{
+  position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;
+  background:var(--stone-new);border:2px solid #3a2a08;box-shadow:0 0 0 2px #ffd76a55,0 0 10px #ffd76a;
+  pointer-events:none;animation:new-dot-pulse 1.4s ease-in-out infinite alternate;z-index:2;
+}
+@keyframes new-dot-pulse{to{box-shadow:0 0 0 4px #ffd76a22,0 0 16px #ffd76a}}
+@media(prefers-reduced-motion:reduce){.new-dot{animation:none}}
+/* One-line first-visit tip at the top of a panel. */
+.first-tip{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:8px 12px;font-size:14px;line-height:1.35}
+.first-tip b{color:var(--stone-new);font-weight:400;white-space:nowrap}
+.first-tip span{flex:1}
+.first-tip button{flex:none;background:#394f3c;border:1px solid #a8ac7b;color:#f2e5b6;padding:3px 10px;cursor:pointer;font:inherit;font-size:13px}
+.first-tip button:hover{background:#4a6448}
+/* Any button holding a New dot anchors it at its corner. */
+button:has(> .new-dot){position:relative}
+/* Shop: the first-visit tip floats over the open ground left of the counter, above the coin box. */
+.trading-first-tip{position:absolute;left:3%;bottom:18%;width:min(440px,42%);z-index:5}
+.trading-first-tip .first-tip{margin:0}

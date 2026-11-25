@@ -8,13 +8,17 @@ const divider=(x:number,y:number,gap:number):Rect[]=>[{x,y:40,width:36,height:y-
 const trap=(kind:Trap['kind'],x:number,y:number,width:number,height:number,period:number,offset=0):Trap=>({kind,x,y,width,height,period,offset});
 const base=(id:number,subtitle:string,x:number,y:number):LevelData=>({id,name:`LEVEL 0${id}`,subtitle,difficulty:id,description:'',playerSpawn:{x,y,direction:'right'},walls:perimeter.map(w=>({...w})),plates:[],doors:[],exit:{x:1140,y:330,width:60,height:60,radius:36},traps:[]});
 
+// Trial 1, the practice ground (logic/practiceGround.ts): stations left to right, split by pillar
+// pairs with an open middle. Move → hit the dummies (enemies.ts) → skill → dash through the
+// rockfall → record an Echo to hold the rune while you cross the gate. No clock, no death.
 const first=base(1,'ECHO GROVE',220,360);
-first.plates=[plate('plate_1',440,180)];
-first.walls.push(...divider(660,300,120),{x:320,y:300,width:180,height:32},{x:140,y:560,width:80,height:40},{x:380,y:560,width:120,height:40});
-first.doors=[gate('door_1',660,300,120,['plate_1'])];
-first.exit={x:1040,y:360,width:60,height:60,radius:36};
-first.traps=[trap('vines',530,335,90,70,4.8),trap('crusher',600,255,48,60,4.8,.3),trap('rocks',850,325,88,88,5.2,1.1)];
-first.description='Leave one Echo holding the northern rune. Choose a slow safe path or time the stone jaws, then cross while the Echo keeps the gate open.';
+const stationPillars=(x:number):Rect[]=>[{x,y:40,width:28,height:190},{x,y:490,width:28,height:190}];
+first.plates=[plate('plate_1',900,150)];
+first.walls.push(...stationPillars(320),...stationPillars(600),...stationPillars(840),...divider(1040,300,120));
+first.doors=[gate('door_1',1040,300,120,['plate_1'])];
+first.exit={x:1140,y:330,width:60,height:60,radius:36};
+first.traps=[trap('rocks',670,316,88,88,3.6,.6),trap('crusher',700,470,48,60,4.2,.3),trap('vines',900,520,90,70,4.8)];
+first.description='Practice ground: learn to move, attack, use your skill and dash, then leave an Echo holding the rune so you can cross the gate.';
 
 // Trial 2: a U-shaped journey, from the south-west through the eastern grove
 // and back into a sealed north-west sanctuary.

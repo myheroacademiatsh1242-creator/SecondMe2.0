@@ -25,6 +25,8 @@ import {drawTripleFrost} from './tripleFrost.ts';
 import { drawVfx, drawHexShield } from './vfx.ts';
 import { drawPfxShots } from './pixelfx.ts';
 import { WIND_BRIDGE } from '../logic/frostLevels.ts';
+import { ECHO_RUNES } from '../logic/echoRunes.ts';
+import { drawKeyPrompt } from './keyPrompt.ts';
 let echoCanvas:HTMLCanvasElement|undefined;
 export const ECHO_COLORS=['#67e8f9','#c084fc','#fbbf24','#fb7185','#a3e635','#f9a8d4'];
 
@@ -56,7 +58,25 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   if(game.echoes.length){
     echoCanvas??=document.createElement('canvas');echoCanvas.width=96;echoCanvas.height=112;
     const layer=echoCanvas.getContext('2d')!;
+    // Runes that stay active on Echoes (not the instant Calling / Restoration).
+    const auras=ECHO_RUNES.filter(r=>r.id!=='call'&&r.id!=='restore'&&game.activeEchoRunes.has(r.id));
     for(const echo of game.echoes){
+      if(auras.length){
+        // A pulsing glow in each active rune's colour under the Echo, with glyphs orbiting it, so buffed Echoes read at a glance.
+        ctx.save();
+        const beat=game.reducedMotion?.5:.5+.5*Math.sin(time*4+(echo.colorSlot??0));
+        auras.forEach((r,i)=>{
+          ctx.globalAlpha=.28+.22*beat;ctx.fillStyle=r.color;
+          ctx.beginPath();ctx.ellipse(echo.x,echo.y+12,26+i*5,10+i*2,0,0,Math.PI*2);ctx.fill();
+        });
+        ctx.globalAlpha=1;ctx.font='bold 17px "Second Me Pixel", monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        auras.forEach((r,i)=>{
+          const a=(game.reducedMotion?0:time*1.6)+i*Math.PI*2/auras.length;
+          const gx=echo.x+Math.cos(a)*30,gy=echo.y-10+Math.sin(a)*14;
+          ctx.lineWidth=3;ctx.strokeStyle='#0b120d';ctx.strokeText(r.glyph,gx,gy);ctx.fillStyle=r.color;ctx.fillText(r.glyph,gx,gy);
+        });
+        ctx.restore();
+      }
       layer.clearRect(0,0,96,112);
       if(echo.characterClass==='swordsman')drawSoldierSprite(layer,48,70,echo.direction,echo.isMoving,true,time,(echo.attackFlash??0)>0,1-(echo.attackFlash??0)/.22);
       else if(echo.characterClass==='mechanical')drawMechanicalSprite(layer,48,70,echo.direction,echo.isMoving,true,time);
@@ -72,6 +92,17 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
       ctx.fillStyle=ECHO_COLORS[slot];ctx.font='bold 12px "Second Me Pixel", monospace';ctx.textAlign='center';ctx.fillText(`E${slot+1}`,echo.x,echo.y-48);
     }
   }
+  // Rune activation / splash rings: expand and fade in the rune's colour.
+  if(game.runePulses.length){
+    ctx.save();
+    for(const p of game.runePulses){
+      const k=1-p.life/p.max;
+      ctx.globalAlpha=Math.max(0,1-k);ctx.strokeStyle=p.color;ctx.lineWidth=4*(1-k)+1;
+      ctx.beginPath();ctx.ellipse(p.x,p.y+8,14+k*46,6+k*20,0,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  drawKeyPrompt(ctx,game,time);
   // With the hand-drawn art the trap floors were drawn under the characters by the renderer;
   // only falling boulders go on top here.
   const trapLayer = trapSpritesReady() ? 'overhead' : 'all';

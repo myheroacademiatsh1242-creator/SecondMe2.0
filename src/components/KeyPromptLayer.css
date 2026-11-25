@@ -1,0 +1,22 @@
+/* "New" mechanic card: a flat-stone plate across the top of the arena, never covering the hero's area for long. */
+.new-mechanic{
+  position:absolute;left:50%;top:calc(7% + 14px);transform:translateX(-50%);z-index:40;
+  display:flex;align-items:center;gap:12px;width:min(620px,86vw);padding:10px 12px;
+  pointer-events:auto;animation:new-mechanic-in .25s ease-out;
+}
+.new-mechanic-badge{
+  flex:none;align-self:flex-start;padding:2px 7px;background:var(--stone-new);color:#2a1d04;
+  font-size:12px;line-height:1.2;letter-spacing:.6px;text-shadow:none;border:2px solid #3a2a08;
+}
+.new-mechanic-icon{flex:none;color:var(--stone-accent)}
+.new-mechanic-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.new-mechanic-text strong{font-weight:400;font-size:17px;line-height:1.15;color:var(--stone-accent)}
+.new-mechanic-text span{font-size:14px;line-height:1.35;color:var(--stone-text)}
+.new-mechanic button{
+  flex:none;cursor:pointer;font:inherit;color:#f2e5b6;background:#394f3c;border:1px solid #a8ac7b;padding:4px 10px;font-size:13px;
+}
+.new-mechanic button:hover{background:#4a6448}
+.new-mechanic-close{display:grid;place-items:center;width:28px;height:28px;padding:0!important}
+@keyframes new-mechanic-in{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+@media(prefers-reduced-motion:reduce){.new-mechanic{animation:none}}
+@media(max-height:620px){.new-mechanic{padding:6px 8px;gap:8px}.new-mechanic-text strong{font-size:15px}.new-mechanic-text span{font-size:12px}}

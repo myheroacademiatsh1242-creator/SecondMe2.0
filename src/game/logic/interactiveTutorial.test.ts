@@ -105,10 +105,10 @@ test('insufficient swap stability and no summon charges are genuine failures',t=
 });
 
 
-test('tutorial clock assist ends immediately after skip without completing the level',t=>{
- const {e,tick}=engineFor(t);tick();const time=e.legTimeRemaining;assert.ok(e.tutorialClockPaused);
- (e as any).update(.1);assert.equal(e.legTimeRemaining,time);
- e.onboarding.skipAll();assert.equal(e.tutorialClockPaused,false);(e as any).update(.1);assert.ok(e.legTimeRemaining!<time!);assert.deepEqual(e.campaign.completed,[]);
+test('the practice ground (level 1 with tutorials on) has no clock, before or after skipping, and completes nothing',t=>{
+ const {e,tick}=engineFor(t);tick();assert.equal(e.isPracticeGround,true);assert.equal(e.legTimeRemaining,null);
+ (e as any).update(.1);assert.equal(e.legTimeRemaining,null);
+ e.onboarding.skipAll();(e as any).update(.1);assert.equal(e.legTimeRemaining,null);assert.deepEqual(e.campaign.completed,[]);
 });
 test('inventory packing validates limits and quantity while tutorial observes real successes',t=>{
  const {e,tick}=engineFor(t);e.campaign.completed=[1,2];e.goToLobby();tick();
