@@ -26,8 +26,8 @@ const trailSegments = [
   'M 590 535 C 670 565, 760 575, 840 560',
   // 11 -> 12: Down the upper stairs, across the landing, then down the lower stairs.
   'M 840 560 C 860 582, 887 598, 914 606 C 940 615, 956 637, 955 661 L 929 711 Q 921 725, 928 737 Q 943 749, 960 753 Q 969 756, 975 770 L 1008 824 Q 1019 843, 1038 836 Q 1055 827, 1060 800',
-  // 12 -> 13: Follows canyon trail past dragon bones, between guardian statues into demon cavern
-  'M 1060 800 C 1140 810, 1240 800, 1360 765',
+  // 12 -> 13: Rounds the lava flow and the guardian's pedestal before climbing to the cavern.
+  'M 1060 800 C 1057 834, 1074 867, 1105 865 C 1140 863, 1180 851, 1214 862 C 1250 875, 1285 886, 1310 869 C 1336 851, 1317 808, 1333 787 Q 1344 770, 1360 765',
 ];
 
 const stops = [
@@ -201,7 +201,10 @@ export function FrostChapter({
       {runeEditor && <RuneLoadoutEditor hud={hud} engine={engine} close={() => setRuneEditor(false)} />}
 
       <aside className={`journey-camp integrated-camp frost-camp${christmas ? ' christmas-camp' : ''}`}>
-        {christmas && <div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div>}
+        {christmas && <>
+          <div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div>
+          <div className="frost-camp-snow"><ChristmasSnow count={24} still={hud.reducedMotion}/></div>
+        </>}
         <button className="frost-back" onClick={back} aria-label={vi ? 'Về Chương I · Rừng Vọng Âm' : 'Back to Chapter I · Echo Forest'}>
           <ChevronLeft size={18} />
           {vi ? 'CHƯƠNG I · RỪNG VỌNG ÂM' : 'CHAPTER I · ECHO FOREST'}
@@ -246,6 +249,7 @@ export function FrostChapter({
           <button className="rest-prepare frost-prepare" onClick={() => setRuneEditor(true)}>
             <Backpack size={18} />
             {vi ? 'Đổi rune' : 'Edit runes'}
+            {hud.newRunes&&<span className="new-dot" aria-hidden="true"/>}
           </button>
         </div>
 

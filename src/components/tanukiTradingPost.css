@@ -205,8 +205,8 @@
 .trading-merchant>span{height:310px}
 
 /* One catalogue rhythm for supplies and outfits, independent of tab. */
-.trading-catalogue :is(.trading-items,.outfit-shop-list){display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:64px;gap:5px;padding:0;align-content:start;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;scrollbar-gutter:auto;overscroll-behavior-y:contain;touch-action:pan-y pinch-zoom}
-.trading-catalogue :is(.trading-items,.outfit-shop-list)>button{display:grid;grid-template-columns:34px minmax(0,1fr) 62px;align-items:center;gap:8px;width:100%;height:64px;min-height:64px;box-sizing:border-box;margin:0;padding:5px 7px;text-align:left;border:1px solid #67785c;border-image:none!important;border-radius:0;background:#20322c;box-shadow:inset 0 0 0 2px #14251f;color:#e7e4c7;font-family:inherit}
+.trading-catalogue :is(.trading-items,.outfit-shop-list){display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:minmax(52px,auto);gap:5px;padding:0;align-content:start;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;scrollbar-gutter:auto;overscroll-behavior-y:contain;touch-action:pan-y pinch-zoom}
+.trading-catalogue :is(.trading-items,.outfit-shop-list)>button{display:grid;grid-template-columns:34px minmax(0,1fr) max-content;align-items:center;gap:8px;width:100%;min-height:52px;box-sizing:border-box;margin:0;padding:5px 7px;text-align:left;border:1px solid #67785c;border-image:none!important;border-radius:0;background:#20322c;box-shadow:inset 0 0 0 2px #14251f;color:#e7e4c7;font-family:inherit}
 .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:is(.selected,[aria-pressed=true]){border-color:#c7b67c;background:#344535;box-shadow:inset 3px 0 #e0cb88,inset 0 0 0 1px #667552}
 .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:hover{background:#344535}
 .trading-catalogue :is(.trading-items,.outfit-shop-list)>button>span:not(.shop-item-icon){min-width:0;font-size:19px;line-height:1.2;text-align:left;overflow-wrap:anywhere}
@@ -222,10 +222,6 @@ html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list
 /* Keep both stock lists full-width while retaining native wheel and touch scrolling. */
 .trading-catalogue :is(.trading-items,.outfit-shop-list)::-webkit-scrollbar{display:none;width:0;height:0}
 
-/* Tanuki's catalogue: the forest UI's mossy stone and vines, regraded for the sunset shop
-   (tools/assets/prepare_shop_frame.py): amber runes like the lanterns, warm brown wells, stone in
-   evening light. Same painting, so it matches the rest of the game's art. */
-html body .adventure-app .trading-catalogue:before{background-image:url('/assets/ui/trading-forest-frame-warm.png')!important}
 html body .adventure-app .trading-actions>.trading-leave{background-image:url('/assets/ui/trading-forest-frame-warm.png')!important;color:#fff1c2;text-shadow:2px 2px #2a190d}
 html body .adventure-app .trading-catalogue .trading-tabs>button{color:#e9cf9c;text-shadow:2px 2px #2a190d}
 html body .adventure-app .trading-catalogue .trading-tabs>button[aria-selected=true]{color:#fff1c2;text-shadow:0 0 7px #f0b85a99,2px 2px #2a190d}
@@ -236,17 +232,128 @@ html body .adventure-app .trading-actions>.trading-buy:not(:disabled):hover{colo
 html body .adventure-app .trading-product-info strong{color:#ffe3a3}
 html body .adventure-app .trading-product-info small{color:#d4b98a}
 html body .adventure-app .trading-product-info p{color:#f1e2c4}
-/* Rows: carved stone slabs in the same warm light; forestFrames.css thins row borders to 1px, so set them here. */
+/* Dark inset rows leave the icons, names and prices as the brightest elements. */
 html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button{
-  border:6px solid transparent!important;border-image:url('/assets/ui/stone-card-pixel.png') 86 / 6px stretch!important;
-  background:linear-gradient(180deg,#4b4335,#322b21)!important;box-shadow:0 2px 0 #140f0a!important;
-  padding:0 6px!important;color:#f6e7c8;image-rendering:pixelated;
+  border:2px solid #65503a!important;border-image:none!important;
+  background:linear-gradient(180deg,#38291f,#2c211a)!important;box-shadow:inset 0 0 0 2px #241a14,0 2px #160f0c!important;
+  padding:2px 7px!important;color:#f6e7c8;image-rendering:pixelated;
 }
-html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:hover,
-html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:focus-visible{background:linear-gradient(180deg,#5a5040,#3c3427)!important;outline:none}
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:hover{background:#453020!important}
 html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:is(.selected,[aria-pressed=true]){
-  outline:none;background:linear-gradient(180deg,#665638,#46392a)!important;
-  box-shadow:inset 0 0 0 2px #f0c870,inset 0 0 14px #f0b85a66!important;
+  outline:none;border-color:#8b8951!important;background:#3b3223!important;color:#d8e6a5;
+  box-shadow:inset 3px 0 #a3a461,inset 0 0 0 2px #271e16!important;
 }
+html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button:focus-visible{outline:2px solid #ffe1a3;outline-offset:-4px}
 html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button>span>small{color:#d4b98a}
 html body .adventure-app .trading-catalogue :is(.trading-items,.outfit-shop-list)>button>b{color:#ffd76a}
+
+/* Match the live controls to the plaques and wells of the transparent catalogue sprite. */
+.tanuki-trading-shop .trading-catalogue {
+  --stock-top: 166px;
+  --stock-height: 232px;
+  --stock-left: 83px;
+  --stock-right: 83px;
+  --description-top: 490px;
+  --purchase-top: 420px;
+}
+
+html body .adventure-app .tanuki-trading-shop .trading-catalogue::before {
+  background-image: url('/assets/ui/tanuki-shop-frame.png') !important;
+}
+
+html body .adventure-app .christmas-shop .trading-catalogue::before {
+  background-image: url('/assets/ui/noel/tanuki-shop-frame-winter.png') !important;
+}
+
+.tanuki-trading-shop .trading-catalogue::after {
+  content: none;
+}
+
+.tanuki-trading-shop .trading-tabs {
+  left: 79px;
+  right: 79px;
+  top: 67px;
+  height: 44px;
+  gap: 24px;
+}
+
+.tanuki-trading-shop .trading-tabs > button[aria-selected='true'] {
+  box-shadow: inset 0 -2px #e8c879;
+}
+
+.tanuki-trading-shop .trading-hint {
+  left: var(--stock-left);
+  right: var(--stock-right);
+  top: 147px;
+}
+
+.tanuki-trading-shop .trading-product-info {
+  left: var(--stock-left);
+  right: var(--stock-right);
+  top: var(--description-top);
+  height: 104px;
+}
+
+.tanuki-trading-shop .outfit-shop-description {
+  top: calc(var(--description-top) - var(--stock-top));
+  height: 104px;
+}
+
+.tanuki-trading-shop .trading-actions {
+  left: 951px;
+  bottom: 246px;
+  width: 148px;
+}
+
+.tanuki-trading-shop .outfit-shop-actions {
+  top: calc(var(--purchase-top) - var(--stock-top));
+  width: 148px;
+}
+
+html body .tanuki-trading-shop .trading-world
+  :is(.trading-actions > .trading-buy, .outfit-shop-actions > button) {
+  font-size: 19px !important;
+}
+
+/* Back and Gold share the same plaque crop, size and left edge. */
+html body .adventure-app .tanuki-trading-shop :is(.trading-leave, .trading-wallet) {
+  left: 24px;
+  width: 228px;
+  height: 56px;
+  background: none !important;
+  isolation: isolate;
+  box-shadow: none;
+  filter: drop-shadow(2px 4px #10231c99);
+  color: #fff0c4;
+  text-shadow: 1px 2px #322015;
+}
+
+.tanuki-trading-shop :is(.trading-leave, .trading-wallet)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/assets/ui/tanuki-shop-frame.png') 23.1% 9.76% / 303% 1124% no-repeat;
+  image-rendering: pixelated;
+  clip-path: polygon(7% 0, 93% 0, 100% 22%, 100% 78%, 93% 100%, 7% 100%, 0 78%, 0 22%);
+}
+
+html body .adventure-app .tanuki-trading-shop .trading-leave:hover,
+html body .adventure-app .tanuki-trading-shop .trading-leave:focus-visible {
+  filter: brightness(1.15) drop-shadow(2px 4px #10231c99);
+}
+
+.tanuki-trading-shop .trading-leave:focus-visible::before {
+  filter: brightness(1.2);
+}
+
+.christmas-shop :is(.trading-leave, .trading-wallet)::after {
+  content: '';
+  position: absolute;
+  inset: -3px 13px auto;
+  height: 9px;
+  pointer-events: none;
+  background: url('/assets/ui/noel/snow-edge.png') top center / auto 100% repeat-x;
+  image-rendering: pixelated;
+}

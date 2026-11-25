@@ -56,6 +56,7 @@ export class TutorialDirector {
   readonly seen = new Set<GuideTopic>();
   private queue: GuideTopic[] = [];
   private remaining = 0;
+  private pausedHint: GuideTopic | null = null;
 
   constructor(private storage: Pick<Storage, 'getItem' | 'setItem'> | null =
     typeof localStorage === 'undefined' ? null : localStorage) {
@@ -105,15 +106,25 @@ export class TutorialDirector {
     this.queue = [];
     this.libraryOpen = false;
     this.remaining = 0;
+    this.pausedHint = null;
   }
 
   openLibrary() {
-    this.reset();
+    if (this.libraryOpen) return;
+    this.pausedHint = this.active;
+    this.active = null;
     this.libraryOpen = true;
   }
 
   replay(topic: GuideTopic) { this.active = topic; }
-  closeLibrary() { this.reset(); }
+  closeLibrary() {
+    if (!this.libraryOpen) return;
+    const readHint = this.active !== null && this.active === this.pausedHint;
+    this.libraryOpen = false;
+    this.active = this.pausedHint;
+    this.pausedHint = null;
+    if (readHint) this.dismiss();
+  }
 }
 
 /**

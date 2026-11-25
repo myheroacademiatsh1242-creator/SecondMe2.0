@@ -4,9 +4,9 @@ import { FEATURE_TIPS, featureIntro, type FeatureId } from '../game/logic/featur
 function useFeatureIntro() { useSyncExternalStore(featureIntro.subscribe, featureIntro.snapshot); }
 
 /** Glowing dot on a button whose feature the player has not opened yet (the button needs no extra class). */
-export function NewDot({ feature, show = true }: { feature: FeatureId; show?: boolean }) {
+export function NewDot({ feature, show = true, acquired = false }: { feature: FeatureId; show?: boolean; acquired?: boolean }) {
   useFeatureIntro();
-  return show && featureIntro.isNew(feature) ? <span className="new-dot" aria-hidden="true"/> : null;
+  return acquired || (show && featureIntro.isNew(feature)) ? <span className="new-dot" aria-hidden="true"/> : null;
 }
 
 /** One line of explanation at the top of a panel the first time it opens; "Got it" marks the feature seen. */

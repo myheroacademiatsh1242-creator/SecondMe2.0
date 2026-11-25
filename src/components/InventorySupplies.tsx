@@ -1,15 +1,16 @@
 import {bindingLabel,type ControlAction} from '../game/logic/controlSettings.ts';
 import { Backpack, Minus, Plus, X } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
-import { ITEM_LOADOUT_LIMIT, SHOP_ITEMS, type ShopItemId } from '../game/logic/shopItems.ts';
+import { ITEM_CARRY_LIMIT, ITEM_LOADOUT_LIMIT, SHOP_ITEMS, type ShopItemId } from '../game/logic/shopItems.ts';
 import { ShopItemIcon } from './ShopItemIcon.tsx';
 
 export function CampSupplyKit({ hud, onOpen }: { hud: HUDState; onOpen: () => void }) {
   if(!hud.completed.includes(2)&&!hud.devUnlocked)return null;
   const vi = hud.language === 'vi';
+  const packedCount = hud.itemLoadout?.reduce((total, item) => total + item.count, 0) ?? 0;
   return <div className="rest-kit">
-    <div><span>{vi ? 'VẬT PHẨM MANG THEO' : 'COMBAT ITEMS'}</span><p>{hud.itemLoadout?.length ?? 0} / {ITEM_LOADOUT_LIMIT}</p></div>
-    <button className="rest-prepare" onClick={onOpen}><Backpack size={18}/>{vi ? 'Chọn vật phẩm' : 'Equip items'}</button>
+    <div><span>{vi ? 'VẬT PHẨM MANG THEO' : 'COMBAT ITEMS'}</span><p>{packedCount} / {ITEM_CARRY_LIMIT}</p></div>
+    <button className="rest-prepare" onClick={onOpen}><Backpack size={18}/>{vi ? 'Chọn vật phẩm' : 'Equip items'}{hud.newItems&&<span className="new-dot" aria-hidden="true"/>}</button>
   </div>;
 }
 
@@ -52,10 +53,11 @@ export function InventoryPack({ engine, hud, playing = false }: { engine: GameEn
   const vi = hud.language === 'vi';
   const selected = (playing ? hud.carriedItems : hud.itemLoadout) ?? [];
   const selectedCount = selected.filter(item => item !== null).length;
+  const packedCount = selected.reduce((total, item) => total + (item?.count ?? 0), 0);
   return <div className="inventory-pack">
     <div className="inventory-pack-heading">
       <strong>{vi ? 'Vật phẩm mang theo' : 'Combat items'}</strong>
-      <span aria-live="polite">{selectedCount} / {ITEM_LOADOUT_LIMIT}{vi ? ' loại' : ' types'}</span>
+      <span aria-live="polite">{packedCount} / {ITEM_CARRY_LIMIT}{vi ? ' món' : ' items'}</span>
     </div>
     {playing ? selectedCount === 0 && <p>{vi ? 'Không còn vật phẩm mang theo.' : 'No combat items left.'}</p> : <>
       <div className="inventory-pack-slots">
@@ -66,7 +68,7 @@ export function InventoryPack({ engine, hud, playing = false }: { engine: GameEn
           const name = vi ? item.vi : item.en;
           return <div className="inventory-packed-item" key={item.id}>
             <kbd>{index + 1}</kbd><ShopItemIcon id={item.id}/><span className="inventory-packed-name">{name}</span>
-            <PackedQuantity count={stack.count} max={engine?.campaign.packableCount(item.id) ?? stack.count}
+            <PackedQuantity count={stack.count} max={engine?.campaign.maxPackedCount(item.id) ?? stack.count}
               name={name} vi={vi}
               onChange={count => engine?.setPackedCount(index, count)}/>
             <button className="inventory-remove-item" type="button" aria-label={vi ? `Bỏ ${name} khỏi ô ${index + 1}` : `Remove ${name} from slot ${index + 1}`} onClick={() => engine?.unpackItem(index)}><X size={12} aria-hidden="true"/></button>
@@ -85,8 +87,9 @@ export function InventorySupplies({ engine, hud, preparing = false }: { engine: 
   const selected = (playing ? hud.carriedItems : hud.itemLoadout) ?? [];
   const number = (value: number) => value.toLocaleString(vi ? 'vi-VN' : 'en-US');
   const stock = (id: ShopItemId) => id === 'time' ? hud.timeItems : id === 'ring' ? hud.limitRings : hud.supplies?.[id] ?? 0;
-  const items = SHOP_ITEMS.filter(({id}) => playing ? selected.some(item => item?.id === id) : !preparing ||
-    (id !== 'aid' || hud.aidUnlocked) && (stock(id) > 0 || id === 'chances' && (hud.chanceCharges ?? 0) > 0));
+  const items = SHOP_ITEMS.filter(({id}) => playing
+    ? selected.some(item => item?.id === id && item.count > 0)
+    : (id !== 'aid' || hud.aidUnlocked) && (stock(id) > 0 || id === 'chances' && (hud.chanceCharges ?? 0) > 0));
   const canUse = (id: ShopItemId) => id === 'time' ? engine?.canUseTimeItem() : id === 'ring' ? engine?.canUseLimitRing() : engine?.canUseSupply(id);
   const use = (id: ShopItemId) => id === 'time' ? engine?.useTimeItem() : id === 'ring' ? engine?.useLimitRing() : engine?.useSupply(id);
 
@@ -100,7 +103,7 @@ export function InventorySupplies({ engine, hud, preparing = false }: { engine: 
       return <article key={id} data-inventory-item={id}>
         <span className="supply-icon"><ShopItemIcon id={id}/></span>
         <div>
-          <h3>{name} <b>× {number(count)}</b></h3>
+          <h3>{name}{count>0&&<b>× {number(count)}</b>}</h3>
           <p>{vi ? item.detailVi : item.detailEn}</p>
           {id === 'chances' && <small>{vi ? 'Lượt hồi sinh còn lại' : 'Remaining revival charges'} {hud.chanceCharges ?? 0}</small>}
         </div>

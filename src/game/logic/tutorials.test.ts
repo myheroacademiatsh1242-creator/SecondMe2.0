@@ -23,6 +23,17 @@ test('corrupt or unavailable storage does not break guidance',()=>{
  const guide=new TutorialDirector({getItem:()=>null,setItem:()=>{throw new Error('blocked');}});
  guide.offer('echo');assert.doesNotThrow(()=>guide.dismiss());assert.equal(guide.seen.has('echo'),true);
 });
+test('reading a level-two hint preserves the next queued lesson',()=>{
+ const guide=new TutorialDirector(null);
+ guide.offer('multi');guide.offer('spikes');
+ guide.openLibrary();guide.replay('multi');guide.advance(10);
+ guide.closeLibrary();
+ assert.equal(guide.blocking,false);
+ assert.equal(guide.active,'spikes');
+ assert.ok(guide.seen.has('multi'));
+ guide.openLibrary();guide.closeLibrary();
+ assert.equal(guide.active,'spikes');
+});
 test('automatic hints expire while movement and the timer continue; only the library pauses',()=>{
  const game=new GameEngine();game.screen='playing';game.tutorialEnabled=true;game.legTimeRemaining=10;
  const internals=game as unknown as {update(dt:number):void;heldKeys:Set<string>;elapsedLevelTime:number};

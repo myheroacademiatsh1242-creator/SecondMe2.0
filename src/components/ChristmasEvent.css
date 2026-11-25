@@ -311,8 +311,7 @@ body.reduced-motion .christmas-lights i { animation: none; }
 
 .christmas-menu .intro-menu-face::before,
 .christmas-heroes .outfit-options button::after,
-.christmas-camp .rest-scene::before,
-.christmas-shop .trading-catalogue > .trading-tabs::before {
+.christmas-camp .rest-scene::before {
   content: '';
   position: absolute;
   inset: 0 5% auto;
@@ -322,6 +321,17 @@ body.reduced-motion .christmas-lights i { animation: none; }
   pointer-events: none;
 }
 .christmas-menu .intro-menu-item:disabled .intro-menu-face::before { opacity: .55; }
+.christmas-menu .intro-noel-action .intro-menu-face {
+  background-position-y: 100%;
+  filter: drop-shadow(0 0 5px #dfad587d);
+}
+.christmas-menu .intro-noel-action .intro-menu-label { color: #fff0ad; }
+#root .journey-lobby .lobby-header nav .lobby-noel-action {
+  background: linear-gradient(#803d32, #442724) !important;
+  color: #ffe4a0 !important;
+  box-shadow: inset 0 0 0 2px #ad8750, 0 0 8px #eac46c66 !important;
+}
+.christmas-dialog .christmas-play { margin-bottom: 6px; }
 
 .christmas-heroes .hero-select-scene {
   background: #102e30 url('/assets/ui/noel/heroes-winter.webp') center / 100% 100% no-repeat;
@@ -636,8 +646,72 @@ html body .adventure-app .journey-lobby .christmas-camp .rest-kit {
 .christmas-shop .trading-world > .christmas-entry { left: 40%; top: 18px; }
 .christmas-shop .trading-world > .christmas-lights { inset: 12px 64% auto 21%; }
 .christmas-shop .trading-world > .christmas-snow { --snow-distance: 720px; z-index: 4; }
-.christmas-shop .trading-catalogue > .trading-tabs::before { inset: -12px 5% auto; height: 13px; }
 .christmas-shop .trading-merchant:hover { background: radial-gradient(ellipse,#ffdf871a,transparent 65%); }
+
+.trading-merchant-gift,
+.trading-merchant-breath,
+.trading-merchant-sparkle {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.trading-merchant-gift {
+  left: 66%;
+  bottom: 20%;
+  width: 43px;
+  height: 51px;
+  object-fit: contain;
+  filter: drop-shadow(1px 2px #211411);
+  animation: tanuki-offer-gift 1.95s both;
+}
+
+.trading-merchant-breath {
+  left: 54%;
+  top: 70%;
+  width: 7px;
+  height: 6px;
+  color: #e4f9ff;
+  background: currentColor;
+  box-shadow: 7px -4px currentColor, 12px 0 #b6e5f1, 17px -6px #b6e5f1;
+  animation: tanuki-cold-breath .85s ease-out both;
+}
+
+.trading-merchant-sparkle {
+  left: 76%;
+  top: 59%;
+  width: 15px;
+  height: 15px;
+  background: #fff1a1;
+  clip-path: polygon(40% 0, 60% 0, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%, 0 40%, 40% 40%);
+  animation: tanuki-sale-sparkle .5s steps(4) both;
+}
+
+@keyframes tanuki-offer-gift {
+  0%, 14% { opacity: 0; transform: translateY(13px) rotate(-14deg); }
+  30%, 78% { opacity: 1; transform: translateY(0) rotate(5deg); }
+  100% { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes tanuki-cold-breath {
+  from { opacity: .65; transform: translate(0, 0) scale(.65); }
+  to { opacity: 0; transform: translate(24px, -22px) scale(1.5); }
+}
+
+@keyframes tanuki-sale-sparkle {
+  0%, 100% { opacity: 0; transform: scale(.35); }
+  38% { opacity: 1; transform: scale(1); }
+}
+
+.merchant-still :is(.trading-merchant-gift, .trading-merchant-breath, .trading-merchant-sparkle) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trading-merchant :is(.trading-merchant-gift, .trading-merchant-breath, .trading-merchant-sparkle) {
+    animation: none;
+  }
+}
 .christmas-shop .trading-world .shop-reward-chest { left: 114.5px; }
 .christmas-shop .trading-world .shop-reward-chest:focus-visible { outline: 2px dashed #f6dc8d!important; }
 .christmas-chest-pedestal {

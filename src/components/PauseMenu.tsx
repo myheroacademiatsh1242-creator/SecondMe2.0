@@ -1,6 +1,6 @@
 import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {useEffect, useRef, useState} from 'react';
-import {BookOpen, Home, Pause, Play, RotateCcw, Settings} from 'lucide-react';
+import {Backpack, BookOpen, Home, Pause, Play, RotateCcw, Settings} from 'lucide-react';
 import type {GameEngine, HUDState} from '../game/GameEngine';
 import {SettingsPanel} from './CampaignUI';
 import {translate} from '../i18n.ts';
@@ -34,7 +34,7 @@ export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
       <div className="pause-menu-summary">
       <header>
         <h2 id="pause-menu-title">{vi?'Tạm dừng':'Paused'}</h2>
-        <p className="pause-menu-level">{translate(hud.levelName,hud.language)} · {translate(hud.levelSubtitle,hud.language)}</p>
+        <p className="pause-menu-level">{!engine?.isChristmasTrail&&<>{translate(hud.levelName,hud.language)} · </>}{translate(hud.levelSubtitle,hud.language)}</p>
       </header>
       <dl><div><dt>HP</dt><dd>{Math.ceil(hud.health)}<small> / {hud.maxHealth??100}</small></dd></div><div><dt>MP</dt><dd>{Math.floor(hud.mana??100)}<small> / {hud.maxMana??100}</small></dd></div><div><dt>ECHO</dt><dd>{hud.echoCount}<small> / {hud.echoLimit}</small></dd></div></dl>
       </div>
@@ -44,6 +44,7 @@ export function PauseMenu({engine,hud}:{engine:GameEngine|null;hud:HUDState}) {
         <button onClick={()=>setSettings(true)}><Settings size={18}/>{vi?'Cài đặt':'Settings'}</button>
         <button onClick={()=>{engine?.resumeGame();engine?.openGuide();}}><BookOpen size={18}/>{vi?'Sổ tay':'Guide'}</button>
         <button onClick={()=>engine?.requestBattleRetry()}><RotateCcw size={18}/>{vi?'Chơi lại màn':'Retry level'}</button>
+        {engine?.battlePreparationUnlocked&&<button onClick={()=>engine.requestBattleRetry(true)}><Backpack size={18}/>{vi?'Chuẩn bị vật phẩm':'Prepare items'}</button>}
         <button onClick={()=>engine?.goToLobby()}><Home size={18}/>{vi?'Về trại':'Back to camp'}</button>
       </div>
       </div>

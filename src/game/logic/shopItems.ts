@@ -13,6 +13,7 @@ export const SHOP_ITEMS = [
 export type ShopItemId=(typeof SHOP_ITEMS)[number]['id'];
 export type PackedItem = Readonly<{ id: ShopItemId; count: number }>;
 export const ITEM_LOADOUT_LIMIT = 3;
+export const ITEM_CARRY_LIMIT = 9;
 export function carryItemLimit(id: ShopItemId) {
   return id === 'ring' || id === 'revive' || id === 'chances' || id === 'aid' ? 1 : Infinity;
 }

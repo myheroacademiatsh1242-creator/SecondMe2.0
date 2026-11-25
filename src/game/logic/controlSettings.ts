@@ -1,3 +1,5 @@
+import { translate, type Language } from '../../i18n.ts';
+
 /** One source of truth for keyboard/mouse, Standard Gamepad buttons and touch layout. */
 export const ACTIONS = {
  up:'Đi lên',down:'Đi xuống',left:'Đi trái',right:'Đi phải',attack:'Tấn công',skill:'Kỹ năng',ultimate:'Tuyệt kỹ',dodge:'Lướt né',record:'Ghi / lưu đường đi',summon:'Gọi Echo',recall:'Thu Echo',echoPause:'Dừng / phát Echo',swap:'Đổi chỗ Echo',mark:'Đánh dấu mục tiêu',item1:'Vật phẩm ô 1',item2:'Vật phẩm ô 2',item3:'Vật phẩm ô 3',time:'Bình thời gian',inventory:'Mở túi đồ',pause:'Tạm dừng / tiếp tục',retry:'Chơi lại màn',mute:'Bật / tắt âm thanh',fullscreen:'Toàn màn hình',guide:'Sổ tay'
@@ -47,11 +49,16 @@ export function actionForInput(code:string,shift=false,config=controls.value):Co
  const token=inputToken(code,shift);const exact=all.find(a=>config.keys[a].includes(token));if(exact)return exact;
  if(shift)return (['up','down','left','right'] as ControlAction[]).find(a=>config.keys[a].includes(code))??null;return null;
 }
-export function keyLabel(key:string){return key.replace('Shift+','Shift + ').replace(/^Key/,'').replace(/Key/g,'').replace(/Digit|Numpad/g,'').replace('Mouse0','Chuột trái').replace('Mouse1','Chuột giữa').replace('Mouse2','Chuột phải').replace('ShiftLeft','Shift trái').replace('ShiftRight','Shift phải').replace('ArrowUp','↑').replace('ArrowDown','↓').replace('ArrowLeft','←').replace('ArrowRight','→').replace('Escape','Esc');}
-export function bindingLabel(action:ControlAction){return [...new Set(controls.value.keys[action].map(keyLabel))].join(' / ');}
+export function keyLabel(key:string, language:Language = 'vi'){const label = key.replace('Shift+','Shift + ').replace(/^Key/,'').replace(/Key/g,'').replace(/Digit|Numpad/g,'').replace('Mouse0','Chuột trái').replace('Mouse1','Chuột giữa').replace('Mouse2','Chuột phải').replace('ShiftLeft','Shift trái').replace('ShiftRight','Shift phải').replace('ArrowUp','↑').replace('ArrowDown','↓').replace('ArrowLeft','←').replace('ArrowRight','→').replace('Escape','Esc');
+ const shiftPrefix = 'Shift + ';
+ return label.startsWith(shiftPrefix)
+  ? shiftPrefix + translate(label.slice(shiftPrefix.length), language)
+  : translate(label, language);
+}
+export function bindingLabel(action:ControlAction, language:Language = 'vi'){return [...new Set(controls.value.keys[action].map(key => keyLabel(key, language)))].join(' / ');}
 /** First binding only, mouse buttons abbreviated ("Chuột T"), so a key fits a small cap: the HUD rail and the prompt by the hero. */
 export function shortKeyLabel(key:string){return key.split(' / ')[0].replace(/^Shift (trái|phải)$/i,'Shift').replace(/Chuột (trái|phải|giữa)/i,(_,b:string)=>'Chuột '+b[0].toUpperCase());}
 export function shortBindingLabel(action:ControlAction){return shortKeyLabel(bindingLabel(action));}
 export function touchVars(){const out:Record<string,string>={};for(const [part,p] of Object.entries(controls.value.touch)){out[`--touch-${part}-x`]=p.x+'vw';out[`--touch-${part}-y`]=p.y+'vh';out[`--touch-${part}-scale`]=String(p.scale);}return out;}
 
-export function liveKeyLabel(label:string){const map:Record<string,ControlAction>={'E':'record','Q':'summon','X':'recall','C':'echoPause','Shift + Q':'swap','Shift+Q':'swap','Shift':'dodge','SHIFT':'dodge','Space / Chuột phải':'skill','Chuột phải / Space':'skill','Chuột phải / Phím Space':'skill','Chuột phải hoặc Space':'skill','Chuột trái':'attack','CHUỘT TRÁI':'attack','V / Chuột giữa':'ultimate','V / chuột giữa':'ultimate','R':'time','Tab':'inventory','Esc':'pause','Esc / P':'pause','T':'retry','M':'mute','F':'fullscreen'};if(map[label])return bindingLabel(map[label]);if(label==='1 / 2 / 3'||label==='1 – 3')return (['item1','item2','item3'] as ControlAction[]).map(bindingLabel).join(' · ');if(label.startsWith('WASD')||label.startsWith('W A S D'))return (['up','left','down','right'] as ControlAction[]).map(a=>keyLabel(controls.value.keys[a][0])).join(' ');return label;}
+export function liveKeyLabel(label:string, language:Language = 'vi'){const map:Record<string,ControlAction>={'Left click':'attack','Right click / Space':'skill','E':'record','Q':'summon','X':'recall','C':'echoPause','Shift + Q':'swap','Shift+Q':'swap','Shift':'dodge','SHIFT':'dodge','Space / Chuột phải':'skill','Chuột phải / Space':'skill','Chuột phải / Phím Space':'skill','Chuột phải hoặc Space':'skill','Chuột trái':'attack','CHUỘT TRÁI':'attack','V / Chuột giữa':'ultimate','V / chuột giữa':'ultimate','R':'time','Tab':'inventory','Esc':'pause','Esc / P':'pause','T':'retry','M':'mute','F':'fullscreen'};if(map[label])return bindingLabel(map[label], language);if(label==='1 / 2 / 3'||label==='1 – 3')return (['item1','item2','item3'] as ControlAction[]).map(action => bindingLabel(action, language)).join(' · ');if(label.startsWith('WASD')||label.startsWith('W A S D'))return (['up','left','down','right'] as ControlAction[]).map(a=>keyLabel(controls.value.keys[a][0], language)).join(' ');return label;}

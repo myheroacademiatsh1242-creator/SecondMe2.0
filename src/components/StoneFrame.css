@@ -27,13 +27,13 @@
   background:#d9d2b4;color:#1d2419;border:2px solid #6f7a55;box-shadow:0 2px 0 #3a4430;
   font-size:.85em;line-height:1.2;text-shadow:none;white-space:nowrap;
 }
-/* "New" badge: a small glowing dot on buttons whose feature the player has not opened yet. */
+/* Keep the badge inside the button's chamfered corner so its circle stays visible. */
 .new-dot{
-  position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;
-  background:var(--stone-new);border:2px solid #3a2a08;box-shadow:0 0 0 2px #ffd76a55,0 0 10px #ffd76a;
+  position:absolute;inset:4px 4px auto auto;box-sizing:border-box;width:9px;height:9px;border-radius:50%;
+  background:var(--stone-new);border:1px solid #63451c;box-shadow:0 0 4px #ffd76a99;
   pointer-events:none;animation:new-dot-pulse 1.4s ease-in-out infinite alternate;z-index:2;
 }
-@keyframes new-dot-pulse{to{box-shadow:0 0 0 4px #ffd76a22,0 0 16px #ffd76a}}
+@keyframes new-dot-pulse{to{box-shadow:0 0 7px #ffd76acc}}
 @media(prefers-reduced-motion:reduce){.new-dot{animation:none}}
 /* One-line first-visit tip at the top of a panel. */
 .first-tip{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:8px 12px;font-size:14px;line-height:1.35}

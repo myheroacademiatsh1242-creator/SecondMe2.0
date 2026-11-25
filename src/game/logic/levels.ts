@@ -88,4 +88,12 @@ export const TRAINING_LEVEL: LevelData = {
   exit: { x: 1150, y: 600, width: 60, height: 60, radius: 36 },
 };
 /** The level at a campaign index, or the training ground at TRAINING_IDX. */
-export const levelAt = (idx: number): LevelData => (idx === TRAINING_IDX ? TRAINING_LEVEL : LEVELS[idx]);
+export const CHRISTMAS_TRAIL_IDX = -2;
+const christmasTrail: LevelData = {
+  ...FROST_LEVELS[0],
+  name: 'Christmas Trail',
+  subtitle: 'Christmas Trail',
+  description: 'Use Echoes to hold the runes and reach the portal.',
+};
+export const levelAt = (idx: number): LevelData => idx === TRAINING_IDX ? TRAINING_LEVEL
+  : idx === CHRISTMAS_TRAIL_IDX ? christmasTrail : LEVELS[idx];

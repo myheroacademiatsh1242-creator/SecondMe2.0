@@ -7,7 +7,7 @@ import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from 
 import {ICE_BARRAGE} from './iceBarrage.ts';
 import {FROST_STRIKE,makeIceRays,insideIceRay,type IceRay} from './iceMagic.ts';
 export {TIME_ITEM_PRICE,TIME_ITEM_CAP} from './shopItems.ts';
-import {SHOP_ITEMS,ITEM_LOADOUT_LIMIT,carryItemLimit,emptySupplies,cleanSupplies,type PackedItem,type ShopItemId} from './shopItems.ts';
+import {SHOP_ITEMS,ITEM_LOADOUT_LIMIT,ITEM_CARRY_LIMIT,carryItemLimit,emptySupplies,cleanSupplies,type PackedItem,type ShopItemId} from './shopItems.ts';
 import {isChestAvailable, rollChest, chestReward, CHEST_PRICES, chestBalance, type ChestKind, type ChestRewardId} from './chest.ts';
 import { DAMAGE, damagePoints } from './damage.ts';
 import { ECHO_RUNES, RUNE_STOCK_MAX, rollEchoRune, rollRuneChoices, runesBelowCap, cleanRuneChoices, cleanRuneStock, type EchoRuneId, type EchoRuneStock } from './echoRunes.ts';
@@ -243,21 +243,29 @@ export class Campaign {
   private cleanItemLoadout(value: unknown): PackedItem[] {
     if (!Array.isArray(value)) return [];
     const items = new Map<ShopItemId, number>();
+    let remaining = ITEM_CARRY_LIMIT;
     for (const entry of value) {
       // Old saves store one string per copy. Merge them in first-seen order.
       const item = SHOP_ITEMS.find(item => item.id === (typeof entry === 'string' ? entry : entry?.id));
       const count = typeof entry === 'string' ? 1 : entry?.count;
       if (!item || !Number.isSafeInteger(count) || count < 1) continue;
       if (!items.has(item.id) && items.size === ITEM_LOADOUT_LIMIT) continue;
-      const clamped = Math.min(this.packableCount(item.id), (items.get(item.id) ?? 0) + count);
-      if (clamped > 0) items.set(item.id, clamped);
+      const packed = items.get(item.id) ?? 0;
+      const added = Math.min(count, remaining, this.packableCount(item.id) - packed);
+      if (added <= 0) continue;
+      items.set(item.id, packed + added);
+      remaining -= added;
     }
     return Array.from(items, ([id, count]) => ({ id, count }));
+  }
+  maxPackedCount(id: ShopItemId) {
+    const otherItems = this.itemLoadout.reduce((sum, item) => sum + (item.id === id ? 0 : item.count), 0);
+    return Math.min(this.packableCount(id), ITEM_CARRY_LIMIT - otherItems);
   }
   canPackItem(id: ShopItemId) {
     const existing = this.itemLoadout.find(item => item.id === id);
     return (!!existing || this.itemLoadout.length < ITEM_LOADOUT_LIMIT) &&
-      (existing?.count ?? 0) < this.packableCount(id);
+      (existing?.count ?? 0) < this.maxPackedCount(id);
   }
   packItem(id: ShopItemId) {
     if (!SHOP_ITEMS.some(item => item.id === id) || !this.canPackItem(id)) return false;
@@ -269,7 +277,7 @@ export class Campaign {
   }
   setPackedCount(index: number, count: number) {
     const item = this.itemLoadout[index];
-    if (!item || !Number.isSafeInteger(count) || count < 1 || count > this.packableCount(item.id)) return false;
+    if (!item || !Number.isSafeInteger(count) || count < 1 || count > this.maxPackedCount(item.id)) return false;
     this.itemLoadout[index] = { id: item.id, count };
     this.save();
     return true;
