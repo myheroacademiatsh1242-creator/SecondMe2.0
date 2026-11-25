@@ -18,7 +18,7 @@ test('replays award coins and upgrades charge each rank once per hero, including
 
   const campaign = new Campaign();
   campaign.load();
-  assert.deepEqual(campaign.heroRanks, { mage: { health: 0, attack: 0, specialty: 0 }, swordsman: { health: 2, attack: 2, specialty: 2 } });
+  assert.deepEqual(campaign.heroRanks, { mage: { health: 0, attack: 0, specialty: 0 }, swordsman: { health: 2, attack: 2, specialty: 2 }, assassin: { health: 0, attack: 0, specialty: 0 } });
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 0), false);
   assert.equal(campaign.completeLevel(1, 100).coins, 4);
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 0), true);
@@ -34,10 +34,10 @@ test('replays award coins and upgrades charge each rank once per hero, including
 
   const restored = new Campaign();
   restored.load();
-  assert.deepEqual(restored.heroRanks, { mage: { health: 3, attack: 0, specialty: 0 }, swordsman: { health: 2, attack: 2, specialty: 2 } });
+  assert.deepEqual(restored.heroRanks, { mage: { health: 3, attack: 0, specialty: 0 }, swordsman: { health: 2, attack: 2, specialty: 2 }, assassin: { health: 0, attack: 0, specialty: 0 } });
   assert.equal(restored.coins, 32);
   assert.deepEqual(restored.completed, [1]);
-  assert.deepEqual(restored.heroUpgradeSpent, { mage: 576, swordsman: 276 });
+  assert.deepEqual(restored.heroUpgradeSpent, { mage: 576, swordsman: 276, assassin: 0 });
   assert.equal(restored.resetHeroUpgrades('swordsman', 275), false);
   assert.equal(restored.resetHeroUpgrades('swordsman', 276), true);
   assert.equal(restored.coins, 252);
@@ -49,7 +49,7 @@ test('replays award coins and upgrades charge each rank once per hero, including
   assert.equal(afterReset.coins, 252);
   assert.equal(afterReset.heroUpgradeSpent.swordsman, 0);
   restored.reset();
-  assert.deepEqual(restored.heroRanks, { mage: { health: 0, attack: 0, specialty: 0 }, swordsman: { health: 0, attack: 0, specialty: 0 } });
+  assert.deepEqual(restored.heroRanks, { mage: { health: 0, attack: 0, specialty: 0 }, swordsman: { health: 0, attack: 0, specialty: 0 }, assassin: { health: 0, attack: 0, specialty: 0 } });
 });
 
 test('upgrades affect hero health, attacks, skill MP and revival', t => {
@@ -69,7 +69,7 @@ test('upgrades affect hero health, attacks, skill MP and revival', t => {
   assert.equal(game.buyHeroUpgrade('swordsman', 'health', 0), true);
   assert.equal(game.characterClass, 'mage');
   assert.equal(game.buyHeroUpgrade('mage', 'health', 0), true);
-  assert.deepEqual(heroStats('mage', game.campaign.heroRanks), { maxHealth: 92, attackBonus: 0, damageReduction: 0, skillManaDiscount: 0, iceRadiusBonus: 0, sanctuaryBonus: 0, defeatsEarlyEnemies: false });
+  assert.deepEqual(heroStats('mage', game.campaign.heroRanks), { maxHealth: 92, attackBonus: 0, damageReduction: 0, skillManaDiscount: 0, iceRadiusBonus: 0, sanctuaryBonus: 0, assassinCritBonus: 0, assassinSkillCooldownDiscount: 0, defeatsEarlyEnemies: false });
   assert.equal(game.buyHeroUpgrade('mage', 'attack', 0), true);
   assert.equal(game.buyHeroUpgrade('mage', 'specialty', 0), true);
   game.restartLevel();

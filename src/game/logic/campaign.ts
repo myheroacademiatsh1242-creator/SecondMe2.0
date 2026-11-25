@@ -23,7 +23,7 @@ export const MATERIALS = [
   { id: 'rune', name: 'Ấn thạch cổ', detail: 'Mảnh cuối để đánh thức vũ khí Echo.', icon: '◇', color: '#dac18e' },
 ] as const;
 
-export type CharacterClass = 'mage' | 'swordsman' | 'mechanical';
+export type CharacterClass = 'mage' | 'swordsman' | 'assassin' | 'mechanical';
 export function levelRating(seconds: number, levelId?: number): { stars: number; coins: number } {
   const target = levelId ? (levelId===6?120:levelId===13?180:puzzleBalance(levelId).threeStars) : 15;
   const stars = seconds <= target ? 3 : seconds <= target*4/3 ? 2 : seconds <= target*5/3 ? 1 : 0;
@@ -39,7 +39,7 @@ export class Campaign {
   }
 
   heroRanks = cleanHeroRanks();
-  heroUpgradeSpent = { mage: 0, swordsman: 0 };
+  heroUpgradeSpent = { mage: 0, swordsman: 0, assassin: 0 };
   ownedOutfits:ShopOutfitId[]=[];
   ownedWeapons:WeaponId[]=[];
   completed: number[] = [];
@@ -70,7 +70,7 @@ export class Campaign {
       if (typeof localStorage === 'undefined') return;
       const value = JSON.parse(localStorage.getItem('second-me-campaign-v3') ?? '{}');
       this.heroRanks = cleanHeroRanks(value.heroRanks);
-      for (const hero of ['mage', 'swordsman'] as const) {
+      for (const hero of ['mage', 'swordsman', 'assassin'] as const) {
         const ranks = this.heroRanks[hero];
         const maximum = HERO_UPGRADE_STATS.reduce((sum, stat) => sum + heroUpgradeCost(ranks[stat]), 0);
         const saved = value.heroUpgradeSpent?.[hero];
@@ -118,7 +118,7 @@ export class Campaign {
       }
       this.itemLoadout = this.cleanItemLoadout(value.itemLoadout);
       if(migrateRunes||legacyDevStock)this.save();
-    } catch { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
+    } catch { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.ownedOutfits=[];this.ownedWeapons=[];this.supplies=emptySupplies();this.chanceCharges=0;this.aidUnlocked=false;this.heroClears={mage:[],swordsman:[]};this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.echoRunes={};this.runeLoadout=[]; }
 
   }
   save() {
@@ -298,7 +298,7 @@ export class Campaign {
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
   get unlockedLevel() { return Math.min(5, this.completed.filter(id=>id<=5).length); }
-  reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
+  reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 
 }
 

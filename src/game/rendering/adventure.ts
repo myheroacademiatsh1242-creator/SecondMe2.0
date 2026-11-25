@@ -18,6 +18,7 @@ import { drawTrap, trapSpritesReady } from './traps.ts';
 import { translate, getCurrentLanguage } from '../../i18n.ts';
 import { drawFrostGuardian } from './frostGuardian.ts';
 import { drawSoldierSprite } from './soldierSprite.ts';
+import { drawAssassinDart, drawAssassinSprite, type AssassinPose } from './assassinSprite.ts';
 import { drawComboHero, drawComboEffects, comboPose } from './comboSprites.ts';
 import { drawTimeRelic } from './timeRelic.ts';
 import { drawPillars, drawCombatHits } from './bossFeedback.ts';
@@ -79,6 +80,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
       }
       layer.clearRect(0,0,96,112);
       if(echo.characterClass==='swordsman')drawSoldierSprite(layer,48,70,echo.direction,echo.isMoving,true,time,(echo.attackFlash??0)>0,1-(echo.attackFlash??0)/.22);
+      else if(echo.characterClass==='assassin')drawAssassinSprite(layer,48,70,echo.direction,echo.isMoving,time,(echo.attackFlash??0)>0,getOutfit('assassin'),.75);
       else if(echo.characterClass==='mechanical')drawMechanicalSprite(layer,48,70,echo.direction,echo.isMoving,true,time);
       else game.renderer.drawEcho(layer,48,70,echo.direction,echo.isMoving,time);
       const slot=echo.colorSlot??0;
@@ -175,12 +177,27 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   }
   drawVfx(ctx, game.vfx, game.player, true,cosmetic);    // on the ground, under the hero: heal ring, time clock
   drawPfxShots(ctx, game.pfx, true);
+  for(const dart of game.droppedDarts){
+    ctx.save();
+    ctx.globalAlpha=dart.life<2?.55+.35*Math.sin(time*12):1;
+    ctx.strokeStyle='#8cdef1';ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(dart.x,dart.y+5,12,5,0,0,Math.PI*2);ctx.stroke();
+    drawAssassinDart(ctx,dart.x,dart.y,dart.angle);
+    ctx.restore();
+  }
+  if(game.characterClass==='assassin')for(const [index,ghost] of game.phantomTrail.entries())drawAssassinSprite(ctx,ghost.x,ghost.y,game.player.direction,false,time,false,getOutfit('assassin'),Math.min(.65,ghost.life*3),`skill${1+index%4}` as AssassinPose);
   if(game.characterClass==='mechanical' && (!game.exitTravelRemaining || game.exitTravelRemaining>.35))drawMechanicalSprite(ctx,game.player.x,game.player.y,game.player.direction,game.player.isMoving,false,time,game.attackFlash>0);
   for(const zone of game.frostZones)drawBossFrostZone(ctx,zone.x,zone.y,zone.radius,zone.struck,time,game.reducedMotion,Math.max(0,-zone.timer));
   if(game.overdrive>0){ctx.strokeStyle='#ffac52';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(game.player.x,game.player.y+4,23,10,0,0,Math.PI*2);ctx.stroke();}
   // Kael and Aeris show their combo frames while attacking (rendering/comboSprites.ts).
   const comboFrame = !game.exitTravelRemaining && comboPose(game) ? drawComboHero(ctx, game) : false;
   if(game.characterClass==='swordsman' && !comboFrame && (!game.exitTravelRemaining || game.exitTravelRemaining>.35))drawSoldierSprite(ctx,game.player.x,game.player.y,game.player.direction,game.player.isMoving,false,time,game.attackFlash>0,1-game.attackFlash/.22);
+  if(game.characterClass==='assassin' && (!game.exitTravelRemaining || game.exitTravelRemaining>.35)){
+    const combo=game.combo;
+    const pose:AssassinPose|undefined=game.health<=0?(game.assassinDeathAge>=0&&game.assassinDeathAge<.28?'kneel':'dead'):game.hurtFlash>0?'hurt':game.phantomDashing?'skill0':combo?.active
+      ? `atk${combo.step+1}${combo.time<(combo.current?.hitFrame??1)*(combo.current?.frameTime??.05)?'a':'b'}` as AssassinPose:undefined;
+    drawAssassinSprite(ctx,game.player.x,game.player.y,game.player.direction,game.player.isMoving,time,false,getOutfit('assassin'),1,pose);
+  }
   // Match Kael's foreground layer: the legacy stage draws walls after its player pass.
   // Drawing Aeris there used to cover her head when standing below a wall.
   if (game.characterClass === 'mage' && !comboFrame && (!game.exitTravelRemaining || game.exitTravelRemaining > .35)) {

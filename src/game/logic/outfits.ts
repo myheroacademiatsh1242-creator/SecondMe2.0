@@ -1,6 +1,6 @@
 import {sortShopCatalogue,type Rarity} from './rarity.ts';
 
-export type OutfitHero='mage'|'swordsman';
+export type OutfitHero='mage'|'swordsman'|'assassin';
 export type OutfitId='default'|'frost'|'woodland'|'ember';
 export const OUTFITS=[
  {id:'default',vi:'Nguyên bản',en:'Original',color:'#e2c585'},
@@ -12,13 +12,13 @@ export const OUTFIT_KEY='second-me-outfits-v1';
 export function cleanOutfits(value:unknown):Record<OutfitHero,OutfitId>{
  const raw=value&&typeof value==='object'?value as Record<string,unknown>:{};
  const valid=(id:unknown):OutfitId=>OUTFITS.some(o=>o.id===id)?id as OutfitId:'default';
- return{mage:valid(raw.mage),swordsman:valid(raw.swordsman)};
+ return{mage:valid(raw.mage),swordsman:valid(raw.swordsman),assassin:raw.assassin==='frost'?'frost':'default'};
 }
-let equipped:Record<OutfitHero,OutfitId>={mage:'default',swordsman:'default'};
+let equipped:Record<OutfitHero,OutfitId>={mage:'default',swordsman:'default',assassin:'default'};
 export function restoreOutfits(){try{equipped=cleanOutfits(JSON.parse(localStorage.getItem(OUTFIT_KEY)??'{}'));}catch{equipped=cleanOutfits(null);}try{localStorage.setItem(OUTFIT_KEY,JSON.stringify(equipped));}catch{}return{...equipped};}
 export const getOutfit=(hero:OutfitHero)=>equipped[hero];
 export const getOutfits=()=>({...equipped});
-export function equipOutfit(hero:OutfitHero,id:OutfitId){if(!['mage','swordsman'].includes(hero)||!OUTFITS.some(o=>o.id===id))return false;equipped={...equipped,[hero]:id};try{localStorage.setItem(OUTFIT_KEY,JSON.stringify(equipped));}catch{/* Cosmetics still work without storage. */}return true;}
+export function equipOutfit(hero:OutfitHero,id:OutfitId){if(!['mage','swordsman','assassin'].includes(hero)||!OUTFITS.some(o=>o.id===id)||(hero==='assassin'&&id!=='default'&&id!=='frost'))return false;equipped={...equipped,[hero]:id};try{localStorage.setItem(OUTFIT_KEY,JSON.stringify(equipped));}catch{/* Cosmetics still work without storage. */}return true;}
 /** Recolor cloth and cold metal only; preserve skin, hair, outlines and alpha. */
 export function outfitPixel(r:number,g:number,b:number,hero:OutfitHero,id:OutfitId):[number,number,number]{
  if(id==='default')return[r,g,b];
@@ -47,6 +47,7 @@ export function orderedShopOutfits(_owned:readonly ShopOutfitId[]){
 }
 export function canWearOutfit(hero:OutfitHero,id:OutfitId,owned:readonly ShopOutfitId[]){
  if(!OUTFITS.some(o=>o.id===id))return false;
+ if(hero==='assassin')return id==='default'||id==='frost';
  if(id==='default'||id==='woodland')return true;
  return SHOP_OUTFITS.some(o=>o.hero===hero&&o.outfit===id&&owned.includes(o.id));
 }

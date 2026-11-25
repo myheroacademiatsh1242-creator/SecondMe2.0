@@ -6,7 +6,7 @@ import type {Rarity} from './rarity.ts';
  * Designs come from the 200-weapon handbook (WEAPONS_PLAN.md); `sample` is its entry number.
  * Data and storage only: drawing the weapon and applying `trait` are later steps of the plan.
  */
-export type WeaponHero='mage'|'swordsman';
+export type WeaponHero='mage'|'swordsman'|'assassin';
 export type WeaponTrait='none'|'burn'|'slow'|'chain'|'ward';
 export interface Weapon{
  id:string;hero:WeaponHero;sample:number;vi:string;en:string;rarity:Rarity;trait:WeaponTrait;
@@ -31,11 +31,12 @@ export const WEAPONS:readonly Weapon[]=[
  {id:'blade-flame',hero:'swordsman',sample:114,vi:'Đại đao hỏa ngục',en:'Flame Executioner Blade',rarity:'bespoke',trait:'burn',fx:'fireball'},
  {id:'sword-caliburn',hero:'swordsman',sample:116,vi:'Đại kiếm thần thánh Caliburn',en:'Giant Caliburn Sword',rarity:'ultimate',trait:'none',fx:'smite'},
  {id:'sword-demonking',hero:'swordsman',sample:118,vi:'Ma kiếm Quỷ Vương',en:'Demon King Greatsword',rarity:'ultimate',trait:'burn',fx:'ground-slam'},
+ {id:'dart-steel',hero:'assassin',sample:0,vi:'Phi tiêu thép',en:'Steel Darts',rarity:'common',trait:'none',fx:'sword-slash'},
 ];
 export type WeaponId=string;
 
 /** The weapon each hero has from the start; always usable. */
-export const DEFAULT_WEAPON:Record<WeaponHero,WeaponId>={mage:'wand-novice',swordsman:'sword-rusted'};
+export const DEFAULT_WEAPON:Record<WeaponHero,WeaponId>={mage:'wand-novice',swordsman:'sword-rusted',assassin:'dart-steel'};
 export const WEAPON_KEY='second-me-weapons-v1';
 
 export const weaponById=(id:unknown)=>WEAPONS.find(w=>w.id===id);
@@ -50,7 +51,7 @@ export function canUseWeapon(hero:WeaponHero,id:unknown,owned:readonly WeaponId[
 export function cleanWeapons(value:unknown):Record<WeaponHero,WeaponId>{
  const raw=value&&typeof value==='object'?value as Record<string,unknown>:{};
  const valid=(hero:WeaponHero)=>weaponById(raw[hero])?.hero===hero?raw[hero] as WeaponId:DEFAULT_WEAPON[hero];
- return{mage:valid('mage'),swordsman:valid('swordsman')};
+ return{mage:valid('mage'),swordsman:valid('swordsman'),assassin:valid('assassin')};
 }
 
 let equipped:Record<WeaponHero,WeaponId>={...DEFAULT_WEAPON};

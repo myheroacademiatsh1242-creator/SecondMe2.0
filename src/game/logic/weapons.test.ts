@@ -45,7 +45,7 @@ test('a weapon needs ownership and the right hero; unknown ids are refused',()=>
 test('saved data is cleaned: duplicates, defaults, unknown ids and non-arrays drop out',()=>{
  assert.deepEqual(cleanOwnedWeapons(['staff-frost','staff-frost','wand-novice','nope',7]),['staff-frost']);
  assert.deepEqual(cleanOwnedWeapons('staff-frost'),[]);
- assert.deepEqual(cleanWeapons({mage:'sword-rusted',swordsman:'katana-frost'}),{mage:'wand-novice',swordsman:'katana-frost'});
+ assert.deepEqual(cleanWeapons({mage:'sword-rusted',swordsman:'katana-frost'}),{mage:'wand-novice',swordsman:'katana-frost',assassin:'dart-steel'});
  assert.deepEqual(cleanWeapons(null),{...DEFAULT_WEAPON});
 });
 

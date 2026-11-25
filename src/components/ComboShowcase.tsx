@@ -2,7 +2,8 @@ import {outfitSheet} from '../game/rendering/outfitSprites.ts';
 import type {OutfitId} from '../game/logic/outfits.ts';
 import React, { useEffect, useRef } from 'react';
 import sprites from '../game/data/comboSprites.json';
-import { COMBO_HITS, type ComboHero } from '../game/logic/combo.ts';
+import { COMBO_HITS } from '../game/logic/combo.ts';
+type ComboHero = 'mage' | 'swordsman';
 import { drawSantaHat, readySantaHat } from './HeroSantaHat.ts';
 
 /** How much slower than in battle the showcase plays, so each swing can be followed. */

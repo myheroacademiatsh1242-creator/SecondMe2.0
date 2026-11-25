@@ -1,6 +1,6 @@
 import { HERO_MAX_HP } from './balance.ts';
 
-export type UpgradeHero = 'mage' | 'swordsman';
+export type UpgradeHero = 'mage' | 'swordsman' | 'assassin';
 export const HERO_UPGRADE_STATS = ['health', 'attack', 'specialty'] as const;
 export type HeroUpgradeStat = typeof HERO_UPGRADE_STATS[number];
 type StatRanks = Record<HeroUpgradeStat, number>;
@@ -22,16 +22,18 @@ export function heroUpgradeCost(rank: number) {
 const HEALTH_BONUS = {
   mage: [0, 7, 14, 21, 30, 43, 52, 62, 75, 88, 108],
   swordsman: [0, 12, 24, 36, 50, 68, 82, 98, 117, 138, 165],
+  assassin: [0, 6, 12, 18, 26, 35, 45, 56, 68, 81, 96],
 };
 const ATTACK_BONUS = {
   mage: [0, 8, 16, 24, 38, 55, 70, 85, 105, 125, 150],
   swordsman: [0, 10, 20, 30, 48, 70, 88, 108, 132, 156, 185],
+  assassin: [0, 8, 16, 24, 38, 55, 70, 85, 105, 125, 150],
 };
 const ICE_MP_DISCOUNT = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12];
 const DAMAGE_REDUCTION = [0, 4, 8, 12, 15, 20, 23, 26, 30, 33, 38];
 
 export function isUpgradeHero(hero: string): hero is UpgradeHero {
-  return hero === 'mage' || hero === 'swordsman';
+  return hero === 'mage' || hero === 'swordsman' || hero === 'assassin';
 }
 
 function cleanRank(saved: unknown): number {
@@ -50,7 +52,7 @@ function cleanStatRanks(saved: number | Partial<StatRanks> | undefined): StatRan
 }
 
 export function cleanHeroRanks(value?: Partial<Record<UpgradeHero, number | Partial<StatRanks>>>): HeroRanks {
-  return { mage: cleanStatRanks(value?.mage), swordsman: cleanStatRanks(value?.swordsman) };
+  return { mage: cleanStatRanks(value?.mage), swordsman: cleanStatRanks(value?.swordsman), assassin: cleanStatRanks(value?.assassin) };
 }
 
 export function heroStats(hero: keyof typeof HERO_MAX_HP, ranks: HeroRanks) {
@@ -64,6 +66,8 @@ export function heroStats(hero: keyof typeof HERO_MAX_HP, ranks: HeroRanks) {
     skillManaDiscount: hero === 'mage' ? ICE_MP_DISCOUNT[specialty] : 0,
     iceRadiusBonus: hero === 'mage' ? (specialty >= 10 ? 30 : specialty >= 5 ? 15 : 0) : 0,
     sanctuaryBonus: hero === 'swordsman' ? (specialty >= 10 ? 4 : specialty >= 5 ? 2 : 0) : 0,
+    assassinCritBonus: hero === 'assassin' ? specialty * .01 : 0,
+    assassinSkillCooldownDiscount: hero === 'assassin' ? specialty * .08 : 0,
     defeatsEarlyEnemies: attack === HERO_MAX_RANK,
   };
 }

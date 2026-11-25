@@ -35,6 +35,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { drawWizardSprite } from '../game/rendering/wizardSprite.ts';
 import { sounds } from '../game/logic/sound.ts';
 import { drawSoldierSprite } from '../game/rendering/soldierSprite.ts';
+import { drawAssassinSprite } from '../game/rendering/assassinSprite.ts';
 import { localize } from '../localize.tsx';
 import { translate } from '../i18n.ts';
 import { BookOpen, ArrowRight, RotateCcw, Home, Pause, Volume2, VolumeX, Lock, Sword, Check, Shield, Backpack, Bell, Settings, Map, Play, X, SlidersHorizontal, ShoppingBasket, Music as MusicIcon, Zap, ChevronsUp } from 'lucide-react';
@@ -75,8 +76,14 @@ function KaelPortrait({outfit,direction='down',winter=false}:PortraitProps={}) {
   }, [outfit,direction,winter]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Kael"/>;
 }
+function CrimsonPortrait({outfit,direction='down',demo=false}:PortraitProps & {demo?:boolean}={}) {
+  const ref=useRef<HTMLCanvasElement>(null);
+  useEffect(()=>{const draw=()=>{const ctx=ref.current?.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,70,70);drawAssassinSprite(ctx,35,58,direction,false,0,false,outfit,1,demo?(['atk1a','atk1b','atk2a','atk2b','atk3a','atk3b'] as const)[Math.floor(performance.now()/260)%6]:undefined);};draw();const timer=window.setInterval(draw,90);return()=>window.clearInterval(timer);},[outfit,direction,demo]);
+  return <canvas ref={ref} width={70} height={70} role="img" aria-label="Crimson Veil"/>;
+}
 function SelectedCharacterAvatar({hud,winter=false}:{hud:HUDState;winter?:boolean}) {
   if(hud.characterClass==='mechanical')return <MechanicalPortrait/>;
+  if(hud.characterClass==='assassin')return <span className="selected-soldier-avatar"><CrimsonPortrait outfit={hud.outfits?.assassin}/></span>;
   return hud.characterClass==='swordsman'
     ? <span className="selected-soldier-avatar"><KaelPortrait winter={winter} outfit={winter ? hud.outfits?.swordsman : undefined}/></span>
     : winter ? <span className="wizard-avatar"><AerisPortrait winter outfit={hud.outfits?.mage}/></span> : <WizardAvatar/>;
@@ -334,14 +341,15 @@ export function Inventory({ hud, close,engine }: { hud: HUDState; close: () => v
   return <TrailInventory hud={hud} engine={engine??null} close={close}/>;
 }
 
-type SelectableCharacter = 'mage' | 'swordsman' | 'mechanical';
+type SelectableCharacter = 'mage' | 'swordsman' | 'assassin' | 'mechanical';
 
 export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDState}) {
   const christmas = useChristmas(engine?.devSeasonPreview);
   const vi = hud.language === 'vi';
   const [selected, setSelected] = useState<SelectableCharacter>(hud.characterClass);
   const grid = useRef<HTMLDivElement>(null);
-  const [draftOutfits,setDraftOutfits]=useState<Record<OutfitHero,OutfitId>>(hud.outfits??{mage:'default',swordsman:'default'});
+  const [draftOutfits,setDraftOutfits]=useState<Record<OutfitHero,OutfitId>>(hud.outfits??{mage:'default',swordsman:'default',assassin:'default'});
+
   const [previewDirection,setPreviewDirection]=useState<'down'|'left'|'up'|'right'>('down');
   const [upgradeOpen,setUpgradeOpen]=useState(false);
   // Start keyboard focus on the current hero, so focus and selection agree on open.
@@ -349,10 +357,11 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
   const roster: {id: SelectableCharacter; name: string; roleVi: string; roleEn: string}[] = [
     {id:'mage', name:'Aeris', roleVi:'Pháp sư', roleEn:'Mage'},
     {id:'swordsman', name:'Kael', roleVi:'Kiếm sĩ', roleEn:'Swordsman'},
+    {id:'assassin', name:'Crimson Veil', roleVi:'Xạ thủ', roleEn:'Marksman'},
     ...(MECHANICAL_ENABLED && hud.mechanicalOwned ? [{id:'mechanical' as const, name:'Rivet-07', roleVi:'Cơ giới', roleEn:'Mechanic'}] : []),
   ];
   const choice = roster.find(c => c.id === selected) ?? roster[0];
-  const portrait = (id: SelectableCharacter,outfit?:OutfitId) => id === 'mage' ? <AerisPortrait outfit={outfit} winter={christmas.active}/> : id === 'swordsman' ? <KaelPortrait outfit={outfit} winter={christmas.active}/> : <MechanicalPortrait/>;
+  const portrait = (id: SelectableCharacter,outfit?:OutfitId) => id === 'mage' ? <AerisPortrait outfit={outfit} winter={christmas.active}/> : id === 'swordsman' ? <KaelPortrait outfit={outfit} winter={christmas.active}/> : id === 'assassin' ? <CrimsonPortrait outfit={outfit}/> : <MechanicalPortrait/>;
   const outfit=choice.id==='mechanical'?'default':draftOutfits[choice.id];
   const outfitInfo=OUTFITS.find(o=>o.id===outfit)!;
   const hero=choice.id==='mechanical'?null:choice.id;
@@ -362,6 +371,8 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     ? (vi ? `${maxHealth} HP. Đánh xa, phủ nhiều mục tiêu. Gai Băng làm quái chậm 40% trong 2 giây.` : `${maxHealth} HP. Ranged attacks cover multiple targets. Ice Spike slows regular enemies by 40% for 2 seconds.`)
     : choice.id === 'swordsman'
     ? (vi ? `${maxHealth} HP. Chịu đòn tốt và đánh mạnh khi áp sát. Pháp trận ánh sáng tăng sát thương và hồi máu trong 5 giây.` : `${maxHealth} HP. Durable and hard-hitting in melee. Light Sanctuary boosts damage and restores health for five seconds.`)
+    : choice.id === 'assassin'
+    ? (vi ? `${maxHealth} HP. Xạ thủ cơ động, tấn công tầm xa bằng phi tiêu. Combo 1–3–1 phi tiêu, đòn cuối tốn 20 MP để giật lùi. Thiếu MP chỉ đánh hai đòn. Bóng Ma Đỏ lao vào mục tiêu, phóng năm phi tiêu rồi giật lùi. Nhặt phi tiêu trong 10 giây để hồi 8 MP và giảm 0,4 giây hồi chiêu mỗi chiếc.` : `${maxHealth} HP. A mobile marksman who attacks from range with darts. The 1–3–1 combo costs 20 MP on its final recoil hit. Without enough MP, repeat the first two hits. Crimson Phantom rushes the target, throws five darts and recoils. Recover darts within 10 seconds for 8 MP and 0.4s cooldown reduction each.`)
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
   const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
   return <div className={`characters-screen overlay hero-select-screen${christmas.active ? ' christmas-heroes' : ''}`}>
@@ -372,20 +383,20 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
       <button className="hero-select-back" onClick={() => engine?.goToLobby()} aria-label={vi ? 'Về sảnh' : 'Back to lobby'}>{vi ? 'VỀ SẢNH' : 'BACK'}</button>
       <div className="hero-outfit-workspace">
        <div className="hero-roster" ref={grid} role="group" aria-label={vi?'Chọn nhân vật':'Choose character'}>{roster.map(c=><button key={c.id} className={`hero-slot${choice.id===c.id?' is-selected':''}`} aria-pressed={choice.id===c.id} aria-label={c.name} onClick={()=>{setSelected(c.id);engine?.onboarding.event('hero-select');}}><span className="roster-portrait">{portrait(c.id,c.id==='mechanical'?undefined:draftOutfits[c.id])}</span><strong>{c.name}</strong></button>)}</div>
-       <div className="outfit-large-preview">
+       <div className={`outfit-large-preview${choice.id==='assassin'?' crimson-preview':''}`}>
          <span>{choice.name}</span>
          {hero && <button type="button" className="hero-upgrade-trigger" onClick={()=>setUpgradeOpen(true)} disabled={!engine}>
            <ChevronsUp size={16} aria-hidden="true"/>{vi?'Nâng cấp':'Upgrades'}
          </button>}
-         <div>{choice.id==='mage'?<AerisPortrait outfit={outfit} direction={previewDirection} winter={christmas.active}/>:choice.id==='swordsman'?<KaelPortrait outfit={outfit} direction={previewDirection} winter={christmas.active}/>:<MechanicalPortrait/>}</div>
-         <nav className="outfit-rotation-controls" aria-label={vi?'Xoay hướng xem':'Rotate preview'}>{(['down','left','up','right'] as const).map((direction,index)=><button type="button" key={direction} aria-pressed={previewDirection===direction} onClick={()=>setPreviewDirection(direction)}>{vi?['Trước','Trái','Sau','Phải'][index]:['Front','Left','Back','Right'][index]}</button>)}</nav>
-         <strong style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</strong>
+         <div>{choice.id==='mage'?<AerisPortrait outfit={outfit} direction={previewDirection} winter={christmas.active}/>:choice.id==='swordsman'?<KaelPortrait outfit={outfit} direction={previewDirection} winter={christmas.active}/>:choice.id==='assassin'?<CrimsonPortrait outfit={outfit} direction={previewDirection}/>:<MechanicalPortrait/>}</div>
+         {<nav className="outfit-rotation-controls" aria-label={vi?'Xoay hướng xem':'Rotate preview'}>{(['down','left','up','right'] as const).map((direction,index)=><button type="button" key={direction} aria-pressed={previewDirection===direction} onClick={()=>setPreviewDirection(direction)}>{vi?['Trước','Trái','Sau','Phải'][index]:['Front','Left','Back','Right'][index]}</button>)}</nav>}
+         <strong style={{color:outfitColor}}>{choice.id==='assassin'&&outfit==='frost'?(vi?'Giáng Sinh':'Christmas'):vi?outfitInfo.vi:outfitInfo.en}</strong>
        </div>
-       <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header><small>{vi?'Chọn trang phục':'Choose outfit'}</small></header><div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS:orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div></section>
+       <section className="outfit-collection" aria-label={vi?'Trang phục':'Outfits'}><header><small>{vi?'Chọn trang phục':'Choose outfit'}</small></header><div className="outfit-options" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>{(choice.id==='mechanical'?OUTFITS.slice(0,1):choice.id==='assassin'?OUTFITS.slice(0,2).map(o=>o.id==='frost'?{...o,vi:'Giáng Sinh',en:'Christmas'}:o):orderedCharacterOutfits(choice.id,hud.ownedOutfits??[])).map(o=><button key={choice.id+o.id} className={outfit===o.id?'outfit-selected':''} aria-pressed={outfit===o.id} aria-label={(vi?o.vi:o.en)+((choice.id!=='mechanical'&&!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[]))?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')} disabled={choice.id==='mechanical'?o.id!=='default':!canWearOutfit(choice.id,o.id,hud.ownedOutfits??[])} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,o.id)]} as React.CSSProperties} onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:o.id}));}}><span>{portrait(choice.id,o.id)}</span><strong>{vi?o.vi:o.en}</strong>{outfit===o.id&&<Check size={16}/>}</button>)}</div></section>
       </div>
       <section className="hero-select-info" aria-live="polite">
-        <div className="hero-info-portrait">{choice.id === 'mage' || choice.id === 'swordsman' ? <ComboPreview key={choice.id} hero={choice.id} outfit={outfit} winter={christmas.active} reducedMotion={hud.reducedMotion}/> : portrait(choice.id)}</div>
-        <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small><span style={{color:outfitColor}}>{vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
+        <div className="hero-info-portrait">{choice.id === 'mage' || choice.id === 'swordsman' ? <ComboPreview key={choice.id} hero={choice.id} outfit={outfit} winter={christmas.active} reducedMotion={hud.reducedMotion}/> : choice.id==='assassin'?<CrimsonPortrait outfit={outfit} demo={!hud.reducedMotion}/>:portrait(choice.id)}</div>
+        <div className="hero-info-copy"><h2>{choice.name} · {vi ? choice.roleVi : choice.roleEn}</h2><p>{detail}</p><small><span style={{color:outfitColor}}>{choice.id==='assassin'&&outfit==='frost'?(vi?'Giáng Sinh':'Christmas'):vi?outfitInfo.vi:outfitInfo.en}</span></small></div>
         <div className="hero-info-action"><span>{choice.id === hud.characterClass ? (vi ? 'ĐANG CHỌN' : 'CURRENT HERO') : (vi ? 'NHÂN VẬT SẴN SÀNG' : 'HERO READY')}</span><button type="button" onClick={confirm} disabled={!engine}>{vi ? 'TRANG BỊ & CHỌN' : 'EQUIP & CONFIRM'}</button></div>
       </section>
     </div>
@@ -466,7 +477,7 @@ function LevelOneHUD({ engine, hud, openBag, inventory }: { engine: GameEngine |
   const vi = hud.language === 'vi';
   const boss = hud.bossHp > 0;
   const time = `${Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2, '0')}:${Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2, '0')}`;
-  const hero = hud.characterClass === 'swordsman' ? 'KAEL' : hud.characterClass === 'mechanical' ? 'RIVET-07' : 'AERIS';
+  const hero = hud.characterClass === 'swordsman' ? 'KAEL' : hud.characterClass === 'assassin' ? 'CRIMSON VEIL' : hud.characterClass === 'mechanical' ? 'RIVET-07' : 'AERIS';
   return localize(<div className="level-one-hud overlay">
     <aside className="level-one-left">
       <div className="level-one-sidebar-content">
@@ -564,7 +575,7 @@ function DefeatScreen({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
 
 export function EndScreen({ engine, hud }: { engine: GameEngine | null; hud: HUDState }) {
   if(hud.screen!=='ending')return <DefeatScreen engine={engine} hud={hud}/>;
-  const vi=hud.language==='vi',hero=hud.characterClass==='swordsman'?'Kael':hud.characterClass==='mechanical'?'Rivet-07':'Aeris';
+  const vi=hud.language==='vi',hero=hud.characterClass==='swordsman'?'Kael':hud.characterClass==='assassin'?'Crimson Veil':hud.characterClass==='mechanical'?'Rivet-07':'Aeris';
   return <div className="modal-backdrop finale-backdrop"><section className="journey-finale" data-reduced-motion={hud.reducedMotion} role="dialog" aria-modal="true" aria-labelledby="finale-title">
     <header className="finale-heading"><span>{vi?'HÀNH TRÌNH HOÀN TẤT':'JOURNEY COMPLETE'}</span><b>VI / VI</b></header>
     <div className="finale-body"><div className="finale-hero" data-character={hud.characterClass}><div className="hero-echo-ring"/><div className="finale-portrait"><SelectedCharacterAvatar hud={hud}/></div><span>{hero}</span><small>{vi?'NGƯỜI GÌN GIỮ KÝ ỨC':'KEEPER OF ECHOES'}</small></div>
