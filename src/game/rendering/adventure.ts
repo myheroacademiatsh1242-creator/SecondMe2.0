@@ -28,6 +28,7 @@ import { drawPfxShots } from './pixelfx.ts';
 import { WIND_BRIDGE } from '../logic/frostLevels.ts';
 import { ECHO_RUNES } from '../logic/echoRunes.ts';
 import { drawKeyPrompt } from './keyPrompt.ts';
+import { drawHuntArena, drawHuntSnow } from './snowHunt.ts';
 let echoCanvas:HTMLCanvasElement|undefined;
 export const ECHO_COLORS=['#67e8f9','#c084fc','#fbbf24','#fb7185','#a3e635','#f9a8d4'];
 
@@ -46,6 +47,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.stroke();
   }
   ctx.restore();
+  if(game.hunt)drawHuntArena(ctx,game,time);
   drawEnemies(ctx,visibleEnemies,time);
   if(game.supportAlly){
     const a=game.supportAlly;ctx.save();ctx.globalAlpha=.9;
@@ -105,6 +107,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.restore();
   }
   drawKeyPrompt(ctx,game,time);
+  if(game.hunt)drawHuntSnow(ctx,time,game.reducedMotion);
   // With the hand-drawn art the trap floors were drawn under the characters by the renderer;
   // only falling boulders go on top here.
   const trapLayer = trapSpritesReady() ? 'overhead' : 'all';

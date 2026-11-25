@@ -3,6 +3,7 @@ import {startGamepadControls} from './game/logic/gamepadControls.ts';
 import {MissionBriefing} from './components/MissionBriefing.tsx';
 import './components/StoneFrame.css';
 import {KeyPromptLayer} from './components/KeyPromptLayer.tsx';
+import {SnowHuntHUD} from './components/SnowHuntHUD.tsx';
 import {PANEL_ART,warmPanelArt} from './components/panelArt.ts';
 
 import {sounds} from './game/logic/sound.ts';
@@ -164,6 +165,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
     {hud.screen === 'paused' && !hud.missionBriefing && !hud.preparingBattle && <PauseMenu engine={engine} hud={hud}/>}
     {/* The New card sits inside the stage, under the top bar, so it scales and stays with the arena. */}
     {engine&&!filmPlaying&&!portraitBlocked&&!bossIntroVisible&&hud.screen==='playing'&&<KeyPromptLayer engine={engine} hud={hud} touch={touchControls}/>}
+    {engine&&hud.hunt&&(hud.screen==='playing'||hud.screen==='paused')&&<SnowHuntHUD engine={engine} hud={hud}/>}
 
   </div>
     {hud.missionBriefing&&engine&&!portraitBlocked&&<MissionBriefing engine={engine} hud={hud} touch={touchControls}/>}

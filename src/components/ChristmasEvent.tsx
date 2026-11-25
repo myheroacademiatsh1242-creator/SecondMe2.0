@@ -135,13 +135,13 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
         aria-label={vi ? 'Đóng' : 'Close'}><X size={22}/></button>
       <div className="christmas-gift" aria-hidden="true"><i/></div>
       <p className="christmas-dates">{vi ? '01–31/12 · Giờ Việt Nam' : 'Dec 1–31 · Vietnam time'}</p>
-      <h2>{vi ? 'Đường mòn Noel' : 'Christmas Trail'}</h2>
-      <p>{vi ? 'Dùng Echo giữ ấn và tìm đường đến cổng thoát qua đèo tuyết.' : 'Use Echoes to hold the runes and find the exit through the snowy pass.'}</p>
+      <h2>{vi ? 'Săn quái đêm Noel' : 'Snow Hunt'}</h2>
+      <p>{vi ? 'Trụ qua các đợt quái tuyết, lên cấp chọn sức mạnh cho nhân vật và Echo. Trụ càng lâu, càng nhiều vé Noel và xu.' : 'Survive waves of snow monsters and level up powers for your hero and Echoes. The longer you last, the more Noel tickets and coins.'}</p>
       <button className="christmas-claim christmas-play" type="button" disabled={!engine?.canPlayChristmasTrail}
-        onClick={()=>{if(engine?.startChristmasTrail())dialog.current?.close();}}>
+        onClick={()=>{if(engine?.startSnowHunt())dialog.current?.close();}}>
         {vi?'Chơi sự kiện':'Play event'}
       </button>
-      {!engine?.campaign.bossDefeated&&<p>{vi?'Thắng Boss 1 · Thủ Vệ Băng để mở khóa.':'Defeat Boss 1 · the Frost Guardian to unlock.'}</p>}
+      {!engine?.campaign.bossDefeated&&!hud.devUnlocked&&<p>{vi?'Thắng Boss 1 · Thủ Vệ Băng để mở khóa.':'Defeat Boss 1 · the Frost Guardian to unlock.'}</p>}
       {engine?.campaign.bossDefeated&&!!hud.pendingRuneChoices?.length&&<p>{vi?'Nhận ấn thưởng đang chờ để vào sự kiện.':'Claim your pending rune reward to enter the event.'}</p>}
       {event.preview && <p className="christmas-preview">{vi ? 'Xem thử local · Xu thử không cộng vào túi.' : 'Local preview · Test coins are not added to your wallet.'}</p>}
       <button className="christmas-claim" type="button" disabled={claimed || (!event.preview && !engine)}

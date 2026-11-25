@@ -15,6 +15,10 @@ const ENEMY_SOUND = {
   skull: { pitch: 240, grit: 2450, release: 1750 },
   shaman: { pitch: 310, grit: 1050, release: 2350 },
   minotaur: { pitch: 92, grit: 560, release: 360 },
+  thief: { pitch: 260, grit: 1600, release: 900 },
+  bombfish: { pitch: 150, grit: 900, release: 1200 },
+  turtle: { pitch: 80, grit: 300, release: 400 },
+  troll: { pitch: 58, grit: 420, release: 300 },
 } satisfies Record<Exclude<EnemyKind, 'dummy'>, { pitch: number; grit: number; release: number }>;
 
 class SoundEngine {

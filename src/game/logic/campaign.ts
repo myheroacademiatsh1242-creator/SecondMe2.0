@@ -62,6 +62,8 @@ export class Campaign {
   // Legacy save field: this balance holds Tanuki phàm tinh thể.
   chestKeys = 0;
   whiteCrystals = 0;
+  /** Noel event tickets earned in Snow Hunt runs (logic/snowHunt.ts), spent at the event chest. */
+  noelTickets = 0;
   mysticCrystals = 0;
   lastChestRewards:ChestRewardId[]=[];
   bestStars: Record<number, number> = {};
@@ -101,6 +103,7 @@ export class Campaign {
       this.limitRings = Number.isSafeInteger(value.limitRings) && value.limitRings >= 0 ? value.limitRings : 0;
       this.chestKeys=Number.isSafeInteger(value.chestKeys)&&value.chestKeys>=0?value.chestKeys:0;
       this.whiteCrystals=Number.isSafeInteger(value.whiteCrystals)&&value.whiteCrystals>=0?value.whiteCrystals:0;
+      this.noelTickets=Number.isSafeInteger(value.noelTickets)&&value.noelTickets>=0?value.noelTickets:0;
       this.mysticCrystals=Number.isSafeInteger(value.mysticCrystals)&&value.mysticCrystals>=0?value.mysticCrystals:0;
       this.lastChestRewards=Array.isArray(value.lastChestRewards)?value.lastChestRewards.filter((id:unknown)=>typeof id==='string'&&Boolean(chestReward(id as ChestRewardId))).slice(0,10):[];
       this.echoRunes=cleanRuneStock(value.echoRunes);
@@ -129,7 +132,7 @@ export class Campaign {
       supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
       tutorialWelcomeClaimed:this.tutorialWelcomeClaimed, completed: this.completed, bossDefeated: this.bossDefeated,
-      echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
+      echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, noelTickets: this.noelTickets, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
   }
   claimChristmasGift(now = new Date()) {
@@ -306,6 +309,11 @@ export class Campaign {
   buyLimitRing() { return this.buyShopItem('ring'); }
   useLimitRing() { if (this.limitRings < 1) return false; this.limitRings--; this.save(); return true; }
   get unlockedLevel() { return Math.min(5, this.completed.filter(id=>id<=5).length); }
+  /** Bank what a Snow Hunt run collected: its Noel tickets and coins. */
+  addHuntRewards(tickets:number,coins:number){
+    if(!Number.isSafeInteger(tickets)||!Number.isSafeInteger(coins)||tickets<0||coins<0)return;
+    this.noelTickets=Math.min(999999,this.noelTickets+tickets);this.coins=Math.min(99999999,this.coins+coins);this.save();
+  }
   reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 
 }

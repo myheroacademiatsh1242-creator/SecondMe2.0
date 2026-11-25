@@ -6,9 +6,9 @@ import { segmentCircle, segmentWall } from './combatGeometry.ts';
 import type { LevelData } from './types.ts';
 import { DUMMY_RESET } from './training.ts';
 /** 'dummy': the dev training ground's target (logic/training.ts): never moves, attacks or dies. */
-export type EnemyKind='goblin'|'bear'|'skull'|'shaman'|'minotaur'|'dummy';
+export type EnemyKind='goblin'|'bear'|'skull'|'shaman'|'minotaur'|'thief'|'bombfish'|'turtle'|'troll'|'dummy';
 export const EMBER_SLIME_ID = 'ember-slime';
-export interface Enemy {id:string;kind:EnemyKind;x:number;y:number;homeX:number;homeY:number;hp:number;maxHp:number;mode:'idle'|'chase'|'warning'|'recover';timer:number;targetX:number;targetY:number;facingLeft:boolean;hitFlash:number;deathAge:number;targetId:number|null;attackFx?:number;slimeHue?:number;chillTime?:number;/** Sees the hero anywhere on the map: no notice range, no leash home, routes round walls (Frost Crystals). */seesAll?:boolean;/** Push-back still to slide (logic/hitFeel.ts). */push?:{x:number;y:number};targetEcho?:{x:number;y:number;aggroTime?:number};
+export interface Enemy {/** Snow Hunt scaling: damage multiplier and speed/attack-tempo multiplier (default 1). */power?:number;haste?:number;id:string;kind:EnemyKind;x:number;y:number;homeX:number;homeY:number;hp:number;maxHp:number;mode:'idle'|'chase'|'warning'|'recover';timer:number;targetX:number;targetY:number;facingLeft:boolean;hitFlash:number;deathAge:number;targetId:number|null;attackFx?:number;slimeHue?:number;chillTime?:number;/** Sees the hero anywhere on the map: no notice range, no leash home, routes round walls (Frost Crystals). */seesAll?:boolean;/** Push-back still to slide (logic/hitFeel.ts). */push?:{x:number;y:number};targetEcho?:{x:number;y:number;aggroTime?:number};
  /** The Echo this enemy was drawn to, and how long it keeps after it once out of sight (s). */
  lureEcho?:{x:number;y:number};lureTime?:number; bolt?:EnemyBolt}
 interface EnemyBolt {x:number;y:number;vx:number;vy:number;life:number;damage:number}
@@ -20,7 +20,7 @@ export const SHAMAN_BOLT_RADIUS = 7;
  * be, in sight (walls and closed gates block it), to draw the enemy instead: notice + 80, a
  * little further, as an Echo is a decoy.
  */
-export const ENEMY_STATS={goblin:{hp:108,speed:82,reach:42,notice:180,lure:260,damage:12},bear:{hp:150,speed:68,reach:47,notice:175,lure:255,damage:20},skull:{hp:98,speed:93,reach:39,notice:190,lure:270,damage:12},shaman:{hp:100,speed:72,reach:280,notice:340,lure:360,damage:18},minotaur:{hp:205,speed:68,reach:58,notice:195,lure:275,damage:28},dummy:{hp:500,speed:0,reach:0,notice:0,lure:0,damage:0}};
+export const ENEMY_STATS={goblin:{hp:108,speed:82,reach:42,notice:180,lure:260,damage:12},bear:{hp:150,speed:68,reach:47,notice:175,lure:255,damage:20},skull:{hp:98,speed:93,reach:39,notice:190,lure:270,damage:12},shaman:{hp:100,speed:72,reach:280,notice:340,lure:360,damage:18},minotaur:{hp:205,speed:68,reach:58,notice:195,lure:275,damage:28},thief:{hp:70,speed:128,reach:40,notice:220,lure:260,damage:9},bombfish:{hp:62,speed:96,reach:46,notice:200,lure:260,damage:24},turtle:{hp:240,speed:50,reach:46,notice:170,lure:240,damage:14},troll:{hp:340,speed:58,reach:66,notice:220,lure:300,damage:30},dummy:{hp:500,speed:0,reach:0,notice:0,lure:0,damage:0}};
 /** An enemy drawn to an Echo keeps after it this long once it loses sight of it (round a corner). */
 export const LURE_MEMORY = 2;
 /** How far from home an Echo can lead an enemy: its lure range plus this (px). */
@@ -125,12 +125,12 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
     const index=e.targetEcho?echoes.indexOf(e.targetEcho):-1;
     const target=e.targetId===null?player:index>=0?echoes[index]:undefined;
     const hitX=slime?e.x:e.targetX,hitY=slime?e.y:e.targetY;
-    const damage=Math.round(stat.damage*balance.damage);
+    const damage=Math.round(stat.damage*balance.damage*(e.power??1));
     if(ranged){
      const angle=Math.atan2(e.targetY-e.y,e.targetX-e.x);
      e.bolt={x:e.x,y:e.y,vx:Math.cos(angle)*SHAMAN_BOLT_SPEED,vy:Math.sin(angle)*SHAMAN_BOLT_SPEED,life:1.3,damage};
     }else if(target&&Math.hypot(target.x-hitX,target.y-hitY)<(slime?28:44)&&sight(e,target))onHit({...target,echoIndex:e.targetId===null?null:index},damage,e);
-    e.mode='recover';e.timer=(ranged?.85:slime?.95:e.kind==='minotaur'?1.1:.82)*balance.recovery;
+    e.mode='recover';e.timer=(ranged?.85:slime?.95:e.kind==='minotaur'||e.kind==='troll'?1.1:.82)*balance.recovery/(e.haste??1);
    }continue;
   }
   if(e.mode==='recover'){if(e.timer<=0)e.mode='idle';continue;}
@@ -154,7 +154,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   const backstep=retreat?resolveMovement(e.x,e.y,e.x+(escape.x-e.x)*.15,e.y+(escape.y-e.y)*.15,30,30,obstacles):e;
   const canRetreat=retreat&&Math.hypot(backstep.x-e.x,backstep.y-e.y)>1;
   if(engaged&&distance<attackReach&&e.timer<=0&&!canRetreat&&sight(e,target)){
-   e.mode='warning';e.timer=ranged?.64:slime?.48:e.kind==='minotaur'?.78:.57;e.targetX=target.x;e.targetY=target.y;e.targetId=target.echoIndex;e.targetEcho=target.echoIndex===null?undefined:echoes[target.echoIndex];
+   e.mode='warning';e.timer=(ranged?.64:slime?.48:e.kind==='minotaur'||e.kind==='troll'?.78:.57)/(e.haste??1);e.targetX=target.x;e.targetY=target.y;e.targetId=target.echoIndex;e.targetEcho=target.echoIndex===null?undefined:echoes[target.echoIndex];
    e.facingLeft=target.x<e.x;
    onAttack?.(e,'warning');
    continue;
@@ -179,7 +179,7 @@ export function updateEnemies(enemies:Enemy[],level:LevelData,player:{x:number;y
   const length=Math.hypot(dx,dy);
   e.mode=length>5?'chase':'idle';e.facingLeft=ranged&&engaged?target.x<e.x:dx<0;
   if(length>5){
-   const speed=stat.speed*balance.speed*(canRetreat?.9:caveAmbush?1.2:engaged?1:.45);
+   const speed=stat.speed*balance.speed*(e.haste??1)*(canRetreat?.9:caveAmbush?1.2:engaged?1:.45);
    const amount=Math.min(length,speed*movementTime);
    const pos=resolveMovement(e.x,e.y,e.x+dx/length*amount,e.y+dy/length*amount,30,30,obstacles);
    const nextDistance=Math.hypot(pos.x-player.x,pos.y-player.y);

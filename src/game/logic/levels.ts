@@ -1,4 +1,5 @@
 import {FROST_LEVELS} from './frostLevels.ts';
+import {HUNT_LEVEL} from './snowHunt.ts';
 import type { LevelData, Rect, Trap } from './types.ts';
 
 const perimeter:Rect[]=[{x:0,y:0,width:1280,height:40},{x:0,y:680,width:1280,height:40},{x:0,y:40,width:40,height:640},{x:1240,y:40,width:40,height:640}];
@@ -95,5 +96,7 @@ const christmasTrail: LevelData = {
   subtitle: 'Christmas Trail',
   description: 'Use Echoes to hold the runes and reach the portal.',
 };
-export const levelAt = (idx: number): LevelData => idx === TRAINING_IDX ? TRAINING_LEVEL
+/** currentLevelIdx while in the Christmas Snow Hunt arena (logic/snowHunt.ts). */
+export const HUNT_IDX = -3;
+export const levelAt = (idx: number): LevelData => idx === TRAINING_IDX ? TRAINING_LEVEL : idx === HUNT_IDX ? HUNT_LEVEL
   : idx === CHRISTMAS_TRAIL_IDX ? christmasTrail : LEVELS[idx];

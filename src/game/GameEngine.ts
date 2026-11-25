@@ -53,7 +53,8 @@ import {
   updateSecurityDoors,
   checkExitReached,
 } from './logic/puzzle.ts';
-import { LEVELS, levelAt, TRAINING_IDX, TRAINING_LEVEL_ID, CHRISTMAS_TRAIL_IDX } from './logic/levels.ts';
+import { LEVELS, levelAt, TRAINING_IDX, TRAINING_LEVEL_ID, CHRISTMAS_TRAIL_IDX, HUNT_IDX } from './logic/levels.ts';
+import { SnowHunt, HUNT_CARD } from './logic/snowHunt.ts';
 import { TrainingStats } from './logic/training.ts';
 import { sounds } from './logic/sound.ts';
 import { GameRenderer } from './rendering/renderer.ts';
@@ -131,6 +132,10 @@ export interface HUDState {
   echoRunes?:EchoRuneStock;
   runeLoadout?:EchoRuneId[];
   activeEchoRunes?:EchoRuneId[];
+  /** Snow Hunt run snapshot (logic/snowHunt.ts), while in its arena. */
+  hunt?:{wave:number;waveTime:number;waveBanner:number;level:number;xp:number;tickets:number;coins:number;kills:number;choices:string[]|null;offerKind:'level'|'wave';stacks:Record<string,number>;over:boolean};
+  huntResult?:{wave:number;time:number;kills:number;level:number;tickets:number;coins:number};
+  noelTickets?:number;
   spentRuneSlots?:number[];
   newItems?:boolean;
   newRunes?:boolean;
@@ -312,7 +317,7 @@ export class GameEngine {
   public recorder = new RecordingManager();
   public echoCharges = 3;
   public limitRingActive = false;
-  public get echoLimit() { return this.limitRingActive ? 6 : 4; }
+  public get echoLimit() { return (this.limitRingActive ? 6 : 4) + (this.hunt?.stack('echoSlot') ?? 0); }
   private echoFreeSummon = true;
   public get availableEchoCharges() { return this.echoCharges + (this.echoFreeSummon ? 1 : 0); }
   public dissonanceSeconds = 0;
@@ -435,7 +440,7 @@ export class GameEngine {
   public language: Language = 'vi';
   public characterClass: CharacterClass = 'mage';
   public lastRating: { stars: number; coins: number; commonCrystals?:number } | null = null;
-  public mana=new ManaPool(()=>maxMana(this.characterClass));
+  public mana=new ManaPool(()=>maxMana(this.characterClass)+(this.hunt?this.huntBonusMp:0));
   public skillCooldown = 0;
   public frostZones:FrostZone[]=[];
   public frostSlow=0;
@@ -676,6 +681,8 @@ export class GameEngine {
   }
 
   public goToLobby() {
+    // Leaving a Snow Hunt mid-run still banks what was collected; then the run and its stat cards go.
+    if(this.hunt){this.endSnowHunt();this.hunt=null;this.huntResult=null;this.player.speed=this.characterClass==='assassin'?290:200;}
     if(this.christmasReturn){
       this.currentLevelIdx=this.christmasReturn.index;
       this.currentLevel=this.christmasReturn.level;
@@ -737,8 +744,98 @@ export class GameEngine {
 
   private christmasReturn: {index:number;level:LevelData}|null=null;
   public get isChristmasTrail(){return this.currentLevelIdx===CHRISTMAS_TRAIL_IDX;}
+
+  // --- Snow Hunt: the Christmas wave-survival event (logic/snowHunt.ts). ---
+  /** The run in progress while in the hunt arena, else null. */
+  public hunt: SnowHunt|null=null;
+  /** What the last run banked, shown on its result panel. */
+  public huntResult:{wave:number;time:number;kills:number;level:number;tickets:number;coins:number}|null=null;
+  private huntLast={attack:0,skill:0,dodge:0};
+  /** Max HP and MP raised this run by shards (reset with the run). */
+  private huntBonusHp=0;private huntBonusMp=0;
+  public get isSnowHunt(){return this.currentLevelIdx===HUNT_IDX;}
+  public startSnowHunt(){
+    if(!this.canPlayChristmasTrail||this.orientationBlocked||!['intro','lobby','shop'].includes(this.screen))return false;
+    if(!this.isSnowHunt&&!this.isChristmasTrail)this.christmasReturn={index:this.currentLevelIdx,level:this.currentLevel};
+    this.enterLevel(HUNT_IDX);
+    return true;
+  }
+  /** Take a power card from a level-up offer. */
+  public chooseHuntCard(id:string){
+    const card=this.hunt?.choose(id);
+    if(!card)return false;
+    if(card.rune)this.activeEchoRunes.add(card.rune);
+    if(card.id==='tough'||card.id==='greed'){const before=this.maxHealth;this.maxHealth=this.huntMaxHealth();this.health=Math.max(1,Math.min(this.maxHealth,this.health+this.maxHealth-before));}
+    this.runePulses.push({x:this.player.x,y:this.player.y,color:card.side==='echo'?'#9be7ff':'#ffd76a',life:.8,max:.8});
+    sounds.playFeedback('rune');this.heldKeys.clear();this.notifyHUD();return true;
+  }
+  /** End the run (fallen or retreated) and bank its tickets and coins. */
+  public endSnowHunt(){
+    const run=this.hunt;
+    if(!run||run.state==='over')return;
+    run.finish();
+    this.campaign.addHuntRewards(run.tickets,run.coins);
+    this.huntResult={wave:run.wave,time:run.time,kills:run.kills,level:run.level,tickets:run.tickets,coins:run.coins};
+    this.heldKeys.clear();this.notifyHUD();
+  }
+  public restartSnowHunt(){ if(this.isSnowHunt){this.restartLevel();this.notifyHUD();} }
+  private huntMaxHealth(){ return Math.max(1,Math.round((this.heroStats.maxHealth+(this.hunt?.maxHpBonus??0)+this.huntBonusHp)*(this.hunt?.maxHpMul??1))); }
+  /** Damage every living enemy within `radius` of a point and chill it (Blizzard, Snow Nova). */
+  private huntBurst(x:number,y:number,radius:number,damage:number,color='#bfefff'){
+    for(const e of this.enemies)if(e.hp>0&&e.kind!=='dummy'&&Math.hypot(e.x-x,e.y-y)<=radius){e.chillTime=Math.max(e.chillTime??0,1.5);this.strike(e,damage,false,{x,y});}
+    this.runePulses.push({x,y,color,life:.6,max:.6});
+  }
+  /** One frame of the run: spawns, pickups, timed card effects, stat cards and clean-up. */
+  private updateHunt(dt:number){
+    const run=this.hunt!;
+    // Stat cards: move speed, and attack/skill/dash cooldowns scaled as soon as an action starts one.
+    this.player.speed=(this.characterClass==='assassin'?290:200)*run.speedMul;
+    const fury=run.has('fury')&&this.health<this.maxHealth*.3;
+    if(this.attackCooldown>this.huntLast.attack)this.attackCooldown*=run.attackCooldownMul*(fury?1/1.4:1);
+    if(this.skillCooldown>this.huntLast.skill)this.skillCooldown*=run.skillCooldownMul;
+    if(this.dodgeCooldown>this.huntLast.dodge)this.dodgeCooldown*=run.dodgeCooldownMul;
+    this.huntLast={attack:this.attackCooldown,skill:this.skillCooldown,dodge:this.dodgeCooldown};
+    if(run.regenFraction>0&&this.health>0)this.health=Math.min(this.maxHealth,this.health+run.regenFraction*this.maxHealth*dt);
+    if(run.has('blizzard')){run.blizzardTimer-=dt;if(run.blizzardTimer<=0){run.blizzardTimer=6;this.huntBurst(this.player.x,this.player.y,150,22);}}
+    if(run.has('echoCharge')){run.echoChargeTimer-=dt;if(run.echoChargeTimer<=0){run.echoChargeTimer=run.echoChargeEvery;this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);}}
+    // Waves: place new enemies on the edges, away from the hero, always hunting (seesAll).
+    const spawns=run.update(dt,this.enemies.filter(e=>e.hp>0).length,Math.random,this.enemies.some(e=>e.hp>0&&e.id.startsWith('hunt-boss-')));
+    const walls=getActiveObstacles(this.currentLevel.walls,this.currentLevel.doors);
+    for(const s of spawns){
+      let x=640,y=360;
+      for(let tries=0;tries<12;tries++){
+        const side=Math.floor(Math.random()*4);
+        x=side===0?70:side===1?1210:70+Math.random()*1140;
+        y=side===2?70:side===3?650:70+Math.random()*580;
+        if(Math.hypot(x-this.player.x,y-this.player.y)>300)break;
+      }
+      const safe=resolveMovement(x,y,x,y,30,30,walls);
+      const maxHp=Math.max(10,Math.round(ENEMY_STATS[s.kind].hp*s.hpScale));
+      this.enemies.push({id:`hunt-${s.boss?'boss-':s.elite?'elite-':''}${run.kills}-${Math.random().toString(36).slice(2,7)}`,kind:s.kind,x:safe.x,y:safe.y,homeX:safe.x,homeY:safe.y,hp:maxHp,maxHp,mode:'idle',timer:.8,targetX:safe.x,targetY:safe.y,facingLeft:false,hitFlash:0,deathAge:0,targetId:null,seesAll:true,power:s.power,haste:s.haste});
+      if(s.boss)this.showBanner(this.language==='vi'?`Boss đợt ${run.wave}: Troll khổng lồ!`:`Wave ${run.wave} boss: Giant Troll!`,3);
+    }
+    // Fallen enemies leave the field after their death animation.
+    this.enemies=this.enemies.filter(e=>e.hp>0||e.deathAge<1.6);
+    // Auto-attack and auto-aim: basic attacks fire at the nearest enemy in reach whenever they are ready.
+    // Skill, ultimate, dodge and Echoes stay in the player's hands.
+    if(this.attackCooldown<=0&&this.health>0&&this.dodgeTime<=0){
+      const reach=this.characterClass==='swordsman'?95:this.characterClass==='mechanical'?110:320;
+      const target=this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').map(e=>({e,d:Math.hypot(e.x-this.player.x,e.y-this.player.y)}))
+        .filter(o=>o.d<=reach).sort((a,b)=>a.d-b.d)[0]?.e;
+      if(target){this.cursorTarget={x:target.x,y:target.y};this.attack({x:target.x,y:target.y});}
+    }
+    // Pickups: the hero, and every Echo on the field, gather gems, tickets and coins in reach.
+    run.collect([{x:this.player.x,y:this.player.y,r:run.pickupRadius},...this.echoes.map(e=>({x:e.x,y:e.y,r:run.echoPickupRadius}))]);
+    // Potions, wave clears and shards: healing as a share of the maximum, raises as flat amounts.
+    const fx=run.takeEffects();
+    if(fx.maxHp){this.huntBonusHp+=fx.maxHp;const before=this.maxHealth;this.maxHealth=this.huntMaxHealth();this.health+=this.maxHealth-before;}
+    if(fx.maxMp){this.huntBonusMp+=fx.maxMp;this.mana.value+=fx.maxMp;}
+    if(fx.heal&&this.health>0)this.health=Math.min(this.maxHealth,this.health+fx.heal*this.maxHealth);
+    if(fx.mana)this.mana.value=Math.min(this.mana.max,this.mana.value+fx.mana*this.mana.max);
+    if(run.choices)this.heldKeys.clear();
+  }
   public get canPlayChristmasTrail(){
-    return this.campaign.bossDefeated && !this.campaign.pendingRuneChoices.length &&
+    return (this.campaign.bossDefeated||this.devUnlocked) && !this.campaign.pendingRuneChoices.length &&
       (this.devSeasonPreview==='christmas'||(this.devSeasonPreview==='auto'&&christmasSeason()!==null));
   }
   public startChristmasTrail(){
@@ -932,6 +1029,9 @@ export class GameEngine {
     if(this.currentLevel.id===13)loadDemonSprites();
     this.bossIntroduction = !!this.boss;
     this.enemies=createEnemies(this.currentLevel);
+    // Snow Hunt: an empty arena with no clock; the run spawns the waves (logic/snowHunt.ts).
+    this.hunt=this.isSnowHunt?new SnowHunt():null;this.huntResult=null;
+    if(this.hunt){this.huntBonusHp=0;this.huntBonusMp=0;this.mana.reset();this.enemies=[];this.legTimeRemaining=null;this.maxHealth=this.huntMaxHealth();this.health=this.maxHealth;this.huntLast={attack:0,skill:0,dodge:0};}
     if(this.currentLevel.id===13)this.enemies.push(...createCaveSlimes());
     this.magicShots = [];
     this.combo?.cancel(); this.comboShots = []; this.comboFx = []; this.damageTexts = []; this.runePulses = []; this.runeCueCooldown.clear(); this.lunge.time = 0; this.hitFeel.reset(); this.pfx = []; this.rage.reset(); this.delayedHits = []; this.ultBeam = null; this.timeStop = 0;
@@ -959,7 +1059,8 @@ export class GameEngine {
     document.body.dataset.state = 'playing';
     this.showBanner(`Bắt đầu lại ${this.currentLevel.name}`);
     if(this.isTraining){this.showBanner(this.language==='vi'?'Bãi tập (dev) · Hình nộm không chết, không đánh trả · Cổng ra để về trại':'Training ground (dev) · Dummies never die or fight back · Exit portal returns to camp',6);this.voiceLevelStart();this.notifyHUD();return;}
-    if(this.currentLevel.id===13)this.showBanner(this.language==='vi'?'Hang Tâm Hỏa':'Ember Cave',3);
+    if(this.hunt)this.showBanner(this.language==='vi'?'Săn quái đêm Noel · Trụ càng lâu, thưởng càng nhiều':'Snow Hunt · The longer you last, the more you earn',5);
+    else if(this.currentLevel.id===13)this.showBanner(this.language==='vi'?'Hang Tâm Hỏa':'Ember Cave',3);
     else if(this.currentLevel.id===6)this.showBanner(this.language==='vi'?`Pha Lê Băng thấy bạn khắp bản đồ · Đập vỡ ${FROST_PRELUDE_KILLS} con!`:`Frost Crystals see you anywhere · Shatter ${FROST_PRELUDE_KILLS} of them!`,5);
     else if(this.currentLevel.id>=7)this.showBanner(translate(this.currentLevel.description,this.language),8);
     else if(this.isPracticeGround)this.showBanner(this.language==='vi'?'Bãi tập · Đi qua từng trạm, làm theo gợi ý trên đầu nhân vật':'Practice ground · Walk through each station and follow the hint over your hero',6);
@@ -1222,7 +1323,20 @@ export class GameEngine {
         this.renderer.emitMagic('sparkle',enemy.x,enemy.y-20,heavy?48:24);sounds.playIceHit(false);
         return true;
       }
+      const huntHero=this.hunt&&source===this.player;
+      if(huntHero){
+        const run=this.hunt!;
+        amount*=run.damageMul*(1+.05*run.stack('echoResonance')*this.echoes.length);
+        if(run.has('fury')&&this.health<this.maxHealth*.3)amount*=1.4;
+        if(run.stack('finisher')&&enemy.hp<=enemy.maxHp*.3)amount*=1+.3*run.stack('finisher');
+        if(Math.random()<run.critChance){amount*=2;this.addDamageText(enemy.x,enemy.y-50,0,true,this.language==='vi'?'CHÍ MẠNG':'CRIT');}
+      }
       const result=applyDamage(enemy.hp,amount);const dealt=result.dealt;enemy.hp=result.hp;enemy.hitFlash=.18;
+      if(huntHero&&dealt>0){
+        const run=this.hunt!;
+        if(run.lifesteal)this.health=Math.min(this.maxHealth,this.health+run.lifesteal);
+        if(run.has('splash'))for(const other of this.enemies.filter(o=>o!==enemy&&o.hp>0&&o.kind!=='dummy'&&Math.hypot(o.x-enemy.x,o.y-enemy.y)<=70).slice(0,2))this.strike(other,dealt*.4*run.stack('splash'),false,{x:enemy.x,y:enemy.y});
+      }
       this.combatHits.push({x:enemy.x,y:enemy.y-30,damage:Math.round(dealt*10)/10,life:.7,broken:enemy.hp===0});this.combatHits=this.combatHits.slice(-24);
       this.renderer.emitMagic('sparkle',enemy.x,enemy.y,heavy?48:24);sounds.playIceHit(false);
       if(enemy.hp===0){
@@ -1233,7 +1347,8 @@ export class GameEngine {
         if(this.legTimeRemaining!==null)this.legTimeRemaining+=timeBonus;
         this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);
         const label=this.language==='vi'?'Hạ quái · +1 lượt Echo':'Enemy defeated · +1 Echo charge';
-        this.showBanner(timeBonus>0?`${label} · +${Number(timeBonus.toFixed(1))}s`:label);
+        if(this.hunt)this.hunt.onKill(enemy.x,enemy.y,enemy.id.startsWith('hunt-boss-')?'boss':enemy.id.startsWith('hunt-elite-')?'elite':'normal');
+        else this.showBanner(timeBonus>0?`${label} · +${Number(timeBonus.toFixed(1))}s`:label);
       }
       this.notifyHUD();return true;
     }
@@ -1530,13 +1645,14 @@ export class GameEngine {
   private startComboHit(step: number) {
     const hero = this.comboHero();
     if (!hero) return;
-    if(hero==='assassin' && step===2 && this.mana.value<comboManaCost(hero,2)){
+    // Snow Hunt: basic attacks fire on their own and cost no MP; MP is for skills.
+    if(!this.hunt && hero==='assassin' && step===2 && this.mana.value<comboManaCost(hero,2)){
       this.combo?.cancel();
       const first=this.combo?.press();
       if(first===0)this.startComboHit(0);
       return;
     }
-    if(!this.spendMana(comboManaCost(hero, step))){this.combo?.cancel();this.attackCooldown=0;return;}
+    if(!this.hunt&&!this.spendMana(comboManaCost(hero, step))){this.combo?.cancel();this.attackCooldown=0;return;}
     const hit = COMBO_HITS[hero][step];
     if (hero === 'assassin') {
       this.attackFlash = hitDuration(hit);
@@ -1893,6 +2009,11 @@ export class GameEngine {
 
   private onHealthZero() {
     this.burn = newBurn();
+    // Snow Hunt: the Noel Revival card stands the hero up once; otherwise the run ends and keeps its loot.
+    if (this.hunt && this.hunt.state === 'fighting') {
+      if (this.hunt.has('revive') && !this.hunt.reviveUsed) { this.hunt.reviveUsed = true; this.health = Math.round(this.maxHealth * .5); this.invulnerability = 2; this.showBanner(this.language === 'vi' ? 'Hồi sinh Noel!' : 'Noel Revival!', 2); this.huntBurst(this.player.x, this.player.y, 150, 30, '#ffd76a'); this.notifyHUD(); return; }
+      this.endSnowHunt(); return;
+    }
     if (this.autoRevive()) return;
     this.defeatReason = 'damage';
     if(this.characterClass==='assassin'){
@@ -2167,6 +2288,7 @@ export class GameEngine {
       this.echoes = this.echoes.filter(e => e !== echo);
       this.selectedEcho = Math.max(0, selected === echo ? Math.min(this.selectedEcho, this.echoes.length - 1) : this.echoes.indexOf(selected!));
       this.echoGrace = 2;
+      if (this.hunt?.has('echoNova')) this.huntBurst(echo.x, echo.y, 110, 28);
     }
   }
 
@@ -2576,6 +2698,8 @@ export class GameEngine {
     }
     if (this.screen !== 'playing' || this.bossIntroduction || this.orientationBlocked || this.runeEditing || this.inventoryOpen || this.pendingBattleStart) return;
     if (this.isPracticeGround) this.trackPractice();
+    // Snow Hunt: play freezes while a level-up card offer or the result panel is up.
+    if (this.hunt) { if (this.hunt.choices || this.hunt.state === 'over') return; this.updateHunt(dt); }
     if(this.tutorialEnabled){
       const previousTopic=this.guides.active;
       if (this.guides.blocking) return;
@@ -3252,6 +3376,7 @@ export class GameEngine {
         completed: [...this.campaign.completed],
         lastReward: this.lastReward,
         newItems:this.newLoot.items,newRunes:this.newLoot.runes,
+        hunt:this.hunt?{wave:this.hunt.wave,waveTime:this.hunt.waveTime,waveBanner:this.hunt.waveBanner,level:this.hunt.level,xp:this.hunt.xp,tickets:this.hunt.tickets,coins:this.hunt.coins,kills:this.hunt.kills,choices:this.hunt.choices?[...this.hunt.choices]:null,offerKind:this.hunt.offerKind,stacks:{...this.hunt.stacks},over:this.hunt.state==='over'}:undefined,huntResult:this.huntResult??undefined,noelTickets:this.campaign.noelTickets,
         lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],spentRuneSlots:[...this.spentRuneSlots],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
         itemLoadout: [...this.campaign.itemLoadout], carriedItems: [...this.carriedItems], preparingBattle: !!this.pendingBattleStart,

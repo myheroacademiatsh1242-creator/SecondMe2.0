@@ -1,0 +1,56 @@
+/* Snow Hunt overlay (SnowHuntHUD.tsx), inside the game stage, over the arena. */
+.snow-hunt-layer{position:absolute;inset:0;z-index:30;pointer-events:none;font-family:"Second Me Pixel",monospace}
+.snow-hunt-layer button{pointer-events:auto;cursor:pointer;font:inherit}
+
+/* Top bar under the level title: wave clock, XP bar, loot, Retreat. */
+.snow-hunt-bar{position:absolute;left:50%;top:calc(7% + 8px);transform:translateX(-50%);width:min(780px,72%);display:flex;align-items:center;gap:14px;padding:6px 12px;pointer-events:auto}
+.snow-hunt-wave{display:flex;align-items:baseline;gap:6px;flex:none}
+.snow-hunt-wave small{font-size:12px;color:var(--stone-text-dim)}
+.snow-hunt-wave strong{font-size:24px;font-weight:400;color:var(--stone-accent)}
+.snow-hunt-wave span{font-size:16px;color:var(--stone-text);font-variant-numeric:tabular-nums}
+.snow-hunt-xp{flex:1;min-width:120px}
+.snow-hunt-xp small{display:block;font-size:12px;color:#9be7ff;margin-bottom:3px}
+.snow-hunt-xp>i{display:block;height:10px;background:#0d1a12;border:2px solid #6f7a55}
+.snow-hunt-xp>i>i{display:block;height:100%;background:linear-gradient(90deg,#4aa8ff,#9be7ff);transition:width .15s linear}
+.snow-hunt-loot{display:flex;align-items:center;gap:10px;flex:none;flex-wrap:wrap;max-width:240px}
+.snow-hunt-loot span{display:inline-flex;align-items:center;gap:4px;font-size:17px;color:#ffd76a}
+.snow-hunt-loot span:nth-child(2){color:#ffe3a3}
+.snow-hunt-loot small{width:100%;font-size:11px;color:var(--stone-text-dim)}
+.snow-hunt-retreat{flex:none;display:inline-flex;align-items:center;gap:5px;background:#394f3c;border:1px solid #a8ac7b;color:#f2e5b6;padding:5px 10px;font-size:13px}
+.snow-hunt-retreat:hover{background:#5a3a2a;border-color:#e0a06a}
+
+/* "Wave N" announcement. */
+.snow-hunt-wave-banner{position:absolute;left:50%;top:32%;transform:translateX(-50%);font-size:56px;color:#fff3c2;text-shadow:0 0 18px #ffd76a,4px 4px 0 #2a190d;animation:snow-hunt-wave 2.5s ease-out forwards}
+@keyframes snow-hunt-wave{0%{opacity:0;transform:translate(-50%,10px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1)}75%{opacity:1}100%{opacity:0}}
+
+/* Level-up offer: three cards. */
+.snow-hunt-offer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#05100bcc;pointer-events:auto;animation:snow-hunt-fade .2s ease-out}
+.snow-hunt-offer h2{margin:0;font-size:28px;font-weight:400;color:#fff3c2;text-shadow:0 0 12px #ffd76a88,3px 3px 0 #2a190d}
+.snow-hunt-cards{display:flex;gap:18px}
+.snow-hunt-card{position:relative;width:230px;min-height:250px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 14px 14px;text-align:center;color:var(--stone-text);transition:transform .12s,box-shadow .12s}
+.snow-hunt-card:hover,.snow-hunt-card:focus-visible{transform:translateY(-6px);box-shadow:0 0 0 2px var(--rarity),0 0 22px var(--rarity);outline:none}
+.snow-hunt-card-key{position:absolute;top:6px;left:8px;padding:1px 6px;background:#d9d2b4;color:#1d2419;border:2px solid #6f7a55;font-size:13px}
+.snow-hunt-card-side{font-size:12px;letter-spacing:1px;padding:2px 8px;color:#1d2419;background:#ffd76a}
+.snow-hunt-card.side-echo .snow-hunt-card-side{background:#9be7ff}
+.snow-hunt-card strong{font-size:22px;font-weight:400;color:var(--rarity)}
+.snow-hunt-card p{margin:0;flex:1;font-size:15px;line-height:1.4}
+.snow-hunt-card small{font-size:12px;color:var(--rarity)}
+
+/* Result panel. */
+.snow-hunt-result{position:absolute;inset:0;display:grid;place-items:center;background:#05100bd9;pointer-events:auto;animation:snow-hunt-fade .3s ease-out}
+.snow-hunt-result section{width:min(460px,80%);padding:20px 24px;text-align:center}
+.snow-hunt-result h2{margin:0 0 14px;font-size:28px;font-weight:400;color:var(--stone-accent)}
+.snow-hunt-result dl{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin:0 0 16px}
+.snow-hunt-result dl div{display:flex;justify-content:space-between;font-size:15px}
+.snow-hunt-result dt{color:var(--stone-text-dim)}
+.snow-hunt-result dd{margin:0;color:var(--stone-text)}
+.snow-hunt-take{display:flex;justify-content:center;gap:22px;margin:0 0 8px;font-size:22px;color:#ffd76a}
+.snow-hunt-take span{display:inline-flex;align-items:center;gap:6px}
+.snow-hunt-result small{display:block;margin-bottom:14px;color:var(--stone-text-dim);font-size:13px}
+.snow-hunt-result footer{display:flex;justify-content:center;gap:12px}
+.snow-hunt-result footer button{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#394f3c;border:2px solid #a8ac7b;color:#f2e5b6;font-size:16px}
+.snow-hunt-result footer button.primary{background:#d8b45c;border-color:#fff1c2;color:#2a1a05}
+.snow-hunt-result footer button:hover{filter:brightness(1.15)}
+@keyframes snow-hunt-fade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.snow-hunt-wave-banner,.snow-hunt-offer,.snow-hunt-result{animation:none}.snow-hunt-card{transition:none}}
+@media(max-height:620px){.snow-hunt-card{width:190px;min-height:200px}.snow-hunt-card p{font-size:13px}.snow-hunt-wave-banner{font-size:40px}}
