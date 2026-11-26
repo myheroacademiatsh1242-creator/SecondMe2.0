@@ -168,3 +168,32 @@ test('in the hunt basic attacks cost no MP, so auto-attack never drains it', t =
   for (let i = 0; i < 60; i++) internals.update(0.05);
   assert.ok(game.mana.value >= mp);
 });
+
+test('the claw machine spends Noel tickets per play and banks each prize', t => {
+  mockDocument(t);
+  const game = new GameEngine();
+  game.campaign.noelTickets = 5; game.campaign.coins = 0;
+  assert.equal(game.spendClawPlay(), true);
+  assert.equal(game.campaign.noelTickets, 1);
+  assert.equal(game.spendClawPlay(), false, 'not enough tickets: nothing spent');
+  assert.equal(game.campaign.noelTickets, 1);
+  assert.deepEqual(game.claimClawPrize(0), { coins: 25, rune: null });
+  assert.deepEqual(game.claimClawPrize(2), { coins: 10, rune: null });
+  assert.equal(game.campaign.coins, 35);
+  const runes = Object.values(game.campaign.echoRunes).reduce((a, b) => a + (b ?? 0), 0);
+  assert.ok(game.claimClawPrize(1)?.rune);
+  assert.equal(Object.values(game.campaign.echoRunes).reduce((a, b) => a + (b ?? 0), 0), runes + 1);
+  assert.equal(game.claimClawPrize(7), null);
+});
+
+test('in dev mode the claw machine plays for free and shows unlimited tickets', t => {
+  mockDocument(t);
+  const game = new GameEngine();
+  game.campaign.noelTickets = 0;
+  game.devUnlocked = true;
+  assert.equal(game.spendClawPlay(), true);
+  assert.equal(game.campaign.noelTickets, 0, 'no real tickets spent');
+  assert.ok(game.clawTickets >= 9999);
+  game.devUnlocked = false;
+  assert.equal(game.spendClawPlay(), false);
+});

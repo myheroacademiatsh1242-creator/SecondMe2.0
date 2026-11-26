@@ -10,7 +10,9 @@ const poses: AssassinPose[] = ['idle0','idle1','idle2','idle3','run0','run1','ru
   'atk1a','atk1b','atk2a','atk2b','atk3a','atk3b','skill0','skill1','skill2','skill3','skill4','hurt','kneel','dead'];
 const images = new Map<string,HTMLImageElement>();
 import {getOutfit} from '../logic/outfits.ts';
-const scale=.22;
+// Crimson stands ~56 px tall in play, the same as Kael (55) and Aeris (58).
+const SIZE=1.18;
+const scale=.22*SIZE;
 
 function sprite(name:string) {
   if(typeof Image==='undefined')return null;
@@ -28,7 +30,7 @@ export function drawAssassinSprite(ctx:CanvasRenderingContext2D,x:number,y:numbe
   const action=pose??(attack?'atk1b':undefined);
   const name=action??(moving?row+Math.floor(time*10)%8:'turn'+(angle??turn));
   const image=sprite((winter?'winter-':'')+name);if(!image)return;
-  const factor=action&&!winter?scale:.60;
+  const factor=action&&!winter?scale:.60*SIZE;
   const w=Math.round(image.naturalWidth*factor),h=Math.round(image.naturalHeight*factor);
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha*=alpha;
   ctx.translate(Math.round(x),Math.round(y));

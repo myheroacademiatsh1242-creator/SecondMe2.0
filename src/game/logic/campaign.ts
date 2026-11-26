@@ -24,6 +24,11 @@ export const MATERIALS = [
 ] as const;
 
 export type CharacterClass = 'mage' | 'swordsman' | 'assassin' | 'mechanical';
+/** Noel tickets per claw machine play. */
+export const CLAW_COST = 4;
+/** What the claw machine is told in dev mode: it shows ∞ and never runs out. */
+export const CLAW_DEV_TICKETS = 9999;
+
 export function levelRating(seconds: number, levelId?: number): { stars: number; coins: number } {
   const target = levelId ? (levelId===6?120:levelId===13?180:puzzleBalance(levelId).threeStars) : 15;
   const stars = seconds <= target ? 3 : seconds <= target*4/3 ? 2 : seconds <= target*5/3 ? 1 : 0;
@@ -313,6 +318,14 @@ export class Campaign {
   addHuntRewards(tickets:number,coins:number){
     if(!Number.isSafeInteger(tickets)||!Number.isSafeInteger(coins)||tickets<0||coins<0)return;
     this.noelTickets=Math.min(999999,this.noelTickets+tickets);this.coins=Math.min(99999999,this.coins+coins);this.save();
+  }
+  /** Claw machine: one play costs CLAW_COST Noel tickets. False (nothing spent) when short. */
+  spendClawPlay(){ if(this.noelTickets<CLAW_COST)return false; this.noelTickets-=CLAW_COST; this.save(); return true; }
+  /** Claw machine prize by toy kind: 0 gift box = 25 coins, 1 snowman = a random Echo rune, 2 candy cane = 10 coins. */
+  claimClawPrize(kind:number,random:()=>number=Math.random):{coins:number;rune:EchoRuneId|null}|null{
+    if(kind===1){const rune=this.grantRune(random);this.save();return{coins:0,rune};}
+    const coins=kind===0?25:kind===2?10:0; if(!coins)return null;
+    this.coins=Math.min(99999999,this.coins+coins);this.save();return{coins,rune:null};
   }
   reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 

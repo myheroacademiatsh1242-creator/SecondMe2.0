@@ -58,7 +58,7 @@ import { SnowHunt, HUNT_CARD } from './logic/snowHunt.ts';
 import { TrainingStats } from './logic/training.ts';
 import { sounds } from './logic/sound.ts';
 import { GameRenderer } from './rendering/renderer.ts';
-import { MECHANICAL_ENABLED, Campaign, createBoss, updateBoss, bossShieldFloor, bossSegment, raiseBossShield, BOSS_SEGMENTS, type BossState, type CharacterClass } from './logic/campaign.ts';
+import { MECHANICAL_ENABLED, CLAW_DEV_TICKETS, Campaign, createBoss, updateBoss, bossShieldFloor, bossSegment, raiseBossShield, BOSS_SEGMENTS, type BossState, type CharacterClass } from './logic/campaign.ts';
 import { renderAdventure } from './rendering/adventure.ts';
 import { drawPortalEnergy, finishPixelFrame } from './rendering/portalEffects.ts';
 import { translate, setCurrentLanguage, type Language } from '../i18n.ts';
@@ -770,6 +770,16 @@ export class GameEngine {
     sounds.playFeedback('rune');this.heldKeys.clear();this.notifyHUD();return true;
   }
   /** End the run (fallen or retreated) and bank its tickets and coins. */
+  /** Claw machine (Christmas event): pay one play in Noel tickets. */
+  /** Dev mode plays for free: tickets are never spent. */
+  public spendClawPlay(){ const ok=this.devUnlocked||this.campaign.spendClawPlay(); this.notifyHUD(); return ok; }
+  /** Tickets the claw machine may spend; unlimited (shown as ∞) in dev mode. */
+  public get clawTickets(){ return this.devUnlocked?CLAW_DEV_TICKETS:this.campaign.noelTickets; }
+  /** Claw machine prize collected from the tray: bank it and say so. */
+  public claimClawPrize(kind:number){
+    const prize=this.campaign.claimClawPrize(kind); if(!prize)return null;
+    this.notifyHUD(); return prize;
+  }
   public endSnowHunt(){
     const run=this.hunt;
     if(!run||run.state==='over')return;

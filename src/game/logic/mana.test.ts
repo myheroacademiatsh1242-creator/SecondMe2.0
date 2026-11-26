@@ -45,3 +45,8 @@ test('mage can cast four skills from full mana and all upgrades retain a positiv
  }
  assert.equal(previous,12);
 });
+
+test('Crimson spends MP like the others: her darts and her Phantom skill both cost something',()=>{
+ assert.ok(COMBO_MP.assassin.slice(1).every(n=>n>0));
+ assert.equal(skillManaCost('assassin'),26);
+});
