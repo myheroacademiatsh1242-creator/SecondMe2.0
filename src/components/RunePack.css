@@ -191,3 +191,8 @@ html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack .rp-grid
 .rune-pack .rp-grid .rp-text{padding-right:18px}
 html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{box-shadow:none!important;filter:drop-shadow(0 14px 24px #000a)}
 html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel::before,html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel::after{content:none!important;display:none!important}
+
+/* The detail / status strip keeps one fixed height whatever it shows, so hovering a rune never resizes the frame.
+   Long descriptions are cut to two lines (the full text is on the rune card). */
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack>:is(.rp-detail,.rp-status){box-sizing:border-box;height:62px;min-height:62px;max-height:62px;overflow:hidden;align-items:center}
+.rune-pack .rp-detail p,.rune-pack>.rp-status p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
