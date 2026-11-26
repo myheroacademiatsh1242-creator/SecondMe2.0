@@ -1,0 +1,193 @@
+/* Rune loadout, laid out as: title bar · [equipped slots | collection grid] · detail strip · footer.
+   One frame (the panel) and flat sections inside it, so nothing is a box in a box in a box. */
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{
+ display:flex;flex-direction:column;gap:12px;
+ width:min(1040px,calc(100vw - 40px));height:min(720px,calc(100dvh - 40px));
+}
+.rune-pack{--rp-gold:#e2c37c;--rp-line:#6f7656;--rp-dim:#a7ab8e;--rp-card:#2b3326;--rp-card-hi:#3b4429;font-family:'Second Me Pixel','Segoe UI',monospace}
+.rune-pack button{font:inherit;cursor:pointer}
+
+/* Title bar */
+.rune-pack .rp-head{flex:none;display:flex;align-items:center;gap:14px;padding:0 2px 12px;border-bottom:2px solid #6f765655;position:relative;z-index:3}
+.rune-pack .rp-head>div{flex:1;min-width:0}
+.rune-pack .rp-head h2{margin:0;font-size:26px;line-height:1.2;color:var(--rp-gold);text-shadow:0 2px #141a0e}
+.rune-pack .rp-head p{margin:4px 0 0;font-size:14px;color:#cfd2b6}
+.rune-pack .rp-head b{color:var(--rp-gold)}
+.rune-pack .rp-chip{flex:none;padding:6px 12px;border:2px solid var(--rp-line);background:#1d241a;color:var(--rp-gold);font-size:14px}
+.rune-pack .rp-close{flex:none;width:36px;height:36px;padding:0;border:2px solid #a8906a;background:#4a3326;color:#f0d9a6;font-size:22px;line-height:1}
+.rune-pack .rp-close:hover{background:#6a4630}
+.rune-pack>.first-tip{flex:none;margin:0}
+
+/* Two columns */
+.rune-pack .rp-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.4fr);gap:18px}
+.rune-pack h3{margin:0 0 10px;font-size:13px;letter-spacing:1.5px;color:var(--rp-dim);display:flex;justify-content:space-between;gap:8px}
+.rune-pack h3 span{letter-spacing:0;color:var(--rp-gold)}
+.rune-pack .rp-loadout,.rune-pack .rp-library{min-height:0;display:flex;flex-direction:column}
+.rune-pack .rp-loadout{overflow:auto;scrollbar-width:thin}
+
+/* Equipped slots: a vertical list, every slot says what it does. */
+.rune-pack .rp-slots{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rune-pack .rp-slots button{width:100%;display:grid;grid-template-columns:26px 48px 1fr;align-items:center;gap:10px;min-height:64px;padding:6px 10px;text-align:left;border:2px solid var(--rp-line);background:var(--rp-card);color:#e6e0c4;box-shadow:inset 0 0 0 2px #151c13}
+.rune-pack .rp-slots button:hover:not(:disabled){background:var(--rp-card-hi)}
+.rune-pack .rp-slots button[aria-pressed=true]{border-color:var(--rp-gold);background:#46432a;box-shadow:inset 0 0 0 2px #6d5d30,0 0 0 2px #e2c37c33}
+.rune-pack .rp-slots button:disabled{opacity:.45;cursor:default}
+.rune-pack .rp-num{display:grid;place-items:center;width:26px;height:26px;background:#151c13;color:var(--rp-gold);font-size:14px}
+.rune-pack .rp-slots button[aria-pressed=true] .rp-num{background:var(--rp-gold);color:#1d2414}
+
+.rune-pack .rp-stone{display:block;width:48px;height:56px}
+.rune-pack .rp-stone .rune-stone{width:100%;height:100%}
+.rune-pack .rp-empty{display:grid;place-items:center;border:2px dashed #6f7656;color:#8b9374;font-size:26px;box-sizing:border-box}
+.rune-pack .rp-text{min-width:0;display:flex;flex-direction:column;gap:3px}
+.rune-pack .rp-text strong{font-size:16px;line-height:1.2;color:#f0e3bb}
+.rune-pack .rp-text small{font-size:12.5px;line-height:1.35;color:var(--rp-dim)}
+
+/* Status / swap confirmation under the slots */
+.rune-pack .rp-status{margin-top:10px;padding:10px 12px;border-left:3px solid var(--rp-line);background:#1a2117;font-size:13px;color:#cdd0b4}
+.rune-pack .rp-status p{margin:0}
+.rune-pack .rp-status.rp-warn{border-color:#d4a54f;background:#4a391a55;color:#f1cf82}
+.rune-pack .rp-swap{font-size:15px;margin:4px 0 8px!important}
+.rune-pack .rp-status div{display:flex;gap:8px}
+.rune-pack .rp-status div button{padding:6px 12px;border:2px solid var(--rp-line);background:#2a3324;color:#d6d8bd}
+.rune-pack .rp-status .rp-confirm{border-color:#e3c780;background:#b9964c;color:#1f2914}
+
+/* Collection grid */
+.rune-pack .rp-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));align-content:start;gap:8px;padding:2px 8px 2px 2px;scrollbar-width:thin;scrollbar-color:#b3a26c #2d3227}
+.rune-pack .rp-grid button{position:relative;display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:10px;min-height:76px;padding:8px 10px;text-align:left;border:2px solid var(--rp-line);background:var(--rp-card);color:#e6e0c4;box-shadow:inset 0 0 0 2px #151c13}
+.rune-pack .rp-grid button:hover{background:var(--rp-card-hi);border-color:#b8b888}
+.rune-pack .rp-grid button[aria-pressed=true]{border-color:#9fb36b}
+.rune-pack .rp-grid button.rp-locked{opacity:.5;filter:grayscale(.7)}
+.rune-pack .rp-count{align-self:start;font-size:13px;color:var(--rp-gold)}
+.rune-pack .rp-locked .rp-count{font-size:11px;color:#8d927a}
+.rune-pack .rp-badge{position:absolute;right:8px;bottom:6px;padding:1px 6px;background:#9fb36b;color:#18200f;font-size:11px}
+
+/* Detail strip */
+.rune-pack .rp-detail{flex:none;display:flex;align-items:baseline;gap:12px;min-height:44px;padding:10px 14px;border:2px solid #6f765666;background:#171e14}
+.rune-pack .rp-detail strong{flex:none;font-size:15px}
+.rune-pack .rp-detail p{flex:1;margin:0;font-size:13px;line-height:1.45;color:#d2d4bb}
+.rune-pack .rp-detail small{flex:none;color:var(--rp-gold);font-size:12px}
+
+/* Footer */
+html body .rune-loadout-editor.rune-pack>footer{flex:none;display:flex;align-items:center;gap:14px;padding-top:12px;margin:0}
+html body .rune-loadout-editor.rune-pack>footer>.loadout-note{flex:1;text-align:center;font-size:12px;color:#8d997b}
+html body .rune-loadout-editor.rune-pack>footer>button{flex:0 0 180px}
+
+.rune-pack button:focus-visible,.rune-pack .rp-grid:focus-visible{outline:2px solid #f0d78f;outline-offset:2px}
+
+@media(max-width:760px){
+ html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{height:calc(100dvh - 30px)}
+ .rune-pack .rp-main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+ .rune-pack .rp-slots{grid-template-columns:repeat(2,1fr)}
+ .rune-pack .rp-slots button{grid-template-columns:22px 36px 1fr;min-height:60px;gap:6px}
+ .rune-pack .rp-slots .rp-text small,.rune-pack .rp-detail small{display:none}
+ .rune-pack .rp-stone{width:36px;height:42px}
+ .rune-pack .rp-grid{grid-template-columns:1fr}
+ .rune-pack .rp-head h2{font-size:21px}
+ html body .rune-loadout-editor.rune-pack>footer>.loadout-note{display:none}
+ html body .rune-loadout-editor.rune-pack>footer>button{flex:1}
+}
+
+/* The status takes the detail strip's place: one row, always in view. */
+.rune-pack>.rp-status{flex:none;display:flex;align-items:center;gap:12px;min-height:44px;margin:0;padding:8px 14px;border:2px solid var(--rp-gold);border-left-width:4px;background:#3a3522}
+.rune-pack>.rp-status .rp-swap{margin:0!important;flex:1}
+.rune-pack>.rp-status.rp-warn{border-color:#d4a54f}
+
+/* In-match overview */
+.rune-pack .rp-summary{margin-top:12px;padding:10px 12px;background:#2c2a1b;border:2px solid #b08a4a;box-shadow:inset 0 0 0 2px #15120a}
+.rune-pack .rp-summary h3{color:var(--rp-gold);margin-bottom:8px}
+.rune-pack .rp-summary ul{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:5px}
+.rune-pack .rp-summary li{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;font-size:13px;color:#efe6c6}
+.rune-pack .rp-summary li i{width:10px;height:10px;transform:rotate(45deg)}
+.rune-pack .rp-summary li b{font-weight:normal;font-size:12px;color:var(--rp-gold);white-space:nowrap}
+.rune-pack .rp-summary small,.rune-pack .rp-sum-empty{font-size:11.5px;color:#a9a383;margin:0}
+
+/* Christmas preview keeps the new frame too */
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.christmas-rune-editor.panel.panel.panel{padding:14px 18px 10px!important}
+.rune-pack .rp-slots button{min-height:46px;padding:3px 10px;grid-template-columns:26px 32px 1fr}
+.rune-pack .rp-slots .rp-stone{width:32px;height:38px}
+.rune-pack .rp-slots .rp-text small{display:none}
+.rune-pack .rp-slots .rp-empty{font-size:18px}
+.rune-pack .rp-loadout{overflow:visible}
+.rune-pack .rp-summary{flex:1;min-height:0;overflow:auto;scrollbar-width:thin}
+.rune-pack .rp-grid button{min-height:84px;padding:4px 8px}
+.rune-pack .rp-grid .rp-text small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{padding-top:22px!important}
+.rune-pack .rp-badge{bottom:2px;right:4px}
+
+
+/* ---- Frame: the hero-select branch-and-ivy frame on warm wood; plaques inside, no scrolling ---- */
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{
+ border:34px solid transparent!important;
+ border-image:url('/assets/ui/hero-selection-forest-frame.png') 18% 25% 13% / 50px 56px stretch!important;
+ background:
+  radial-gradient(ellipse at 90% 0%,#56412555,transparent 65%),
+  repeating-linear-gradient(0deg,transparent 0 28px,#150f0980 29px 30px),
+  linear-gradient(150deg,#30271a,#181e15 60%,#252013) padding-box!important;
+ box-shadow:0 20px 60px #000c!important;
+ padding:8px 14px 6px!important;gap:10px;
+ width:min(1120px,calc(100vw - 32px));height:auto;max-height:calc(100dvh - 24px);
+ color:#e0d2b0;font-family:'Second Me Pixel',monospace;
+}
+.rune-pack.rune-loadout-editor::before,.rune-pack.rune-loadout-editor::after{display:none}
+.rune-pack{--rp-gold:#f0cf86;--rp-dim:#c2b08a;--rp-line:#7a5a33}
+/* Wooden plaques for every inner card, button and bar */
+.rune-pack .rp-chip,.rune-pack .rp-close,.rune-pack .rp-slots button,.rune-pack .rp-grid button,.rune-pack .rp-detail,.rune-pack>.rp-status,.rune-pack .rp-summary,.rune-pack .rp-status div button,
+html body .rune-loadout-editor.rune-pack>footer>button{
+ border:2px solid #7a5a33!important;border-image:none!important;
+ background:linear-gradient(160deg,#3a2c1c,#251d13)!important;
+ box-shadow:inset 0 0 0 2px #1a120a,inset 0 2px 0 3px #5a432633,0 3px 0 #0e0a05!important;
+ clip-path:none!important;color:#eadbb6;text-shadow:1px 1px #0f0a05;
+}
+.rune-pack .rp-head{border-bottom:2px solid #7a5a3355;padding:0 0 6px}
+.rune-pack .rp-head h2{color:var(--rp-gold);font-size:24px;text-shadow:1px 2px #0f0a05;background:none;border:0;clip-path:none;padding:0;box-shadow:none}
+.rune-pack .rp-head p{margin-top:2px;color:#d8c9a4}
+.rune-pack h3{color:var(--rp-dim);border-bottom:1px solid #7a5a3355;padding-bottom:4px;margin-bottom:8px}
+.rune-pack .rp-num{background:#1a120a;color:var(--rp-gold);box-shadow:inset 0 0 0 1px #7a5a33}
+.rune-pack .rp-slots button[aria-pressed=true],.rune-pack .rp-grid button[aria-pressed=true]{border-color:#e2bd6b!important;background:linear-gradient(160deg,#5a4426,#33281a)!important;outline:none}
+.rune-pack .rp-slots button[aria-pressed=true] .rp-num{background:var(--rp-gold);color:#2a1d0c}
+.rune-pack .rp-slots button:hover:not(:disabled),.rune-pack .rp-grid button:hover{background:linear-gradient(160deg,#4a3822,#2d2216)!important}
+.rune-pack .rp-summary{background:linear-gradient(160deg,#2f3a24,#1e2617)!important;border-color:#8aa05a!important}
+.rune-pack>.rp-status{background:linear-gradient(160deg,#5a4426,#33281a)!important;border-color:#e2bd6b!important}
+.rune-pack .rp-status .rp-confirm,html body .rune-loadout-editor.rune-pack>footer>button:last-child{background:linear-gradient(#d9b25e,#a07a33)!important;border-color:#f0d08a!important;color:#2a1d0c!important;text-shadow:0 1px #e9c97c!important}
+.rune-pack .rp-badge{background:#8aa05a;color:#16200c}
+.rune-pack .rp-text strong{color:#f3e3b8}
+.rune-pack .rp-text small{color:#c9b892}
+
+/* No scrolling: all 12 runes in a 3x4 grid, overview shows every line */
+.rune-pack .rp-main{grid-template-columns:300px 1fr;gap:16px;padding:0;background:none;border:0;box-shadow:none;min-height:0}
+.rune-pack .rp-loadout{overflow:visible}
+.rune-pack .rp-summary{flex:none;overflow:visible}
+.rune-pack .rp-grid{overflow:visible;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:6px;padding:0}
+.rune-pack .rp-grid button{min-height:0;padding:5px 8px;grid-template-columns:34px 1fr auto;gap:8px}
+.rune-pack .rp-grid .rp-stone{width:34px;height:40px}
+.rune-pack .rp-grid .rp-text strong{font-size:14px}
+.rune-pack .rp-grid .rp-text small{font-size:11.5px;-webkit-line-clamp:3}
+.rune-pack .rp-count{font-size:12px}
+@media(max-width:900px){.rune-pack .rp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+ html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{border-width:22px!important;border-image-width:32px 36px!important;max-height:calc(100dvh - 16px)}
+ .rune-pack .rp-main{grid-template-columns:1fr}
+ .rune-pack .rp-grid{overflow:auto}
+}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.christmas-rune-editor.panel.panel.panel{padding:8px 14px 6px!important}
+/* Win over the shared lobby-dialog stone skin. */
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack :is(.rp-chip,.rp-close,.rp-slots button,.rp-grid button,.rp-detail,.rp-summary,.rp-status div button),
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack>:is(.rp-status,footer>button){
+ border:2px solid #7a5a33!important;border-image:none!important;
+ background:linear-gradient(160deg,#3a2c1c,#251d13)!important;
+}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack :is(.rp-slots,.rp-grid) button[aria-pressed=true],
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack>.rp-status{border-color:#e2bd6b!important;background:linear-gradient(160deg,#5a4426,#33281a)!important}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack :is(.rp-slots,.rp-grid) button:hover:not(:disabled){background:linear-gradient(160deg,#4a3822,#2d2216)!important}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack .rp-summary{border-color:#8aa05a!important;background:linear-gradient(160deg,#2f3a24,#1e2617)!important}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack :is(.rp-confirm,footer>button:last-child){border-color:#f0d08a!important;background:linear-gradient(#d9b25e,#a07a33)!important}
+html body .modal-backdrop.rune-loadout-backdrop .rune-loadout-editor.rune-pack.panel.panel>footer>button:first-child{border:2px solid #7a5a33!important;border-image:none!important;background:linear-gradient(160deg,#3a2c1c,#251d13)!important;color:#eadbb6!important;box-shadow:inset 0 0 0 2px #1a120a,0 3px 0 #0e0a05!important}
+html body .modal-backdrop.rune-loadout-backdrop .rune-loadout-editor.rune-pack.panel.panel>footer>button:first-child:disabled{opacity:.5}
+/* Fixes: keep the wood fill inside the branch frame; readable Done; count/badge out of the text flow. */
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{background-clip:padding-box!important;background-origin:padding-box!important}
+html body .modal-backdrop.rune-loadout-backdrop .rune-loadout-editor.rune-pack.panel.panel>footer>button:last-child{color:#2a1d0c!important;font-weight:bold;text-shadow:0 1px #f0d08a!important}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack .rp-grid button{grid-template-columns:34px 1fr;padding:6px 10px 6px 8px}
+.rune-pack .rp-grid .rp-count{position:absolute;top:4px;right:6px;font-size:11px}
+.rune-pack .rp-grid .rp-badge{position:absolute;right:6px;bottom:4px}
+.rune-pack .rp-grid .rp-text{padding-right:18px}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel{box-shadow:none!important;filter:drop-shadow(0 14px 24px #000a)}
+html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel::before,html body .modal-backdrop.modal-backdrop .rune-loadout-editor.rune-pack.panel.panel.panel::after{content:none!important;display:none!important}

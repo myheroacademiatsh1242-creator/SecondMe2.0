@@ -1,12 +1,13 @@
 import {PANEL_ART,usePanelArt} from './panelArt.ts';
 import {useDialogClose} from './useDialogClose.ts';
 import {createPortal} from 'react-dom';
-import {useState,useEffect,useRef} from 'react';
+import {useState,useEffect} from 'react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { ECHO_RUNES, type EchoRuneId } from '../game/logic/echoRunes.ts';
 import './EchoRunes.css';
 import {RuneRewardRoll} from './RuneRewardRoll.tsx';
 import './RuneLoadout.css';
+import './RunePack.css';
 export function EchoRuneStock({hud,engine,compact=false,summaryOnly=false}:{hud:HUDState;engine?:GameEngine|null;compact?:boolean;summaryOnly?:boolean}){
  const vi=hud.language==='vi';
  const [editing,setEditing]=useState(false);
@@ -48,47 +49,61 @@ export function RuneLoadoutEditor({hud,engine,close:onClose,initialSlot=0}:{hud:
  const panelArt=usePanelArt(PANEL_ART.inventory);
  const {closing,close}=useDialogClose(onClose);
  useEffect(()=>engine?.markLootSeen('runes'),[engine]);
- const vi=hud.language==='vi',selected=(hud.runeLoadout??[]).slice(0,4),[slot,setSlot]=useState(Math.min(initialSlot,selected.length,3)),owned=ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0);
+ const vi=hud.language==='vi',selected=(hud.runeLoadout??[]).slice(0,4),[slot,setSlot]=useState(Math.min(initialSlot,selected.length,3));
+ const ownedCount=ECHO_RUNES.filter(r=>(hud.echoRunes?.[r.id]??0)>0).length;
+ // Owned runes first, locked ones after, so the useful part of the grid is on top.
+ const library=[...ECHO_RUNES].sort((a,b)=>Number((hud.echoRunes?.[b.id]??0)>0)-Number((hud.echoRunes?.[a.id]??0)>0));
  useEffect(()=>{engine?.setRuneEditing(true);const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}};window.addEventListener('keydown',key,true);return()=>{engine?.setRuneEditing(false);window.removeEventListener('keydown',key,true);};},[engine,close]);
  const [notice,setNotice]=useState('');
- const [slotChosen,setSlotChosen]=useState(false);
  const [candidate,setCandidate]=useState<EchoRuneId|null>(null);
+ const [hover,setHover]=useState<EchoRuneId|null>(null);
  const compare=ECHO_RUNES.find(r=>r.id===candidate);
+ const focused=ECHO_RUNES.find(r=>r.id===selected[slot]);
+ const shown=ECHO_RUNES.find(r=>r.id===(hover??candidate??focused?.id));
+ const name=(r:{vi:string;en:string})=>vi?r.vi:r.en;
+ const pickSlot=(i:number)=>{setSlot(Math.min(i,selected.length));setCandidate(null);setNotice('');engine?.onboarding.event('rune-slot');};
  const equipRune=(id:EchoRuneId,confirmed=false)=>{
+  if(!(hud.echoRunes?.[id]??0)){setNotice(vi?'Chưa sở hữu rune này. Thắng màn giải đố để nhận.':'You do not own this rune yet. Clear puzzle trails to earn it.');return;}
   if(selected[slot]===id){setNotice(vi?'Rune này đã ở trong ô đang chọn.':'This rune is already in the selected slot.');return;}
   const copies=selected.filter((r,i)=>r===id&&i!==slot).length;
-  if(copies>=(hud.echoRunes?.[id]??0)){setNotice(vi?'Không đủ số lượng rune để lắp thêm ô.':'Not enough copies to equip another slot.');return;}
-  if(selected.length===4&&!confirmed){
-   setCandidate(id);
-   setNotice(slotChosen
-    ? (vi?'Xem thay đổi rồi xác nhận.':'Review the change, then confirm.')
-    : (vi?'Chọn một trong 4 ô để thay rune.':'Choose one of the four slots to replace.'));
-   return;
-  }
-  if(engine?.setRuneSlot(slot,id)){setNotice('');setCandidate(null);setSlotChosen(false);}
+  if(copies>=(hud.echoRunes?.[id]??0)){setNotice(vi?`Chỉ có ×${hud.echoRunes?.[id]} – không đủ để lắp thêm ô.`:`Only ×${hud.echoRunes?.[id]} – not enough to fill another slot.`);return;}
+  if(selected[slot]&&!confirmed){setCandidate(id);setNotice('');return;}
+  if(engine?.setRuneSlot(slot,id)){setNotice('');setCandidate(null);if(slot<3&&!selected[slot+1])setSlot(Math.min(slot+1,selected.length+1,3));}
  };
- const focused=ECHO_RUNES.find(r=>r.id===selected[slot]);
- const previewRef=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(previewRef.current)previewRef.current.scrollTop=0;},[slot,focused?.id]);
- return createPortal(<div lang={vi ? 'vi' : 'en'} className={`modal-backdrop rune-loadout-backdrop forest-dialog-backdrop ${closing?'is-leaving':''}`} onClick={close}><section className={`panel rune-loadout-editor forest-dialog${winter?' christmas-rune-editor':''}`} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-label={vi?'Đổi rune':'Change runes'} onClick={e=>e.stopPropagation()}>
+ return createPortal(<div lang={vi ? 'vi' : 'en'} className={`modal-backdrop rune-loadout-backdrop forest-dialog-backdrop ${closing?'is-leaving':''}`} onClick={close}><section className={`panel rune-loadout-editor rune-pack forest-dialog${winter?' christmas-rune-editor':''}`} data-panel-art={panelArt} data-lobby-dialog role="dialog" aria-modal="true" aria-labelledby="rp-title" onClick={e=>e.stopPropagation()}>
   {winter&&<ChristmasPanelTrim still={hud.reducedMotion}/>}
-  <div className="loadout-scenery" aria-hidden="true"><i/><i/><i/><i/></div>
-  <div className="loadout-equipped">
-   <header><small>{vi?`ĐÃ CHỌN ${selected.length}/4 RUNE`:`${selected.length}/4 RUNES EQUIPPED`}</small><h2>{vi?'Chọn 4 rune mang theo':'Choose your four runes'}</h2></header><FirstTip feature="runes" vi={vi}/>
-   <div className="loadout-slots">{Array.from({length:4},(_,i)=>{const r=ECHO_RUNES.find(r=>r.id===selected[i]);return <button key={i} aria-pressed={slot===i} onClick={()=>{setSlot(Math.min(i,selected.length));setSlotChosen(true);setNotice('');engine?.onboarding.event('rune-slot');}}><small>{i+1}</small>{r?<span className="slot-stone" style={{color:r.color}}><RuneStone id={r.id}/></span>:<span className="empty-socket" aria-hidden="true"><svg viewBox="0 0 48 56" shapeRendering="crispEdges"><path d="M9 4H39V10H43V46H37V52H11V46H5V10H9Z" fill="#171d18" stroke="#68725a" strokeWidth="2"/><path d="M24 15L34 28L24 41L14 28Z" fill="none" stroke="#58634d" strokeWidth="2"/><path d="M24 23V33M19 28H29" stroke="#75805f" strokeWidth="2"/></svg></span>}<span title={r?(vi?r.vi:r.en):undefined}>{r?(vi?r.vi:({restore:'Restore',power:'Amplify',guard:'Endure'} as Record<string,string>)[r.id]??r.en):(vi?'Trống':'Empty')}</span></button>;})}</div>
-   <p className={`loadout-instruction ${notice?'loadout-warning':''}`} role="status" aria-live="polite">{notice||(vi?`Chọn ô ${slot+1}, rồi bấm rune muốn thay ở danh sách. Đổi ô không tiêu hao ấn.`:`Select slot ${slot+1}, then pick a rune from the library. Changing slots spends no runes.`)}</p>
-   {compare&&<div className="loadout-comparison" aria-live="polite">
-    <p>{vi?'Trước':'Before'} · {focused ? RUNE_SHORT[focused.id][vi?0:1] : (vi?'Ô trống':'Empty slot')}</p>
-    <p>{vi?'Sau':'After'} · {RUNE_SHORT[compare.id][vi?0:1]}</p>
-    {slotChosen&&<button type="button" onClick={()=>equipRune(compare.id,true)}>{vi?'Xác nhận thay':'Confirm swap'}</button>}
-   </div>}
-   <div className="loadout-preview" ref={previewRef}>{focused?<><div style={{color:focused.color}}><RuneStone id={focused.id}/></div><small>{vi?'ẤN ĐANG CHỌN':'SELECTED RUNE'} · 0{slot+1}</small><h3>{vi?focused.vi:focused.en}</h3><p>{vi?focused.detailVi:focused.detailEn}</p><span>× {hud.echoRunes?.[focused.id]??0} {vi?'trong túi':'in inventory'}</span></>:<><div className="loadout-empty-art"><RuneStone id="call"/><RuneStone id="guard"/><RuneStone id="restore"/></div><small>{vi?'Ô RUNE CHƯA TRANG BỊ':'UNEQUIPPED RUNE SLOT'}</small><h3>{owned.length?(vi?'Chọn một ấn cho hành trình':'Choose a rune for the trail'):(vi?'Tiếng vọng đầu tiên đang chờ':'Your first Echo awaits')}</h3><p>{owned.length?(vi?'Chọn rune trong kho bên cạnh để đặt vào ô này.':'Pick an owned rune from the collection to fill this slot.'):(vi?'Hoàn thành màn giải đố và chọn phần thưởng để sở hữu rune. Rune sẽ xuất hiện ở đây khi bạn sở hữu.':'Complete puzzle trails and choose a reward to earn runes. Owned runes will appear here.')}</p></>}</div>
+  <header className="rp-head">
+   <div><h2 id="rp-title">{vi?'Rune mang theo':'Rune loadout'}</h2><p>{vi?<>① Bấm một <b>ô</b> bên trái → ② bấm <b>rune</b> trong kho để lắp vào.</>:<>① Pick a <b>slot</b> on the left → ② pick a <b>rune</b> from the collection.</>}</p></div>
+   <span className="rp-chip">{selected.length}/4 {vi?'ô':'slots'}</span>
+   <button type="button" className="rp-close" aria-label={vi?'Đóng':'Close'} onClick={close}>×</button>
+  </header>
+  <FirstTip feature="runes" vi={vi}/>
+  <div className="rp-main">
+   <aside className="rp-loadout">
+    <h3>{vi?'ĐANG TRANG BỊ':'EQUIPPED'}</h3>
+    <ol className="rp-slots">{Array.from({length:4},(_,i)=>{const r=ECHO_RUNES.find(r=>r.id===selected[i]);const locked=i>selected.length;return <li key={i}><button type="button" aria-pressed={slot===i} disabled={locked} onClick={()=>pickSlot(i)} onMouseEnter={()=>r&&setHover(r.id)} onMouseLeave={()=>setHover(null)}>
+     <b className="rp-num">{i+1}</b>
+     {r?<span className="rp-stone" style={{color:r.color}}><RuneStone id={r.id}/></span>:<span className="rp-stone rp-empty" aria-hidden="true">+</span>}
+     <span className="rp-text"><strong>{r?name(r):(vi?'Ô trống':'Empty slot')}</strong><small>{r?RUNE_SHORT[r.id][vi?0:1]:locked?(vi?'Lắp ô trước đó trước':'Fill the slot above first'):(vi?'Chọn rune trong kho →':'Pick a rune from the collection →')}</small></span>
+    </button></li>;})}</ol>
+    <div className="rp-summary">
+     <h3>{vi?'TỔNG QUAN KHI VÀO TRẬN':'IN-MATCH OVERVIEW'}</h3>
+     {selected.length===0?<p className="rp-sum-empty">{vi?'Chưa gắn rune nào.':'No runes equipped.'}</p>:<ul>{[...new Set(selected)].map(id=>{const r=ECHO_RUNES.find(x=>x.id===id)!;const n=selected.filter(x=>x===id).length;return <li key={id}><i style={{background:r.color}}/><span>{RUNE_SHORT[id][vi?0:1]}</span><b>{vi?`${n} lần dùng`:`${n} use${n>1?'s':''}`}</b></li>;})}</ul>}
+     <small>{vi?`${selected.length} lượt kích hoạt · mỗi lượt tốn 1 ấn · cùng loại không cộng dồn`:`${selected.length} activations · each spends 1 rune · same type does not stack`}</small>
+    </div>
+   </aside>
+   <section className="rp-library" aria-label={vi?'Kho rune':'Rune collection'}>
+    <h3>{vi?'KHO RUNE':'COLLECTION'} <span>{vi?`Có ${ownedCount}/${ECHO_RUNES.length} loại`:`${ownedCount}/${ECHO_RUNES.length} types owned`}</span></h3>
+    <div className="rp-grid" tabIndex={0}>{library.map(r=>{const count=hud.echoRunes?.[r.id]??0;const slots=selected.flatMap((id,i)=>id===r.id?[i+1]:[]);return <button type="button" key={r.id} className={count?'':'rp-locked'} aria-pressed={slots.length>0} onClick={()=>equipRune(r.id)} onMouseEnter={()=>setHover(r.id)} onMouseLeave={()=>setHover(null)} onFocus={()=>setHover(r.id)} onBlur={()=>setHover(null)}>
+     <span className="rp-stone" style={{color:r.color}}><RuneStone id={r.id}/></span>
+     <span className="rp-text"><strong>{name(r)}</strong><small>{RUNE_SHORT[r.id][vi?0:1]}</small></span>
+     <span className="rp-count">{count?`×${count}`:(vi?'Chưa có':'Locked')}</span>
+     {slots.length>0&&<span className="rp-badge">{vi?'Ô':'Slot'} {slots.join(',')}</span>}
+    </button>;})}</div>
+   </section>
   </div>
-  <div className="loadout-library"><div className="loadout-list-heading"><span>{vi?`ĐANG SỞ HỮU ${owned.length} / ${ECHO_RUNES.length} LOẠI`:`OWNED ${owned.length} / ${ECHO_RUNES.length} TYPES`}</span><small>{vi?'Cuộn để xem ↓':'Scroll to explore ↓'}</small></div>
-   <div className="loadout-owned" tabIndex={0} aria-label={vi?'Rune đang sở hữu':'Owned runes'}>{owned.length===0&&<p className="loadout-no-runes">{vi?'Bạn chưa có rune. Hoàn thành màn và nhận ấn thưởng để thêm vào kho.':'No runes yet. Clear a trail and claim a rune reward.'}</p>}{owned.map(r=><button key={r.id} disabled={!(hud.echoRunes?.[r.id]??0)} aria-pressed={selected.includes(r.id)} title={RUNE_SHORT[r.id][vi?0:1]} onClick={()=>equipRune(r.id)}><span className="library-stone" style={{color:r.color}}><RuneStone id={r.id}/></span><div><strong>{vi?r.vi:r.en}{selected.includes(r.id)?` · ${vi?'Ô':'Slot'} ${selected.flatMap((id,i)=>id===r.id?[i+1]:[]).join(', ')}`:''}</strong><p>{vi?r.detailVi:r.detailEn}</p></div><small>{(hud.echoRunes?.[r.id]??0)>0?`×${hud.echoRunes?.[r.id]}`:(vi?'CHƯA CÓ':'LOCKED')}</small></button>)}</div>
-  </div>
-  <footer><button disabled={!selected[slot]} onClick={()=>{engine?.setRuneSlot(slot,null);setNotice('');}}>{vi?'BỎ KHỎI Ô':'CLEAR SLOT'}</button><button onClick={close}>{vi?'XONG':'DONE'} →</button></footer>
-  <small className="loadout-note">{vi?'Có đủ bản sao thì được lắp trùng · Buff cùng loại không cộng dồn':'Duplicate slots require enough copies · Same-type buffs do not stack'}</small>
+  {compare&&focused||notice?<div className={`rp-status${notice?' rp-warn':''}`} role="status" aria-live="polite">{compare&&focused?<><p>{vi?`Thay ô ${slot+1}:`:`Replace slot ${slot+1}:`}</p><p className="rp-swap"><span style={{color:focused.color}}>{name(focused)}</span> → <span style={{color:compare.color}}>{name(compare)}</span></p><div><button type="button" className="rp-confirm" onClick={()=>equipRune(compare.id,true)}>{vi?'Xác nhận thay':'Confirm swap'}</button><button type="button" onClick={()=>setCandidate(null)}>{vi?'Huỷ':'Cancel'}</button></div></>:<p>{notice||(vi?`Đang chọn ô ${slot+1}. Đổi rune không tiêu hao ấn.`:`Slot ${slot+1} selected. Swapping spends no runes.`)}</p>}</div>:  <div className="rp-detail" aria-live="polite">{shown?<><strong style={{color:shown.color}}>{name(shown)}</strong><p>{vi?shown.detailVi:shown.detailEn}</p><small>×{hud.echoRunes?.[shown.id]??0} {vi?'trong túi':'owned'}</small></>:<p>{vi?'Rê chuột lên rune để xem chi tiết.':'Hover a rune to see its details.'}</p>}</div>}
+  <footer><button type="button" disabled={!selected[slot]} onClick={()=>{engine?.setRuneSlot(slot,null);setNotice('');setCandidate(null);}}>{vi?'Gỡ ô':'Clear slot'} {slot+1}</button><small className="loadout-note">{vi?'Có đủ bản sao thì lắp trùng được · Buff cùng loại không cộng dồn':'Duplicates need enough copies · Same-type buffs do not stack'}</small><button type="button" onClick={close}>{vi?'Xong':'Done'} →</button></footer>
  </section></div>,document.body);
 }
 
