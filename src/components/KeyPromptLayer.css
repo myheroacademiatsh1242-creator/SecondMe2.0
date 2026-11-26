@@ -1,6 +1,6 @@
 /* "New" mechanic card: a flat-stone plate across the top of the arena, never covering the hero's area for long. */
 .new-mechanic{
-  position:absolute;left:50%;top:calc(7% + 14px);transform:translateX(-50%);z-index:40;
+  position:absolute;left:50%;top:17%;transform:translateX(-50%);z-index:40;
   display:flex;align-items:center;gap:12px;width:min(620px,86vw);padding:10px 12px;
   pointer-events:auto;animation:new-mechanic-in .25s ease-out;
 }

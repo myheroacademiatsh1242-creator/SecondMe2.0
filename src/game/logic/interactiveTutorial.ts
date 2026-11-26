@@ -17,7 +17,7 @@ export const TUTORIAL_STEPS:TutorialStep[] = [
  step('combat','combo','Nối combo','Bấm tấn công liên tiếp theo nhịp để nối sang đòn thứ hai. Điện thoại có thể giữ nút tấn công.','Chuột trái','.action-attack, .skill-attack','combo'),
  step('combat','skill','Kỹ năng & năng lượng','Dùng kỹ năng riêng. Cần đủ MP và hết hồi chiêu; bấm khi chưa sẵn sàng không được tính.','Space / Chuột phải','.action-skill, .skill-skill','skill',c=>c.canSkill),
  step('combat','dodge','Lướt né','Di chuyển rồi lướt theo hướng đó. Chờ nút sáng nếu đang hồi chiêu.','Shift','.action-dodge, .skill-dodge','dodge',c=>c.canDodge),
- step('combat','hud','Thanh kỹ năng','Các nút trên HUD dùng được trực tiếp. Số đếm là hồi chiêu, MP là năng lượng. Bấm một nút sẵn sàng để thử.','Chạm nút','.combat-action-bar, .touch-skills','hud-action'),
+ step('combat','hud','Thanh kỹ năng','Các nút trên HUD dùng được trực tiếp. Số đếm là hồi chiêu, MP là năng lượng. Bấm một nút sẵn sàng để thử.','Chạm nút','.nh-skills, .touch-skills','hud-action'),
  step('combat','finish','Tới cổng thoát','Hạ quái còn lại rồi đi vào cổng thoát. Mục tiêu trên sân sẽ chỉ đường.','','.trail-objective','level-clear'),
  step('chest','open','Rương đã mở khóa','Bạn được tặng 15 phàm tinh thể: đủ đúng 3 lượt rương Hoàng Phẩm, cùng xu mua vật phẩm. Vào Shop rồi bấm Rương thưởng.','Shop → Rương','.shop-reward-chest, [data-tutorial="shop"]','chest-open'),
  step('chest','kind','Chọn rương đang hoạt động','Chọn Hoàng Phẩm: mỗi lượt tốn 5 phàm tinh thể. Rương đang phát triển không nằm trong bài tập.','Hoàng Phẩm','.chest-kind-buttons','chest-kind',c=>c.chestOpen),

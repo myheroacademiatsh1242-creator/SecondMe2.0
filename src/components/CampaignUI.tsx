@@ -11,6 +11,7 @@ import {RARITY_COLORS,rarityName} from '../game/logic/rarity.ts';
 import {DEFAULT_WEAPON,TRAIT_TEXT,canUseWeapon,weaponById,weaponsOf,type WeaponHero,type WeaponId} from '../game/logic/weapons.ts';
 import './JourneyFinale.css';
 import './CombatActionBar.css';
+import './NoelHud.css';
 import { CombatActionBar } from './CombatActionBar.tsx';
 import { TouchJoystick, TouchEchoStrip } from './TouchControls.tsx';
 import { FullscreenButton } from './FullscreenButton.tsx';
@@ -595,53 +596,51 @@ export function AdventureHUD({ engine, hud }: { engine: GameEngine | null; hud: 
   </div>);
 }
 
-function LevelOneHUD({ engine, hud, openBag, inventory, winter }: { engine: GameEngine | null; hud: HUDState; openBag: () => void; inventory: React.ReactNode; winter:boolean }) {
+function LevelOneHUD({ engine, hud, openBag, inventory, winter }: { engine: GameEngine | null; hud: HUDState; openBag: () => void; inventory: React.ReactNode; winter: boolean }) {
   const vi = hud.language === 'vi';
   const boss = hud.bossHp > 0;
   const time = `${Math.floor(hud.elapsedLevelTime / 60).toString().padStart(2, '0')}:${Math.floor(hud.elapsedLevelTime % 60).toString().padStart(2, '0')}`;
-  const hero = hud.characterClass === 'swordsman' ? 'KAEL' : hud.characterClass === 'assassin' ? 'CRIMSON VEIL' : hud.characterClass === 'mechanical' ? 'RIVET-07' : 'AERIS';
-  return localize(<div className={`level-one-hud overlay${winter?' christmas-combat':''}`}>
-    <aside className="level-one-left" inert={!!inventory}>
-      <div className="level-one-sidebar-content">
-        <div className="level-one-stat"><small>{vi ? 'MÀN CHƠI' : 'LEVEL'}</small><strong>{engine?.isChristmasTrail?'NOEL':hud.training ? 'DEV' : <>{String(engine?.currentLevel.id ?? 1).padStart(2, '0')} <em>/ {String(LEVELS.length).padStart(2, '0')}</em></>}</strong></div>
-        {/* One clock, in the same card style as the level: the leg countdown on timed levels, elapsed time otherwise. */}
-        {hud.legTimeRemaining !== null
-          ? <div className="level-one-stat level-one-clock" role="timer" aria-label={vi ? 'Thời gian còn lại' : 'Time remaining'}><small>{vi ? 'CÒN LẠI' : 'TIME LEFT'}</small><strong className={hud.legTimeRemaining <= 5 ? 'urgent' : undefined}>{hud.legTimeRemaining.toFixed(1)}<em>s</em></strong></div>
-          : <div className="level-one-stat"><small>{vi ? 'THỜI GIAN' : 'ELAPSED'}</small><strong>{time}</strong></div>}
-        {boss && (
-          <div className="level-one-stat"><small>{vi ? 'MÁU BOSS' : 'BOSS HP'}</small><strong>{hud.bossHp} <em>/ {hud.bossMaxHp ?? 240}</em></strong></div>
-        )}
-        <div className="level-one-vitals">
-          <div className="vital vital-hp" role="meter" aria-label="HP" aria-valuenow={Math.ceil(hud.health)} aria-valuemin={0} aria-valuemax={hud.maxHealth ?? 100}>
-            <span><b>HP</b>{Math.ceil(hud.health)}/{hud.maxHealth ?? 100}</span><i><i style={{ width: `${Math.max(0, hud.health / (hud.maxHealth ?? 100) * 100)}%` }}/></i>
-          </div>
-          <div className="vital vital-mp" role="meter" aria-label="MP" aria-valuenow={Math.floor(hud.mana ?? 100)} aria-valuemin={0} aria-valuemax={hud.maxMana ?? 100}>
-            <span><b>MP</b>{Math.floor(hud.mana ?? 100)}/{hud.maxMana ?? 100}</span><i><i style={{ width: `${Math.max(0, (hud.mana ?? 100) / (hud.maxMana ?? 100) * 100)}%` }}/></i>
-          </div>
-        </div>
-        <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
-        <CombatItemSlots engine={engine} hud={hud}/>
-      </div>
-      <div className="level-one-utilities" role="group" aria-label={vi ? 'Tiện ích' : 'Game utilities'}>
-        <button aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title={`${vi?'Cài đặt':'Settings'} · ${bindingLabel('pause')}`} onClick={() => engine?.pauseGame()}><Settings size={18}/></button>
-        <button aria-label={vi ? 'Túi đồ' : 'Inventory'} data-tutorial="bag" aria-keyshortcuts="Tab" title={`${vi?'Túi đồ':'Inventory'} · ${bindingLabel('inventory')}`} onClick={openBag}><Backpack size={18}/><NewDot feature="bag" show={false} acquired={hud.newItems || hud.newRunes}/></button>
-        <button aria-label={vi ? 'Sổ tay hướng dẫn' : 'Guide'} title={vi ? 'Sổ tay hướng dẫn' : 'Guide'} onClick={() => engine?.openGuide()}><BookOpen size={18}/></button>
+  const bossMax = hud.bossMaxHp ?? 240;
+  const hp = hud.health, maxHp = hud.maxHealth ?? 100, mp = hud.mana ?? 100, maxMp = hud.maxMana ?? 100;
+  return localize(<div className={`level-one-hud overlay${winter ? ' christmas-combat' : ''}`}>
+    <aside className="nh-panel nh-hero" inert={!!inventory}>
+      <div className="nh-portrait"><SelectedCharacterAvatar hud={hud}/></div>
+      <div className="nh-vitals">
+        <div className="nh-vital nh-hp" role="meter" aria-label="HP" aria-valuenow={Math.ceil(hp)} aria-valuemin={0} aria-valuemax={maxHp}><i style={{ width: `${Math.max(0, hp / maxHp * 100)}%` }}/><span>♥ HP {Math.ceil(hp)} / {maxHp}</span></div>
+        <div className="nh-vital nh-mp" role="meter" aria-label="MP" aria-valuenow={Math.floor(mp)} aria-valuemin={0} aria-valuemax={maxMp}><i style={{ width: `${Math.max(0, mp / maxMp * 100)}%` }}/><span>◆ MP {Math.floor(mp)} / {maxMp}</span></div>
       </div>
     </aside>
-    <header className="level-one-top">
-      <div className="level-one-heading"><strong>{hud.levelSubtitle}</strong></div>
-    </header>
     <div className="level-one-arena-overlay">
-      {boss && <div className="boss-bar"><div><span>{hud.bossKind === 'demon' ? 'QUỶ TÂM HỎA' : 'THỦ VỆ BĂNG'}</span><small>{hud.bossHp} / {hud.bossMaxHp ?? 240} · {translate('GIAI ĐOẠN', hud.language)} {hud.bossPhase} / 3</small></div><div className="health-track boss-segments" role="progressbar" aria-label="Máu boss" aria-valuenow={hud.bossHp} aria-valuemin={0} aria-valuemax={hud.bossMaxHp ?? 240}><i style={{ width: `${hud.bossHp / (hud.bossMaxHp ?? 240) * 100}%` }}/>{[1, 2, 3].map(k => <b key={k} className={hud.bossHp > k * (hud.bossMaxHp ?? 240) / 4 ? '' : 'spent'} style={{ left: `${k * 25}%` }}/>)}</div><p className="boss-armor">{hud.bossKind === 'demon' ? (hud.demonStunned ? (vi ? 'SƠ HỞ CHOÁNG · SÁT THƯƠNG ×2.5 · ĐÁNH NGAY!' : 'STUNNED · 2.5× DAMAGE · STRIKE NOW!') : hud.demonRitual ? (vi ? 'TẾ LỄ NGUYÊN TỐ · ĐỨNG LÊN TRỤ ĐỂ PHONG ẤN!' : 'RITUAL · STAND ON CORE TO SEAL!') : hud.demonHeatShield ? (vi ? 'GIÁP KHÁNG HỎA · DỤ BOSS HÚC VÀO TRỤ TẢN NHIỆT!' : 'HEAT SHIELD · BAIT BOSS INTO COOLING VENT!') : hud.bossVulnerable ? (vi ? 'SƠ HỞ · PHẢN CÔNG +35%' : 'OPENING · DAMAGE +35%') : (vi ? 'NÉ VÙNG CAM · DỤ BOSS ĐÁNH ECHO' : 'EVADE ORANGE ZONES · BAIT ATTACKS ON ECHO')) : hud.pillarsRemaining > 0 ? (vi ? `PHÁ ${hud.pillarsRemaining} TRỤ · GIÁP ${hud.bossArmor}` : `BREAK ${hud.pillarsRemaining} PILLARS · ARMOR ${hud.bossArmor}`) : hud.bossVulnerable ? (vi ? 'SƠ HỞ · SÁT THƯƠNG +35%' : 'OPENING · DAMAGE +35%') : (hud.bossShieldAt ?? 0) > 0 ? (vi ? `KHIÊN KẾ TIẾP · ${hud.bossShieldAt} HP` : `NEXT SHIELD · ${hud.bossShieldAt} HP`) : (vi ? 'ĐOẠN MÁU CUỐI' : 'FINAL HEALTH BAR')}</p></div>}
+      {boss ? <div className="nh-panel nh-boss">
+        <strong>{hud.bossKind === 'demon' ? 'QUỶ TÂM HỎA' : 'THỦ VỆ BĂNG'}</strong>
+        <div className="nh-boss-track" role="progressbar" aria-label="Máu boss" aria-valuenow={hud.bossHp} aria-valuemin={0} aria-valuemax={bossMax}><i style={{ width: `${hud.bossHp / bossMax * 100}%` }}/>{[1, 2, 3].map(k => <b key={k} style={{ left: `${k * 25}%` }}/>)}<span>{hud.bossHp} / {bossMax}</span></div>
+        <div className="nh-boss-note">
+          {hud.bossKind !== 'demon' && hud.pillarsRemaining > 0 && <span className="nh-pillars" aria-hidden="true">{[0, 1, 2, 3].map(k => <i key={k} className={k < hud.pillarsRemaining ? undefined : 'broken'}/>)}</span>}
+          <p>{hud.bossKind === 'demon' ? (hud.demonStunned ? (vi ? 'SƠ HỞ CHOÁNG · SÁT THƯƠNG ×2.5 · ĐÁNH NGAY!' : 'STUNNED · 2.5× DAMAGE · STRIKE NOW!') : hud.demonRitual ? (vi ? 'TẾ LỄ NGUYÊN TỐ · ĐỨNG LÊN TRỤ ĐỂ PHONG ẤN!' : 'RITUAL · STAND ON CORE TO SEAL!') : hud.demonHeatShield ? (vi ? 'GIÁP KHÁNG HỎA · DỤ BOSS HÚC VÀO TRỤ TẢN NHIỆT!' : 'HEAT SHIELD · BAIT BOSS INTO COOLING VENT!') : hud.bossVulnerable ? (vi ? 'SƠ HỞ · PHẢN CÔNG +35%' : 'OPENING · DAMAGE +35%') : (vi ? 'NÉ VÙNG CAM · DỤ BOSS ĐÁNH ECHO' : 'EVADE ORANGE ZONES · BAIT ATTACKS ON ECHO')) : hud.pillarsRemaining > 0 ? (vi ? `PHÁ ${hud.pillarsRemaining} TRỤ · GIÁP ${hud.bossArmor}` : `BREAK ${hud.pillarsRemaining} PILLARS · ARMOR ${hud.bossArmor}`) : hud.bossVulnerable ? (vi ? 'SƠ HỞ · SÁT THƯƠNG +35%' : 'OPENING · DAMAGE +35%') : (hud.bossShieldAt ?? 0) > 0 ? (vi ? `KHIÊN KẾ TIẾP · ${hud.bossShieldAt} HP` : `NEXT SHIELD · ${hud.bossShieldAt} HP`) : (vi ? 'ĐOẠN MÁU CUỐI' : 'FINAL HEALTH BAR')}</p>
+        </div>
+      </div> : <div className="nh-panel nh-title"><strong>{hud.levelSubtitle}</strong></div>}
       <div className="hud-alerts">
         {hud.bannerMessage && <div className={'hud-banner ' + (boss ? 'boss-banner' : 'trail-banner')}>{hud.bannerMessage}</div>}
         {hud.activeBuff && <div className="combat-buff">{hud.activeBuff}</div>}
         {hud.dissonanceSeconds > 0 && <div className="combat-buff" role="status">RẠN VỠ {hud.dissonanceSeconds.toFixed(1)} / 5s · Gọi Echo để bảo hộ</div>}
       </div>
     </div>
-    <aside className="level-one-right" inert={!!inventory}>
-      <div className="level-one-character"><SelectedCharacterAvatar hud={hud}/><small>{vi ? 'NHÂN VẬT' : 'CHARACTER'}</small><strong>{hero}</strong></div>
-      {!inventory && !hud.bossIntroduction && <CombatActionBar engine={engine} hud={hud}/>}
+    <aside className="nh-top-right" inert={!!inventory}>
+      <div className="nh-panel nh-stat" role="timer" aria-label={vi ? 'Thời gian' : 'Time'}>
+        <small>{engine?.isChristmasTrail ? 'NOEL' : hud.training ? 'DEV' : `${vi ? 'MÀN' : 'LEVEL'} ${String(engine?.currentLevel.id ?? 1).padStart(2, '0')} / ${String(LEVELS.length).padStart(2, '0')}`}</small>
+        {/* One clock: the leg countdown on timed levels, elapsed time otherwise. */}
+        <strong className={hud.legTimeRemaining !== null && hud.legTimeRemaining <= 5 ? 'urgent' : undefined}>{hud.legTimeRemaining !== null ? `${hud.legTimeRemaining.toFixed(1)}s` : time}</strong>
+      </div>
+      <div className="level-one-utilities" role="group" aria-label={vi ? 'Tiện ích' : 'Game utilities'}>
+        <button className="nh-panel nh-pause" aria-label={vi ? 'Cài đặt và tạm dừng' : 'Settings and pause'} title={`${vi?'Cài đặt':'Settings'} · ${bindingLabel('pause')}`} onClick={() => engine?.pauseGame()}><Pause fill="currentColor"/></button>
+        <button className="nh-panel" aria-label={vi ? 'Túi đồ' : 'Inventory'} data-tutorial="bag" aria-keyshortcuts="Tab" title={`${vi?'Túi đồ':'Inventory'} · ${bindingLabel('inventory')}`} onClick={openBag}><Backpack/><NewDot feature="bag" show={false} acquired={hud.newItems || hud.newRunes}/></button>
+        <button className="nh-panel" aria-label={vi ? 'Sổ tay hướng dẫn' : 'Guide'} title={vi ? 'Sổ tay hướng dẫn' : 'Guide'} onClick={() => engine?.openGuide()}><BookOpen/></button>
+      </div>
+    </aside>
+    {!inventory && !hud.bossIntroduction && <CombatActionBar engine={engine} hud={hud}/>}
+    <aside className="nh-bag" inert={!!inventory}>
+      <div className="level-one-runes"><EchoRuneStock engine={engine} hud={hud} compact/></div>
+      <CombatItemSlots engine={engine} hud={hud}/>
     </aside>
     {inventory}
   </div>);

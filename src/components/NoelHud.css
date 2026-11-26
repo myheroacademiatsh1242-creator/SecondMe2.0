@@ -1,0 +1,98 @@
+/* Desktop battle HUD: navy + gold frames; snow, holly and bows only in the Christmas season (.christmas-combat). 1 --u = 1px of the 1672×941 design, scaled with the stage. */
+.adventure-app .game-stage .level-one-hud{--u:calc(100cqw / 1672);display:block;position:absolute;inset:0;padding:0;background:none;color:#fff;font-family:"Second Me Pixel",monospace;text-shadow:calc(2*var(--u)) calc(2*var(--u)) 0 #060d1f}
+.level-one-hud .nh-panel{box-sizing:border-box;margin:0;background:linear-gradient(#16294f,#0c1733);border:calc(4*var(--u)) solid #c99a45;border-radius:calc(14*var(--u));box-shadow:0 0 0 calc(3*var(--u)) #1a1008,inset 0 0 0 calc(2*var(--u)) #060d1f}
+/* snow cap along the top of the large frames */
+.christmas-combat :is(.nh-boss,.nh-title,.nh-echo-slots,.nh-skills)::before{content:'';position:absolute;left:calc(12*var(--u));right:calc(12*var(--u));top:calc(-9*var(--u));height:calc(14*var(--u));background:url('/assets/ui/noel/snow-edge.png') top center/auto 100% repeat-x;image-rendering:pixelated;pointer-events:none}
+.level-one-hud strong,.level-one-hud small,.level-one-hud kbd{font-weight:400;line-height:1.05!important}
+
+/* top left: portrait + HP/MP */
+.level-one-hud .nh-hero{position:absolute;left:calc(8*var(--u));top:calc(8*var(--u));display:flex;align-items:center;background:none;border:0;box-shadow:none}
+.nh-portrait{position:relative;z-index:1;width:calc(100*var(--u));height:calc(100*var(--u));display:grid;place-items:center;box-sizing:border-box;border:calc(5*var(--u)) solid #c99a45;border-radius:50%;background:radial-gradient(#4b7fc0,#12264d);box-shadow:0 0 0 calc(3*var(--u)) #1a1008}
+.christmas-combat .nh-portrait::after{content:'';position:absolute;left:50%;bottom:calc(-26*var(--u));width:calc(86*var(--u));height:calc(62*var(--u));transform:translateX(-50%);background:url('/assets/ui/noel/hud/bow-small.png') center/contain no-repeat;pointer-events:none}
+.nh-portrait :is(.wizard-avatar,.selected-soldier-avatar,.mechanical-portrait){display:grid;place-items:center;width:calc(72*var(--u));height:calc(72*var(--u));margin:0;transform:none}
+.nh-portrait :is(canvas,svg,img){position:static!important;width:calc(72*var(--u))!important;height:calc(72*var(--u))!important;object-fit:contain}
+.nh-vitals{display:flex;flex-direction:column;gap:calc(8*var(--u));margin-left:calc(-8*var(--u))}
+.nh-vital{position:relative;width:calc(232*var(--u));height:calc(32*var(--u));overflow:hidden;background:#0c1733;border:calc(3*var(--u)) solid #c99a45;border-radius:0 calc(14*var(--u)) calc(14*var(--u)) 0;box-shadow:0 0 0 calc(2*var(--u)) #1a1008}
+.nh-vital>i,.nh-boss-track>i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#e5484a,#a41f2c);transition:width .15s linear}
+.nh-mp>i{background:linear-gradient(#3d9cf0,#1a55b0)}
+.nh-vital>span{position:absolute;inset:0;display:flex;align-items:center;padding-left:calc(18*var(--u));font-size:calc(21*var(--u));font-variant-numeric:tabular-nums}
+
+/* top centre: boss, or the level name */
+.level-one-hud .level-one-arena-overlay{position:absolute;inset:0;pointer-events:none}
+.level-one-hud :is(.nh-boss,.nh-title){position:absolute;left:50%;top:calc(10*var(--u));transform:translateX(-50%);text-align:center}
+.level-one-hud .nh-boss{width:calc(520*var(--u));padding:calc(6*var(--u)) calc(14*var(--u)) calc(5*var(--u))}
+.level-one-hud .nh-title{padding:calc(12*var(--u)) calc(70*var(--u))}
+.level-one-hud :is(.nh-boss,.nh-title)>strong{display:block;font-size:calc(26*var(--u))!important;white-space:nowrap}
+.christmas-combat :is(.nh-boss,.nh-title)::after{content:'';position:absolute;inset:calc(-14*var(--u)) calc(-24*var(--u)) auto;height:calc(46*var(--u));background:url('/assets/ui/noel/hud/holly-left.png') left center/contain no-repeat,url('/assets/ui/noel/hud/holly-right.png') right center/contain no-repeat;pointer-events:none}
+.nh-boss-track{position:relative;height:calc(28*var(--u));margin:calc(4*var(--u)) 0;overflow:hidden;background:#2b0d16;border:calc(3*var(--u)) solid #c99a45;border-radius:calc(8*var(--u))}
+.nh-boss-track>b{position:absolute;top:0;bottom:0;width:calc(3*var(--u));background:#ffe9b0}
+.nh-boss-track>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:calc(19*var(--u))}
+.nh-boss-note{display:flex;align-items:center;justify-content:center;gap:calc(12*var(--u))}
+.level-one-hud .nh-boss-note p{margin:0;font-size:calc(16*var(--u))!important;line-height:1.15!important;color:#e4f2ff}
+.nh-pillars{display:flex;flex:none;gap:calc(7*var(--u))}
+.nh-pillars>i{width:calc(17*var(--u));height:calc(26*var(--u));background:linear-gradient(110deg,#e8fbff 30%,#59c8f5 55%,#1d6fc0);clip-path:polygon(50% 0,100% 30%,82% 100%,18% 100%,0 30%)}
+.nh-pillars>i.broken{background:#6d7482;clip-path:polygon(0 100%,18% 55%,45% 68%,70% 45%,100% 100%)}
+
+/* top right: level + clock, pause, bag, guide */
+.nh-top-right{position:absolute;right:calc(10*var(--u));top:calc(14*var(--u));display:flex;align-items:flex-start;gap:calc(10*var(--u))}
+.level-one-hud .nh-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(4*var(--u));min-width:calc(150*var(--u));height:calc(66*var(--u));padding:0 calc(10*var(--u))}
+.nh-stat small{font-size:calc(15*var(--u))!important;color:#bcd3f2;white-space:nowrap}
+.nh-stat strong{font-size:calc(27*var(--u))!important;color:#ffe9b0;font-variant-numeric:tabular-nums}
+.nh-stat strong.urgent{color:#ff8a6a}
+.level-one-utilities{display:flex;gap:calc(8*var(--u))}
+.level-one-utilities button{position:relative;display:grid;place-items:center;width:calc(50*var(--u));height:calc(50*var(--u));padding:0;color:#fff}
+.level-one-utilities button.nh-pause{width:calc(76*var(--u));height:calc(76*var(--u))}
+.level-one-utilities button>svg{width:55%;height:55%}
+.level-one-utilities button:hover,.nh-action:hover:not(:disabled){filter:brightness(1.25)}
+.level-one-hud button:focus-visible{outline:calc(3*var(--u)) solid #ffe9b0;outline-offset:calc(2*var(--u))}
+
+/* bottom: Echo (left), skills (centre) */
+.nh-bar{display:contents}
+.nh-echo{position:absolute;left:calc(8*var(--u));bottom:calc(8*var(--u));display:flex;align-items:flex-end;gap:calc(6*var(--u));pointer-events:auto}
+.level-one-hud .nh-echo-slots{position:relative;display:flex;gap:calc(6*var(--u));padding:calc(12*var(--u)) calc(8*var(--u)) calc(8*var(--u));list-style:none}
+.nh-echo-slots li{display:flex;flex-direction:column;align-items:center;gap:calc(5*var(--u))}
+.nh-echo-slots li>b{font-weight:400;font-size:calc(18*var(--u));line-height:1}
+.nh-echo-slots li>span{position:relative;display:grid;place-items:center;width:calc(48*var(--u));height:calc(66*var(--u));overflow:hidden;background:#08112a;border:calc(3*var(--u)) solid #33507f;border-radius:calc(8*var(--u));font-size:calc(28*var(--u));color:#3f5c8c}
+.nh-echo-slots li.filled>span{border-color:#58c8ff}
+.nh-echo-slots li.filled>span::after{content:'';position:absolute;left:25%;top:14%;width:50%;height:70%;background:#8fe0ff;clip-path:polygon(50% 0,82% 14%,86% 40%,70% 46%,100% 100%,0 100%,30% 46%,14% 40%,18% 14%)}
+.nh-echo-slots li>span>i{position:absolute;left:0;right:0;bottom:0;background:#1f6fc4a6}   /* stability left */
+.nh-echo-slots li.selected>span{border-color:#ffe08a;box-shadow:0 0 calc(12*var(--u)) #ffd45e}
+
+.level-one-hud .nh-skills{position:absolute;left:50%;bottom:calc(8*var(--u));transform:translateX(-50%);display:flex;gap:calc(10*var(--u));padding:calc(14*var(--u)) calc(14*var(--u)) calc(6*var(--u));pointer-events:auto}
+.christmas-combat .nh-skills::after{content:'';position:absolute;left:50%;top:calc(-30*var(--u));width:calc(134*var(--u));height:calc(52*var(--u));transform:translateX(-50%);background:url('/assets/ui/noel/hud/bow-garland.png') center/contain no-repeat;pointer-events:none}
+
+.nh-action{position:relative;display:flex;flex-direction:column;align-items:center;gap:calc(3*var(--u));width:calc(104*var(--u));height:calc(138*var(--u));padding:calc(4*var(--u));box-sizing:border-box;color:#fff;font:inherit;text-shadow:inherit;background:none;border:0}
+.nh-echo .nh-action{width:calc(74*var(--u));height:calc(110*var(--u));background:linear-gradient(#16294f,#0c1733);border:calc(3*var(--u)) solid #c99a45;border-radius:calc(12*var(--u));box-shadow:0 0 0 calc(2*var(--u)) #1a1008}
+.nh-icon{position:relative;display:grid;place-items:center;flex:none;width:calc(76*var(--u));height:calc(76*var(--u));overflow:hidden;background:radial-gradient(#2a7fe0,#0b1c4a);border:calc(3*var(--u)) solid #c99a45;border-radius:calc(10*var(--u))}
+.nh-echo .nh-icon{width:calc(42*var(--u));height:calc(42*var(--u));background:#0b1c4a;border-width:calc(2*var(--u))}
+.action-ultimate .nh-icon{background:conic-gradient(#ffd23e calc(var(--fill)*1turn),#2c2350 0)}
+.action-ultimate .nh-icon::before{content:'';position:absolute;inset:calc(5*var(--u));border-radius:calc(7*var(--u));background:radial-gradient(#b266f0,#2a0f55)}
+.nh-icon>:is(img,svg){position:relative;width:78%;height:78%;object-fit:contain;image-rendering:pixelated}
+.nh-action kbd{font-family:inherit;font-size:calc(21*var(--u))!important;color:#fff;background:none;border:0;padding:0;box-shadow:none}
+.nh-action strong{font-size:calc(16*var(--u))!important;white-space:nowrap}
+.nh-action small{font-size:calc(14*var(--u))!important;color:#8ff0ff;white-space:nowrap}
+.nh-timer{position:absolute;inset:0;display:grid;place-items:center;font-weight:400;font-size:calc(24*var(--u));background:#040a1bb8}
+.nh-charges{position:absolute;right:0;bottom:0;padding:0 calc(4*var(--u));font-weight:400;font-size:calc(17*var(--u));background:#040a1b;color:#ffe9b0}
+.nh-action:disabled{opacity:1}   /* adventure.css fades every disabled button; keep the frame, dim its contents */
+.nh-action:disabled :is(.nh-icon,kbd,strong,small){filter:saturate(.3) brightness(.6)}
+.action-ultimate.is-ready .nh-icon{animation:nh-ready 1s ease-in-out infinite alternate}
+.action-record.is-recording .nh-icon{background:#a41f2c;color:#fff}
+@keyframes nh-ready{to{box-shadow:0 0 calc(18*var(--u)) #d79bff}}
+@media(prefers-reduced-motion:reduce){.action-ultimate.is-ready .nh-icon{animation:none;box-shadow:0 0 calc(18*var(--u)) #d79bff}}
+
+/* bottom right: runes + carried items */
+.nh-bag{position:absolute;right:calc(8*var(--u));bottom:calc(8*var(--u));width:calc(220*var(--u));display:flex;flex-direction:column;gap:calc(6*var(--u));pointer-events:auto}
+.nh-bag>:empty{display:none}
+.nh-bag .level-one-runes{margin:0}
+.nh-bag .level-one-runes .quick-runes>p{display:none}
+.nh-bag .level-one-runes .quick-runes .echo-rune-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(5*var(--u))}
+.nh-bag .level-one-runes .quick-runes .echo-rune{min-height:calc(48*var(--u));border-color:#c99a45;background:#0c1733;box-shadow:none}
+.nh-bag .combat-items h3{display:none}
+.nh-bag .combat-item-slots{gap:calc(6*var(--u))}
+.nh-bag .combat-item-slots button{border:calc(3*var(--u)) solid #c99a45;border-radius:calc(10*var(--u));background:linear-gradient(#16294f,#0c1733);box-shadow:0 0 0 calc(2*var(--u)) #1a1008}
+.nh-bag .combat-item-slots kbd,.nh-bag .combat-item-count{background:#040a1b}
+
+/* messages sit under the boss frame */
+.level-one-hud .hud-alerts{position:absolute;left:50%;top:calc(142*var(--u));bottom:auto;transform:translateX(-50%);width:min(calc(640*var(--u)),60%);display:flex;flex-direction:column;align-items:center;gap:calc(6*var(--u));pointer-events:none}
+.level-one-hud .hud-alerts :is(.hud-banner,.combat-buff){position:static!important;transform:none!important;max-width:100%}
+.level-one-hud .hud-alerts .hud-banner.trail-banner{font-size:max(12px,calc(18*var(--u)))!important;line-height:1.35!important;padding:calc(8*var(--u)) calc(16*var(--u))!important;color:#fff;background:#0c1733e6!important;border:calc(3*var(--u)) solid #c99a45!important;border-image:none!important;border-radius:calc(10*var(--u))!important;box-shadow:none!important}

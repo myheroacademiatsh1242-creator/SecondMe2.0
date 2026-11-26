@@ -39,21 +39,6 @@
   height: 12px;
 }
 
-.christmas-combat :is(.level-one-left, .level-one-right) {
-  position: relative;
-}
-
-.christmas-combat :is(.level-one-left, .level-one-right, .hud-tools)::before {
-  content: '';
-  position: absolute;
-  inset: -4px 4px auto;
-  height: 9px;
-  z-index: 3;
-  background: url('/assets/ui/noel/snow-edge.png') top center / auto 100% repeat-x;
-  image-rendering: pixelated;
-  pointer-events: none;
-}
-
 .christmas-combat .combat-action-track > i {
   background-color: #93d9e4;
 }
