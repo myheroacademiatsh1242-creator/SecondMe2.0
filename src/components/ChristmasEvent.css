@@ -941,3 +941,51 @@ html body .modal-backdrop.rune-loadout-backdrop .rune-loadout-editor.christmas-r
 
 /* Bulbs already have a painted cable in these illustrations. */
 :is(.christmas-menu,.christmas-shop,.christmas-loading,.christmas-heroes) .christmas-lights::before { content: none; }
+
+/* Christmas camp sidebar, tidied: the hero name stays on one line (a long name like "Crimson Veil" used to wrap
+   and run into the upgrade card), the kit buttons keep their label on one line, and the kit cards are a little
+   shorter so the whole column fits without scrolling on common screens. */
+html body .adventure-app .journey-lobby .integrated-camp.christmas-camp .rest-scene-caption strong {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: clamp(17px, 1.6vw, 24px);
+}
+html body .adventure-app .journey-lobby .christmas-camp .rest-kit { min-height: 0; padding: 7px 8px; }
+html body .adventure-app .christmas-camp .rest-kit .rest-prepare { max-width: none; white-space: nowrap; }
+
+/* Chapter I's Christmas camp uses the same look as Chapter II's: the snowy Christmas camp painting, snow falling
+   over the whole sidebar, and the progress bar as a string of coloured bulbs. */
+html body .adventure-app .journey-lobby .christmas-camp .rest-scene {
+  background-image: url('/assets/ui/noel/camp-winter.webp')!important;
+}
+.adventure-app .christmas-camp .rest-departure { margin-top: 0; }
+@media (min-width: 761px) {
+  .journey-lobby .journey-camp.christmas-camp { container-type: size; }
+}
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .rest-progress [role=progressbar] {
+  flex: 1;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 7px 3px;
+  background: linear-gradient(#456344, #456344) 0 6px / 100% 1px no-repeat;
+}
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .rest-progress i {
+  --frost-bulb: #ffd45f;
+  flex: none;
+  width: 8px;
+  height: 11px;
+  background: var(--frost-bulb);
+  border-top: 3px solid #456344;
+  border-radius: 2px 2px 4px 4px;
+  box-shadow: inset 0 -2px #11201766;
+  opacity: .48;
+}
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .rest-progress i:nth-child(3n + 2) { --frost-bulb: #ff715c; }
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .rest-progress i:nth-child(3n) { --frost-bulb: #7fe5ff; }
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .rest-progress i:is(.explored, .next) {
+  box-shadow: inset 0 -2px #11201766, 0 0 7px var(--frost-bulb);
+  opacity: 1;
+}
+.journey-lobby.journey-lobby .integrated-camp.christmas-camp .rest-progress i.next { outline: 1px solid #fff5d1; outline-offset: 2px; }

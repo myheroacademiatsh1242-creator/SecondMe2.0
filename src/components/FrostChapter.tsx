@@ -386,14 +386,9 @@ export function FrostChapter({
                 }`}
               >
                 <span className="stop-medallion">
-                  {!ready ? (
-                    <Lock size={18} />
-                  ) : isBoss ? (
-                    <Flame size={22} />
-                  ) : (
-                    <span>{String(item.id).padStart(2, '0')}</span>
-                  )}
+                  {isBoss ? <Flame size={22} /> : <span>{String(item.id).padStart(2, '0')}</span>}
                 </span>
+                {!ready && <span className="stop-lock" aria-hidden="true"><Lock size={11} /></span>}
                 <span
                   className="stop-caption"
                   data-idle={inspect === null}

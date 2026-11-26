@@ -154,8 +154,8 @@ export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,o
   const minLive=Math.min(heroStop,selected);
   const maxLive=Math.max(heroStop,selected);
   return <div className="journey-layout">{runeEditor&&<RuneLoadoutEditor hud={hud} engine={engine} close={()=>setRuneEditor(false)}/>}
-    <aside className={`journey-camp integrated-camp${christmas ? ' christmas-camp' : ''}`}><button className="frost-back frost-forward" disabled={!frostUnlocked} onClick={()=>setFrost(true)}><span>{frostUnlocked?(vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'):(vi?'HẠ THỦ VỆ BĂNG ĐỂ MỞ CHƯƠNG 2':'DEFEAT THE FROST GUARDIAN TO UNLOCK CHAPTER 2')}</span>{frostUnlocked?<ChevronRight size={18}/>:<Lock size={16}/>}</button>
-      {christmas && <div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div>}
+    <aside className={`journey-camp integrated-camp${christmas ? ' christmas-camp' : ''}`}>{christmas && <><div className="christmas-camp-rails" aria-hidden="true"><ChristmasLights/><ChristmasLights/></div><div className="frost-camp-snow"><ChristmasSnow count={24} still={hud.reducedMotion}/></div></>}<button className="frost-back frost-forward" disabled={!frostUnlocked} onClick={()=>setFrost(true)}><span>{frostUnlocked?(vi?'CHƯƠNG II · RỪNG HÀN HỎA':'CHAPTER II · FROSTFIRE WOODS'):(vi?'HẠ THỦ VỆ BĂNG ĐỂ MỞ CHƯƠNG 2':'DEFEAT THE FROST GUARDIAN TO UNLOCK CHAPTER 2')}</span>{frostUnlocked?<ChevronRight size={18}/>:<Lock size={16}/>}</button>
+      
       <header className="rest-heading"><span><Flame size={17}/>{vi?'TRẠI NGHỈ ECHO':'ECHO CAMP'}</span><button type="button" className="camp-guide" onClick={openPlayerGuide}><BookOpen size={15} aria-hidden="true"/>{vi?'Sổ tay':'Guide'}</button><span>{count} / 6</span></header>
       <div className={`rest-scene${hud.reducedMotion?' rest-still':''}`}>
         {christmas && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/><ChristmasOrnaments scene="camp" still={hud.reducedMotion}/></>}
@@ -188,7 +188,7 @@ export function JourneyCamp({engine,hud,complete,next,christmas=false,traveler,o
               if(window.matchMedia('(hover: none)').matches&&touchInspect!==i){setTouchInspect(i);setInspect(i);return;}
               if(ready)prepareStop(i);
             }} aria-label={`${String(i+1).padStart(2,'0')} · ${translate(item.subtitle,hud.language)} · ${done?(vi?'Đã hoàn thành':'Cleared'):ready?(vi?'Sẵn sàng':'Ready'):(vi?'Chưa mở':'Locked')}`}>
-            <span className="stop-medallion">{!ready?<Lock size={18}/>:i===5?<Snowflake size={23}/>:<span>{String(i+1).padStart(2,'0')}</span>}</span>
+            <span className="stop-medallion">{i===5?<Snowflake size={23}/>:<span>{String(i+1).padStart(2,'0')}</span>}</span>{!ready&&<span className="stop-lock" aria-hidden="true"><Lock size={11}/></span>}
             <span className="stop-caption" data-idle={inspect===null} role="tooltip" hidden={inspect!==i}><small>{i===5?(vi?'THỦ VỆ BĂNG':'FROST GUARDIAN'):`0${i+1}`}</small><strong>{translate(item.subtitle,hud.language)}</strong>{done?<em>{'★'.repeat(hud.bestStars[item.id]??0)}{'☆'.repeat(3-(hud.bestStars[item.id]??0))}</em>:<em>{current&&ready?(vi?'Bắt đầu hành trình':'Begin your journey'):!ready?(vi?'CHƯA MỞ':'LOCKED'):(vi?'SẴN SÀNG':'READY')}</em>}</span>
           </button>;
         })}

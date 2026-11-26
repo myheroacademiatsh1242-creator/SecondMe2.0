@@ -1436,6 +1436,12 @@ export class GameEngine {
 
   private addDamageText(x: number, y: number, amount: number, heavy: boolean, label?: string, color?: string) {
     const max = heavy ? 1.1 : color ? 1.2 : 0.8;
+    // Hits that land together (Aeris's orbs, a combo) would print their numbers on top of each other:
+    // each new number starts one line above any fresh number still sitting at the same spot.
+    if (!color) {
+      const fresh = this.damageTexts.filter(t => !t.color && t.max - t.life < 0.45 && Math.abs(t.x - x) < 30 && t.y <= y + 4 && t.y > y - 80);
+      y -= fresh.length * 17;
+    }
     this.damageTexts.push({ x: x + (Math.random() - 0.5) * 14, y, text: label ?? String(Math.round(amount)), life: max, max, heavy, blocked: !!label && !color, color });
     if (this.damageTexts.length > 24) this.damageTexts.shift();
   }

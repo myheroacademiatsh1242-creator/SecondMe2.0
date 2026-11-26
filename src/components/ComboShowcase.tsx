@@ -254,7 +254,24 @@ export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=fals
       frameId=requestAnimationFrame(frame);
     };
     frameId=requestAnimationFrame(frame);
-    return ()=>cancelAnimationFrame(frameId);
+    // The stage hero is painted once and then left alone, so if the browser drops the canvas (a hidden
+    // window or tab can lose its 2D canvas to free memory) it would stay blank. Repaint from scratch
+    // when the canvas comes back or the page is shown again.
+    const repaint=()=>{
+      if(document.visibilityState==='hidden')return;
+      previous='';scarfFrame=undefined;scarfTick=-1;
+      cancelAnimationFrame(frameId);frameId=requestAnimationFrame(frame);
+    };
+    const element=canvas.current;
+    element?.addEventListener('contextrestored',repaint);
+    document.addEventListener('visibilitychange',repaint);
+    window.addEventListener('focus',repaint);
+    return ()=>{
+      cancelAnimationFrame(frameId);
+      element?.removeEventListener('contextrestored',repaint);
+      document.removeEventListener('visibilitychange',repaint);
+      window.removeEventListener('focus',repaint);
+    };
   },[hero,outfit,direction,combo,reducedMotion,winter]);
   return <canvas ref={canvas} width={SIZE} height={SIZE} aria-hidden="true"/>;
 }

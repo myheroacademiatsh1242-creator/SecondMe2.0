@@ -224,3 +224,11 @@
 .chest-rates small { display: block; border-top: 1px solid #6a5841; padding-top: 8px; font-size: 12px; line-height: 1.35; }
 .chest-reveal-backdrop { position: absolute; inset: 0; z-index: 99; background: #080716; pointer-events: none; }
 .chest-still .chest-sparkle { animation: none !important; }
+
+/* Fit the chest window without a scrollbar: the first-time tip is one compact strip, and the chest picture
+   shrinks to whatever height is left after the title, balance and status lines (≈ 72px of text below the
+   picture's own negative margins). A long ×10 result list can still scroll. */
+.chest-panel .chest-panel-content > .first-tip { flex: none; margin: 0 0 4px; padding: 4px 8px; font-size: 12px; line-height: 1.3; }
+.chest-panel .chest-panel-content > .first-tip button { padding: 2px 8px; font-size: 12px; }
+.chest-panel-scroll { container-type: size; }
+.chest-display { width: clamp(72px, calc(100cqh - 72px), 170px); }

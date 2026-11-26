@@ -81,3 +81,17 @@
 .journey-lobby.journey-lobby .integrated-camp .rest-scene-caption{padding-top:4px}
 .journey-lobby.journey-lobby .integrated-camp .rest-departure{padding:12px 10px}
 @media(max-height:480px){.journey-lobby.journey-lobby .integrated-camp .rest-kit{padding:6px;gap:5px}.journey-lobby.journey-lobby .integrated-camp .rest-kit p{font-size:15px}.journey-lobby.journey-lobby .integrated-camp .rest-prepare{min-width:91px;min-height:34px;font-size:15px;padding:5px}.journey-lobby.journey-lobby .integrated-camp .rest-departure{padding:8px}}
+
+/* Camp sidebar: no hole in the middle. Spare height is shared evenly between the blocks instead of piling up
+   above the campfire, and the journey bar spans the full width so it reads as progress. */
+@media(min-height:481px){
+ .journey-lobby.journey-lobby .integrated-camp .rest-scene{margin-top:0}
+ .journey-lobby.journey-lobby .integrated-camp{justify-content:space-between}
+ .journey-lobby.journey-lobby .integrated-camp .rest-progress{margin-bottom:0;padding-top:6px}
+}
+.journey-lobby.journey-lobby .integrated-camp .rest-progress [role=progressbar]{flex:1}
+.journey-lobby.journey-lobby .integrated-camp .rest-progress i{flex:1;width:auto;min-width:0;height:10px}
+
+/* Locked map stops keep their number, with a small lock tucked in the corner, so the route order is readable. */
+.journey-lobby .journey-stop>.stop-lock{position:absolute;z-index:2;left:50%;top:50%;margin:8px 0 0 9px;display:grid;place-items:center;width:17px;height:17px;background:#0c1810;border:2px solid #6d8a74;color:#c4d6c8;pointer-events:none}
+.journey-lobby .journey-stop>.stop-lock svg{width:11px;height:11px}
