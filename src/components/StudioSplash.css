@@ -1,3 +1,10 @@
+/*
+ * 8HANDS studio card. Every layer is the same logo image cut to one part (gear, lightning/background,
+ * name, tagline) so each part can animate on its own while lining up exactly with the artwork.
+ * Timeline (4.6 s): 0.15 CRT line on · 0.6 gear spins in · 1.3 lock: flash, shake, sparks, lightning
+ * · 1.6 "8HANDS" wipes in · 2.15 "GAME STUDIO" types · 2.65 light sweep · 3.9 fade out.
+ * Each layer's resting state is the finished logo, so with motion off it simply shows the logo.
+ */
 .studio-splash {
   position: fixed;
   inset: 0;
@@ -13,6 +20,7 @@
 .studio-card {
   position: relative;
   isolation: isolate;
+  container-type: inline-size;
   width: min(100vw, calc(100dvh * 1376 / 768));
   aspect-ratio: 1376 / 768;
   opacity: 0;
@@ -21,29 +29,71 @@
   mask-image: radial-gradient(ellipse 50% 50% at center, #000 72%, transparent 100%);
 }
 
-.studio-card img,
-.studio-light-sweep {
+.studio-stage, .studio-card img, .studio-flash, .studio-scanlines, .studio-glow, .studio-sparks {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
+.studio-card img { image-rendering: pixelated; }
 
-.studio-emblem {
+/* Lightning, aura and circuit lines: the top of the logo with a hole where the gear sits. */
+.studio-bg {
   clip-path: inset(0 0 35% 0);
-  transform-origin: 50% 38%;
+  mask-image: radial-gradient(ellipse 14.6% 26.2% at 50% 37.8%, transparent 97%, #000 100%);
+}
+/* The gear with the 8, cut as a circle so it can spin. */
+.studio-emblem {
+  clip-path: ellipse(14.8% 26.5% at 50% 37.8%);
+  transform-origin: 50% 37.8%;
+}
+.studio-wordmark { clip-path: inset(65% 30% 16.5% 30%); }
+.studio-tagline { clip-path: inset(83.5% 37% 8% 37%); }
+
+/* Soft cyan/gold glow behind the gear. */
+.studio-glow {
+  background:
+    radial-gradient(ellipse 12% 21% at 44% 38%, #3fe0e866, transparent 70%),
+    radial-gradient(ellipse 12% 21% at 56% 38%, #ffc24a55, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
 }
 
-.studio-wordmark { clip-path: inset(65% 0 0 0); }
+/* CRT power-on line, on the splash itself so it is not cut by the card's vignette. */
+.studio-boot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70vw;
+  height: 4px;
+  margin: -2px 0 0 -35vw;
+  background: linear-gradient(90deg, transparent, #60dfe4 20%, #eaffff 50%, #60dfe4 80%, transparent);
+  box-shadow: 0 0 18px #60dfe4aa;
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.studio-flash {
+  background: radial-gradient(ellipse 40% 55% at 50% 38%, #fffbe8, #9ff6ff88 45%, transparent 75%);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.studio-scanlines {
+  background: repeating-linear-gradient(0deg, #0006 0 1px, transparent 1px 3px);
+  opacity: .35;
+  mix-blend-mode: multiply;
+}
 
 .studio-light-sweep {
+  position: absolute;
   inset: 66% 28% auto;
   width: 44%;
   height: 18%;
   overflow: hidden;
   mix-blend-mode: screen;
 }
-
 .studio-light-sweep::after {
   content: '';
   position: absolute;
@@ -52,28 +102,87 @@
   opacity: 0;
 }
 
-.studio-splash.is-ready .studio-card { animation: studio-card-in 3.5s linear both; }
-.studio-splash.is-ready .studio-emblem { animation: studio-emblem-in 850ms 200ms ease-out both; }
-.studio-splash.is-ready .studio-wordmark { animation: studio-name-in 650ms 760ms ease-out both; }
-.studio-splash.is-ready .studio-light-sweep::after { animation: studio-sweep 820ms 1.4s ease-in-out both; }
-.studio-splash.is-paused :is(.studio-card, .studio-emblem, .studio-wordmark),
-.studio-splash.is-paused .studio-light-sweep::after {
-  animation-play-state: paused !important;
+/* Square pixel sparks from the gear's centre. */
+.studio-sparks i {
+  position: absolute;
+  left: 50%;
+  top: 37.8%;
+  width: .55cqw;
+  height: .55cqw;
+  background: #8ff4f7;
+  box-shadow: 0 0 .6cqw #3fe0e8;
+  opacity: 0;
 }
+.studio-sparks i.is-gold { background: #ffd96a; box-shadow: 0 0 .6cqw #f2a93b; }
+
+/* ---------- Animation ---------- */
+.studio-splash.is-ready .studio-boot { animation: studio-boot 700ms 150ms ease-out both; }
+.studio-splash.is-ready .studio-card { animation: studio-card-in 4.6s linear both; }
+.studio-splash.is-ready .studio-emblem { animation: studio-emblem-in 720ms 600ms steps(14, end) both; }
+.studio-splash.is-ready .studio-stage { animation: studio-shake 320ms 1.3s steps(1, end) both; }
+.studio-splash.is-ready .studio-flash { animation: studio-flash 420ms 1.3s ease-out both; }
+.studio-splash.is-ready .studio-bg { animation: studio-bg-in 520ms 1.3s steps(5, end) both; }
+.studio-splash.is-ready .studio-glow { animation: studio-glow 2.4s 1.3s ease-in-out both; }
+.studio-splash.is-ready .studio-sparks i { animation: studio-spark 700ms steps(7, end) both; }
+.studio-splash.is-ready .studio-wordmark { animation: studio-name-in 480ms 1.6s steps(12, end) both; }
+.studio-splash.is-ready .studio-tagline { animation: studio-type 550ms 2.15s steps(11, end) both; }
+.studio-splash.is-ready .studio-light-sweep::after { animation: studio-sweep 820ms 2.65s ease-in-out both; }
+.studio-splash.is-paused,
+.studio-splash.is-paused *,
+.studio-splash.is-paused *::after { animation-play-state: paused !important; }
 
 @keyframes studio-card-in {
-  0%, 8% { opacity: 0; }
-  20%, 77% { opacity: 1; }
-  95%, 100% { opacity: 0; }
+  0%, 12% { opacity: 0; }
+  14%, 84% { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+@keyframes studio-boot {
+  0% { opacity: 1; transform: scaleX(0); }
+  45% { opacity: 1; transform: scaleX(1) scaleY(1); }
+  80% { opacity: .9; transform: scaleX(1) scaleY(.4); }
+  100% { opacity: 0; transform: scaleX(.05) scaleY(.4); }
 }
 @keyframes studio-emblem-in {
-  from { opacity: 0; transform: scale(.86) rotate(-6deg); }
-  75% { opacity: 1; transform: scale(1.025) rotate(.7deg); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; transform: scale(.25) rotate(-270deg); filter: brightness(2.2); }
+  30% { opacity: 1; }
+  85% { transform: scale(1.08) rotate(8deg); filter: brightness(1.4); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes studio-shake {
+  0% { transform: translate(.5cqw, -.3cqw); }
+  25% { transform: translate(-.45cqw, .35cqw); }
+  50% { transform: translate(.3cqw, .2cqw); }
+  75% { transform: translate(-.15cqw, -.1cqw); }
+  100% { transform: none; }
+}
+@keyframes studio-flash {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes studio-bg-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes studio-glow {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  60% { opacity: .55; }
+  100% { opacity: .85; }
+}
+@keyframes studio-spark {
+  0% { opacity: 1; transform: translate(0, 0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
 }
 @keyframes studio-name-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: none; }
+  from { clip-path: inset(65% 70% 16.5% 30%); filter: brightness(2); }
+  90% { filter: brightness(1.6); }
+  to { clip-path: inset(65% 30% 16.5% 30%); filter: none; }
+}
+@keyframes studio-type {
+  from { clip-path: inset(83.5% 63% 8% 37%); }
+  to { clip-path: inset(83.5% 37% 8% 37%); }
 }
 @keyframes studio-sweep {
   0% { opacity: 0; transform: translateX(-62%); }
@@ -81,12 +190,15 @@
   100% { opacity: 0; transform: translateX(62%); }
 }
 
+/* Motion off: the finished logo fades in and out. */
 .studio-splash.studio-still.is-ready .studio-card { animation: studio-card-in 1.8s linear both !important; }
-.studio-splash.studio-still.is-ready :is(.studio-emblem, .studio-wordmark),
-.studio-splash.studio-still.is-ready .studio-light-sweep::after { animation: none; }
+.studio-splash.studio-still.is-ready .studio-card *,
+.studio-splash.studio-still.is-ready .studio-card *::after,
+.studio-splash.studio-still.is-ready .studio-boot { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .studio-splash.is-ready .studio-card { animation: studio-card-in 1.8s linear both !important; }
-  .studio-splash.is-ready :is(.studio-emblem, .studio-wordmark),
-  .studio-splash.is-ready .studio-light-sweep::after { animation: none; }
+  .studio-splash.is-ready .studio-card *,
+  .studio-splash.is-ready .studio-card *::after,
+  .studio-splash.is-ready .studio-boot { animation: none !important; }
 }
 .studio-splash.is-ready.is-paused .studio-card { animation-play-state: paused !important; }
