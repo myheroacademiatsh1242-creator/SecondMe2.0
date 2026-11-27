@@ -123,7 +123,7 @@ export function ChestHistoryModal({ vi, onClose }: ChestHistoryModalProps) {
           >
             {vi ? 'Tất cả' : 'All'} ({history.length})
           </button>
-          {(['royal', 'platinum', 'crystal', 'wood'] as const).map((k) => {
+          {(['royal', 'wood'] as const).map((k) => {
             const count = history.filter((item) => item.kind === k).length;
             return (
               <button

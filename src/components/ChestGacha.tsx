@@ -16,8 +16,6 @@ import { FirstTip } from './FeatureIntro.tsx';
 const chestKinds: {id:ChestKind;vi:string;en:string}[]=[
   {id:'wood',vi:'PHÀM PHẨM',en:'COMMON'},
   {id:'royal',vi:'HOÀNG PHẨM',en:'ROYAL'},
-  {id:'platinum',vi:'ĐẾ PHẨM',en:'IMPERIAL'},
-  {id:'crystal',vi:'CHÂN PHẨM VÔ SONG',en:'PEERLESS'},
 ];
 
 export function ChestGacha({engine,hud,christmas=false}:{engine:GameEngine|null;hud:HUDState;christmas?:boolean}){
