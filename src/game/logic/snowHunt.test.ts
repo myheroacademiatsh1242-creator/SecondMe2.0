@@ -172,11 +172,11 @@ test('in the hunt basic attacks cost no MP, so auto-attack never drains it', t =
 test('the claw machine spends Noel tickets per play and banks each prize', t => {
   mockDocument(t);
   const game = new GameEngine();
-  game.campaign.noelTickets = 5; game.campaign.coins = 0;
+  game.campaign.noelTickets = 1; game.campaign.coins = 0;
   assert.equal(game.spendClawPlay(), true);
-  assert.equal(game.campaign.noelTickets, 1);
+  assert.equal(game.campaign.noelTickets, 0);
   assert.equal(game.spendClawPlay(), false, 'not enough tickets: nothing spent');
-  assert.equal(game.campaign.noelTickets, 1);
+  assert.equal(game.campaign.noelTickets, 0);
   assert.deepEqual(game.claimClawPrize(0), { coins: 25, rune: null });
   assert.deepEqual(game.claimClawPrize(2), { coins: 10, rune: null });
   assert.equal(game.campaign.coins, 35);

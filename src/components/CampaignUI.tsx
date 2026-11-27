@@ -93,7 +93,9 @@ function SelectedCharacterAvatar({hud,winter=false}:{hud:HUDState;winter?:boolea
 }
 
 export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine | null; hud: HUDState; afterFilm?: boolean }) {
-  const christmas = useChristmas(engine?.devSeasonPreview);
+  const localEventLink = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
+    && new URLSearchParams(window.location.search).get('preview') === 'noel';
+  const christmas = useChristmas(localEventLink ? 'christmas' : engine?.devSeasonPreview);
   const revealChristmas = useRef(false);
   const filmWasFinished = useRef(false);
   if (afterFilm && !filmWasFinished.current) {
@@ -102,6 +104,9 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
   }
   if (!christmas.active || hud.reducedMotion) revealChristmas.current = false;
   const christmasDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (localEventLink && engine && !christmasDialog.current?.open) christmasDialog.current?.showModal();
+  }, [localEventLink, engine]);
   const [panel, setPanel] = useState<'none' | 'settings' | 'credits' | 'quit'>('none');
   const vi = hud.language === 'vi';
   const hasProgress = hud.completed.length > 0;

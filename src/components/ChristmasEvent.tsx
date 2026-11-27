@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { Check, Gift, X } from 'lucide-react';
+import { Check, Gift, X, Ticket, Swords } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { CHRISTMAS_COINS, christmasSeason, type SeasonPreview } from '../game/logic/christmas.ts';
+import { ClawMachine } from './ClawMachine.tsx';
+import { CLAW_COST } from '../game/logic/campaign.ts';
 import './ChristmasEvent.css';
 
 export function useChristmas(selection: SeasonPreview = 'auto') {
@@ -113,6 +115,9 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
 }) {
   const shopDialog = useRef<HTMLDialogElement>(null);
   const dialog = menuDialog ?? shopDialog;
+  const [clawOpen, setClawOpen] = useState(false);
+  const clawButton = useRef<HTMLButtonElement>(null);
+  const closeClaw = () => { setClawOpen(false); requestAnimationFrame(() => clawButton.current?.focus()); };
   const [previewClaimed, setPreviewClaimed] = useState(false);
   useEffect(() => { if (!event.preview) setPreviewClaimed(false); }, [event.preview]);
   const vi = hud.language === 'vi';
@@ -124,31 +129,47 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
     {!menuDialog && <button className="christmas-trigger" type="button" onClick={() => dialog.current?.showModal()}>
       <Gift size={18} aria-hidden="true"/>{vi ? 'Sự kiện Noel' : 'Christmas event'}
     </button>}
-    <dialog className="christmas-dialog" ref={dialog} data-lobby-dialog
+    <dialog className={clawOpen ? 'christmas-dialog fair-machine' : 'christmas-dialog'} onClose={() => setClawOpen(false)} onCancel={e => { if (clawOpen) { e.preventDefault(); closeClaw(); } }} ref={dialog} data-lobby-dialog
       aria-label={vi ? 'Sự kiện Noel' : 'Christmas event'}
       onKeyDown={e => {
-        if (e.key === 'Escape') dialog.current?.close();
+        if (e.key === 'Escape') { e.preventDefault(); if (clawOpen) closeClaw(); else dialog.current?.close(); }
         e.stopPropagation();
       }}>
-      <ChristmasLights/>
-      <button className="christmas-close" type="button" autoFocus onClick={() => dialog.current?.close()}
-        aria-label={vi ? 'Đóng' : 'Close'}><X size={22}/></button>
-      <div className="christmas-gift" aria-hidden="true"><i/></div>
-      <p className="christmas-dates">{vi ? '01–31/12 · Giờ Việt Nam' : 'Dec 1–31 · Vietnam time'}</p>
-      <h2>{vi ? 'Săn quái đêm Noel' : 'Snow Hunt'}</h2>
-      <p>{vi ? 'Trụ qua các đợt quái tuyết, lên cấp chọn sức mạnh cho nhân vật và Echo. Trụ càng lâu, càng nhiều vé Noel và xu.' : 'Survive waves of snow monsters and level up powers for your hero and Echoes. The longer you last, the more Noel tickets and coins.'}</p>
-      <button className="christmas-claim christmas-play" type="button" disabled={!engine?.canPlayChristmasTrail}
-        onClick={()=>{if(engine?.startSnowHunt())dialog.current?.close();}}>
-        {vi?'Chơi sự kiện':'Play event'}
-      </button>
+      <div hidden={clawOpen}>
+      <header className="fair-hero">
+        <ChristmasLights/>
+        <img className="fair-duo" src="/assets/ui/noel/claw-and-crimson.webp" alt={vi ? "Crimson Veil tựa bên máy gắp quà Noel" : "Crimson Veil beside the Christmas claw machine"}/>
+        <button className="christmas-close" type="button" autoFocus onClick={() => dialog.current?.close()}
+          aria-label={vi ? 'Đóng' : 'Close'}><X size={22}/></button>
+        <div><p className="christmas-dates">{vi ? '01–31/12 · Giờ Việt Nam' : 'Dec 1–31 · Vietnam time'}</p>
+        <h2>{vi ? 'Săn quái đêm Noel' : 'Snow Hunt'}</h2></div>
+      </header>
+      <section className="fair-details">
+
+      <p>{vi ? 'Cùng Echo chống từng đợt quái tuyết. Lên cấp để chọn sức mạnh, trụ càng lâu càng kiếm được nhiều vé Noel và xu.' : 'Survive waves of snow monsters with your Echoes. Level up to choose powers and earn more Noel tickets and coins.'}</p>
+      <div className="fair-actions">
+        <button className="christmas-claim christmas-play" type="button" disabled={!engine?.canPlayChristmasTrail}
+          onClick={()=>{if(engine?.startSnowHunt())dialog.current?.close();}}>
+          <Swords size={19}/>{vi?'Chơi sự kiện':'Play event'}
+        </button>
+        <button className="christmas-claim fair-claw" ref={clawButton} type="button" disabled={!engine} onClick={()=>setClawOpen(true)}>
+          <Ticket size={19}/>{vi?'Vào máy gắp':'Claw machine'}
+          <small>{CLAW_COST} {vi?'vé/lượt':'ticket/play'}</small>
+        </button>
+      </div>
       {!engine?.campaign.bossDefeated&&!hud.devUnlocked&&<p>{vi?'Thắng Boss 1 · Thủ Vệ Băng để mở khóa.':'Defeat Boss 1 · the Frost Guardian to unlock.'}</p>}
       {engine?.campaign.bossDefeated&&!!hud.pendingRuneChoices?.length&&<p>{vi?'Nhận ấn thưởng đang chờ để vào sự kiện.':'Claim your pending rune reward to enter the event.'}</p>}
+      <footer className="fair-gift">
       {event.preview && <p className="christmas-preview">{vi ? 'Xem thử local · Xu thử không cộng vào túi.' : 'Local preview · Test coins are not added to your wallet.'}</p>}
       <button className="christmas-claim" type="button" disabled={claimed || (!event.preview && !engine)}
         onClick={() => event.preview ? setPreviewClaimed(true) : engine?.claimChristmasGift()}>
         {claimed ? <><Check size={18} aria-hidden="true"/>{vi ? 'Đã nhận quà' : 'Gift claimed'}</>
           : vi ? `Nhận ${CHRISTMAS_COINS} xu` : `Claim ${CHRISTMAS_COINS} coins`}
       </button>
+      </footer>
+      </section>
+      </div>
+      {clawOpen && engine && dialog.current && <ClawMachine engine={engine} close={closeClaw} container={dialog.current}/>}
     </dialog>
   </div>;
 }

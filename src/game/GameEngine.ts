@@ -1,7 +1,8 @@
 import {controls,actionForInput,type ControlAction} from './logic/controlSettings.ts';
 import {InteractiveTutorial} from './logic/interactiveTutorial.ts';
 import {loadDemonSprites} from './rendering/demonBoss.ts';
-import type {ChestKind} from './logic/chest.ts';
+import { placeHiddenChest } from './logic/hiddenChest.ts';
+import { chestReward, type ChestKind } from './logic/chest.ts';
 import {createDemonBoss} from './logic/demonBoss.ts';
 import { trailObjective, type TrailAction } from './logic/trailObjective.ts';
 import {restoreWeapons,getWeapons,equipWeapon,cleanOwnedWeapons,canUseWeapon,WEAPONS,DEFAULT_WEAPON,type WeaponHero,type WeaponId} from './logic/weapons.ts';
@@ -59,7 +60,8 @@ import { TrainingStats } from './logic/training.ts';
 import { sounds } from './logic/sound.ts';
 import { GameRenderer } from './rendering/renderer.ts';
 import { MECHANICAL_ENABLED, CLAW_DEV_TICKETS, Campaign, createBoss, updateBoss, bossShieldFloor, bossSegment, raiseBossShield, BOSS_SEGMENTS, type BossState, type CharacterClass } from './logic/campaign.ts';
-import { renderAdventure } from './rendering/adventure.ts';
+import { ExplorationFog } from './rendering/explorationFog.ts';
+import { drawTutorialObjective, renderAdventure } from './rendering/adventure.ts';
 import { drawPortalEnergy, finishPixelFrame } from './rendering/portalEffects.ts';
 import { translate, setCurrentLanguage, type Language } from '../i18n.ts';
 import { voice, type VoiceRole } from './logic/voice.ts';
@@ -424,6 +426,7 @@ export class GameEngine {
   /** True in the dev-only training ground. */
   public get isTraining() { return this.currentLevel.id === TRAINING_LEVEL_ID; }
   public legTimeRemaining: number | null = null;
+  public hiddenChest: ReturnType<typeof placeHiddenChest> = null;
   public timePickup: { x: number; y: number } | null = null;
   public pickupSpawnTimer: number = puzzleBalance(1).shardInterval;
   private shardClaimedThisLeg = false;
@@ -503,6 +506,8 @@ export class GameEngine {
   private lastDevKeyAt = 0;
 
   // Rendering & audio
+  private explorationFog = new ExplorationFog();
+  public get usesExplorationFog() { return !this.isTraining && !this.isPracticeGround; }
   public renderer = new GameRenderer();
   /** Hit-stop, push-back and shake of landed combo hits (logic/hitFeel.ts). */
   public hitFeel = new HitFeel();
@@ -772,6 +777,11 @@ export class GameEngine {
   /** End the run (fallen or retreated) and bank its tickets and coins. */
   /** Claw machine (Christmas event): pay one play in Noel tickets. */
   /** Dev mode plays for free: tickets are never spent. */
+  public enterClawMachine(){
+    const granted = !this.devUnlocked && this.campaign.claimClawWelcome();
+    if(granted)this.notifyHUD();
+    return granted;
+  }
   public spendClawPlay(){ const ok=this.devUnlocked||this.campaign.spendClawPlay(); this.notifyHUD(); return ok; }
   /** Tickets the claw machine may spend; unlimited (shown as ∞) in dev mode. */
   public get clawTickets(){ return this.devUnlocked?CLAW_DEV_TICKETS:this.campaign.noelTickets; }
@@ -998,12 +1008,14 @@ export class GameEngine {
 
   /** Fresh state for the current level, without starting play. */
   private buildLevel() {
+    this.explorationFog = new ExplorationFog();
     this.missionBriefing=false;
     this.targetMarkArmed=0;
     this.heldKeys.clear();
     this.renderer.reset();
     this.currentLevel = this.cloneLevel(levelAt(this.currentLevelIdx));
     this.initPlayer();
+    this.hiddenChest = this.usesExplorationFog ? placeHiddenChest(this.currentLevel, this.player) : null;
     this.echoes = [];
     this.selectedEcho=0;
     this.echoCharges = 3;
@@ -1018,7 +1030,7 @@ export class GameEngine {
     this.legTimeRemaining = !this.isTraining && !this.isPracticeGround && (this.currentLevel.id <= 5 || this.currentLevel.id >= 7 && this.currentLevel.id<=12) ? puzzleBalance(this.currentLevel.id).legSeconds : null;
     this.training.reset();
     this.timePickup = null;
-    this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
+    this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval * (.7 + .6 * Math.random());
     this.shardClaimedThisLeg = false;
     this.trappedTime = 0;
     this.checkpointIndex = 0;
@@ -2789,6 +2801,14 @@ export class GameEngine {
         this.showBanner(this.language==='vi'?'Rạn vỡ ký ức: cần Echo để bảo hộ.':'Dissonance: summon Echo for protection.');
       }
     }
+    const chest = this.hiddenChest;
+    if (chest && chest.openedAt === null && Math.hypot(this.player.x-chest.x,this.player.y-chest.y) < 32 &&
+        !getActiveObstacles(this.currentLevel.walls,this.currentLevel.doors).some(w => segmentWall(this.player,chest,w) !== null)) {
+      chest.openedAt = this.elapsedLevelTime;
+      const reward = chestReward(this.campaign.openHiddenChest());
+      this.showBanner(this.language === 'vi' ? 'Rương bí mật · ' + reward.vi : 'Hidden chest · ' + reward.en, 4);
+      this.notifyHUD();
+    }
     this.trappedTime = Math.max(0, this.trappedTime - dt);
     if (this.legTimeRemaining !== null) {
       this.pickupSpawnTimer -= dt;
@@ -3068,7 +3088,7 @@ export class GameEngine {
       this.echoCharges = Math.min(this.echoLimit - (this.echoFreeSummon ? 1 : 0), this.echoCharges + this.checkpointIndex - previousCheckpoint);
       if (!this.isPracticeGround) this.legTimeRemaining = puzzleBalance(this.currentLevel.id).legSeconds;
       this.shardClaimedThisLeg = false; this.timePickup = null;
-      this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval;
+      this.pickupSpawnTimer = puzzleBalance(this.currentLevel.id).shardInterval * (.7 + .6 * Math.random());
       this.showBanner(this.checkpointIndex < this.currentLevel.plates.length
         ? (this.language==='vi'?`Chặng mới ${puzzleBalance(this.currentLevel.id).legSeconds}s · Đến rune ${this.checkpointIndex+1}!`:`New leg · ${puzzleBalance(this.currentLevel.id).legSeconds}s · Reach rune ${this.checkpointIndex + 1}!`)
         : (this.language==='vi'?'Kiểm tra các ấn ở cổng cuối rồi đi qua!':'Check the final gate’s runes, then cross!'));
@@ -3331,6 +3351,8 @@ export class GameEngine {
     if(open && this.exitOpenedAt===null) this.exitOpenedAt=t;
     if(!open) this.exitOpenedAt=null;
     if(open) drawPortalEnergy(this.ctx,exit.x+exit.width/2,exit.y+exit.height/2,t-this.exitOpenedAt!,this.exitTravelRemaining>0?1:.6,this.reducedMotion,true);
+    if (this.usesExplorationFog) this.explorationFog.draw(this.ctx, this.player, this.reducedMotion ? 0 : t);
+    drawTutorialObjective(this.ctx, this);
     if(this.hurtFlash>0){
       this.ctx.save();const g=this.ctx.createRadialGradient(this.canvas.width/2,this.canvas.height/2,this.canvas.height*.25,this.canvas.width/2,this.canvas.height/2,this.canvas.width*.65);
       g.addColorStop(0,'#b8321800');g.addColorStop(1,`rgba(196,48,24,${this.hurtFlash/.28*.45})`);

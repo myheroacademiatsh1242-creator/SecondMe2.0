@@ -29,6 +29,19 @@ import { WIND_BRIDGE } from '../logic/frostLevels.ts';
 import { ECHO_RUNES } from '../logic/echoRunes.ts';
 import { drawKeyPrompt } from './keyPrompt.ts';
 import { drawHuntArena, drawHuntSnow } from './snowHunt.ts';
+let chestSprites: HTMLImageElement[] | undefined;
+function drawHiddenChest(ctx: CanvasRenderingContext2D, chest: NonNullable<GameEngine['hiddenChest']>, time: number, reducedMotion: boolean) {
+  chestSprites ??= ['closed','opening','open_loop'].map(state => {
+    const image = new Image();
+    image.src = '/assets/chest/chest_wood_' + state + '.png';
+    return image;
+  });
+  const age = chest.openedAt === null ? -1 : Math.max(0,time-chest.openedAt);
+  const opening = !reducedMotion && age >= 0 && age < .6;
+  const image = chestSprites[age < 0 ? 0 : opening ? 1 : 2];
+  const frame = opening ? Math.floor(age*10) : 0;
+  if (image.naturalWidth) ctx.drawImage(image, frame*256,0,256,256,chest.x-26,chest.y-40,52,52);
+}
 let echoCanvas:HTMLCanvasElement|undefined;
 export const ECHO_COLORS=['#67e8f9','#c084fc','#fbbf24','#fb7185','#a3e635','#f9a8d4'];
 
@@ -48,6 +61,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   }
   ctx.restore();
   if(game.hunt)drawHuntArena(ctx,game,time);
+  if (game.hiddenChest) drawHiddenChest(ctx,game.hiddenChest,time,game.reducedMotion);
   drawEnemies(ctx,visibleEnemies,time);
   if(game.supportAlly){
     const a=game.supportAlly;ctx.save();ctx.globalAlpha=.9;
@@ -274,6 +288,14 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.restore();
   }
   drawCombatHits(ctx, game.combatHits, game.reducedMotion);
+  if (game.showHints) drawRuneHints(ctx, game.currentLevel, game.discoveredRunes);
+  drawFrostMechanics(ctx,game,time);
+  if (game.isTraining) drawTrainingBoard(ctx, game);
+  ctx.restore();
+}
+
+export function drawTutorialObjective(ctx: CanvasRenderingContext2D, game: GameEngine) {
+  ctx.save();
   const objective = trailObjective(game);
   if (objective) {
     const { x, y, width, height } = objective.target;
@@ -291,9 +313,6 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.strokeStyle = '#ffe3a0';
     ctx.stroke();
   }
-  if (game.showHints) drawRuneHints(ctx, game.currentLevel, game.discoveredRunes);
-  drawFrostMechanics(ctx,game,time);
-  if (game.isTraining) drawTrainingBoard(ctx, game);
   ctx.restore();
 }
 

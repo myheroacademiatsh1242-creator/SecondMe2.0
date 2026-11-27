@@ -25,7 +25,7 @@ export const MATERIALS = [
 
 export type CharacterClass = 'mage' | 'swordsman' | 'assassin' | 'mechanical';
 /** Noel tickets per claw machine play. */
-export const CLAW_COST = 4;
+export const CLAW_COST = 1;
 /** What the claw machine is told in dev mode: it shows ∞ and never runs out. */
 export const CLAW_DEV_TICKETS = 9999;
 
@@ -69,6 +69,7 @@ export class Campaign {
   whiteCrystals = 0;
   /** Noel event tickets earned in Snow Hunt runs (logic/snowHunt.ts), spent at the event chest. */
   noelTickets = 0;
+  clawWelcomeClaimed = false;
   mysticCrystals = 0;
   lastChestRewards:ChestRewardId[]=[];
   bestStars: Record<number, number> = {};
@@ -108,6 +109,7 @@ export class Campaign {
       this.limitRings = Number.isSafeInteger(value.limitRings) && value.limitRings >= 0 ? value.limitRings : 0;
       this.chestKeys=Number.isSafeInteger(value.chestKeys)&&value.chestKeys>=0?value.chestKeys:0;
       this.whiteCrystals=Number.isSafeInteger(value.whiteCrystals)&&value.whiteCrystals>=0?value.whiteCrystals:0;
+      this.clawWelcomeClaimed=value.clawWelcomeClaimed===true;
       this.noelTickets=Number.isSafeInteger(value.noelTickets)&&value.noelTickets>=0?value.noelTickets:0;
       this.mysticCrystals=Number.isSafeInteger(value.mysticCrystals)&&value.mysticCrystals>=0?value.mysticCrystals:0;
       this.lastChestRewards=Array.isArray(value.lastChestRewards)?value.lastChestRewards.filter((id:unknown)=>typeof id==='string'&&Boolean(chestReward(id as ChestRewardId))).slice(0,10):[];
@@ -137,7 +139,7 @@ export class Campaign {
       supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
       tutorialWelcomeClaimed:this.tutorialWelcomeClaimed, completed: this.completed, bossDefeated: this.bossDefeated,
-      echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, noelTickets: this.noelTickets, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
+      echoRunes:this.echoRunes,runeLoadout:this.runeLoadout,pendingRuneChoices:this.pendingRuneChoices, mechanicalOwned: this.mechanicalOwned, coins: this.coins, noelTickets: this.noelTickets, clawWelcomeClaimed:this.clawWelcomeClaimed, timeItems: this.timeItems, limitRings:this.limitRings, chestKeys:this.chestKeys,whiteCrystals:this.whiteCrystals,mysticCrystals:this.mysticCrystals,lastChestRewards:this.lastChestRewards, bestStars: this.bestStars,
     })); } catch { /* Play remains available if browser storage is disabled. */ }
   }
   claimChristmasGift(now = new Date()) {
@@ -202,16 +204,24 @@ export class Campaign {
     if(!Number.isSafeInteger(balance)||balance<cost)return null;
     const rewards=Array.from({length:count},()=>rollChest(random,kind));
     if(price.currency==='coins')this.coins-=cost;else if(price.currency==='whiteCrystals')this.whiteCrystals-=cost;else if(price.currency==='mysticCrystals')this.mysticCrystals-=cost;else this.chestKeys-=cost;
-    for(const id of rewards){
+    for(const id of rewards)this.grantChestItem(id);
+    this.lastChestRewards=rewards;this.save();return [...rewards];
+  }
+  openHiddenChest(random = Math.random): ChestRewardId {
+    const roll = random();
+    const reward = roll < .001 ? 'revive' : roll < .09 ? 'commonCrystals5' :
+      roll < .20 ? 'time' : roll < .32 ? 'healSmall' : roll < .44 ? 'manaSmall' :
+      roll < .60 ? 'coins9' : roll < .80 ? 'coins5' : 'coins3';
+    this.grantChestItem(reward);
+    this.save();
+    return reward;
+  }
+  private grantChestItem(id: ChestRewardId) {
       if(id.startsWith('commonCrystals'))this.chestKeys+=Number(id.slice('commonCrystals'.length));
       else if(id.startsWith('coins'))this.coins+=Number(id.slice(5));
-      else if(id==='coins15')this.coins+=15;
-      else if(id==='coins30')this.coins+=30;
-      else if(id==='coins100')this.coins+=100;
       else if(id==='time')this.timeItems++;
       else if(id in this.supplies)this.supplies[id as keyof typeof this.supplies]++;
-    }
-    this.lastChestRewards=rewards;this.save();return [...rewards];
+
   }
   recordHeroClear(hero:string,level:number){
     if(!['mage','swordsman'].includes(hero)||!Number.isInteger(level)||level<1||level>6)return;
@@ -320,6 +330,13 @@ export class Campaign {
     this.noelTickets=Math.min(999999,this.noelTickets+tickets);this.coins=Math.min(99999999,this.coins+coins);this.save();
   }
   /** Claw machine: one play costs CLAW_COST Noel tickets. False (nothing spent) when short. */
+  claimClawWelcome(){
+    if(this.clawWelcomeClaimed)return false;
+    this.clawWelcomeClaimed=true;
+    this.noelTickets=Math.min(999999,this.noelTickets+3);
+    this.save();
+    return true;
+  }
   spendClawPlay(){ if(this.noelTickets<CLAW_COST)return false; this.noelTickets-=CLAW_COST; this.save(); return true; }
   /** Claw machine prize by toy kind: 0 gift box = 25 coins, 1 snowman = a random Echo rune, 2 candy cane = 10 coins. */
   claimClawPrize(kind:number,random:()=>number=Math.random):{coins:number;rune:EchoRuneId|null}|null{

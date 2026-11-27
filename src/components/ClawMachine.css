@@ -1,6 +1,14 @@
-.claw-machine-layer{position:fixed;inset:0;z-index:200;background:#0b1712 url('/assets/ui/noel/shop-winter.webp') center/cover}
+.claw-machine-layer{position:fixed;inset:0;z-index:200;background:#263c42}
 .claw-machine-layer>iframe{display:block;width:100%;height:100%;border:0}
 /* Wooden "Máy gắp" button beside the Noel event button at the top of the shop. */
 .adventure-app .christmas-shop .trading-world>.claw-shop-button{position:absolute;z-index:10;left:calc(40% + 180px);top:18px;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:165px;height:49px;padding:0 16px;border:0;background:url('/assets/ui/trading-wood-button.svg') center/100% 100% no-repeat;color:#f1dfaf;text-shadow:2px 2px #2b2a19;white-space:nowrap;font:inherit;cursor:pointer}
 .adventure-app .christmas-shop .trading-world>.claw-shop-button:hover{filter:brightness(1.2)}
 .christmas-shop:has([aria-modal="true"]) .trading-world>.claw-shop-button{visibility:hidden}
+
+.claw-welcome {
+  position:absolute; top:4.5rem; left:50%; transform:translateX(-50%);
+  width:max-content; max-width:92%; padding:.65em 1em; pointer-events:none;
+  text-align:center; color:#fff0bc; background:#273d3e; border:2px solid #d5ab69;
+  box-shadow:3px 3px #17242b; font-family:'Second Me Pixel',monospace;
+}
+.claw-welcome:empty { padding:0; border:0; box-shadow:none; }

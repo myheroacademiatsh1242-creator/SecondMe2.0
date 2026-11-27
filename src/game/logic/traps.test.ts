@@ -109,7 +109,8 @@ test('later trials contain both crushers and spikes with staggered cycles',()=>{
 
 test('each leg offers one safe time shard worth the configured bonus',t=>{
   const {game,advance}=setup(t);
-  advance(puzzleBalance(1).shardInterval-.01); assert.equal(game.timePickup,null);
+  assert.ok(game.pickupSpawnTimer >= puzzleBalance(1).shardInterval*.7 && game.pickupSpawnTimer <= puzzleBalance(1).shardInterval*1.3);
+  advance(game.pickupSpawnTimer-.01); assert.equal(game.timePickup,null);
   advance(.02); assert.ok(game.timePickup);
   const shard=game.timePickup as {x:number;y:number} | null;
   assert.ok(shard);
