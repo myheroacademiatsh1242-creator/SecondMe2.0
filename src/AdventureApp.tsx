@@ -105,6 +105,7 @@ export default function AdventureApp({ prepare }: { prepare?: (engine: GameEngin
       }
       setHud({ ...state });
     };
+    engine.suspendVisuals = !restoreCamp;
     engine.start(false, restoreCamp);
 
     const stopGamepad=startGamepadControls(engine);

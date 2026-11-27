@@ -441,7 +441,7 @@ export class LoadingScene {
     }
     else if (this.phase === 'finishing') {
       if (!this.opts.reducedMotion && transitionArtReady() && (this.frame === 0 || this.phaseTime >= .35)) {
-        this.setPhase(prepareWarpSheet(WARP_FRAMES) ? 'pull' : 'move');
+        this.setPhase(prepareWarpSheet() ? 'pull' : 'move');
       } else if ((this.opts.reducedMotion && this.phaseTime >= .35) || this.phaseTime >= PORTAL_ART_GRACE_S) {
         this.beginFade();
       }
@@ -474,7 +474,7 @@ export class LoadingScene {
     }
 
     // The warp sheet (the pull at the end) is drawn a frame at a time while loading runs.
-    if (this.opts.portal && !this.opts.reducedMotion && (this.phase === 'loading' || this.phase === 'finishing')) prepareWarpSheet(1);
+    if (this.opts.portal && !this.opts.reducedMotion && (this.phase === 'loading' || this.phase === 'finishing')) prepareWarpSheet();
 
     this.updateParticles(dt);
     this.updateUI();

@@ -509,7 +509,8 @@ export class GameEngine {
   // Rendering & audio
   private explorationFog = new ExplorationFog();
   public get usesExplorationFog() { return !this.isTraining && !this.isPracticeGround; }
-  public renderer = new GameRenderer();
+  private worldRenderer?:GameRenderer;
+  public get renderer(){return this.worldRenderer ??= new GameRenderer();}
   /** Hit-stop, push-back and shake of landed combo hits (logic/hitFeel.ts). */
   public hitFeel = new HitFeel();
   /** pixelfx one-shots playing in the world (rendering/pixelfx.ts). */
@@ -1081,7 +1082,7 @@ export class GameEngine {
     if(this.currentLevel.id===13)this.enemies.push(...createCaveSlimes());
     this.magicShots = [];
     this.combo?.cancel(); this.comboShots = []; this.comboFx = []; this.damageTexts = []; this.runePulses = []; this.runeCueCooldown.clear(); this.lunge.time = 0; this.hitFeel.reset(); this.pfx = []; this.rage.reset(); this.delayedHits = []; this.ultBeam = null; this.timeStop = 0;
-    preloadComboSprites(); preloadPfx(['hit-spark', 'crit-hit', 'shield-block', ...(this.characterClass === 'mage' ? ['icicle-fall', 'spell-charge', 'arcane-beam', 'time-stop'] as const : [])]);
+    preloadComboSprites(this.characterClass); preloadPfx(['hit-spark', 'crit-hit', 'shield-block', ...(this.characterClass === 'mage' ? ['icicle-fall', 'spell-charge', 'arcane-beam', 'time-stop'] as const : [])]);
     if(this.currentLevel.id===6){   // after this.pfx is cleared, so their snowflake bursts play as the level opens
       preloadPfx(['ice-crystal','snowflake-burst','ice-shatter']);
       for(const pillar of createBoss().pillars)this.enemies.push(this.newFrostCrystal(pillar,false));

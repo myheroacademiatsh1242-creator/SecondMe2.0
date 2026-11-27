@@ -1,4 +1,4 @@
-import {drawChristmasAttack} from './christmasOutfits.ts';
+import {drawChristmasAttack,preloadChristmasSprites} from './christmasOutfits.ts';
 import {getOutfit} from '../logic/outfits.ts';
 import {outfitSheet} from './outfitSprites.ts';
 /**
@@ -32,52 +32,18 @@ function image(hero: ComboHero) {
   return img.complete && img.naturalWidth ? img : null;
 }
 
-/**
- * Aeris's combat frames come from the same sheet as the hero-select preview
- * (aeris-combo-reference-matched.png: 18 frames on a 6x3 grid, same order as the old strip). The old
- * 95x81 strip was a heavy downscale that turned blurry in play. Each cell is shrunk once, with
- * high-quality filtering, to the strip's in-game size (body 59 px), and its edge is snapped back to hard
- * pixels; drawing then stays 1:1. The old strip is only a fallback while the sheet loads.
- */
-const AERIS_REF = {
-  file: 'aeris-combo-reference-matched.png', columns: 6, center: 149, scale: 59 / 222,
-  rows: [{ top: 0, bottom: 263, feet: 246 }, { top: 263, bottom: 523, feet: 513 }, { top: 523, bottom: 820, feet: 791 }],
-} as const;
-type RefFrame = { canvas: HTMLCanvasElement; ax: number; ay: number };
-let aerisRef: HTMLImageElement | undefined;
-const aerisFrames = new Map<string, RefFrame[]>();
-function aerisFrame(index: number): RefFrame | null {
-  if (typeof Image === 'undefined' || typeof document === 'undefined') return null;
-  if (!aerisRef) { aerisRef = new Image(); aerisRef.src = `${import.meta.env.BASE_URL}assets/combat/${AERIS_REF.file}`; }
-  if (!aerisRef.complete || !aerisRef.naturalWidth) return null;
-  const outfit = getOutfit('mage');
-  let frames = aerisFrames.get(outfit);
-  if (!frames) {
-    const source = outfitSheet(aerisRef, 'mage', outfit);
-    const cellW = aerisRef.naturalWidth / AERIS_REF.columns, k = AERIS_REF.scale;
-    frames = [];
-    for (let i = 0; i < AERIS_REF.columns * AERIS_REF.rows.length; i++) {
-      const row = AERIS_REF.rows[Math.floor(i / AERIS_REF.columns)];
-      const left = Math.round((i % AERIS_REF.columns) * cellW), right = Math.round((i % AERIS_REF.columns + 1) * cellW);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil((right - left) * k); canvas.height = Math.ceil((row.bottom - row.top) * k);
-      const c = canvas.getContext('2d');
-      if (!c) return null;
-      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-      c.drawImage(source, left, row.top, right - left, row.bottom - row.top, 0, 0, canvas.width, canvas.height);
-      const data = c.getImageData(0, 0, canvas.width, canvas.height), px = data.data;
-      for (let j = 3; j < px.length; j += 4) {
-        if (px[j] < 96) { px[j] = 0; continue; }
-        const a = px[j] / 255;   // undo the premultiplied fade on edge pixels, then make them solid
-        px[j - 3] = Math.min(255, px[j - 3] / a); px[j - 2] = Math.min(255, px[j - 2] / a); px[j - 1] = Math.min(255, px[j - 1] / a);
-        px[j] = 255;
-      }
-      c.putImageData(data, 0, 0);
-      frames.push({ canvas, ax: AERIS_REF.center * k, ay: (row.feet - row.top) * k });
-    }
-    aerisFrames.set(outfit, frames);
+// Exact pre-scaled gameplay frames; the larger reference sheet is reserved for hero selection.
+const aerisSheets=new Map<string,HTMLImageElement>();
+function aerisSheet(){
+  if(typeof Image==='undefined')return null;
+  const outfit=getOutfit('mage');
+  let img=aerisSheets.get(outfit);
+  if(!img){
+    img=new Image();
+    img.src=`${import.meta.env.BASE_URL}assets/combat/aeris-play-${outfit}.webp`;
+    aerisSheets.set(outfit,img);
   }
-  return frames[index] ?? null;
+  return img.complete&&img.naturalWidth?img:null;
 }
 
 /** public/assets/effects/arcane-orb.png: pixelfx arcane/arcane-orb, each cell cropped to the orb
@@ -104,7 +70,13 @@ function drawArcaneOrb(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sho
 }
 
 /** Starts loading both strips (called when a level is built, so the first swing is ready). */
-export function preloadComboSprites() { image('swordsman'); image('mage'); aerisFrame(0); arcaneOrb(); }
+export function preloadComboSprites(hero: GameEngine['characterClass']) {
+  if(hero!=='mage'&&hero!=='swordsman')return;
+  const outfit=getOutfit(hero);
+  if(outfit==='reindeer'||outfit==='snowman'){preloadChristmasSprites(outfit);return;}
+  if(hero==='mage'){aerisSheet();arcaneOrb();}
+  else image(hero);
+}
 
 /** The combo frame to show for the hero now, or null (walk sprite instead). */
 export function comboPose(game: GameEngine): { hero: ComboHero; index: number } | null {
@@ -127,13 +99,13 @@ export function drawComboHero(ctx: CanvasRenderingContext2D, game: GameEngine): 
   const outfit=getOutfit(pose.hero);
   if(outfit==='snowman'||outfit==='reindeer')
     return drawChristmasAttack(ctx,outfit,pose.index,game.player.x,game.player.y+(outfit==='snowman'?10:7),outfit==='snowman'?58:55,left);
-  const ref = pose.hero === 'mage' ? aerisFrame(pose.index) : null;
+  const ref = pose.hero === 'mage' ? aerisSheet() : null;
   if (ref) {
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(game.player.x), Math.round(game.player.y + FEET_Y));
     if (left) ctx.scale(-1, 1);
-    ctx.drawImage(ref.canvas, -Math.round(ref.ax), -Math.round(ref.ay));
+    ctx.drawImage(ref,(pose.index%6)*128,Math.floor(pose.index/6)*96,128,96,-64,-82,128,96);
     ctx.restore();
     return true;
   }
@@ -204,7 +176,7 @@ export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine
   ctx.globalAlpha = 1;
   // Aeris's spell bolts: the pixelfx arcane orb (violet glass, two orbiting rings) over a violet trail;
   // plain circles until the sheet has loaded.
-  const orb = arcaneOrb();
+  const orb = game.characterClass==='mage'&&!snowman&&game.comboShots.length?arcaneOrb():null;
   for (const shot of game.comboShots) {
     const back = Math.hypot(shot.vx, shot.vy) * 0.045;
     const ux = shot.vx / Math.hypot(shot.vx, shot.vy), uy = shot.vy / Math.hypot(shot.vx, shot.vy);

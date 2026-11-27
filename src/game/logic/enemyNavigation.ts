@@ -15,7 +15,13 @@ export function enemyRoute(start: Point, goal: Point, walls: Rect[]): Point[] {
   };
   const nearestVisible = (from: Point) => {
     let best = -1, distance = Infinity;
-    for (let id = 0; id < valid.length; id++) {
+    const radius=STEP*3;
+    const firstRow=Math.max(0,Math.ceil((from.y-radius-TOP)/STEP));
+    const lastRow=Math.min(ROWS-1,Math.floor((from.y+radius-TOP)/STEP));
+    const firstCol=Math.max(0,Math.ceil((from.x-radius-LEFT)/STEP));
+    const lastCol=Math.min(COLS-1,Math.floor((from.x+radius-LEFT)/STEP));
+    for (let row=firstRow;row<=lastRow;row++) for(let col=firstCol;col<=lastCol;col++){
+      const id=row*COLS+col;
       const p = point(id), d = Math.hypot(p.x-from.x,p.y-from.y);
       if (d < distance && d < STEP * 3 && walkable(id) && clear(from,p,walls)) { best=id; distance=d; }
     }

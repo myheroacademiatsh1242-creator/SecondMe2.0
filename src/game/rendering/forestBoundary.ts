@@ -8,6 +8,7 @@ import { livingImage } from './livingAssets.ts';
  */
 const layers = new Map<string, HTMLCanvasElement>();
 const MAX_LAYERS = 3;
+const signatures=new WeakMap<LevelData['walls'],string>();
 /** Level 3's recoloured sheet: its colour filter applied once to the whole sheet, not per sprite. */
 const LEVEL3_FILTER = 'hue-rotate(100deg) saturate(.65) brightness(.8)';
 const LEVEL12_FILTER = 'sepia(1) saturate(3) hue-rotate(-50deg) brightness(.65)';
@@ -29,13 +30,15 @@ function level12Sheet(image: HTMLImageElement): CanvasImageSource {
   }
   return tinted12.sheet;
 }
-export const forestBoundaryReady = () => !!livingImage('forest-edge-pixel.png');
+export const forestBoundaryReady = () => !!livingImage('forest-edge-pixel.webp');
 
 /** Collision rectangles stay fixed; their visible material becomes roots, rock and canopy. */
 export function drawForestBoundary(ctx: CanvasRenderingContext2D, level: LevelData, w = 1280, h = 720) {
-  const image = livingImage('forest-edge-pixel.png');
+  const image = livingImage('forest-edge-pixel.webp');
   if (!image || typeof document === 'undefined') return false;
-  const key = `${w}:${h}:${level.id}:${JSON.stringify(level.walls)}`;
+  let geometry=signatures.get(level.walls);
+  if(geometry===undefined){geometry=JSON.stringify(level.walls);signatures.set(level.walls,geometry);}
+  const key = `${w}:${h}:${level.id}:${geometry}`;
   let layer = layers.get(key);
   if (layer) layers.delete(key);                         // re-inserted below as most recent
   else {

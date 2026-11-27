@@ -26,10 +26,10 @@ function load(file: string) {
   return img.complete && img.naturalWidth ? img : null;
 }
 export function biomeIndex(id: number) { return Math.max(0, Math.min(5, id - 1)); }
-export function biomeLoaded() { return Number(!!load('forest-floors-pixel.png')) + Number(!!load('props-pixel.png')); }
+export function biomeLoaded() { return Number(!!load('forest-floors-pixel.webp')) + Number(!!load('props-pixel.webp')); }
 
 export function drawBiomeProp(ctx: CanvasRenderingContext2D, index: number, x: number, y: number, size: number) {
-  const img = load('props-pixel.png');
+  const img = load('props-pixel.webp');
   if (!img) return;
   const cw = img.width / 4, ch = img.height / 2;
   ctx.drawImage(img, index % 4 * cw, Math.floor(index / 4) * ch, cw, ch, x - size / 2, y - size * .7, size, size);
@@ -40,7 +40,7 @@ export function drawBiomeFloor(ctx: CanvasRenderingContext2D, w: number, h: numb
   if (level.id === 11 || level.id === 12) {
     return drawVolcanoFloor(ctx, w, h, level, 0);
   }
-  const index = biomeIndex(level.id), img = load('forest-floors-pixel.png');
+  const index = biomeIndex(level.id), img = load('forest-floors-pixel.webp');
   if (!img) return false;
   const cw = img.width / 3, ch = img.height / 2;
   drawTerrain(ctx, w, h, level);
@@ -76,7 +76,7 @@ export function drawBiomeWalls(ctx: CanvasRenderingContext2D, level: LevelData) 
   for (const wall of level.walls) {
     const { x, y, width: w, height: h } = wall;
     // Small obstacles are now complete natural vignettes, without a rectangular pedestal.
-    if (livingImage('decor-pixel.png') && w >= h * 1.5 && w >= 60 && x > 0 && y > 0 && x + w < 1280 && y + h < 720 && Math.max(w, h) <= 160) {
+    if (livingImage('decor-pixel.webp') && w >= h * 1.5 && w >= 60 && x > 0 && y > 0 && x + w < 1280 && y + h < 720 && Math.max(w, h) <= 160) {
       ctx.save(); ctx.fillStyle = dark; ctx.shadowColor = '#09140e88'; ctx.shadowBlur = 8;
       ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       continue;

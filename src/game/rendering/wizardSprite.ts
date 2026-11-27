@@ -4,38 +4,19 @@ import {outfitSheet} from './outfitSprites.ts';
 import type {OutfitId} from '../logic/outfits.ts';
 import type { Direction } from '../logic/types.ts';
 
-let sheet: HTMLCanvasElement | null = null;
-let loading = false;
-
+export const WIZARD_WALK_URL = (import.meta.env?.BASE_URL ?? '/') + 'assets/aeris/walk-aligned.webp';
+let sheet: HTMLImageElement | null = null;
 export function loadWizardSprites() {
-  if (loading || sheet || typeof Image === 'undefined') return;
-  loading = true;
-  const image = new Image();
-  image.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { loading = false; return; }
-    ctx.drawImage(image, 0, 0);
-    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    for (let i = 3; i < pixels.data.length; i += 4) pixels.data[i] = pixels.data[i] >= 180 ? 255 : 0;
-    ctx.putImageData(pixels, 0, 0);
-    const aligned=document.createElement('canvas');aligned.width=canvas.width;aligned.height=canvas.height;
-    const alignedCtx=aligned.getContext('2d');
-    if(!alignedCtx){sheet=canvas;return;}
-    const offsets=wizardFrameOffsets(pixels.data,canvas.width);
-    for(let row=0;row<3;row++)for(let frame=0;frame<8;frame++){
-      alignedCtx.save();alignedCtx.beginPath();alignedCtx.rect(frame*256,row*256,256,256);alignedCtx.clip();
-      alignedCtx.drawImage(canvas,frame*256,row*256,256,256,frame*256+offsets[row][frame],row*256,256,256);alignedCtx.restore();
-    }
-    sheet = aligned;
-  };
-  image.onerror = () => { loading = false; };
-  image.src = `${import.meta.env.BASE_URL}assets/aeris/Aeris_Walk.png`;
+  if (sheet || typeof Image === 'undefined') return;
+  sheet = new Image();
+  sheet.decoding = 'async';
+  sheet.onerror = () => { sheet = null; };
+  sheet.src = WIZARD_WALK_URL;
 }
-
-export function getWizardSheet() { loadWizardSprites(); return sheet; }
-
+export function getWizardSheet() {
+  loadWizardSprites();
+  return sheet?.complete && sheet.naturalWidth ? sheet : null;
+}
 /** The sheet is an eight-frame stride; keep its authored temporal order. */
 export const WIZARD_WALK_ORDER: readonly (readonly number[])[] = [
   [0,1,2,3,4,5,6,7],

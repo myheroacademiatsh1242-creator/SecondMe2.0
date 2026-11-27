@@ -8,8 +8,13 @@ test('a level loads its scenery and the chosen hero, not the menu or other heroe
   const spec = level(2, 'swordsman');
   assert.ok(levelUses('assets/forest/ground.jpg', spec));
   assert.ok(levelUses('assets/magic-effects/rune.png', spec));
-  assert.ok(!levelUses('assets/soldier/Kael_Walk.png', spec));   // Kael's sheets load lazily with his sprite
+  assert.ok(!levelUses('assets/soldier/Kael_Walk.png', spec));   // The PNG is the authoring source.
+  assert.ok(levelUses('assets/soldier/Kael_Walk.webp',spec));
   assert.ok(!levelUses('assets/aeris/Aeris_Walk.png', spec));
+  assert.ok(levelUses('assets/enemies/shaman_idle.webp',spec));
+  assert.ok(!levelUses('assets/enemies/bear_idle.webp',spec));
+  assert.ok(levelUses('assets/biomes/forest-floors-pixel.webp',spec));
+  assert.ok(!levelUses('assets/biomes/forest-floors-pixel.png',spec));
   assert.ok(!levelUses('assets/menu/main-menu.jpg', spec));
   assert.ok(!levelUses('assets/loading/background.jpg', spec));
   assert.ok(!levelUses('assets/frost-guardian/sheet.png', spec));

@@ -5,7 +5,7 @@ export interface Plant { index:number;x:number;y:number;size:number;flip:boolean
 const plans=new Map<number,Plant[]>();
 let pixelSheet:HTMLCanvasElement|null=null;
 const overlaps=(a:Rect,b:Rect,pad=0)=>a.x<b.x+b.width+pad&&a.x+a.width>b.x-pad&&a.y<b.y+b.height+pad&&a.y+a.height>b.y-pad;
-export const understoryReady=()=>!!livingImage('understory-pixel.png');
+export const understoryReady=()=>!!livingImage('understory-pixel.webp');
 
 /** Seeded plant communities share a focal log/shrub, with small companion plants around it. */
 export function planUnderstory(level:LevelData,w:number,h:number,clear:Rect[]):Plant[] {
@@ -55,7 +55,7 @@ export function planUnderstory(level:LevelData,w:number,h:number,clear:Rect[]):P
 }
 
 function drawPlant(ctx:CanvasRenderingContext2D,plant:Plant,time:number) {
-  const image=livingImage('understory-pixel.png');if(!image)return;
+  const image=livingImage('understory-pixel.webp');if(!image)return;
   if(!pixelSheet){
     pixelSheet=document.createElement('canvas');pixelSheet.width=pixelSheet.height=192;
     const p=pixelSheet.getContext('2d')!;p.imageSmoothingEnabled=false;p.drawImage(image,0,0,192,192);

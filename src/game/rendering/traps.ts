@@ -14,10 +14,10 @@ export type TrapLayer = 'all' | 'floor' | 'overhead';
 const ICE_TINT = 'saturate(.45) hue-rotate(110deg) brightness(1.22)';
 const BIOME3_TINT = 'hue-rotate(40deg) saturate(.7)';
 
-export const trapSpritesReady = () => !!livingImage('traps-pixel.png') || forestReady('crusher', 'rocks', 'vines', 'spikes');
+export const trapSpritesReady = () => !!livingImage('traps-pixel.webp') || forestReady('crusher', 'rocks', 'vines', 'spikes');
 
 export function drawTrap(ctx: CanvasRenderingContext2D, trap: Trap, time: number, layer: TrapLayer = 'all', biome = 1) {
-  if (livingImage('traps-pixel.png')) {
+  if (livingImage('traps-pixel.webp')) {
     drawLivingTrap(ctx, trap, time, layer, biome); return;
   }
   if (layer === 'all' || !trapSpritesReady()) {
@@ -42,7 +42,7 @@ function drawLivingTrap(ctx: CanvasRenderingContext2D, trap: Trap, time: number,
     ctx.save();
     const sway = kind === 'vines' ? Math.sin(time * 1.6 + x) * 1.5 : 0;
     const shake = kind === 'crusher' && phase === 'warning' ? Math.sin(time * 40) * warn : 0;
-    const draw = (row: number) => drawLivingCell(ctx, 'traps-pixel.png', column, row, x - w * .12 + sway + shake, y - h * .17, w * 1.24, h * 1.3, tint);
+    const draw = (row: number) => drawLivingCell(ctx, 'traps-pixel.webp', column, row, x - w * .12 + sway + shake, y - h * .17, w * 1.24, h * 1.3, tint);
     if (kind === 'rocks') { ctx.globalAlpha = phase === 'impact' ? 1 : .55; draw(phase === 'impact' ? 2 : 0); }
     else {
       const row = kind === 'vines' ? 0 : phase === 'impact' ? 2 : phase === 'warning' ? 1 : 0;
@@ -82,7 +82,7 @@ function drawLivingTrap(ctx: CanvasRenderingContext2D, trap: Trap, time: number,
     if (drop !== null) {
       const size = Math.min(w, h) * 1.12;
       ctx.globalAlpha = Math.min(1, drop * 3);
-      drawLivingCell(ctx, 'traps-pixel.png', 3, 1, cx - size / 2, cy - (1 - drop * drop) * 260 - size / 2, size, size, ice ? ICE_TINT : undefined);
+      drawLivingCell(ctx, 'traps-pixel.webp', 3, 1, cx - size / 2, cy - (1 - drop * drop) * 260 - size / 2, size, size, ice ? ICE_TINT : undefined);
     }
   }
   ctx.restore();

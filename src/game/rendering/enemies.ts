@@ -36,14 +36,19 @@ function drawEmberSlime(ctx: CanvasRenderingContext2D, enemy: Enemy, time: numbe
  ctx.drawImage(slimeSheet, frame * 58, 0, 58, 66, -29, -61, 58, 66);
  ctx.restore();
 }
-const sheets=new Map<string,HTMLCanvasElement>();const loading=new Set<string>();
+const sheets=new Map<string,HTMLImageElement>();
 const cells:Record<Exclude<EnemyKind,'dummy'>,number>={goblin:256,bear:256,skull:192,shaman:192,minotaur:320,thief:192,bombfish:192,turtle:320,troll:384};
 function sheet(kind:Exclude<EnemyKind,'dummy'>,moving:boolean){
  const clip=moving?(kind==='minotaur'||kind==='turtle'||kind==='troll'?'walk':'run'):'idle',key=`${kind}_${clip}`;
- if(sheets.has(key))return sheets.get(key);
- if(!loading.has(key)&&typeof Image!=='undefined'){
-  loading.add(key);const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const g=c.getContext('2d')!;g.drawImage(img,0,0);const pixels=g.getImageData(0,0,c.width,c.height);for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]>=180?255:0;g.putImageData(pixels,0,0);sheets.set(key,c);};img.src=`${import.meta.env.BASE_URL}assets/enemies/${key}.png`;
+ if(typeof Image==='undefined')return;
+ let img=sheets.get(key);
+ if(!img){
+   img=new Image();
+   img.decoding='async';
+   img.src=`${import.meta.env.BASE_URL}assets/enemies/${key}.webp`;
+   sheets.set(key,img);
  }
+ return img.complete&&img.naturalWidth?img:undefined;
 }
 export function drawEnemies(ctx:CanvasRenderingContext2D,enemies:Enemy[],time:number){
  for(const e of [...enemies].sort((a,b)=>a.y-b.y)){

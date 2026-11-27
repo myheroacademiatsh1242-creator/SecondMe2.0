@@ -3,7 +3,7 @@ import { livingImage } from './livingAssets.ts';
 import { drawPixelInteraction } from './pixelInteractions.ts';
 
 export function drawTimeRelic(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, reducedMotion: boolean, hint: boolean) {
-  const image = livingImage('time-relic.png');
+  const image = livingImage('time-relic.webp');
   const t = reducedMotion ? 0 : time, bob = Math.sin(t * 2.3) * 3;
   ctx.save();
   ctx.fillStyle = '#071c2144';ctx.beginPath();ctx.ellipse(x, y + 11, 14, 5, 0, 0, Math.PI * 2);ctx.fill();

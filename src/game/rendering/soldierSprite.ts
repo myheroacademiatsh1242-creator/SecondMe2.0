@@ -4,28 +4,17 @@ import {outfitSheet} from './outfitSprites.ts';
 import type {OutfitId} from '../logic/outfits.ts';
 import type { Direction } from '../logic/types.ts';
 
-const sheets = new Map<string, HTMLCanvasElement>();
-const loading = new Set<string>();
-
-function spriteSheet(name: string): HTMLCanvasElement | undefined {
-  if (sheets.has(name)) return sheets.get(name);
-  if (loading.has(name) || typeof Image === 'undefined') return;
-  loading.add(name);
-  const image = new Image();
-  image.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(image, 0, 0);
-    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    // Remove the faint background left around the pixel-art silhouettes.
-    for (let i = 3; i < pixels.data.length; i += 4) pixels.data[i] = pixels.data[i] >= 180 ? 255 : 0;
-    ctx.putImageData(pixels, 0, 0);
-    sheets.set(name, canvas);
-  };
-  image.src = `${import.meta.env.BASE_URL}assets/soldier/Kael_${name}.png`;
-  return;
+const sheets = new Map<string, HTMLImageElement>();
+function spriteSheet(name: string) {
+  if (typeof Image === 'undefined') return;
+  let image = sheets.get(name);
+  if (!image) {
+    image = new Image();
+    image.decoding = 'async';
+    image.src = `${import.meta.env.BASE_URL}assets/soldier/Kael_${name}.webp`;
+    sheets.set(name, image);
+  }
+  return image.complete && image.naturalWidth ? image : undefined;
 }
 
 export function drawSoldierSprite(ctx: CanvasRenderingContext2D, x: number, y: number, direction: Direction, moving: boolean, echo: boolean, time: number, attacking = false, attackProgress = 0, outfit?:OutfitId) {

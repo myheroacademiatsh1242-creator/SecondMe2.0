@@ -60,7 +60,7 @@ export function IntroEffects() {
       <g mask="url(#intro-swirl-mask)">
         <g transform="translate(309 445) scale(1 1.5)">
           <g className="portal-swirl">
-            <image href="/assets/menu/second-me-forest-clean.png" width="1376" height="768" transform="scale(1 .6667) translate(-309 -445)" preserveAspectRatio="none"/>
+            <image href="/assets/menu/second-me-forest-clean.webp" width="1376" height="768" transform="scale(1 .6667) translate(-309 -445)" preserveAspectRatio="none"/>
           </g>
         </g>
       </g>

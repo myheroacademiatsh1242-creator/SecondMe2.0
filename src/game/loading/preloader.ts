@@ -1,3 +1,5 @@
+import {encounters} from '../logic/enemies.ts';
+import {getOutfit} from '../logic/outfits.ts';
 /** Load only the images needed to reveal the lobby or the selected level. */
 import type { CharacterClass } from '../logic/campaign.ts';
 
@@ -90,6 +92,24 @@ function imageTask(path: string, bytes: number): Task {
   };
 }
 
+// Decode at the play renderer's actual URL so the browser can reuse the same image.
+function levelImageTask(path:string,bytes:number):Task {
+  return {
+    stage:stageOf(path),name:path,weight:Math.max(bytes,1),done:0,
+    async run(){
+      const image=new Image();
+      image.decoding='async';
+      await new Promise<void>((resolve,reject)=>{
+        image.onload=()=>resolve();
+        image.onerror=()=>reject(new Error('Could not load '+path));
+        image.src=BASE+path;
+      });
+      await image.decode();
+      decoded.set(path,image);
+    },
+  };
+}
+
 export type LobbyTheme = 'forest' | 'frost';
 const LOBBY_ART: Record<LobbyTheme, readonly string[]> = {
   forest: ['assets/ui/journey-forest-map.png', 'assets/ui/echo-campsite.png'],
@@ -114,10 +134,17 @@ const HERO_FOLDER: Record<CharacterClass, string> = { mage: 'aeris', swordsman: 
 /** Critical images only. Music, voices and sound effects load through their playback systems. */
 export function levelUses(path: string, spec: LevelLoadSpec): boolean {
   const [, folder, rest] = path.split('/', 3);
-  if (folder === 'forest' || folder === 'nature' || folder === 'magic-effects' || folder === 'biomes') return true;
+  if (folder === 'biomes') return rest.endsWith('.webp');
+  if (folder === 'forest' || folder === 'nature' || folder === 'magic-effects' ) return true;
+  const outfit = spec.character === 'mechanical' ? 'default' : getOutfit(spec.character);
+  if (folder === 'christmas-outfits') return (outfit==='snowman'||outfit==='reindeer') && rest.startsWith(outfit+'-');
+  if (folder === 'aeris') return spec.character==='mage' && outfit!=='snowman' && rest==='walk-aligned.webp';
+  if (folder === 'soldier') return spec.character==='swordsman' && outfit!=='reindeer' && rest.endsWith('.webp');
+  if (folder === 'combat') return spec.character==='mage' ? rest===`aeris-play-${outfit}.webp` : spec.character==='swordsman' && outfit!=='reindeer' && rest==='kael-combo.png';
+  if (folder === 'crimson') return spec.character==='assassin' && rest.startsWith('winter-')===(outfit==='frost');
   if (folder === HERO_FOLDER[spec.character]) return !rest.startsWith('Kael_');
-  if (folder === 'aeris') return spec.character === 'mage';
-  if (folder === 'enemies') return spec.levelId === 1 ? rest.startsWith('goblin_') : spec.levelId >= 2 && spec.levelId !== 6;
+  if (folder === 'enemies') return spec.levelId===6 ? rest.startsWith('frost-crystal') :
+    rest.endsWith('.webp') && (encounters[spec.levelId]??[]).some(([kind])=>rest.startsWith(kind+'_'));
   if (folder === 'frost-guardian') return spec.levelId === 6;
   if (folder === 'demon-boss') return spec.levelId === 13 && ['sheet-fire.png', 'cave-arena.png', 'slime-idle.png', 'slime-transform-strip-fire.png'].includes(rest);
   if (folder === 'volcano') {
@@ -131,12 +158,12 @@ export function levelUses(path: string, spec: LevelLoadSpec): boolean {
 }
 
 export function startLevelPreload(spec: LevelLoadSpec): Preload {
-  return begin(async () => (await assetIndex()).filter(f => levelUses(f.path, spec) && !decoded.has(f.path)), spec.delayMs ?? 0);
+  return begin(async () => (await assetIndex()).filter(f => levelUses(f.path, spec) && !decoded.has(f.path)), spec.delayMs ?? 0, levelImageTask);
 }
 
 type Plan = () => Promise<FileEntry[]>;
 
-function begin(plan: Plan, delayMs: number): Preload {
+function begin(plan: Plan, delayMs: number, taskFor = imageTask): Preload {
   let resolveDone!: () => void;
   const state: Preload = {
     progress: 0, done: false, stage: 'core', totalFiles: 0, loadedFiles: 0, failed: [],
@@ -144,19 +171,19 @@ function begin(plan: Plan, delayMs: number): Preload {
     startedAt: performance.now(), finishedAt: null,
     whenDone: new Promise<void>(r => { resolveDone = r; }),
   };
-  void run(state, plan, delayMs).then(() => {
+  void run(state, plan, delayMs, taskFor).then(() => {
     state.progress = 1; state.done = true; state.finishedAt = performance.now();
     resolveDone();
   });
   return state;
 }
 
-async function run(state: Preload, plan: Plan, delayMs: number) {
+async function run(state: Preload, plan: Plan, delayMs: number, taskFor: typeof imageTask) {
   // The asset list itself (tiny) comes first. Progress stays 0 until the list is known, so
   // the total never grows later and the bar can only move forward. No list: init still runs.
   const files = await plan();
 
-  const tasks: Task[] = files.map(f => imageTask(f.path, f.bytes));
+  const tasks: Task[] = files.map(f => taskFor(f.path, f.bytes));
   const order = (t: Task) => STAGES.indexOf(t.stage);
   tasks.sort((a, b) => order(a) - order(b));
   const total = tasks.reduce((s, t) => s + t.weight, 0);

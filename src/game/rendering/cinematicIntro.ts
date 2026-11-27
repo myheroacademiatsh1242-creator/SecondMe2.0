@@ -52,7 +52,7 @@ const INTRO_PFX: PfxName[] = ['god-rays', 'fireflies', 'rune-circle', 'fog', 'ma
   'shooting-stars', 'pixel-dissolve', 'shatter-wipe', 'star-iris'];
 
 export class CinematicIntro {
-  private backdrop = load('assets/intro/woodland-story.png');
+  private backdrop = load('assets/intro/woodland-story.webp');
   private scene = new PixelLayer();
   private fx = new PixelLayer();
   private vignette = makeCanvas(160, 90);
@@ -72,7 +72,7 @@ export class CinematicIntro {
   constructor(private lang: Lang, private reduced: boolean) {
     getWizardSheet();
     const sheet = (src: string, fw: number, fh: number, cols: number, frames: number): Sheet => ({ img: load(src), fw, fh, cols, frames });
-    this.sold = { Idle: sheet('assets/soldier/Kael_Walk.png', 256, 256, 8, 8), Walk: sheet('assets/soldier/Kael_Walk.png', 256, 256, 8, 8), Attack01: sheet('assets/soldier/Kael_Attack.png', 256, 256, 8, 8) };
+    this.sold = { Idle: sheet('assets/soldier/Kael_Walk.webp', 256, 256, 8, 8), Walk: sheet('assets/soldier/Kael_Walk.webp', 256, 256, 8, 8), Attack01: sheet('assets/soldier/Kael_Attack.webp', 256, 256, 8, 8) };
     this.runeSheet = sheet('assets/magic-effects/rune.png', 32, 32, 18, 18);
     this.buildVignette(); this.buildMist(); this.buildLogo();
     preloadPfx(INTRO_PFX);loadVfx();
@@ -291,20 +291,12 @@ export class CinematicIntro {
   private actor(g:Ctx,kind:'aeris'|'kael',x:number,y:number,time:number,clip:'idle'|'walk'|'attack',alpha=1,echo=false) {
     const source=kind==='aeris'?getWizardSheet():clip==='attack'?this.sold.Attack01.img:this.sold.Walk.img;
     if(!source || (source instanceof HTMLImageElement&&!ready(source)))return;
-    const key=kind==='aeris'?'aeris-action':clip==='attack'?'kael-attack':'kael-walk';
-    let clean=this.cleanSoldiers.get(key);
-    if(!clean){
-      clean=makeCanvas(source.width,source.height);const c=clean.getContext('2d')!;c.drawImage(source,0,0);
-      const pixels=c.getImageData(0,0,clean.width,clean.height);
-      for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]>=180?255:0;
-      c.putImageData(pixels,0,0);this.cleanSoldiers.set(key,clean);
-    }
     const frame=clip==='idle'?0:clip==='attack'?Math.min(7,Math.floor(Math.max(0,time)*22)):Math.floor(Math.max(0,time)*10)%8;
     const row=clip==='attack'?2:1;
     g.save();g.globalAlpha=alpha;
     if(echo)g.filter='brightness(1.5) sepia(1) saturate(3) hue-rotate(120deg)';
     else this.shadow(g,x,y+1,16,.7);
-    g.imageSmoothingEnabled=false;g.drawImage(clean,frame*256,row*256,256,256,Math.round(x)-45,Math.round(y)-72,90,90);g.restore();
+    g.imageSmoothingEnabled=false;g.drawImage(source,frame*256,row*256,256,256,Math.round(x)-45,Math.round(y)-72,90,90);g.restore();
   }
 
   private sceneWoodland(g:Ctx,f:Ctx,t:number,px:number) {

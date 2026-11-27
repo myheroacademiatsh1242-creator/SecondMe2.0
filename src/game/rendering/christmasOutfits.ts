@@ -14,6 +14,10 @@ function sheet(outfit: OutfitId, action: 'walk'|'combat') {
   return img.naturalWidth ? img : undefined;
 }
 
+export function preloadChristmasSprites(outfit:'reindeer'|'snowman'){
+  sheet(outfit,'walk');
+  sheet(outfit,'combat');
+}
 export function drawChristmasWalk(ctx:CanvasRenderingContext2D, outfit:OutfitId, x:number, y:number,
   direction:Direction, moving:boolean, echo:boolean, time:number) {
   const img=sheet(outfit,'walk');

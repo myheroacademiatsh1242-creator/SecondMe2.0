@@ -9,7 +9,7 @@ export function livingImage(file: string) {
   return image.complete && image.naturalWidth > 0 ? image : null;
 }
 export function livingReady() {
-  return Number(!!livingImage('traps-pixel.png')) + Number(!!livingImage('decor-pixel.png'));
+  return Number(!!livingImage('traps-pixel.webp')) + Number(!!livingImage('decor-pixel.webp'));
 }
 /** Whole sheets with a colour filter already applied, by file and filter. */
 const tintedSheets = new Map<string, HTMLCanvasElement>();
@@ -41,6 +41,6 @@ export function drawLivingCell(ctx: CanvasRenderingContext2D, file: string, colu
 }
 export function drawLivingDecor(ctx: CanvasRenderingContext2D, index: number, x: number, y: number, size: number, flip = false) {
   ctx.save(); ctx.translate(x, y); if (flip) ctx.scale(-1, 1);
-  drawLivingCell(ctx, 'decor-pixel.png', index % 4, Math.floor(index / 4), -size / 2, -size * .66, size, size);
+  drawLivingCell(ctx, 'decor-pixel.webp', index % 4, Math.floor(index / 4), -size / 2, -size * .66, size, size);
   ctx.restore();
 }

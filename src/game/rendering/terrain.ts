@@ -121,6 +121,8 @@ export function drawTerrain(ctx: CanvasRenderingContext2D, w: number, h: number,
   const floor = document.createElement('canvas');
   const width = floor.width = Math.ceil(w / 4), height = floor.height = Math.ceil(h / 4);
   const g = floor.getContext('2d')!;
+  const pixels=g.createImageData(width,height);
+  const colors=[...skin.soil,...skin.path,skin.fleck].map(hex=>parseInt(hex.slice(1),16));
   const seed = level.id + 41;
   const boss = level.id === 6;
   for (let row = 0; row < height; row++) for (let column = 0; column < width; column++) {
@@ -132,10 +134,14 @@ export function drawTerrain(ctx: CanvasRenderingContext2D, w: number, h: number,
     const onPath = distance < 39 + (detail - .5) * 38;
     const ring = boss && (Math.abs(radius - 202) < 3 || Math.abs(radius - 224) < 2);
     const value = Math.min(3, Math.floor((broad * .65 + detail * .24 + grain * .11) * 4));
-    g.fillStyle = ring ? skin.fleck : (onPath ? skin.path : skin.soil)[value];
-    if (!ring && grain > .992 && detail > .56) g.fillStyle = skin.fleck;
-    g.fillRect(column, row, 1, 1);
+    const rgb=colors[ring || (grain>.992 && detail>.56) ? 8 : value+(onPath?4:0)];
+    const offset=(row*width+column)*4;
+    pixels.data[offset]=rgb>>16;
+    pixels.data[offset+1]=(rgb>>8)&255;
+    pixels.data[offset+2]=rgb&255;
+    pixels.data[offset+3]=255;
   }
+  g.putImageData(pixels,0,0);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(floor, 0, 0, w, h);

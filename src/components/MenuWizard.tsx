@@ -1,5 +1,5 @@
 import {getOutfit} from '../game/logic/outfits.ts';
-import {getWizardSheet} from '../game/rendering/wizardSprite.ts';
+import {getWizardSheet,WIZARD_WALK_URL} from '../game/rendering/wizardSprite.ts';
 import {outfitSheet} from '../game/rendering/outfitSprites.ts';
 import { useEffect, useRef } from 'react';
 import { ANCHOR, CELL, SPRITE_K, T, wizardPose, type WizardPose } from './menuWizardEntrance.ts';
@@ -11,18 +11,29 @@ let winterPlayed = false;
 
 /** Aeris on the main menu: steps out of the portal, walks to her spot, then idles (inside IntroEffects' SVG). */
 export function MenuWizard({ winter = false, reducedMotion = false }: { winter?: boolean; reducedMotion?: boolean } = {}) {
-  const snowman=getOutfit('mage')==='snowman';
+  const outfit=getOutfit('mage');
+  const snowman=outfit==='snowman';
   const sprite=useRef<SVGImageElement>(null),shadow=useRef<SVGEllipseElement>(null);
   const clip = useRef<SVGGElement>(null), body = useRef<SVGGElement>(null), idle = useRef<SVGGElement>(null);
   const cell = useRef<SVGSVGElement>(null), flare = useRef<SVGEllipseElement>(null);
   const hat = useRef<SVGSVGElement>(null);
 
   useEffect(()=>{
-    if(snowman)return;
-    let frame=0;
-    const ready=()=>{const sheet=getWizardSheet();if(!sheet){frame=requestAnimationFrame(ready);return;}const image=outfitSheet(sheet,'mage');sprite.current?.setAttribute('href',(image as HTMLCanvasElement).toDataURL());};
-    ready();return()=>cancelAnimationFrame(frame);
-  },[snowman]);
+    if (outfit==='default'||snowman) return;
+    let frame=0, disposed=false, url:string|undefined;
+    const ready=()=>{
+      const sheet=getWizardSheet();
+      if (!sheet) { frame=requestAnimationFrame(ready); return; }
+      const variant=outfitSheet(sheet,'mage',outfit);
+      if (variant instanceof HTMLCanvasElement) variant.toBlob(blob=>{
+        if (!blob||disposed) return;
+        url=URL.createObjectURL(blob);
+        sprite.current?.setAttribute('href',url);
+      });
+    };
+    ready();
+    return ()=>{disposed=true;cancelAnimationFrame(frame);if(url)URL.revokeObjectURL(url);};
+  },[outfit,snowman]);
   useEffect(() => {
     const portal = Array.from(clip.current?.ownerSVGElement?.querySelectorAll('.portal-swirl,.plasma-wave,.portal-core,.portal-breath') ?? []);
     const setRate = (rate: number) => portal.forEach(el => el.getAnimations().forEach(a => { a.playbackRate = rate; }));
@@ -82,7 +93,7 @@ export function MenuWizard({ winter = false, reducedMotion = false }: { winter?:
 
         <g ref={idle} className="menu-wizard">
           <svg ref={cell} x={-ANCHOR.x * k} y={-ANCHOR.y * k} width={CELL * k} height={CELL * k} viewBox={`0 ${2 * CELL} ${CELL} ${CELL}`} overflow="hidden">
-            <image ref={sprite} href={snowman?import.meta.env.BASE_URL+'assets/christmas-outfits/snowman-walk.png':'/assets/aeris/Aeris_Walk.png'} width={snowman?1600:CELL*8} height={snowman?800:CELL*3} filter="url(#menu-wizard-alpha)"/>
+            <image ref={sprite} href={snowman?import.meta.env.BASE_URL+'assets/christmas-outfits/snowman-walk.png':WIZARD_WALK_URL} width={snowman?1600:CELL*8} height={snowman?800:CELL*3} filter="url(#menu-wizard-alpha)"/>
           </svg>
           {winter && !snowman && <svg ref={hat} className="menu-wizard-hat" x="-42" width="76" height="54" viewBox="425 300 650 465" overflow="hidden">
             <image href={SANTA_HAT_URL} width="1536" height="1024"/>

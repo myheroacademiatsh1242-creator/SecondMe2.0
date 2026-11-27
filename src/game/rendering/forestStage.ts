@@ -63,18 +63,25 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
   // renders them on alternate frames, which would otherwise rebuild both layers every frame.
   const layerCache = new Map<string, [HTMLCanvasElement | null, HTMLCanvasElement | null]>();
   let level: LevelData | null = null;
+  let previousWalls: LevelData['walls'] | undefined;
+  let previousTraps: LevelData['traps'];
+  let geometryKey='';
   const plateSince = new Map<string, { pressed: boolean; at: number }>();
   let exitOpenedAt: number | null = null, lastTime = 0;
 
   scene.drawGround = (ctx, w, h, lvl) => {
     if(lvl.id===13){level=lvl;drawDemonArena(ctx,w,h,state.reducedMotion?0:state.levelTime);return;}
-    orig.drawGround(ctx, w, h, lvl);
     level = lvl;
     // A new level (or a restart) rewinds the clock: forget per-level animation state.
     if (state.levelTime < lastTime) { plateSince.clear(); exitOpenedAt = null; }
     lastTime = state.levelTime;
     const volcano = lvl.id === 11 || lvl.id === 12;
-    const key = `${w}:${h}:${lvl.id}:${forestLoaded()}:${biomeLoaded()}:${livingReady()}:${understoryReady()}:${(volcano || lvl.id === 10) && !!basaltAtlas()}:${volcano && !!icefireFloor(lvl.id)}:${lvl.id === 10 && !!windBridgeReference()}:${JSON.stringify(lvl.walls)}:${JSON.stringify(lvl.traps ?? [])}`;
+    if (lvl.walls!==previousWalls || lvl.traps!==previousTraps) {
+      geometryKey=JSON.stringify([lvl.walls,lvl.traps??[]]);
+      previousWalls=lvl.walls;
+      previousTraps=lvl.traps;
+    }
+    const key = `${w}:${h}:${lvl.id}:${forestLoaded()}:${biomeLoaded()}:${livingReady()}:${understoryReady()}:${(volcano || lvl.id === 10) && !!basaltAtlas()}:${volcano && !!icefireFloor(lvl.id)}:${lvl.id === 10 && !!windBridgeReference()}:${geometryKey}`;
     if (key !== cacheKey) {
       cacheKey = key;
       let layers = layerCache.get(key);
@@ -85,6 +92,7 @@ export function installForestStage(scene: LegacyScene, state: StageState) {
       [ground, props] = layers;
     }
     if (ground) ctx.drawImage(ground, 0, 0);
+    else orig.drawGround(ctx, w, h, lvl);
     if (lvl.id === 10) drawWindBridgeRiver(ctx, state.reducedMotion ? 0 : state.levelTime, h);
     const lift = lvl.doors.find(door => door.liftBridge);
     if (lift) drawWindBridgeDeck(ctx, lift.openProgress, state.reducedMotion);
@@ -292,7 +300,7 @@ function buildLayers(w: number, h: number, lvl: LevelData): [HTMLCanvasElement |
       drawUnderstoryStatic(g,planUnderstory(lvl,w,h,clear));
       return [ground,props];
     }
-    if (livingImage('decor-pixel.png')) {
+    if (livingImage('decor-pixel.webp')) {
       const pools = [[0, 1, 2, 3], [2, 3, 0], [4, 5], [6, 7, 3], [8, 9], [10, 11]];
       const pool = pools[biomeIndex(lvl.id)];
       const placed: Rect[] = [];
