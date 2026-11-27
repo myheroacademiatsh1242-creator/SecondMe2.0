@@ -39,7 +39,7 @@ function assetIndex(): Promise<FileEntry[]> {
 
 function stageOf(path: string): LoadStage {
   if (/\/(music|voice|sfx)\//.test(path)) return 'audio';
-  if (/\/(blue-wizard|soldier|frost-guardian|mechanical|magic-effects)\//.test(path)) return 'characters';
+  if (/\/(aeris|soldier|frost-guardian|mechanical|magic-effects)\//.test(path)) return 'characters';
   if (/\/(loading|menu)\//.test(path)) return 'core';
   return 'environment';
 }
@@ -110,7 +110,7 @@ export function startPreload({ theme = 'forest', delayMs = 0 }: { theme?: LobbyT
 /** What entering a level needs. */
 export interface LevelLoadSpec { levelId: number; character: CharacterClass; lang: 'en' | 'vi'; delayMs?: number }
 
-const HERO_FOLDER: Record<CharacterClass, string> = { mage: 'blue-wizard', swordsman: 'soldier', assassin: 'crimson', mechanical: 'mechanical' };
+const HERO_FOLDER: Record<CharacterClass, string> = { mage: 'aeris', swordsman: 'soldier', assassin: 'crimson', mechanical: 'mechanical' };
 /** Critical images only. Music, voices and sound effects load through their playback systems. */
 export function levelUses(path: string, spec: LevelLoadSpec): boolean {
   const [, folder, rest] = path.split('/', 3);
