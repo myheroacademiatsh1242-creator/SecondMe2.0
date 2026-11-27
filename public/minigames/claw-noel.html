@@ -51,17 +51,17 @@ function revealPrize(toy){
 function drawPrizeIcon(toy,x,y,size){
  if(!toy?.prize)return false;
  const {icon,glyph}=toy.prize;
- if(icon==='rune'){
+ if(icon==='rune'||icon==='outfit'||icon==='crystals'){
    g.save();g.fillStyle='#453557';g.fillRect(x-size/2,y-size/2,size,size);
    g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ffe296';
-   g.font='bold '+size+'px serif';g.fillText(glyph||'ᚠ',x,y);g.restore();return true
+   g.font='bold '+size+'px serif';g.fillText(icon==='outfit'?'♜':icon==='crystals'?'◆':glyph||'ᚠ',x,y);g.restore();return true
  }
  const index=artCells.indexOf(icon);
  if(index<0||!prizeArt.naturalWidth)return false;
  g.drawImage(prizeArt,index%6*64,Math.floor(index/6)*64,64,64,Math.round(x-size/2),Math.round(y-size/2),size,size);
  return true
 }
-const guide='NẠP VÉ · 1 vé Noel/lượt. Kéo cần để ngắm, bấm GẮP rồi chạm quà ở cửa nhận. Có thể trúng vật phẩm shop hoặc 1 trong 3 skin Noel siêu hiếm.';
+const guide='NẠP VÉ · 1 vé Noel/lượt. Kéo cần để ngắm, bấm GẮP rồi chạm quà ở cửa nhận. Món nào về cửa nhận cũng có quà. Cả 4 loại có cùng tỉ lệ ra đồ shop và skin Noel, kèm 20% cơ hội nhận thưởng thêm.';
 const parentWin=window.parent!==window?window.parent:null,post=m=>parentWin&&parentWin.postMessage(m,location.origin);let waiting=false;
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parentWin)return;const m=e.data||{};
  if(m.type==='claw:reward' && typeof m.label==='string'){

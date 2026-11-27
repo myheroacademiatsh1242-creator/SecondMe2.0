@@ -1,8 +1,8 @@
-import {clawRewardText,rollClawReward,type ClawReward} from './clawRewards.ts';
+import {type ClawReward} from './clawRewards.ts';
 import { GUARDIAN_HP } from './balance.ts';
 import { CHRISTMAS_COINS, christmasSeason } from './christmas.ts';
 import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
-import {NOEL_SKINS,NOEL_SKIN_NAMES,type OutfitHero,SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
+import {NOEL_SKINS,type OutfitHero,SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
 import {cleanOwnedWeapons,type WeaponId} from './weapons.ts';
 import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from './bossBehavior.ts';
 import {ICE_BARRAGE} from './iceBarrage.ts';
@@ -344,67 +344,57 @@ export class Campaign {
     return true;
   }
   spendClawPlay(){ if(this.noelTickets<CLAW_COST)return false; this.noelTickets-=CLAW_COST; this.save(); return true; }
-  private grantCatalogueClawPrize(kind:number,random:()=>number=Math.random):ClawReward|null{
-    const reward=rollClawReward(kind,this.ownedOutfits,random);
-    if(!reward)return null;
-    if(reward.type==='outfit')this.ownedOutfits.push(reward.id);
-    else if(reward.type==='item'){
-      const item=SHOP_ITEMS.find(i=>i.id===reward.id)!;
-      const count=Math.min(reward.quantity,Math.max(0,item.cap-this.shopStock(item.id)));
-      if(item.id==='time')this.timeItems+=count;
-      else if(item.id==='ring')this.limitRings+=count;
-      else this.supplies[item.id]+=count;
-      // Full stacks exchange excess units for their shop value.
-      const overflow=reward.quantity-count;
-      if(overflow){reward.overflowCoins=overflow*item.price;this.coins=Math.min(99999999,this.coins+overflow*item.price);}
-      reward.quantity=count;
-      if(!count){this.save();return{type:'coins',quantity:overflow*item.price};}
+  private rollClawMain(random:()=>number):ClawReward {
+    const roll=random();
+    const pick=<T>(pool:readonly T[])=>pool[Math.floor(random()*pool.length)];
+    const skins=NOEL_SKINS.filter(id=>!this.ownedNoelSkins.includes(id));
+    if(roll<CLAW_SKIN_CHANCE && skins.length){
+      const id=pick(skins);
+      this.ownedNoelSkins.push(id);
+      return {type:'skin',id};
     }
-    else{
-      const field=reward.type==='coins'?'coins':reward.type==='crystals'?'chestKeys':'noelTickets';
-      const cap=reward.type==='coins'?99999999:999999;
-      reward.quantity=Math.min(reward.quantity,Math.max(0,cap-this[field]));
-      this[field]+=reward.quantity;
+    const outfits=SHOP_OUTFITS.filter(outfit=>!this.ownedOutfits.includes(outfit.id));
+    if(roll>=CLAW_SKIN_CHANCE && roll<CLAW_SKIN_CHANCE+0.05 && outfits.length){
+      const {id}=pick(outfits);
+      this.ownedOutfits.push(id);
+      return {type:'outfit',id};
     }
-    this.save();
-    return reward;
+    const available=SHOP_ITEMS.filter(item=>item.price>0 && this.shopStock(item.id)<item.cap);
+    if(!available.length){
+      this.chestKeys++;
+      return {type:'crystals',quantity:1};
+    }
+    const rarity=random()<0.8?'common':'refined';
+    const tier=available.filter(item=>item.rarity===rarity);
+    const {id}=pick(tier.length?tier:available);
+    if(id==='time')this.timeItems++;
+    else if(id==='ring')this.limitRings++;
+    else this.supplies[id]++;
+    return {type:'item',id};
+  }
+  private rollClawBonus(random:()=>number):ClawReward|null {
+    const roll=random();
+    if(roll>=0.20)return null;
+    if(roll<0.05 && this.coins<=99999989){
+      this.coins+=10;
+      return {type:'coins',quantity:10};
+    }
+    if(roll>=0.05 && roll<0.10 && ECHO_RUNES.some(rune=>(this.echoRunes[rune.id]??0)<RUNE_STOCK_MAX)){
+      return {type:'rune',id:this.grantRune(random)};
+    }
+    if(roll>=0.10 && roll<0.15 && this.noelTickets<999999){
+      this.noelTickets++;
+      return {type:'tickets',quantity:1};
+    }
+    this.chestKeys++;
+    return {type:'crystals',quantity:1};
   }
   claimClawPrize(kind:number, random:()=>number=Math.random) {
-    if (![0,1,2,3].includes(kind)) return null;
-    const roll = random();
-    const missing = NOEL_SKINS.filter(hero => !this.ownedNoelSkins.includes(hero));
-    if (roll < CLAW_SKIN_CHANCE && missing.length) {
-      const hero = missing[Math.floor(random()*missing.length)];
-      this.ownedNoelSkins.push(hero);
-      this.save();
-      return {label: 'Skin siêu hiếm · ' + NOEL_SKIN_NAMES[hero], skin: hero};
-    }
-    if (kind === 3) {
-      const catalogue = this.grantCatalogueClawPrize(kind,random);
-      return catalogue ? {catalogue,label:clawRewardText(catalogue,true)} : null;
-    }
-    if (roll < CLAW_SKIN_CHANCE + 0.75) {
-      const available = SHOP_ITEMS.filter(item => item.price > 0 && this.shopStock(item.id) < item.cap);
-      if (available.length) {
-        const item = available[Math.floor(random()*available.length)];
-        if (item.id === 'time') this.timeItems++;
-        else if (item.id === 'ring') this.limitRings++;
-        else this.supplies[item.id]++;
-        this.save();
-        return {label: '+1 ' + item.vi, item: item.id};
-      }
-    }
-    if (kind === 1) {
-      const rune = this.grantRune(random);
-      if (rune) {
-        this.save();
-        return {label: '+1 ' + ECHO_RUNES.find(entry => entry.id === rune)!.vi, rune};
-      }
-    }
-    const coins = kind === 0 ? 25 : 10;
-    this.coins = Math.min(99999999, this.coins + coins);
+    if(![0,1,2,3].includes(kind))return null;
+    const main=this.rollClawMain(random);
+    const bonus=this.rollClawBonus(random);
     this.save();
-    return {label: '+' + coins + ' xu', coins};
+    return {main,bonus};
   }
   reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 

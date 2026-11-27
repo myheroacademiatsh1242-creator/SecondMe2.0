@@ -2,7 +2,6 @@ import {clawRewardText} from '../game/logic/clawRewards.ts';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { GameEngine } from '../game/GameEngine.ts';
-import { ECHO_RUNES } from '../game/logic/echoRunes.ts';
 import { SHOP_ITEMS } from '../game/logic/shopItems.ts';
 import { CLAW_COST } from '../game/logic/campaign.ts';
 import './ClawMachine.css';
@@ -29,12 +28,16 @@ export function ClawMachine({ engine, close, container }: { engine: GameEngine; 
       else if (m.type === 'claw:spend') send(engine.spendClawPlay());
       else if (m.type === 'claw:prize' && typeof m.kind === 'number' && Number.isSafeInteger(m.pickupId)) {
         const prize = engine.claimClawPrize(m.kind);
-        if (prize) frame.current?.contentWindow?.postMessage({
-          type: 'claw:reward', pickupId: m.pickupId, label: prize.catalogue ? clawRewardText(prize.catalogue,engine.language==='vi') : prize.label,
-          special: !!prize.rune || SHOP_ITEMS.some(item => item.id === prize.item && item.rarity !== 'common'),
-          icon: prize.catalogue?.type==='item' ? prize.catalogue.id : prize.skin ?? prize.item ?? (prize.rune ? 'rune' : prize.catalogue?.type ?? 'coins'),
-          glyph: ECHO_RUNES.find(rune => rune.id === prize.rune)?.glyph,
-        }, location.origin);
+        if (prize) {
+          const {main,bonus}=prize;
+          const vi=engine.language==='vi';
+          const label=clawRewardText(main,vi) + (bonus?' · '+clawRewardText(bonus,vi):'');
+          frame.current?.contentWindow?.postMessage({
+            type:'claw:reward', pickupId:m.pickupId, label,
+            special:main.type==='outfit' || (main.type==='item' && SHOP_ITEMS.some(item=>item.id===main.id && item.rarity!=='common')),
+            icon:main.type==='skin' || main.type==='item' ? main.id : main.type,
+          },location.origin);
+        }
         send();
       }
       else if (m.type === 'claw:close') close();

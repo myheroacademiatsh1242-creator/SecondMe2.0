@@ -182,19 +182,12 @@ test('the claw machine spends Noel tickets per play and banks each prize', t => 
   assert.equal(game.campaign.noelTickets, 0);
   assert.equal(game.spendClawPlay(), false, 'not enough tickets: nothing spent');
   assert.equal(game.campaign.noelTickets, 0);
-  assert.equal(game.campaign.claimClawPrize(0,()=>0.9)?.coins, 25);
-  assert.equal(game.campaign.claimClawPrize(2,()=>0.9)?.coins, 10);
-  assert.equal(game.campaign.coins, 35);
-  const runes = Object.values(game.campaign.echoRunes).reduce((a, b) => a + (b ?? 0), 0);
-  assert.ok(game.campaign.claimClawPrize(1,()=>0.9)?.rune);
-  assert.equal(Object.values(game.campaign.echoRunes).reduce((a, b) => a + (b ?? 0), 0), runes + 1);
   assert.equal(game.claimClawPrize(7), null);
-  for (const hero of ['mage','swordsman','assassin']) {
-    assert.equal(game.campaign.claimClawPrize(0,()=>0.0049)?.skin, hero);
+  for (const id of ['mage','swordsman','assassin']) {
+    assert.deepEqual(game.campaign.claimClawPrize(0,()=>0.0049)?.main,{type:'skin',id});
   }
-  assert.equal(game.campaign.claimClawPrize(0,()=>0)?.item, 'manaSmall');
-  assert.equal(game.campaign.claimClawPrize(2,()=>0.005)?.item, 'manaSmall');
-  assert.equal(game.campaign.shopStock('manaSmall'),2);
+  assert.deepEqual(game.campaign.claimClawPrize(0,()=>0)?.main,{type:'item',id:'manaSmall'});
+  assert.equal(game.campaign.shopStock('manaSmall'),1);
 });
 
 test('in dev mode the claw machine plays for free and shows unlimited tickets', t => {
