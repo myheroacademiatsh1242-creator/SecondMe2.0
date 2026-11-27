@@ -1,8 +1,9 @@
 """Walls of the Noel claw-machine room, painted as pixel art (1 px = 1 world unit).
 
 Outputs (public/assets/ui/noel/):
-  claw-room-back.png  364 x 270  back wall, x = -44 .. 320 (column c -> x = -44 + c)
-  claw-room-side.png  250 x 270  left wall, z = 68 .. -182 (column c -> z = 68 - c)
+  claw-room-back.png  640 x 270  back wall, x = -44 .. 596 (column c -> x = -44 + c)
+  claw-room-side.png  480 x 270  left wall, z = 68 .. -412 (column c -> z = 68 - c)
+Both run well past the edges of the widest view, so the old masonry behind them never shows.
 Row r is wall height y = 270 - r on both.
 The page (public/minigames/claw-noel.html, drawCabinetRoom / drawRoomLife) maps each image onto its
 wall plane and animates what moves on top of them (window snow, candle flames, tree lights, the star),
@@ -60,7 +61,7 @@ class Wall:
 
 
 # ---------------------------------------------------------------- back wall: tree, gifts, painting
-back = Wall(364)
+back = Wall(640)
 back.base()
 r, p = back.rect, back.px
 # a framed winter painting above where Crimson stands
@@ -96,7 +97,7 @@ for gx, gw, gh, body, ribbon in ((250, 26, 20, '#c8333f', '#f2d27a'), (280, 18, 
 back.save('claw-room-back.png')
 
 # ---------------------------------------------------------------- side wall: window, stockings
-side = Wall(250)
+side = Wall(480)
 side.base()
 r, p = side.rect, side.px
 rnd = random.Random(7)

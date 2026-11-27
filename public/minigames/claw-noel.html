@@ -319,6 +319,9 @@ let roomPhase=-1;
 const roomBack=new Image(),roomSide=new Image();
 roomBack.onload=roomSide.onload=()=>{roomPhase=-1};
 roomBack.src='/assets/ui/noel/claw-room-back.png';roomSide.src='/assets/ui/noel/claw-room-side.png';
+// Aeris (Lucky Snowman) and Kael (Christmas Reindeer) having a snowball fight outside the window.
+const snowFriends={aeris:new Image(),kael:new Image()};
+snowFriends.aeris.src='/assets/christmas-outfits/snowman-walk.png';snowFriends.kael.src='/assets/christmas-outfits/reindeer-walk.png';
 const ROOM_TOP=270,BACK_X0=-44,SIDE_Z0=68;
 function projectExact(x,y,z){const {turn}=camera(),angle=1-turn;return [91+x+.57*angle*z,252+.105*angle*x-y-(.34+.12*turn)*z]}
 // Puts g into the coordinates of a wall image: (column, row) pixels land on that wall.
@@ -343,6 +346,7 @@ function drawRoomLife(v){
   const speed=9+i%5*3,x=40+((i*29+Math.sin(t*.8+i)*4)%110+110)%110,y=40+((i*17+t*speed)%118);
   g.fillStyle=i%3?'#eef5ff':'#c9daf2';g.fillRect(Math.round(x),Math.round(y),i%4?1:2,i%4?1:2);
  }
+ drawSnowballFight();
  g.restore();
  g.save();onWall('side');
  for(const cx of [52,134]){
@@ -367,6 +371,52 @@ function drawRoomLife(v){
  g.restore();
  g.restore();
 }
+/*
+ * Outside the window (side-wall image coordinates, already clipped to the glass; the side wall is seen
+ * mirrored, so Kael shows on the left and Aeris on the right): the two take turns throwing snowballs. Each 3.2 s turn: wind up, the ball arcs over,
+ * then a hit (a puff and a stagger) or, every other time, a jump that dodges it into the snow.
+ * Between throws they bounce on the spot. The window's middle bar is drawn again on top.
+ */
+function drawSnowballFight(){
+ const A=snowFriends.aeris,K=snowFriends.kael;
+ if(!A.naturalWidth||!K.naturalWidth)return;
+ const S=42,FEET=156,turn=Math.floor(t/3.2),k=t/3.2-turn,aerisThrows=turn%2===0,dodge=turn%4>=2;
+ const pos={aeris:72,kael:115};
+ const hand=(who)=>[pos[who]+(who==='aeris'?9:-9),FEET-19];
+ const target=aerisThrows?'kael':'aeris',thrower=aerisThrows?'aeris':'kael';
+ // Throw at k .12, flight until .42, then the target reacts until .62.
+ const fly=clamp((k-.12)/.3,0,1),react=clamp((k-.42)/.2,0,1);
+ const hop=(who)=>{
+   if(who===target&&dodge&&k>.3&&k<.52)return -Math.round(7*Math.sin(Math.PI*(k-.3)/.22));
+   if(k>.7)return -Math.round(Math.abs(Math.sin(t*9+(who==='kael'?1:0)))*2);       // laughing bounce
+   return 0;
+ };
+ const draw=(img,who,facingRight)=>{
+   let x=pos[who],col=facingRight?2:6,row=0;
+   if(who===thrower&&k<.12)x+=facingRight?-1:1;                                        // wind up
+   if(who===thrower&&k>=.12&&k<.25){row=facingRight?2:1;col=2}                          // the throw
+   if(who===target&&!dodge&&react>0&&react<1){x+=(facingRight?-1:1)*Math.round(3*Math.sin(Math.PI*react))}
+   if(k>.7){row=facingRight?2:1;col=Math.floor(t*8)%6}                                 // stamping about
+   g.drawImage(img,col*200,row*200,200,200,Math.round(x-S/2),Math.round(FEET+hop(who)-186*S/200),S,S);
+ };
+ g.imageSmoothingEnabled=false;
+ draw(A,'aeris',true);draw(K,'kael',false);
+ // The snowball's arc, and where it lands.
+ const [sx,sy]=hand(thrower),[tx,ty]=dodge?[pos[target]+(aerisThrows?10:-10),FEET-2]:hand(target);
+ if(fly>0&&fly<1){
+   const bx=sx+(tx-sx)*fly,by=sy+(ty-sy)*fly-18*Math.sin(Math.PI*fly);
+   g.fillStyle='#9cb6d8';g.fillRect(Math.round(bx)-1,Math.round(by)-1,4,4);
+   g.fillStyle='#ffffff';g.fillRect(Math.round(bx)-1,Math.round(by)-1,3,3);
+ }
+ if(react>0&&react<1){
+   for(let i=0;i<7;i++){const a=i*.9+1.2,r=2+6*react;
+     g.fillStyle=i%2?'#ffffff':'#dbe8fb';g.globalAlpha=1-react;
+     g.fillRect(Math.round(tx+Math.cos(a)*r),Math.round(ty-Math.abs(Math.sin(a))*r),2,2)}
+   g.globalAlpha=1;
+ }
+ // The window's middle bar stays in front of them.
+ g.fillStyle='#6b4630';g.fillRect(93,40,4,118);
+}
 function drawCabinetRoom(v){
  const width=canvas.width,height=canvas.height;
  if(roomPhase!==cameraPhase || roomCanvas.width!==width || roomCanvas.height!==height){
@@ -388,19 +438,20 @@ function drawCabinetRoom(v){
      panel([wall(corner,y),wall(far,y),wall(far,h),wall(corner,h)],front,null);
      panel([side(-far,y),side(back,y),side(back,h),side(-far,h)],tint,null);
    }
-   wallBand(0,far,'#436162','#344b52');
+   // Under the painted walls (claw-room-*.png): the same plum wallpaper and wood, so no gap ever shows another colour.
+   wallBand(0,far,'#4a2833','#40232c');
    // Staggered masonry over dark painted wood panelling.
    for(let y=82,row=0;y<Math.min(far,height/v.scale+320);y+=20,row++){
-     wire([wall(corner,y),wall(far,y)],'#3b5659',1);
-     wire([side(-far,y),side(back,y)],'#2d444b',1);
-     for(let x=corner+(row%2)*28;x<far;x+=56)wire([wall(x,y),wall(x,y+20)],'#3b5659',1);
-     for(let z=back-(row%2)*28;z>-far;z-=56)wire([side(z,y),side(z,y+20)],'#2d444b',1);
+     wire([wall(corner,y),wall(far,y)],'#53303b',1);
+     wire([side(-far,y),side(back,y)],'#472830',1);
+     for(let x=corner+(row%2)*28;x<far;x+=56)wire([wall(x,y),wall(x,y+20)],'#53303b',1);
+     for(let z=back-(row%2)*28;z>-far;z-=56)wire([side(z,y),side(z,y+20)],'#472830',1);
    }
-   wallBand(0,77,'#304947','#293d3e');
-   for(let x=corner+9;x<far;x+=26)wire([wall(x,6),wall(x,73)],'#48615a',2);
-   for(let z=back-9;z>-far;z-=26)wire([side(z,6),side(z,73)],'#394e49',2);
-   wallBand(73,79,'#897754','#685e48');wallBand(0,6,'#253438','#202e33');
-   wire([wall(corner,79),wall(corner,far)],'#283e43',2);
+   wallBand(0,77,'#5a3826','#4a2d1f');
+   for(let x=corner+9;x<far;x+=26)wire([wall(x,6),wall(x,73)],'#64402b',2);
+   for(let z=back-9;z>-far;z-=26)wire([side(z,6),side(z,73)],'#553621',2);
+   wallBand(73,79,'#b0844a','#8a6438');wallBand(0,6,'#2e1c14','#26170f');
+   wire([wall(corner,79),wall(corner,far)],'#2e1c14',2);
    // Small strings of Noel lights are hung directly on both walls.
    function festoon(makePoint,start,end,step){
      const lights=['#edb972','#c96860','#96b6a2'];
