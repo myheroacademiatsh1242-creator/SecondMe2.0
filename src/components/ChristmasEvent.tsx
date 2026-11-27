@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { Check, Gift, X, Ticket, Swords } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
-import { CHRISTMAS_COINS, christmasSeason, type SeasonPreview } from '../game/logic/christmas.ts';
+import { CHRISTMAS_COINS, christmasCalendarDate, type SeasonPreview } from '../game/logic/christmas.ts';
 import { ClawMachine } from './ClawMachine.tsx';
 import { CLAW_COST } from '../game/logic/campaign.ts';
 import './ChristmasEvent.css';
 
 export function useChristmas(selection: SeasonPreview = 'auto') {
-  const [year, setYear] = useState(christmasSeason);
+  const [date, setDate] = useState(christmasCalendarDate);
+  const month = Math.floor(date / 100);
+  const year = month % 100 === 12 ? Math.floor(month / 100) : null;
   useEffect(() => {
-    const refresh = () => setYear(christmasSeason());
+    const refresh = () => setDate(christmasCalendarDate());
     const timer = window.setInterval(refresh, 1000);
     window.addEventListener('focus', refresh);
     return () => {
@@ -18,7 +20,7 @@ export function useChristmas(selection: SeasonPreview = 'auto') {
     };
   }, []);
   const preview = selection === 'christmas';
-  return { preview, year, active: preview || (selection === 'auto' && year !== null) };
+  return { preview, year, teaser: selection !== 'none' && date >= 20261127 && date <= 20261226, active: preview || (selection === 'auto' && year !== null) };
 }
 
 export function ChristmasLights() {
@@ -107,15 +109,19 @@ export function ChristmasPanelTrim({ still }: { still: boolean }) {
   </div>;
 }
 
-export function ChristmasEvent({ engine, hud, event, menuDialog }: {
+export function ChristmasEvent({ engine, hud, event, menuDialog, menuTeaser = false, devMenuPreview = false, onDismiss }: {
   engine: GameEngine | null;
   hud: HUDState;
   event: ReturnType<typeof useChristmas>;
+  menuTeaser?: boolean;
+  devMenuPreview?: boolean;
+  onDismiss?: () => void;
   menuDialog?: RefObject<HTMLDialogElement | null>;
 }) {
   const shopDialog = useRef<HTMLDialogElement>(null);
   const dialog = menuDialog ?? shopDialog;
   const [clawOpen, setClawOpen] = useState(false);
+  const poster = useRef<HTMLDialogElement>(null);
   const clawButton = useRef<HTMLButtonElement>(null);
   const closeClaw = () => { setClawOpen(false); requestAnimationFrame(() => clawButton.current?.focus()); };
   const [previewClaimed, setPreviewClaimed] = useState(false);
@@ -124,18 +130,34 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
   const claimed = event.preview ? previewClaimed
     : event.year !== null && event.year <= (engine?.campaign.christmasGiftYear ?? 0);
 
-  if (!event.active) return null;
+  const [posterPassed, setPosterPassed] = useState(false);
+  const showPoster = menuTeaser && !posterPassed;
+  const continueFromPoster = () => {
+    if (event.active || devMenuPreview) {
+      if (!event.active) engine?.setDevSeasonPreview('christmas');
+      setPosterPassed(true);
+    } else {
+      dialog.current?.close();
+    }
+  };
+
+  if (!event.active && !showPoster && !devMenuPreview) return null;
   return <div className="christmas-entry">
     {!menuDialog && <button className="christmas-trigger" type="button" onClick={() => dialog.current?.showModal()}>
       <Gift size={18} aria-hidden="true"/>{vi ? 'Sự kiện Noel' : 'Christmas event'}
       <span className="christmas-trigger-tickets">{hud.devUnlocked ? '∞' : hud.noelTickets ?? 0} {vi ? 'vé' : 'tickets'}</span>
     </button>}
-    <dialog className={clawOpen ? 'christmas-dialog fair-machine' : 'christmas-dialog'} onClose={() => setClawOpen(false)} onCancel={e => { if (clawOpen) { e.preventDefault(); closeClaw(); } }} ref={dialog} data-lobby-dialog
+    <dialog className={showPoster ? 'fair-poster-view' : clawOpen ? 'christmas-dialog fair-machine' : 'christmas-dialog'} onClose={e => { if (e.target === e.currentTarget && !e.currentTarget.open) { setClawOpen(false); setPosterPassed(false); if (dialog.current?.returnValue !== 'hunt') onDismiss?.(); } }} onCancel={e => { if (clawOpen) { e.preventDefault(); closeClaw(); } }} ref={dialog} data-lobby-dialog
       aria-label={vi ? 'Sự kiện Noel' : 'Christmas event'}
       onKeyDown={e => {
         if (e.key === 'Escape') { e.preventDefault(); if (clawOpen) closeClaw(); else dialog.current?.close(); }
         e.stopPropagation();
       }}>
+      {showPoster ? <>
+        <img src="/assets/ui/noel/snow-hunt-poster.png" alt={vi ? 'Poster Săn quái đêm Noel' : 'Snow Hunt poster'}/>
+        {!event.active && <small>{vi ? 'Mở sự kiện ngày 01/12 · Giờ Việt Nam' : 'Opens December 1 · Vietnam time'}</small>}
+        <button type="button" autoFocus onClick={continueFromPoster}>{vi ? 'Tiếp tục' : 'Continue'}</button>
+      </> : <>
       <div hidden={clawOpen}>
       <header className="fair-hero">
         <ChristmasLights/>
@@ -143,14 +165,17 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
         <button className="christmas-close" type="button" autoFocus onClick={() => dialog.current?.close()}
           aria-label={vi ? 'Đóng' : 'Close'}><X size={22}/></button>
         <div><p className="christmas-dates">{vi ? '01–31/12 · Giờ Việt Nam' : 'Dec 1–31 · Vietnam time'}</p>
-        <h2>{vi ? 'Săn quái đêm Noel' : 'Snow Hunt'}</h2></div>
+        <h2>{vi ? 'Săn quái đêm Noel' : 'Snow Hunt'}</h2>
+        <button className="fair-poster-link" type="button" onClick={() => poster.current?.showModal()}>
+          {vi ? 'Xem poster' : 'View poster'}
+        </button></div>
       </header>
       <section className="fair-details">
 
       <p>{vi ? 'Cùng Echo chống từng đợt quái tuyết. Lên cấp để chọn sức mạnh, trụ càng lâu càng kiếm được nhiều vé Noel và xu.' : 'Survive waves of snow monsters with your Echoes. Level up to choose powers and earn more Noel tickets and coins.'}</p>
       <div className="fair-actions">
         <button className="christmas-claim christmas-play" type="button" disabled={!engine?.canPlayChristmasTrail}
-          onClick={()=>{if(engine?.startSnowHunt())dialog.current?.close();}}>
+          onClick={()=>{if(engine?.startSnowHunt())dialog.current?.close('hunt');}}>
           <Swords size={19}/>{vi?'Chơi sự kiện':'Play event'}
         </button>
         <button className="christmas-claim fair-claw" ref={clawButton} type="button" disabled={!engine} onClick={()=>setClawOpen(true)}>
@@ -170,7 +195,14 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
       </footer>
       </section>
       </div>
+      <dialog className="fair-poster-view" ref={poster} aria-label={vi ? 'Poster Săn quái đêm Noel' : 'Snow Hunt poster'}
+        onKeyDown={e => e.stopPropagation()} onCancel={e => e.stopPropagation()}>
+        <img loading="lazy" src="/assets/ui/noel/snow-hunt-poster.png"
+          alt={vi ? 'Săn quái đêm Noel. Crimson Veil cùng nữ pháp sư người tuyết và kiếm sĩ tuần lộc chạy qua máy gắp quà.' : 'Snow Hunt. Crimson Veil, the snow mage and the reindeer swordsman race past the claw machine.'}/>
+        <button type="button" onClick={() => poster.current?.close()}>{vi ? 'Đóng poster' : 'Close poster'}</button>
+      </dialog>
       {clawOpen && engine && dialog.current && <ClawMachine engine={engine} close={closeClaw} container={dialog.current}/>}
+      </>}
     </dialog>
   </div>;
 }

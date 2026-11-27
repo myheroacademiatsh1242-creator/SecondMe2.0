@@ -994,3 +994,17 @@ html body .adventure-app .journey-lobby .christmas-camp .rest-scene {
 .fair-gift { border-top: 1px solid #48606b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
 .christmas-dialog .fair-gift button { min-height: 32px; padding: 4px 10px; }
 .christmas-dialog.fair-machine { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; border: 0; overflow: hidden; }
+
+.fair-hero .fair-poster-link, .fair-poster-view button {
+  padding: 4px 12px; border: 1px solid #c4a477; color: #fff0ce;
+  background: #162839; cursor: pointer; font: inherit;
+}
+.fair-hero .fair-poster-link { margin-top: 6px; font-size: .85em; }
+.fair-poster-view {
+  position: fixed; inset: 0; margin: auto; padding: 0;
+  width: min(1160px, 94vw); max-height: 96dvh; border: 2px solid #b99a69;
+  background: #101b2b; color: #fff0ce; text-align: right;
+}
+.fair-poster-view::backdrop { background: #070e19e8; }
+.fair-poster-view img { display: block; width: 100%; max-height: calc(94dvh - 54px); object-fit: contain; }
+.fair-poster-view button { margin: 6px 10px; }

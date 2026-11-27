@@ -136,7 +136,7 @@ function SelectedCharacterAvatar({hud,winter=false}:{hud:HUDState;winter?:boolea
 export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine | null; hud: HUDState; afterFilm?: boolean }) {
   const localEventLink = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
     && new URLSearchParams(window.location.search).get('preview') === 'noel';
-  const christmas = useChristmas(localEventLink ? 'christmas' : engine?.devSeasonPreview);
+  const christmas = useChristmas(engine?.devSeasonPreview);
   const revealChristmas = useRef(false);
   const filmWasFinished = useRef(false);
   if (afterFilm && !filmWasFinished.current) {
@@ -145,6 +145,22 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
   }
   if (!christmas.active || hud.reducedMotion) revealChristmas.current = false;
   const christmasDialog = useRef<HTMLDialogElement>(null);
+  const startAfterEvent = useRef(false);
+  const devMenuPreview = hud.devUnlocked && engine?.devSeasonPreview !== 'none';
+  const hasEvent = christmas.active || christmas.teaser || devMenuPreview;
+  const openMenuEvent = (fromStart: boolean) => {
+    const dialog = christmasDialog.current;
+    if (!dialog || dialog.open) return;
+    startAfterEvent.current = fromStart;
+    dialog.returnValue = '';
+    dialog.showModal();
+  };
+  const dismissMenuEvent = () => {
+    if (startAfterEvent.current) {
+      startAfterEvent.current = false;
+      engine?.openLobby(true);
+    }
+  };
   useEffect(() => {
     if (localEventLink && engine && !christmasDialog.current?.open) christmasDialog.current?.showModal();
   }, [localEventLink, engine]);
@@ -154,9 +170,9 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
   // At most one highlighted item: the one under the mouse (none once it leaves), or the one
   // moved to with the arrow keys. -1 = none; Enter then falls through to "start".
   const items = [
-    { label: vi ? 'BẮT ĐẦU' : 'START GAME', disabled: false, act: () => engine?.openLobby(true) },
+    { label: vi ? 'BẮT ĐẦU' : 'START GAME', disabled: false, act: () => hasEvent ? openMenuEvent(true) : engine?.openLobby(true) },
     { label: vi ? 'TIẾP TỤC' : 'CONTINUE', disabled: !hasProgress, act: () => engine?.continueGame() },
-    ...(christmas.active ? [{ label: vi ? 'SỰ KIỆN NOEL' : 'CHRISTMAS EVENT', disabled: false, act: () => christmasDialog.current?.showModal(), slab: 3, seasonal: true }] : []),
+    ...(hasEvent ? [{ label: vi ? 'SỰ KIỆN NOEL' : 'CHRISTMAS EVENT', disabled: false, act: () => openMenuEvent(false), slab: 3, seasonal: true }] : []),
     { label: vi ? 'CÀI ĐẶT' : 'SETTINGS', disabled: false, act: () => setPanel('settings'), slab: 2 },
     { label: vi ? 'TÁC GIẢ' : 'CREDITS', disabled: false, act: () => setPanel('credits'), slab: 3 },
     { label: vi ? 'THOÁT' : 'QUIT', disabled: false, act: () => setPanel('quit'), slab: 4 },
@@ -179,9 +195,9 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
         let i = m.selected < 0 ? (step > 0 ? -1 : 0) : m.selected;
         do i = (i + step + m.items.length) % m.items.length; while (m.items[i].disabled);
         setSelected(i);
-      } else if ((event.key === 'Enter' || event.key === ' ') && m.items[m.selected] && !m.items[m.selected].disabled) {
+      } else if ((event.key === 'Enter' || event.key === ' ') && m.items[Math.max(0,m.selected)] && !m.items[Math.max(0,m.selected)].disabled) {
         event.preventDefault(); event.stopPropagation();
-        sounds.playStoneClick(); m.items[m.selected].act();
+        sounds.playStoneClick(); m.items[Math.max(0,m.selected)].act();
       }
     };
     window.addEventListener('keydown', onKey, true);
@@ -232,7 +248,7 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
       <span aria-hidden="true">/</span>
       <button type="button" className={vi ? 'selected' : ''} aria-pressed={vi} onClick={() => engine?.setLanguage('vi')}>VI</button>
     </div>
-    <nav className="intro-menu" aria-label={vi ? 'Menu chính' : 'Main menu'}>
+    <nav style={hasEvent && !christmas.active ? {gridTemplateRows:"repeat(6,minmax(0,1fr))"} : undefined} className="intro-menu" aria-label={vi ? 'Menu chính' : 'Main menu'}>
       {items.map((item, i) => (
         // A stone slab (mainMenu.css): its face, carrying the label, rises when selected.
         <button key={item.label} type="button" className={`intro-menu-item${i === selected ? ' selected' : ''}${'seasonal' in item ? ' intro-noel-action' : ''}`} disabled={item.disabled}
@@ -242,7 +258,7 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
         </button>
       ))}
     </nav>
-    <ChristmasEvent engine={engine} hud={hud} event={christmas} menuDialog={christmasDialog}/>
+    <ChristmasEvent engine={engine} hud={hud} event={christmas} menuDialog={christmasDialog} menuTeaser={christmas.teaser} devMenuPreview={devMenuPreview} onDismiss={dismissMenuEvent}/>
     </div>
     {panel === 'settings' && <SettingsPanel engine={engine} hud={hud} close={() => setPanel('none')}/>}
     {panel === 'credits' && <CreditsPanel vi={vi} close={() => setPanel('none')}/>}
