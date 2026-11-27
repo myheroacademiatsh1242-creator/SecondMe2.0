@@ -43,7 +43,14 @@ const DEAD_ZONE = 0.2;  // fraction of RADIUS ignored, so a resting thumb does n
 export function TouchJoystick({ engine, vi }: { engine: GameEngine | null; vi: boolean }) {
   const zone = useRef<HTMLDivElement>(null);
   const [stick, setStick] = useState<{ id: number; ox: number; oy: number; dx: number; dy: number } | null>(null);
-  useEffect(() => () => engine?.setTouchMove(0, 0), [engine]);
+  const activeStick=useRef<typeof stick>(null);
+  const reset=()=>{activeStick.current=null;engine?.setTouchMove(0,0);setStick(null);};
+  useEffect(()=>{
+    const hidden=()=>{if(document.hidden)reset();};
+    window.addEventListener('blur',reset);
+    document.addEventListener('visibilitychange',hidden);
+    return()=>{window.removeEventListener('blur',reset);document.removeEventListener('visibilitychange',hidden);engine?.setTouchMove(0,0);};
+  },[engine]);
 
   const local = (e: React.PointerEvent) => {
     const r = zone.current!.getBoundingClientRect();
@@ -57,24 +64,26 @@ export function TouchJoystick({ engine, vi }: { engine: GameEngine | null; vi: b
     return { dx, dy };
   };
   const release = (e: React.PointerEvent) => {
-    if (stick?.id !== e.pointerId) return;
-    engine?.setTouchMove(0, 0);
-    setStick(null);
+    if (activeStick.current?.id !== e.pointerId) return;
+    reset();
   };
 
   return <div ref={zone} className={`touch-stick-zone${stick ? ' is-active' : ''}`} role="presentation" aria-label={vi ? 'Cần điều khiển di chuyển' : 'Movement stick'}
     onPointerDown={e => {
-      if (stick) return;
+      if (activeStick.current) return;
       e.preventDefault();
       e.currentTarget.setPointerCapture(e.pointerId);
       const p = local(e);
-      setStick({ id: e.pointerId, ox: p.x, oy: p.y, dx: 0, dy: 0 });
+      activeStick.current={ id: e.pointerId, ox: p.x, oy: p.y, dx: 0, dy: 0 };
+      setStick(activeStick.current);
       engine?.setTouchMove(0, 0);
     }}
     onPointerMove={e => {
-      if (stick?.id !== e.pointerId) return;
+      if (activeStick.current?.id !== e.pointerId) return;
       const p = local(e);
-      setStick({ ...stick, ...steer(p.x - stick.ox, p.y - stick.oy) });
+      const current=activeStick.current!;
+      activeStick.current={...current,...steer(p.x-current.ox,p.y-current.oy)};
+      setStick(activeStick.current);
     }}
     onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>
     <div className="touch-stick" style={stick ? { left: stick.ox, top: stick.oy, bottom: 'auto' } : undefined}>
@@ -92,8 +101,17 @@ export function TouchSkills({ actions, mana, maxMana, manaCost, charges, recordi
   actions: TouchAction[]; mana: number; maxMana: number; manaCost: number; charges: number; recording: boolean; vi: boolean;
 }) {
   const hold = useRef<number | undefined>(undefined);
-  const stop = () => { window.clearInterval(hold.current); hold.current = undefined; };
-  useEffect(() => stop, []);
+  const heldPointer=useRef<number|null>(null);
+  const liveActions=useRef(actions);liveActions.current=actions;
+  const stop=()=>{window.clearInterval(hold.current);hold.current=undefined;heldPointer.current=null;};
+  const release=(e:React.PointerEvent)=>{if(e.pointerId===heldPointer.current)stop();};
+  useEffect(()=>{
+    const hidden=()=>{if(document.hidden)stop();};
+    window.addEventListener('blur',stop);document.addEventListener('visibilitychange',hidden);
+    return()=>{stop();window.removeEventListener('blur',stop);document.removeEventListener('visibilitychange',hidden);};
+  },[]);
+  const attackDisabled=actions.find(a=>a.id==='attack')?.disabled;
+  useEffect(()=>{if(attackDisabled)stop();},[attackDisabled]);
   return <div className={`touch-skills${recording ? ' is-recording' : ''}`} role="group" aria-label={vi ? 'Chiêu và điều khiển chiến đấu' : 'Combat abilities and controls'}>
     <div className="touch-mana" role="meter" aria-label="MP" aria-valuenow={Math.floor(mana)} aria-valuemin={0} aria-valuemax={maxMana}>
       <i style={{ width: `${mana / maxMana * 100}%` }}/><span>MP {Math.floor(mana)}</span>
@@ -105,9 +123,17 @@ export function TouchSkills({ actions, mana, maxMana, manaCost, charges, recordi
         // Act on touch-down, like a game pad; keep the press away from the canvas (tap-to-attack) and the stick.
         e.preventDefault(); e.stopPropagation();
         a.run();
-        if (a.id === 'attack') { stop(); hold.current = window.setInterval(a.run, HOLD_REPEAT_MS); e.currentTarget.setPointerCapture(e.pointerId); }
+        if (a.id === 'attack') {
+          stop();heldPointer.current=e.pointerId;
+          hold.current=window.setInterval(()=>{
+            const attack=liveActions.current.find(action=>action.id==='attack');
+            if(!attack||attack.disabled){stop();return;}
+            attack.run();
+          },HOLD_REPEAT_MS);
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }
       }}
-      onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={stop}
+      onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}
       onClick={e => { if (e.detail === 0) a.run(); }}>
       <span className="touch-skill-icon">{a.icon}</span><span className="touch-skill-label">{a.name}</span>
       {a.cooldown > 0 && <b className="touch-skill-timer">{a.cooldown.toFixed(a.cooldown < 1 ? 1 : 0)}</b>}

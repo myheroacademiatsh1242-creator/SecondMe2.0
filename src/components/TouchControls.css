@@ -77,5 +77,44 @@
 .touch-skills{right:clamp(8px,calc(14px - var(--touch-skills-x,0vw)),calc(100% - 360px))!important;bottom:clamp(8px,calc(14px - var(--touch-skills-y,0vh)),calc(100% - 360px))!important;transform:scale(calc(var(--touch-skills-scale,1) * var(--touch-base-scale,1)))!important}
 .touch-echo-strip{left:clamp(4px,calc(4px + var(--touch-echo-x,0vw)),calc(100% - 170px));top:clamp(60px,calc(var(--status-rail,78px) + 6px + var(--touch-echo-y,0vh)),calc(100% - 160px));transform:scale(var(--touch-echo-scale,1));transform-origin:top left}
 .touch-stick-zone:not(.is-active) .touch-stick{left:clamp(48px,calc(70px + var(--touch-joystick-x,0vw)),calc(100% - 48px));bottom:clamp(0px,calc(12px - var(--touch-joystick-y,0vh)),calc(100% - 96px));transform:scale(var(--touch-joystick-scale,1));transform-origin:center}
-.mobile-combat-items{left:clamp(4px,calc(12px + var(--touch-items-x,0vw)),calc(100% - 260px))!important;top:clamp(60px,calc(140px + var(--touch-items-y,0vh)),calc(100% - 100px))!important;transform:scale(var(--touch-items-scale,1));transform-origin:top left}
+/* Confine carried items to the right rail; an unpositioned grid expands over the arena. */
+.adventure-app .game-stage[data-touch-controls=true] .mobile-combat-items{
+ position:absolute;z-index:13;box-sizing:border-box;width:180px;
+ left:clamp(4px,calc(100% - 192px + var(--touch-items-x,0vw)),calc(100% - 184px))!important;
+ top:clamp(60px,calc(var(--status-rail,78px) + 4px + var(--touch-items-y,0vh)),calc(100% - 74px))!important;
+ transform:scale(var(--touch-items-scale,1));transform-origin:top right;pointer-events:none;
+}
+.mobile-combat-items .combat-items h3{margin:0 0 2px;font-size:11px!important;line-height:14px}
+.mobile-combat-items .combat-item-slots{grid-template-columns:repeat(3,48px);gap:6px}
+.mobile-combat-items .combat-item-slots button{width:48px;height:44px;min-height:44px;aspect-ratio:auto;padding:2px;pointer-events:auto;touch-action:manipulation}
+.mobile-combat-items .combat-item-slots kbd{display:none}
+.mobile-combat-items .combat-item-slots .shop-item-icon{width:28px;height:28px}
+
 @media(max-height:440px){.touch-skills{--touch-base-scale:.8}}
+
+/* Use the available phone height even when the narrow arena does not fill it. */
+.adventure-app:has(.game-stage[data-touch-controls=true]){
+ box-sizing:border-box;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.adventure-app .game-stage[data-touch-controls=true]:is([data-screen=playing],[data-screen=paused],[data-screen=victory],[data-screen=defeat],[data-screen=ending]){
+ --control-right:228px;container-type:size;
+ width:calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+ height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+.adventure-app .game-stage[data-touch-controls=true]:is([data-screen=playing],[data-screen=paused],[data-screen=victory],[data-screen=defeat],[data-screen=ending])>canvas{
+ --field-width:min(calc(100cqw - var(--control-left) - var(--control-right)),calc((100cqh - var(--status-rail))*16/9));
+ left:calc(var(--control-left) + (100cqw - var(--control-left) - var(--control-right) - var(--field-width))/2);
+ top:calc(var(--status-rail) + (100cqh - var(--status-rail) - var(--field-width)*9/16)/2);
+ bottom:auto;width:var(--field-width);height:calc(var(--field-width)*9/16);object-fit:fill;
+}
+.adventure-app .game-stage[data-touch-controls=true] .hud-top .hud-tools button{
+ width:40px;min-width:40px;height:40px;min-height:40px;
+}
+
+.adventure-app .game-stage[data-touch-controls=true] .hud-alerts{
+ left:calc(var(--control-left) + (100% - var(--control-left) - var(--control-right))/2);
+ width:calc(100% - var(--control-left) - var(--control-right) - 8px);
+}
+.adventure-app .game-stage[data-touch-controls=true] .hud-alerts .hud-banner{
+ font-size:12px!important;line-height:1.2;padding:4px 6px;
+}
