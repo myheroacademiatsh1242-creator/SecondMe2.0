@@ -606,3 +606,10 @@
     justify-content: center;
   }
 }
+
+/* Canonical item rarity colours shared by reward cards and history. */
+.tier-common { --rarity-color:#76c96b; border-color:#76c96b; }
+.tier-refined { --rarity-color:#59adf4; border-color:#59adf4; }
+.tier-deluxe { --rarity-color:#b579e8; border-color:#b579e8; }
+.tier-bespoke { --rarity-color:#f0a154; border-color:#f0a154; }
+.tier-ultimate { --rarity-color:#e75c5c; border-color:#e75c5c; }

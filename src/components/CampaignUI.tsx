@@ -608,7 +608,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
                 const rarity=characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,option.id);
                 const name=vi?option.vi:option.en;
                 return <button type="button" key={choice.id+option.id} aria-pressed={outfit===option.id}
-                  aria-label={name+(rarity==='limited'?' · '+rarityName(rarity,vi):'')+(locked&&isDeluxe(option.id)?' · '+eventHint:seasonal?(vi?' · Mở vào mùa Giáng sinh':' · Unlocks at Christmas'):locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
+                  aria-label={name+(option.id!=='default'?' · '+rarityName(rarity,vi):'')+(locked&&isDeluxe(option.id)?' · '+eventHint:seasonal?(vi?' · Mở vào mùa Giáng sinh':' · Unlocks at Christmas'):locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
                   className={previewable?'outfit-locked-preview':undefined} title={locked&&isDeluxe(option.id)?eventHint:seasonal?(vi?'Xem thử được · Mở vào mùa Giáng sinh (tháng 12)':'Preview only · Unlocks in the Christmas season (December)'):previewable?(vi?'Xem thử được · Mua trong cửa hàng để mặc':'Preview only · Buy it in the shop to wear it'):undefined}
                   disabled={locked&&!previewable} style={option.id==='default'?undefined:{'--outfit-color':RARITY_COLORS[rarity]} as React.CSSProperties}
                   onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:option.id}));}}>

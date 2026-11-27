@@ -1,3 +1,4 @@
+import {normalizeRarity,type Rarity} from './rarity.ts';
 /**
  * Snow Hunt, the Christmas event mode: an endless wave-survival arena. Enemies pour in from the
  * edges in timed waves that keep getting longer and harder. Kills drop XP gems (levels up this run)
@@ -16,7 +17,7 @@ export const waveSeconds = (wave: number) => Math.min(60, 26 + wave * 4);
 export const waveReward = (wave: number) => ({ tickets: 1 + Math.floor(wave * 1.5), coins: 2 + wave * 2 });
 
 export type HuntSide = 'hero' | 'echo';
-export type HuntRarity = 'common' | 'rare' | 'epic';
+export type HuntRarity = Rarity;
 export type HuntHero = 'swordsman' | 'mage' | 'assassin' | 'mechanical';
 export interface HuntCard {
   id: string; side: HuntSide; rarity: HuntRarity; max: number;
@@ -29,9 +30,9 @@ export interface HuntCard {
   needs?: Record<string, number>;
 }
 
-const card = (side: HuntSide, rarity: HuntRarity, id: string, max: number, vi: string, en: string, descVi: string, descEn: string, rune?: EchoRuneId): HuntCard =>
-  ({ id, side, rarity, max, vi, en, descVi, descEn, rune });
-const heroCard = (hero: HuntHero, rarity: HuntRarity, id: string, max: number, vi: string, en: string, descVi: string, descEn: string): HuntCard =>
+const card = (side: HuntSide, rarity: string, id: string, max: number, vi: string, en: string, descVi: string, descEn: string, rune?: EchoRuneId): HuntCard =>
+  ({ id, side, rarity:normalizeRarity(rarity), max, vi, en, descVi, descEn, rune });
+const heroCard = (hero: HuntHero, rarity: string, id: string, max: number, vi: string, en: string, descVi: string, descEn: string): HuntCard =>
   ({ ...card('hero', rarity, id, max, vi, en, descVi, descEn), hero });
 const evolution = (id: string, needs: Record<string, number>, vi: string, en: string, descVi: string, descEn: string): HuntCard =>
   ({ ...card('hero', 'epic', id, 1, vi, en, descVi, descEn), needs });
@@ -93,7 +94,7 @@ export const HUNT_CARDS: HuntCard[] = [
   card('echo', 'epic', 'echoRegen', 1, 'Ký ức bền bỉ', 'Enduring Memory', 'Echo tự hồi ổn định khi không giao chiến', 'Echoes regain stability out of combat', 'regen'),
 ];
 export const HUNT_CARD = Object.fromEntries(HUNT_CARDS.map(c => [c.id, c])) as Record<string, HuntCard>;
-const RARITY_WEIGHT: Record<HuntRarity, number> = { common: 10, rare: 5, epic: 2 };
+const RARITY_WEIGHT: Record<HuntRarity, number> = { common: 10, refined: 5, deluxe: 2, bespoke: 2, ultimate: 2 };
 
 export type HuntPickupKind = 'xp' | 'ticket' | 'coin' | 'hp' | 'mp' | 'maxHp' | 'maxMp';
 export interface HuntPickup {

@@ -1,3 +1,4 @@
+import {rarityName,RARITY_COLORS} from '../game/logic/rarity.ts';
 import {ChestCurrencyIcon} from './ChestCurrencyIcon.tsx';
 import React, { useEffect, useState, useMemo } from 'react';
 import type { ChestKind } from './ChestSprite.tsx';
@@ -140,28 +141,17 @@ export function ChestHistoryModal({ vi, onClose }: ChestHistoryModalProps) {
 
         {/* Overview Stats Bar (Genshin Pity Counter) */}
         <div className="chest-history-stats-bar">
-          <div className="chest-stat-item pity-stat">
-            <span className="stat-label">
-              🎯 {vi ? 'Bảo hiểm Cực phẩm (Pity)' : 'Pity Counter'}:
-            </span>
-            <strong className="stat-value pity-highlight">
-              {stats.pityCount}{' '}
-              <small className="stat-unit">
-                {vi ? 'lượt từ lần đỏ gần nhất' : 'draws since last 5★'}
-              </small>
-            </strong>
-          </div>
           <div className="chest-stat-group">
             <div className="chest-stat-item">
               <span className="stat-label">📦 {vi ? 'Tổng mở' : 'Total'}:</span>
               <strong className="stat-value">{stats.total}</strong>
             </div>
             <div className="chest-stat-item tier-5-stat">
-              <span className="stat-label">🔥 {vi ? 'Cực phẩm' : '5★'}:</span>
+              <span className="stat-label">🔥 {vi ? 'Tinh Chế' : 'Refined'}:</span>
               <strong className="stat-value">{stats.fireCount}</strong>
             </div>
             <div className="chest-stat-item tier-4-stat">
-              <span className="stat-label">✨ {vi ? 'Hiếm' : '4★'}:</span>
+              <span className="stat-label">✨ {vi ? 'Thượng Hạng' : 'Deluxe'}:</span>
               <strong className="stat-value">{stats.epicCount}</strong>
             </div>
           </div>
@@ -248,11 +238,11 @@ export function ChestHistoryModal({ vi, onClose }: ChestHistoryModalProps) {
                       {/* Rarity & Stars */}
                       <td className="td-tier">
                         <div className="tier-cell-wrap">
-                          <span className={`tier-badge tier-${meta.tier}`}>
+                          <span className={`tier-badge tier-${meta.tier}`} style={{color:RARITY_COLORS[meta.tier],borderColor:RARITY_COLORS[meta.tier]}}>
                             {meta.stars === 5 && '🔥 '}
                             {meta.stars === 4 && '✨ '}
                             {meta.stars === 3 && '🌿 '}
-                            {meta.category}
+                            {rarityName(meta.tier,vi)}
                           </span>
                           <span className="stars-glyph">
                             {'★'.repeat(meta.stars)}

@@ -35,25 +35,25 @@ function mockLocalStorage() {
 }
 
 test('getRewardTier maps 5-star, 4-star, and 3-star correctly', () => {
-  assert.equal(getRewardTier('coins100'), 'rare');
-  assert.equal(getRewardTier('revive'), 'legendary');
-  assert.equal(getRewardTier('healLarge'), 'epic');
-  assert.equal(getRewardTier('time'), 'epic');
-  assert.equal(getRewardTier('coins30'), 'rare');
-  assert.equal(getRewardTier('healSmall'), 'rare');
-  assert.equal(getRewardTier('coins15'), 'rare');
-  assert.equal(getRewardTier('coins5'), 'rare');
+  assert.equal(getRewardTier('coins100'), 'common');
+  assert.equal(getRewardTier('revive'), 'refined');
+  assert.equal(getRewardTier('healLarge'), 'common');
+  assert.equal(getRewardTier('time'), 'common');
+  assert.equal(getRewardTier('coins30'), 'common');
+  assert.equal(getRewardTier('healSmall'), 'common');
+  assert.equal(getRewardTier('coins15'), 'common');
+  assert.equal(getRewardTier('coins5'), 'common');
 });
 
 test('getRewardMeta returns bilingual labels and icons', () => {
   const metaVi = getRewardMeta('coins100', true);
   assert.equal(metaVi.name, '100 Xu');
-  assert.equal(metaVi.stars, 3);
-  assert.equal(metaVi.tier, 'rare');
+  assert.equal(metaVi.stars, 1);
+  assert.equal(metaVi.tier, 'common');
 
   const metaEn = getRewardMeta('revive', false);
   assert.equal(metaEn.name, 'Revival Scroll');
-  assert.equal(metaEn.stars, 5);
+  assert.equal(metaEn.stars, 2);
 });
 
 test('chestHistory save, load, add, clear and cap', (t) => {
@@ -102,8 +102,8 @@ test('calculateChestStats counts pity and rarity counts accurately', () => {
   const stats = calculateChestStats(history);
   assert.equal(stats.total, 7);
   assert.equal(stats.fireCount, 1); // revive
-  assert.equal(stats.epicCount, 1); // time
-  assert.equal(stats.rareCount, 5); // all coin rewards and healSmall
+  assert.equal(stats.epicCount, 0); // time
+  assert.equal(stats.rareCount, 6); // all coin rewards and healSmall
   assert.equal(stats.pityCount, 6); // 6 pulls since last fire item
 });
 

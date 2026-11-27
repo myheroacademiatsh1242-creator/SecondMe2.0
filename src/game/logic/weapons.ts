@@ -1,4 +1,4 @@
-import type {Rarity} from './rarity.ts';
+import {normalizeCatalogue,type Rarity} from './rarity.ts';
 
 /**
  * Weapons: an interchangeable kit for each hero, like outfits. They change the look, the colour of the hit effects and one
@@ -14,7 +14,7 @@ export interface Weapon{
  fx:string;
 }
 
-export const WEAPONS:readonly Weapon[]=[
+export const WEAPONS:readonly Weapon[]=normalizeCatalogue<Weapon>([
  {id:'wand-novice',hero:'mage',sample:161,vi:'Đũa phép tập sự',en:'Novice Wand',rarity:'common',trait:'none',fx:'magic-missile'},
  {id:'wand-fire',hero:'mage',sample:162,vi:'Đũa phép lửa',en:'Fire Wand',rarity:'common',trait:'burn',fx:'fireball'},
  {id:'staff-frost',hero:'mage',sample:167,vi:'Trượng băng tuyết',en:'Staff of Frost',rarity:'deluxe',trait:'slow',fx:'ice-lance'},
@@ -32,7 +32,7 @@ export const WEAPONS:readonly Weapon[]=[
  {id:'sword-caliburn',hero:'swordsman',sample:116,vi:'Đại kiếm thần thánh Caliburn',en:'Giant Caliburn Sword',rarity:'ultimate',trait:'none',fx:'smite'},
  {id:'sword-demonking',hero:'swordsman',sample:118,vi:'Ma kiếm Quỷ Vương',en:'Demon King Greatsword',rarity:'ultimate',trait:'burn',fx:'ground-slam'},
  {id:'dart-steel',hero:'assassin',sample:0,vi:'Phi tiêu thép',en:'Steel Darts',rarity:'common',trait:'none',fx:'sword-slash'},
-];
+]);
 export type WeaponId=string;
 
 /** The weapon each hero has from the start; always usable. */

@@ -1,3 +1,4 @@
+import {rarityName,RARITY_COLORS} from '../game/logic/rarity.ts';
 import React, { useEffect, useState } from 'react';
 import { CHEST_PRICES,chestBalance,chestCurrencyName,type ChestKind,type ChestRewardId } from '../game/logic/chest.ts';
 import { ChestCurrencyIcon } from './ChestCurrencyIcon.tsx';
@@ -16,96 +17,7 @@ export interface GachaRewardModalProps {
   onDrawAgain: (count: 1 | 10) => void;
 }
 
-interface CardMeta {
-  id: ChestRewardId;
-  name: string;
-  category: string;
-  stars: 3 | 4 | 5;
-  tier: 'legendary' | 'epic' | 'rare';
-  amountText: string;
-  isNew?: boolean;
-}
-
-function getCardMeta(id: ChestRewardId, vi: boolean): CardMeta {
-  if(id.startsWith('coins')||id.startsWith('commonCrystals'))return {id,...getRewardMeta(id,vi)};
-  switch (id) {
-    case 'manaSmall': case 'manaLarge': return {id,name:id==='manaSmall'?(vi?'Lọ năng lượng nhỏ':'Small energy vial'):(vi?'Bình năng lượng lớn':'Large energy potion'),category:vi?'DƯỢC PHẨM':'POTION',stars:3,tier:'rare',amountText:'×1'};
-    case 'coins100':
-      return {
-        id,
-        name: vi ? '100 Xu' : '100 Coins',
-        category: vi ? 'TIỀN TỆ · ĐẠI TRÀ' : 'CURRENCY · COMMON',
-        stars: 3,
-        tier: 'rare',
-        amountText: '+100',
-      };
-    case 'revive':
-      return {
-        id,
-        name: vi ? 'Trục Phục Sinh' : 'Revival Scroll',
-        category: vi ? 'BẢO VẬT' : 'RELIC',
-        stars: 5,
-        tier: 'legendary',
-        amountText: '×1',
-        isNew: true,
-      };
-    case 'healLarge':
-      return {
-        id,
-        name: vi ? 'Bình HP Lớn' : 'Large HP Potion',
-        category: vi ? 'DƯỢC PHẨM' : 'POTION',
-        stars: 4,
-        tier: 'epic',
-        amountText: '×1',
-      };
-    case 'time':
-      return {
-        id,
-        name: vi ? 'Bình Thời Gian' : 'Time Potion',
-        category: vi ? 'MA THUẬT' : 'CHRONO',
-        stars: 4,
-        tier: 'epic',
-        amountText: '×1',
-      };
-    case 'coins30':
-      return {
-        id,
-        name: vi ? '30 Xu' : '30 Coins',
-        category: vi ? 'TIỀN TỆ · ĐẠI TRÀ' : 'CURRENCY · COMMON',
-        stars: 3,
-        tier: 'rare',
-        amountText: '+30',
-      };
-    case 'healSmall':
-      return {
-        id,
-        name: vi ? 'Bình HP Nhỏ' : 'Small HP Potion',
-        category: vi ? 'DƯỢC PHẨM' : 'POTION',
-        stars: 3,
-        tier: 'rare',
-        amountText: '×1',
-      };
-    case 'coins15':
-      return {
-        id,
-        name: vi ? '15 Xu' : '15 Coins',
-        category: vi ? 'TIỀN TỆ · ĐẠI TRÀ' : 'CURRENCY · COMMON',
-        stars: 3,
-        tier: 'rare',
-        amountText: '+15',
-      };
-    case 'coins5':
-    default:
-      return {
-        id,
-        name: vi ? '5 Xu' : '5 Coins',
-        category: vi ? 'TIỀN TỆ · ĐẠI TRÀ' : 'CURRENCY · COMMON',
-        stars: 3,
-        tier: 'rare',
-        amountText: '+5',
-      };
-  }
-}
+function getCardMeta(id:ChestRewardId,vi:boolean){return {id,...getRewardMeta(id,vi),isNew:false};}
 
 export function GachaRewardModal({
   rewards,
@@ -245,13 +157,13 @@ export function GachaRewardModal({
                   <div className="gacha-card-sunburst" aria-hidden="true" />
                 )}
 
-                <div className={`gacha-card tier-${meta.tier}`}>
+                <div className={`gacha-card tier-${meta.tier}`} style={{borderColor:RARITY_COLORS[meta.tier]}}>
                   {/* Top Badge (NEW / 5-Star / Category) */}
                   <div className="gacha-card-top">
                     {meta.isNew ? (
                       <span className="gacha-badge-new">NEW!</span>
                     ) : (
-                      <span className="gacha-card-category">{meta.category}</span>
+                      <span className="gacha-card-category">{rarityName(meta.tier,vi)}</span>
                     )}
                   </div>
 

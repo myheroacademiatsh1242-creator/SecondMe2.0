@@ -1,3 +1,4 @@
+import {normalizeCatalogue,normalizeRarity} from './rarity.ts';
 import {sortShopCatalogue,type Rarity} from './rarity.ts';
 
 export type OutfitHero='mage'|'swordsman'|'assassin';
@@ -35,16 +36,16 @@ export function outfitPixel(r:number,g:number,b:number,hero:OutfitHero,id:Outfit
  return palette.map(c=>Math.round(c*light)) as [number,number,number];
 }
 
-export const SHOP_OUTFITS = [
+export const SHOP_OUTFITS = normalizeCatalogue([
  {id:'mage-frost',outfit:'frost',hero:'mage',price:60,cap:1,rarity:'common',vi:'Pháp sư Băng giá',en:'Mage Frostbound',color:'#8cdef1',detailVi:'Trang phục Băng giá dành cho Pháp sư.',detailEn:'Frostbound outfit for the Mage.'},
  {id:'swordsman-frost',outfit:'frost',hero:'swordsman',price:60,cap:1,rarity:'common',vi:'Kiếm sĩ Băng giá',en:'Swordsman Frostbound',color:'#8cdef1',detailVi:'Trang phục Băng giá dành cho Kiếm sĩ.',detailEn:'Frostbound outfit for the Swordsman.'},
  {id:'mage-ember',outfit:'ember',hero:'mage',price:60,cap:1,rarity:'common',vi:'Pháp sư Than hồng',en:'Mage Ember',color:'#edaa7e',detailVi:'Trang phục Than hồng dành cho Pháp sư.',detailEn:'Ember outfit for the Mage.'},
  {id:'swordsman-ember',outfit:'ember',hero:'swordsman',price:60,cap:1,rarity:'common',vi:'Kiếm sĩ Than hồng',en:'Swordsman Ember',color:'#edaa7e',detailVi:'Trang phục Than hồng dành cho Kiếm sĩ.',detailEn:'Ember outfit for the Swordsman.'},
-] as const;
+] as const);
 export type ShopOutfitId=typeof SHOP_OUTFITS[number]['id'];
 export function characterOutfitRarity(hero:OutfitHero,outfit:OutfitId):Rarity {
  if(isDeluxe(outfit))return 'deluxe';
- if(hero==='assassin'&&outfit==='frost')return 'limited';   // Crimson's Christmas outfit, an event item
+ if(hero==='assassin'&&outfit==='frost')return normalizeRarity('limited');   // Crimson's Christmas outfit, an event item
  // Every regular outfit (Woodland, Frost, Ember) is Common (green); the original look has no tier.
  if(outfit==='default')return 'common';
  if(outfit==='woodland')return 'common';

@@ -1,14 +1,10 @@
+import {rarityName,rarityColor} from '../game/logic/rarity.ts';
 import { useEffect } from 'react';
 import { Home, RotateCcw, Ticket, Coins, LogOut, Shuffle } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { HUNT_CARD, xpToNext, waveReward } from '../game/logic/snowHunt.ts';
 import './SnowHuntHUD.css';
 
-const RARITY = {
-  common: { vi: 'Thường', en: 'Common', color: '#cfd6c2' },
-  rare: { vi: 'Hiếm', en: 'Rare', color: '#6ec3ff' },
-  epic: { vi: 'Sử thi', en: 'Epic', color: '#d39bff' },
-} as const;
 const clock = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${Math.floor(Math.max(0, s) % 60).toString().padStart(2, '0')}`;
 
 /**
@@ -53,7 +49,7 @@ export function SnowHuntHUD({ engine, hud }: { engine: GameEngine; hud: HUDState
     {owned.length > 0 && <ul className="snow-hunt-owned" aria-label={vi ? 'Sức mạnh đang có' : 'Powers this run'}>
       {owned.map(([id, level]) => {
         const card = HUNT_CARD[id];
-        return <li key={id} className={`side-${card.side}${card.needs ? ' evolved' : ''}`} style={{ '--rarity': RARITY[card.rarity].color } as React.CSSProperties}
+        return <li key={id} className={`side-${card.side}${card.needs ? ' evolved' : ''}`} style={{ '--rarity': rarityColor(card.rarity) } as React.CSSProperties}
           title={vi ? card.descVi : card.descEn}>{vi ? card.vi : card.en}{card.max > 1 && <b>{level}</b>}</li>;
       })}
     </ul>}
@@ -68,7 +64,7 @@ export function SnowHuntHUD({ engine, hud }: { engine: GameEngine; hud: HUDState
         {choices.map((id, i) => {
           const card = HUNT_CARD[id];
           const owned = run.stacks[id] ?? 0;
-          const rarity = RARITY[card.rarity];
+          const rarity = {vi:rarityName(card.rarity,true),en:rarityName(card.rarity,false),color:rarityColor(card.rarity)};
           return <button type="button" key={id} className={`snow-hunt-card stone-frame side-${card.side}`} style={{ '--rarity': rarity.color } as React.CSSProperties}
             onClick={() => engine.chooseHuntCard(id)}>
             <span className="snow-hunt-card-key">{i + 1}</span>
