@@ -438,14 +438,14 @@ function drawCabinetRoom(v){
      panel([wall(corner,y),wall(far,y),wall(far,h),wall(corner,h)],front,null);
      panel([side(-far,y),side(back,y),side(back,h),side(-far,h)],tint,null);
    }
-   // Under the painted walls (claw-room-*.png): the same plum wallpaper and wood, so no gap ever shows another colour.
-   wallBand(0,far,'#4a2833','#40232c');
+   // Under the painted walls (claw-room-*.png): the same tan wallpaper and wood, so no gap ever shows another colour.
+   wallBand(0,far,'#b49a74','#a38963');
    // Staggered masonry over dark painted wood panelling.
    for(let y=82,row=0;y<Math.min(far,height/v.scale+320);y+=20,row++){
-     wire([wall(corner,y),wall(far,y)],'#53303b',1);
-     wire([side(-far,y),side(back,y)],'#472830',1);
-     for(let x=corner+(row%2)*28;x<far;x+=56)wire([wall(x,y),wall(x,y+20)],'#53303b',1);
-     for(let z=back-(row%2)*28;z>-far;z-=56)wire([side(z,y),side(z,y+20)],'#472830',1);
+     wire([wall(corner,y),wall(far,y)],'#a38963',1);
+     wire([side(-far,y),side(back,y)],'#9a805b',1);
+     for(let x=corner+(row%2)*28;x<far;x+=56)wire([wall(x,y),wall(x,y+20)],'#a38963',1);
+     for(let z=back-(row%2)*28;z>-far;z-=56)wire([side(z,y),side(z,y+20)],'#9a805b',1);
    }
    wallBand(0,77,'#5a3826','#4a2d1f');
    for(let x=corner+9;x<far;x+=26)wire([wall(x,6),wall(x,73)],'#64402b',2);
