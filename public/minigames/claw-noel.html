@@ -30,7 +30,7 @@ main{z-index:1}
 const canvas=document.querySelector('canvas'),screenCtx=canvas.getContext('2d');let g=screenCtx;
 // Offscreen pixel buffer: the machine at 1 world unit per pixel, offset so nothing is clipped.
 const BUF_X=24,BUF_Y=34,buffer=document.createElement('canvas');buffer.width=360;buffer.height=330;const bufCtx=buffer.getContext('2d'),$=id=>document.getElementById(id);
-const names=['Hộp Quà','Người Tuyết','Gậy Kẹo'],prizeText=['+25 xu','+1 ấn rune','+10 xu'],colors=['#ffcb62','#a9e3f5','#f28c98'];
+const names=['Hộp Quà','Người Tuyết','Gậy Kẹo','Chim cánh cụt'],colors=['#ffcb62','#a9e3f5','#f28c98','#92caff'];
 let coins=0,cost=1,claw,grab,prizes,ended,t=0,last=0;
 let cameraPhase=0;
 let paid=false,coinTime=null;
@@ -39,8 +39,9 @@ const chute={x:25,z:16}, controls3D={stick:[65,81,-17],blue:[91,71,-17],red:[117
 const guide='Bấm NẠP để dùng vé Noel cho 1 lượt. Sau đó kéo cần để ngắm và bấm GẮP.';
 const parentWin=window.parent!==window?window.parent:null,post=m=>parentWin&&parentWin.postMessage(m,location.origin);let waiting=false;
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parentWin)return;const m=e.data||{};
+ if(m.type==='claw:reward'){ui('Đã nhận '+m.text);return;}
  if(m.type!=='claw:tickets')return;coins=m.tickets|0;cost=(m.cost|0)||cost;
- if(waiting){waiting=false;if(m.ok){coinTime=0;ui('Đang nạp vé…')}else ui('Không đủ vé Noel. Săn quái để kiếm thêm vé.')}else ui()});
+ if(waiting){waiting=false;if(m.ok){coinTime=0;ui('Đang nạp vé…')}else ui('Không đủ vé Noel. Săn quái để kiếm thêm vé.')}});
 // Offset and velocity of the hanging head relative to the moving carriage.
 function swingAxis(){return {offset:0,speed:0,railSpeed:0}}
 let swingX,swingZ;
@@ -66,8 +67,8 @@ function buttonDepth(name){
 function reset(){buttonPress={blue:-10,red:-10};swingX=swingAxis();swingZ=swingAxis();cameraPhase=0;paid=false;coinTime=null;claw=99;depth=31;stick=null;pickupQueue=[];reward=null;grab=null;prizes=[];
 // Fill the bed in layers while keeping the topmost prizes legible from both views.
 for(let i=0;i<90;i++){
- const k=i%3;
- const variants=modelsByPrize[k],model=variants[Math.floor(i/3)%variants.length];
+ const k=i%4;
+ const variants=modelsByPrize[k],model=variants[Math.floor(i/4)%variants.length];
  const tilt=(Math.random()<.5?-1:1)*(.2+Math.random()*(k===0?.75:1.65));
  let bestSpot=null,bestScore=-Infinity;
  for(let attempt=0;attempt<5;attempt++){
@@ -661,7 +662,7 @@ function machine(){
 function collectToy(){
  const toy=pickupQueue.shift();if(!toy)return;
  reward={kind:toy.k,start:t};post({type:'claw:prize',kind:toy.k});
- ui('Đã nhận '+names[toy.k]+'! '+prizeText[toy.k])
+ ui('Đã nhận '+names[toy.k]+'!')
 }
 function drawPickup(){
  const [x,y]=screenPoint([25,29,-2]);

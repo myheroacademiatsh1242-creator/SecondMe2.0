@@ -1,3 +1,4 @@
+import {clawRewardText} from '../game/logic/clawRewards.ts';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { GameEngine } from '../game/GameEngine.ts';
@@ -24,7 +25,9 @@ export function ClawMachine({ engine, close, container }: { engine: GameEngine; 
       const m = e.data as { type?: string; kind?: number };
       if (m.type === 'claw:ready') { if (engine.enterClawMachine()) setWelcome(true); send(); }
       else if (m.type === 'claw:spend') send(engine.spendClawPlay());
-      else if (m.type === 'claw:prize' && typeof m.kind === 'number') { engine.claimClawPrize(m.kind); send(); }
+      else if (m.type === 'claw:prize' && typeof m.kind === 'number') { const prize=engine.claimClawPrize(m.kind);
+        if(prize)frame.current?.contentWindow?.postMessage({type:'claw:reward',text:clawRewardText(prize,engine.language==='vi')},location.origin);
+        send(); }
       else if (m.type === 'claw:close') close();
     };
     window.addEventListener('message', onMessage);

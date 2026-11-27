@@ -1,3 +1,4 @@
+import {rollClawReward,type ClawReward} from './clawRewards.ts';
 import { GUARDIAN_HP } from './balance.ts';
 import { CHRISTMAS_COINS, christmasSeason } from './christmas.ts';
 import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
@@ -340,11 +341,31 @@ export class Campaign {
     return true;
   }
   spendClawPlay(){ if(this.noelTickets<CLAW_COST)return false; this.noelTickets-=CLAW_COST; this.save(); return true; }
-  /** Claw machine prize by toy kind: 0 gift box = 25 coins, 1 snowman = a random Echo rune, 2 candy cane = 10 coins. */
-  claimClawPrize(kind:number,random:()=>number=Math.random):{coins:number;rune:EchoRuneId|null}|null{
-    if(kind===1){const rune=this.grantRune(random);this.save();return{coins:0,rune};}
-    const coins=kind===0?25:kind===2?10:0; if(!coins)return null;
-    this.coins=Math.min(99999999,this.coins+coins);this.save();return{coins,rune:null};
+  /** Award only after the player collects a toy from the delivery tray. */
+  claimClawPrize(kind:number,random:()=>number=Math.random):ClawReward|null{
+    const reward=rollClawReward(kind,this.ownedOutfits,random);
+    if(!reward)return null;
+    if(reward.type==='outfit')this.ownedOutfits.push(reward.id);
+    else if(reward.type==='item'){
+      const item=SHOP_ITEMS.find(i=>i.id===reward.id)!;
+      const count=Math.min(reward.quantity,Math.max(0,item.cap-this.shopStock(item.id)));
+      if(item.id==='time')this.timeItems+=count;
+      else if(item.id==='ring')this.limitRings+=count;
+      else this.supplies[item.id]+=count;
+      // Full stacks exchange excess units for their shop value.
+      const overflow=reward.quantity-count;
+      if(overflow){reward.overflowCoins=overflow*item.price;this.coins=Math.min(99999999,this.coins+overflow*item.price);}
+      reward.quantity=count;
+      if(!count){this.save();return{type:'coins',quantity:overflow*item.price};}
+    }
+    else{
+      const field=reward.type==='coins'?'coins':reward.type==='crystals'?'chestKeys':'noelTickets';
+      const cap=reward.type==='coins'?99999999:999999;
+      reward.quantity=Math.min(reward.quantity,Math.max(0,cap-this[field]));
+      this[field]+=reward.quantity;
+    }
+    this.save();
+    return reward;
   }
   reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 

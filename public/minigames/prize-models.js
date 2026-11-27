@@ -1,6 +1,6 @@
 /* Small solid meshes rasterized onto the same pixel grid as the claw cabinet. */
 const prizeMeshes = (() => {
-  const meshes = Array.from({length:7},()=>[]);
+  const meshes = Array.from({length:8},()=>[]);
   let faces = meshes[0];
   function quad(a,b,c,d,color) { faces.push({points:[a,b,c,d],color}); }
   function box(x,y,z,w,h,d,color) {
@@ -24,7 +24,7 @@ const prizeMeshes = (() => {
     rings(rows,()=>color);
   }
   function ball(x,y,z,r,color) {
-    revolve(x,y,z,Array.from({length:7},(_,i)=>{
+    revolve(x,y,z,Array.from({length:8},(_,i)=>{
       const a=-Math.PI/2+i*Math.PI/6;return [r*Math.sin(a),r*Math.cos(a)];
     }),color);
   }
@@ -74,6 +74,15 @@ const prizeMeshes = (() => {
     ball(0,2.8,-3.6,1,[245,145,46]);
   }
 
+  // Penguin toy uses the same mesh scale and grip physics as the other prizes.
+  faces=meshes[7];
+  ball(0,-1,0,5.2,[32,44,60]);ball(0,4,0,3.6,[32,44,60]);
+  ball(0,-1,-3.2,3.7,cream);
+  for(const x of [-1.35,1.35]){ball(x,4.7,-2.9,1.05,cream);ball(x,4.8,-3.6,.5,[21,28,36]);}
+  box(-1,2.6,-4.1,2,1.3,2,[245,164,42]);
+  for(const x of [-2.6,2.6])box(x-1.3,-6,-3,2.6,1.2,3.5,[245,164,42]);
+  for(const x of [-4.8,4.8])ball(x,-.3,0,1.8,[32,44,60]);
+  revolve(0,0,0,[[1,0],[1,3.8],[2,3.8],[2,0]],red);
   faces=meshes[2];
   // Circular tube following a straight shaft and half-circle hook.
   const path=[];
@@ -143,4 +152,4 @@ function prizeView(kind,angle,cameraTurn){
 }
 
 // Visual variants share the original three prize and payout categories.
-const modelsByPrize=[[0,3,4,5],[1,6],[2]];
+const modelsByPrize=[[0,3,4,5],[1,6],[2],[7]];
