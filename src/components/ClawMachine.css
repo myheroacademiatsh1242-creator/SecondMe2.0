@@ -8,9 +8,3 @@
   box-shadow:3px 3px #17242b; font-family:'Second Me Pixel',monospace;
 }
 .claw-welcome:empty { padding:0; border:0; box-shadow:none; }
-
-.claw-rewards{position:absolute;bottom:max(5rem,13%);left:50%;transform:translateX(-50%);width:max-content;max-width:min(90vw,640px);box-sizing:border-box;padding:14px 44px 14px 20px;border:2px solid #e5c57c;background:#132b2bf5;box-shadow:4px 4px #09171c;color:#fff2cf;font:20px/1.4 'Second Me Pixel',monospace;pointer-events:auto}
-.claw-rewards strong{display:block;font-size:16px;color:#d8c17e}
-.claw-rewards ul{list-style:none;padding:0;margin:8px 0 0}
-.claw-rewards li+li{margin-top:5px}
-.claw-rewards button{position:absolute;right:6px;top:6px;background:#28423d;border:1px solid #b6a36c;color:#fff2cf;font:22px/1 monospace;padding:4px 7px;cursor:pointer}
