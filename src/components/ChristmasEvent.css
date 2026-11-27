@@ -54,8 +54,9 @@
 .christmas-shop .trading-world > .christmas-entry {
   position: absolute;
   z-index: 10;
-  left: 191px;
-  top: 25px;
+  /* beside the Back button (x 24-252, y 29-85 in the shop world) */
+  left: 264px;
+  top: 29px;
 }
 
 .christmas-shop:has([aria-modal="true"]) .trading-world > .christmas-entry { visibility: hidden; }
@@ -84,6 +85,14 @@
 }
 
 .adventure-app .christmas-shop .christmas-trigger:hover { filter: brightness(1.2); }
+.adventure-app .christmas-shop .christmas-trigger { position: relative; min-width: 200px; height: 56px; font-size: 20px; filter: drop-shadow(2px 4px #15231688); }
+/* Ticket count as a small red tag pinned to the button's corner, so the label stays short. */
+.adventure-app .christmas-trigger-tickets {
+  position: absolute; top: -9px; right: -10px;
+  padding: 2px 6px 1px; font-size: 12px; line-height: 1.2;
+  color: #fff4cf; text-shadow: 1px 1px #5a1018;
+  background: #c8333f; border: 2px solid #f2d27a; box-shadow: 2px 2px #2b1a12;
+}
 
 .adventure-app .christmas-claim {
   display: inline-flex;
@@ -420,12 +429,6 @@ body.reduced-motion .christmas-lights i { animation: none; }
   transition: opacity .3s ease;
 }
 .christmas-loading:not([data-phase='loading']) .ornaments-loading { opacity: 0; }
-.ornaments-shop {
-  --ornament-top: 12%;
-  --ornament-left: 23%;
-  --ornament-right: 47%;
-  --ornament-width: 3%;
-}
 .ornaments-camp {
   --ornament-top: 12px;
   --ornament-left: 8%;
@@ -643,9 +646,19 @@ html body .adventure-app .journey-lobby .christmas-camp .rest-kit {
   height: 245px;
 }
 .christmas-shop .trading-merchant > span { width: 330px; height: 330px; }
-.christmas-shop .trading-world > .christmas-entry { left: 40%; top: 18px; }
 .christmas-shop .trading-world > .christmas-lights { inset: 12px 64% auto 21%; }
-.christmas-shop .trading-world > .christmas-snow { --snow-distance: 720px; z-index: 4; }
+.christmas-shop .trading-world > .shop-winter-life {
+  /* no z-index: it paints over the backdrop but under Tanuki, the speech bubble and the panels */
+  position: absolute; inset: 0; width: 1280px; height: 720px;
+  pointer-events: none;
+}
+/* Tanuki shaking the snow off his hat (snow frame 11). */
+.christmas-shop .trading-merchant[data-snow-shake] > span { animation: tanuki-snow-shake .14s steps(2) 4; }
+@keyframes tanuki-snow-shake {
+  0% { translate: -4px 0; }
+  100% { translate: 4px 0; }
+}
+body.reduced-motion .christmas-shop .trading-merchant[data-snow-shake] > span { animation: none; }
 .christmas-shop .trading-merchant:hover { background: radial-gradient(ellipse,#ffdf871a,transparent 65%); }
 
 .trading-merchant-gift,
@@ -714,49 +727,6 @@ html body .adventure-app .journey-lobby .christmas-camp .rest-kit {
 }
 .christmas-shop .trading-world .shop-reward-chest { left: 114.5px; }
 .christmas-shop .trading-world .shop-reward-chest:focus-visible { outline: 2px dashed #f6dc8d!important; }
-.christmas-chest-pedestal {
-  position: absolute;
-  z-index: 2;
-  left: 123px;
-  top: 500px;
-  width: 164px;
-  height: 73px;
-  pointer-events: none;
-  image-rendering: pixelated;
-  filter: drop-shadow(2px 3px #12251ca6);
-}
-.christmas-chest-pedestal::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 43px;
-  background: url('/assets/ui/noel/camp-garland.png') center / 100% 100% no-repeat;
-}
-.christmas-chest-pedestal > i {
-  position: absolute;
-  top: 25px;
-  left: 28px;
-  width: 29px;
-  height: 38px;
-  background: url('/assets/ui/noel/pedestal-stocking.png') center / contain no-repeat;
-  transform-origin: 55% 3px;
-  animation: pedestal-sway 3.2s ease-in-out infinite alternate;
-}
-.christmas-chest-pedestal > .pedestal-candy {
-  top: 30px;
-  left: 69px;
-  background-image: url('/assets/ui/noel/pedestal-candy.png');
-  animation-delay: -1.4s;
-}
-.christmas-chest-pedestal > i:last-child { left: 109px; animation-delay: -.8s; }
-@keyframes pedestal-sway {
-  from { transform: rotate(-5deg); }
-  to { transform: rotate(5deg); }
-}
-body.reduced-motion .christmas-chest-pedestal > i { animation: none; }
-@media (prefers-reduced-motion: reduce) {
-  .christmas-chest-pedestal > i { animation: none; }
-}
 .christmas-chest-variant {
   position: absolute;
   inset: 0;

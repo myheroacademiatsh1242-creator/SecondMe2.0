@@ -128,6 +128,7 @@ export function ChristmasEvent({ engine, hud, event, menuDialog }: {
   return <div className="christmas-entry">
     {!menuDialog && <button className="christmas-trigger" type="button" onClick={() => dialog.current?.showModal()}>
       <Gift size={18} aria-hidden="true"/>{vi ? 'Sự kiện Noel' : 'Christmas event'}
+      <span className="christmas-trigger-tickets">{hud.devUnlocked ? '∞' : hud.noelTickets ?? 0} {vi ? 'vé' : 'tickets'}</span>
     </button>}
     <dialog className={clawOpen ? 'christmas-dialog fair-machine' : 'christmas-dialog'} onClose={() => setClawOpen(false)} onCancel={e => { if (clawOpen) { e.preventDefault(); closeClaw(); } }} ref={dialog} data-lobby-dialog
       aria-label={vi ? 'Sự kiện Noel' : 'Christmas event'}

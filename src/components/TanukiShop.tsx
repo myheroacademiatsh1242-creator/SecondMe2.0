@@ -1,7 +1,6 @@
 import {PANEL_ART,usePanelArt,warmPanelArt} from './panelArt.ts';
 import {OutfitShop} from './OutfitShop.tsx';
-import {Shirt,Gift} from 'lucide-react';
-import {ClawMachine} from './ClawMachine.tsx';
+import {Shirt} from 'lucide-react';
 import {useEffect,useRef,useState,type CSSProperties} from 'react';
 import {ChestGacha} from './ChestGacha.tsx';
 import {ShopItemIcon} from './ShopItemIcon.tsx';
@@ -9,14 +8,21 @@ import {SHOP_ITEMS,type ShopItemId} from '../game/logic/shopItems.ts';
 import {rarityName,RARITY_COLORS,sortShopCatalogue} from '../game/logic/rarity.ts';
 import type {GameEngine,HUDState} from '../game/GameEngine.ts';
 import './tanukiTradingPost.css';
-import { ChristmasEvent, ChristmasLights, ChristmasOrnaments, ChristmasSnow, useChristmas } from './ChristmasEvent.tsx';
+import { ChristmasEvent, useChristmas } from './ChristmasEvent.tsx';
+import { ShopWinterLife } from './ShopWinterLife.tsx';
 import { FirstTip } from './FeatureIntro.tsx';
 const displayItems=sortShopCatalogue(SHOP_ITEMS.filter(item=>item.id!=='aid'));
 // Frames hold long enough to read the expression before returning to idle.
+// Frames 8-15 come from SNOW_SHEET (tools/assets/make_tanuki_snow.py): snow piles up on his hat (8-10),
+// he shakes it off (11) and shows the snowball he made (13); later a flake lands on his nose (12)
+// and he catches the next one on his tongue (14).
 const WINTER_IDLE: [number, number][] = [
- [0, 2700], [1, 160], [2, 140], [1, 160], [0, 3800],
- [4, 900], [0, 4600], [1, 300], [5, 850], [1, 350],
+ [0, 2700], [1, 160], [2, 140], [1, 160], [0, 2400],
+ [8, 2600], [9, 2600], [10, 2200], [11, 560], [15, 300], [13, 1900], [0, 3200],
+ [4, 900], [0, 3400], [1, 300], [5, 850], [1, 350], [0, 2600],
+ [12, 1300], [14, 1400], [2, 700], [0, 2000],
 ];
+const SNOW_SHEET = 'noel/tanuki-merchant-winter-snow.png';
 const WINTER_GREETINGS: { vi: string; en: string; frames: [number, number][]; prop?: string }[] = [
  { vi: 'Giáng sinh vui vẻ! Ghé lại sưởi ấm nhé.', en: 'Merry Christmas! Come in and warm up.', frames: [[3, 250], [6, 560], [2, 740], [3, 400]] },
  { vi: 'Kẹo gậy đây! Một chút ngọt ngào cho ngày tuyết rơi.', en: 'A candy cane! Something sweet for a snowy day.', frames: [[4, 320], [6, 820], [2, 520], [3, 290]], prop: 'pedestal-candy.png' },
@@ -24,7 +30,7 @@ const WINTER_GREETINGS: { vi: string; en: string; frames: [number, number][]; pr
 ];
 const WINTER_SALE: [number, number][] = [[3, 240], [7, 650], [2, 460], [7, 600], [3, 300]];
 const winterFramePosition = (frame: number) =>
- `${(frame % 4) * 100 / 3}% ${Math.floor(frame / 4) * 100}%`;
+ `${(frame % 4) * 100 / 3}% ${Math.floor(frame % 8 / 4) * 100}%`;
 const shopGreetings={
  vi:[
   'Xin chào! Bạn muốn mua gì nào?',
@@ -130,7 +136,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  const catalogueArt=usePanelArt(christmas.active ? PANEL_ART.shopWinter : PANEL_ART.shop);
  const purchaseArt=usePanelArt(PANEL_ART.purchase);
  const vi=hud.language==='vi',viewport=useRef<HTMLDivElement>(null),dialog=useRef<HTMLFormElement>(null),buyButton=useRef<HTMLButtonElement>(null),reactionUntil=useRef(0);
- const [ready,setReady]=useState(false),[greetingRun,setGreetingRun]=useState(0),[greetingIndex,setGreetingIndex]=useState(0),[selected,setSelected]=useState<ShopItemId>('time'),[tab,setTab]=useState<'items'|'outfits'>('items'),[clawOpen,setClawOpen]=useState(false),[confirm,setConfirm]=useState(false),[quantity,setQuantity]=useState(1),[message,setMessage]=useState(''),[pose,setPose]=useState(0),[speech,setSpeech]=useState(true);
+ const [ready,setReady]=useState(false),[greetingRun,setGreetingRun]=useState(0),[greetingIndex,setGreetingIndex]=useState(0),[selected,setSelected]=useState<ShopItemId>('time'),[tab,setTab]=useState<'items'|'outfits'>('items'),[confirm,setConfirm]=useState(false),[quantity,setQuantity]=useState(1),[message,setMessage]=useState(''),[pose,setPose]=useState(0),[speech,setSpeech]=useState(true);
  const [fit, setFit] = useState({ x: 1, y: 1 });
  const [winterFrame, setWinterFrame] = useState(0);
  const [winterGreeting, setWinterGreeting] = useState(0);
@@ -155,7 +161,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   let mounted=true;
   const load=(src:string)=>new Promise<void>(resolve=>{const image=new Image();image.onload=()=>resolve();image.onerror=()=>resolve();image.src=src;if(image.complete)resolve();});
   const sceneAsset = christmas.active ? 'noel/shop-winter.webp' : 'tanuki-market-sunset.png';
-  const assets = [sceneAsset, merchantSheet];
+  const assets = christmas.active ? [sceneAsset, merchantSheet, SNOW_SHEET] : [sceneAsset, merchantSheet];
   void Promise.all(assets.map(name => load(asset(name)))).then(()=>{if(mounted)setReady(true);});
   return()=>{mounted=false;};
  },[christmas.active,merchantSheet]);
@@ -225,7 +231,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
  };
  return <div className={`tanuki-trading-shop${christmas.active ? ' christmas-shop' : ''}`} ref={viewport}><div className="trading-world" style={{transform:`translate(-50%,-50%) scale(${scale})`,'--trading-scale':scale} as CSSProperties}>
   <img className="trading-background" src={asset('tanuki-market-sunset.png')} alt=""/>
-  {christmas.active && <><ChristmasSnow still={hud.reducedMotion}/><ChristmasLights/><ChristmasOrnaments scene="shop" still={hud.reducedMotion}/></>}
+  {christmas.active && <ShopWinterLife still={hud.reducedMotion}/>}
   {/* Atmospheric Sunrise / Dawn System behind Torii Gate */}
   <div className="trading-sunrise-ambient" aria-hidden="true">
     <div className="sunrise-sun-core" />
@@ -277,8 +283,8 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
       </div>
     ))}
   </div>
-  <button className={`trading-merchant ${hud.reducedMotion?'merchant-still':''}`} data-pose={pose} aria-label={vi?'Trò chuyện với Tanuki':'Talk to Tanuki'} onClick={greet}>
-   <span aria-hidden="true" style={{backgroundImage:`url(${asset(merchantSheet)})`,backgroundPosition:merchantPosition,backgroundSize:christmas.active?'400% 200%':undefined}}/>
+  <button className={`trading-merchant ${hud.reducedMotion?'merchant-still':''}`} data-pose={pose} data-snow-shake={christmas.active&&winterFrame===11?'':undefined} aria-label={vi?'Trò chuyện với Tanuki':'Talk to Tanuki'} onClick={greet}>
+   <span aria-hidden="true" style={{backgroundImage:`url(${asset(christmas.active&&winterFrame>=8?SNOW_SHEET:merchantSheet)})`,backgroundPosition:merchantPosition,backgroundSize:christmas.active?'400% 200%':undefined}}/>
    {christmas.active && pose === 6 && seasonalGreeting.prop && <img key={greetingRun} className="trading-merchant-gift" src={asset(`noel/${seasonalGreeting.prop}`)} alt=""/>}
    {christmas.active && winterFrame === 5 && <i className="trading-merchant-breath" aria-hidden="true"/>}
    {christmas.active && winterFrame === 7 && <i className="trading-merchant-sparkle" aria-hidden="true"/>}
@@ -286,9 +292,6 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   {/* The counter in front of Tanuki: the same painting, cut to the counter, so Tanuki stands behind it. */}
   <div className="trading-counter-front" aria-hidden="true" style={{backgroundImage:`url(${asset('tanuki-market-sunset.png')})`}}/>
   {ready&&speech&&<div className="trading-speech" role="status">{message||(christmas.active ? seasonalGreeting[vi?'vi':'en'] : shopGreetings[vi?'vi':'en'][greetingIndex])}</div>}
-  {christmas.active && <div className="christmas-chest-pedestal" aria-hidden="true">
-    <i className="pedestal-stocking"/><i className="pedestal-candy"/><i className="pedestal-stocking"/>
-  </div>}
   <ChestGacha engine={engine} hud={hud} christmas={christmas.active}/>
   <div className="trading-first-tip"><FirstTip feature="shop" vi={vi}/></div>
   <div className="trading-wallet"><img src={asset('raccoon-coin.png')} alt=""/><span>{vi?'XU':'GOLD'}: <b>{hud.coins.toLocaleString(vi?'vi-VN':'en-US')}</b></span></div>
@@ -300,7 +303,7 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
    {tab==='items'?<><div className="trading-items" onMouseLeave={()=>setHovered(null)} role="tabpanel" aria-label={vi?'Vật phẩm':'Items'}>{displayItems.map(product=><button key={product.id} onMouseEnter={()=>setHovered(product.id)} onFocus={()=>setHovered(product.id)} onBlur={()=>setHovered(null)} aria-pressed={selected===product.id} onClick={()=>select(product.id)} className={selected===product.id?'selected':''}><ShopItemIcon id={product.id}/><span>{vi?product.vi:product.en}<small>{rarityName(product.rarity,vi)} · {vi?'Đang có':'Owned'}: {stock(product.id).toLocaleString(vi?'vi-VN':'en-US')}</small></span><b>{`${product.price} ${vi?'xu':'coins'}`}</b></button>)}</div>
    <div className="trading-product-info" aria-live="polite"><header><strong style={{color:RARITY_COLORS[preview.rarity]}}>{vi?preview.vi:preview.en}</strong><small>{vi?'Trong túi':'Owned'} {stock(preview.id).toLocaleString()} / {preview.cap.toLocaleString()}</small></header><p>{vi?preview.detailVi:preview.detailEn}</p>{selected==='chances'&&(hud.chanceCharges??0)>0&&<small>{vi?'Món đang dùng còn ':'Opened item has '}{hud.chanceCharges} {vi?'lượt':'charges left'}</small>}</div></>:<OutfitShop engine={engine} hud={hud} winter={christmas.active}/>}
   </section>
-  <div className="trading-actions"><button className="trading-buy" hidden={tab==='outfits'} ref={buyButton} disabled={tab!=='items'||selected==='aid'||!unlocked||maxQuantity<1} onClick={()=>{setQuantity(1);setConfirm(true);}}>{selected==='aid'?(vi?'PHẦN THƯỞNG HÀNH TRÌNH':'JOURNEY REWARD'):!unlocked?(vi?'CHƯA MỞ KHÓA':'LOCKED'):room<=0?(vi?'TÚI ĐÃ ĐẦY':'INVENTORY FULL'):affordable<1?(vi?'CHƯA ĐỦ XU':'NOT ENOUGH COINS'):vi?'MUA':'BUY'}</button><button className="trading-leave" onClick={()=>engine?.goToLobby()}>← {vi?'QUAY LẠI':'BACK'}</button></div>{clawOpen&&engine&&<ClawMachine engine={engine} close={()=>setClawOpen(false)}/>}
+  <div className="trading-actions"><button className="trading-buy" hidden={tab==='outfits'} ref={buyButton} disabled={tab!=='items'||selected==='aid'||!unlocked||maxQuantity<1} onClick={()=>{setQuantity(1);setConfirm(true);}}>{selected==='aid'?(vi?'PHẦN THƯỞNG HÀNH TRÌNH':'JOURNEY REWARD'):!unlocked?(vi?'CHƯA MỞ KHÓA':'LOCKED'):room<=0?(vi?'TÚI ĐÃ ĐẦY':'INVENTORY FULL'):affordable<1?(vi?'CHƯA ĐỦ XU':'NOT ENOUGH COINS'):vi?'MUA':'BUY'}</button><button className="trading-leave" onClick={()=>engine?.goToLobby()}>← {vi?'QUAY LẠI':'BACK'}</button></div>
   {confirm&&<div className="trading-confirm-backdrop" onClick={close}><form ref={dialog} className="trading-confirm purchase-dialog" data-panel-art={purchaseArt} role="dialog" aria-modal="true" aria-labelledby="trading-confirm-title" onClick={e=>e.stopPropagation()} onSubmit={e=>{e.preventDefault();purchase();}}>
    <header><h2 id="trading-confirm-title">{vi?'XÁC NHẬN MUA?':'CONFIRM PURCHASE?'}</h2><button type="button" aria-label={vi?'Đóng xác nhận':'Close confirmation'} onClick={close}>×</button></header>
    <div className="trading-confirm-item"><ShopItemIcon id={selected}/><div><strong>{vi?item.vi:item.en}</strong><p>{vi?item.detailVi:item.detailEn}</p></div></div>
@@ -310,6 +313,5 @@ export function TanukiShop({engine,hud}:{engine:GameEngine|null;hud:HUDState}){
   </form></div>}
   {!ready&&<div className="trading-loading" role="status">{vi?'Tanuki đang mở quầy…':'Tanuki is opening the stall…'}</div>}
   {ready && !confirm && <ChristmasEvent engine={engine} hud={hud} event={christmas}/>}
-  {ready && !confirm && christmas.active && <button type="button" className="claw-shop-button" onClick={()=>setClawOpen(true)}><Gift size={18} aria-hidden="true"/>{vi?`Máy gắp · ${hud.devUnlocked?"∞":hud.noelTickets??0} vé`:`Claw · ${hud.devUnlocked?"∞":hud.noelTickets??0} tickets`}</button>}
  </div></div>;
 }
