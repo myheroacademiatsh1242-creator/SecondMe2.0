@@ -52,13 +52,34 @@ test('shop sorts outfits by rarity then ascending price regardless of ownership'
 
 test('character wardrobe shows wearable outfits before locked outfits in added order',()=>{
  const ids=(owned:Parameters<typeof orderedShopOutfits>[0])=>orderedCharacterOutfits('mage',owned).map(o=>o.id);
- assert.deepEqual(ids([]),['default','woodland','frost','ember']);
- assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost']);
- assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember']);
+ assert.deepEqual(ids([]),['default','woodland','frost','ember','snowman']);
+ assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost','snowman']);
+ assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember','snowman']);
 });
 
 test("Crimson's Christmas outfit is locked outside the Christmas season", () => {
  assert.equal(canWearOutfit('assassin','frost',[]),false);
  assert.equal(canWearOutfit('assassin','frost',[],true),true);
  assert.equal(canWearOutfit('assassin','default',[]),true);
+});
+
+test('Christmas Deluxe unlocks both hero-specific outfits through participation or DEV',t=>{
+ const previous=Object.getOwnPropertyDescriptor(globalThis,'localStorage');const data=new Map<string,string>();
+ Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:(k:string)=>data.get(k)??null,setItem:(k:string,v:string)=>data.set(k,v)}});
+ t.after(()=>{if(previous)Object.defineProperty(globalThis,'localStorage',previous);else Reflect.deleteProperty(globalThis,'localStorage');});
+
+ const g=new GameEngine();
+ g.screen='characters';
+ assert.equal(g.setCharacterOutfit('mage','snowman'),false);
+ g.devUnlocked=true;
+ assert.equal(g.setCharacterOutfit('mage','snowman'),true);
+ assert.equal(g.setCharacterOutfit('swordsman','reindeer'),true);
+ assert.equal(g.setCharacterOutfit('mage','reindeer'),false);
+ assert.equal(g.campaign.christmasDeluxeEarned,false);
+ g.devUnlocked=false;
+ g.campaign.christmasDeluxeEarned=true;
+ g.campaign.save();
+ const saved=new Campaign();saved.load();
+ assert.equal(saved.christmasDeluxeEarned,true);
+ assert.equal(g.setCharacterOutfit('swordsman','reindeer'),true);
 });

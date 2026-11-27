@@ -45,6 +45,7 @@ export class Campaign {
 
   heroRanks = cleanHeroRanks();
   heroUpgradeSpent = { mage: 0, swordsman: 0, assassin: 0 };
+  christmasDeluxeEarned=false;
   ownedOutfits:ShopOutfitId[]=[];
   ownedWeapons:WeaponId[]=[];
   completed: number[] = [];
@@ -87,6 +88,7 @@ export class Campaign {
           ? saved
           : typeof value.heroRanks?.[hero] === 'number' ? heroUpgradeCost(ranks.health) : maximum;
       }
+      this.christmasDeluxeEarned=value.christmasDeluxeEarned===true;
       this.ownedOutfits=cleanOwnedOutfits(value.ownedOutfits);
       this.ownedWeapons=cleanOwnedWeapons(value.ownedWeapons);
       this.supplies=cleanSupplies(value.supplies);
@@ -134,7 +136,7 @@ export class Campaign {
   save() {
     this.itemLoadout = this.cleanItemLoadout(this.itemLoadout);
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
-      ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
+      christmasDeluxeEarned:this.christmasDeluxeEarned,ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
       christmasGiftYear:this.christmasGiftYear,
       supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,

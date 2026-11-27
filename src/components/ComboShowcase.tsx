@@ -1,3 +1,5 @@
+import {drawChristmasAttack} from '../game/rendering/christmasOutfits.ts';
+import {isDeluxe} from '../game/logic/outfits.ts';
 import {outfitSheet} from '../game/rendering/outfitSprites.ts';
 import {drawWizardSprite} from '../game/rendering/wizardSprite.ts';
 import {drawSoldierSprite} from '../game/rendering/soldierSprite.ts';
@@ -157,14 +159,14 @@ export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=fals
       source.setTransform(4,0,0,4,0,0);
       source.imageSmoothingEnabled=false;
       const facing=combo?'down':direction;
-      const baseline=winter?66:55;
+      const baseline=winter&&!isDeluxe(outfit)?66:55;
       if(hero==='mage')drawWizardSprite(source,35,baseline,facing,false,false,0,outfit);
       else if(hero==='swordsman')drawSoldierSprite(source,35,baseline,facing,false,false,0,false,0,outfit);
       else drawAssassinSprite(source,35,58,facing,false,0,false,outfit,1,pose);
       const body=visibleBounds(source,280,280,hero==='assassin');
       if(!body)return false;
       let bounds=body;
-      if(winter&&hero!=='assassin'&&readySantaHat()){
+      if(winter&&!isDeluxe(outfit)&&hero!=='assassin'&&readySantaHat()){
         if(hero==='mage')drawSantaHat(source,35,facing==='up'?22:19,34,facing==='left');
         else drawSantaHat(source,37,facing==='up'?21:18,28,facing==='left');
         bounds=visibleBounds(source,280,280)??body;
@@ -208,6 +210,10 @@ export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=fals
     };
     const paintComboFrame=(index:number) => {
       if(index===0)return paintPortrait();
+      if(outfit==='snowman'||outfit==='reindeer'){
+        ctx.clearRect(0,0,SIZE,SIZE);
+        return drawChristmasAttack(ctx,outfit,index,SIZE/2,FLOOR,HERO_HEIGHT);
+      }
       if(!atlas||hero==='assassin'||!image.complete||!image.naturalWidth||(winter&&!readySantaHat()))return false;
       const recolored=outfitSheet(image,hero,outfit);
       const column=index%6,row=atlas.rows[Math.floor(index/6)];

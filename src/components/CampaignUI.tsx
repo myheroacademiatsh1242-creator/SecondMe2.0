@@ -6,7 +6,7 @@ import { COMBO_HITS } from '../game/logic/combo.ts';
 import { ICE_MAGIC, ENEMY_CHILL } from '../game/logic/iceMagic.ts';
 import './ForestDefeat.css';
 import {RuneRewardFlow} from './RuneRewardFlow.tsx';
-import {OUTFITS,canWearOutfit,characterOutfitRarity,orderedCharacterOutfits,type OutfitId,type OutfitHero} from '../game/logic/outfits.ts';
+import {isDeluxe,OUTFITS,canWearOutfit,characterOutfitRarity,orderedCharacterOutfits,type OutfitId,type OutfitHero} from '../game/logic/outfits.ts';
 import {RARITY_COLORS,rarityName} from '../game/logic/rarity.ts';
 import {DEFAULT_WEAPON,TRAIT_TEXT,canUseWeapon,weaponById,weaponsOf,type WeaponHero,type WeaponId} from '../game/logic/weapons.ts';
 import './JourneyFinale.css';
@@ -56,8 +56,8 @@ function AerisPortrait({outfit,direction='down',winter=false}:PortraitProps={}) 
       if (!ctx) return;
       ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, 70, 70);
-      const drawn = drawWizardSprite(ctx, 35, winter ? 66 : 55, direction, false, false, 0, outfit);
-      if (winter && drawn) drawSantaHat(ctx, 35, direction === 'up' ? 22 : 19, 34, direction === 'left');
+      const drawn = drawWizardSprite(ctx, 35, winter && !isDeluxe(outfit) ? 66 : 55, direction, false, false, 0, outfit);
+      if (winter && !isDeluxe(outfit) && drawn) drawSantaHat(ctx, 35, direction === 'up' ? 22 : 19, 34, direction === 'left');
     };
     draw(); const timer = window.setInterval(draw, 250); return () => window.clearInterval(timer);
   }, [outfit,direction,winter]);
@@ -72,8 +72,8 @@ function KaelPortrait({outfit,direction='down',winter=false}:PortraitProps={}) {
       if (!ctx) return;
       ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, 70, 70);
-      drawSoldierSprite(ctx, 35, winter ? 66 : 55, direction, false, false, 0, false, 0, outfit);
-      if (winter) drawSantaHat(ctx, 37, direction === 'up' ? 21 : 18, 28, direction === 'left');
+      drawSoldierSprite(ctx, 35, winter && !isDeluxe(outfit) ? 66 : 55, direction, false, false, 0, false, 0, outfit);
+      if (winter && !isDeluxe(outfit)) drawSantaHat(ctx, 37, direction === 'up' ? 21 : 18, 28, direction === 'left');
     };
     draw(); const timer = window.setInterval(draw, 250); return () => window.clearInterval(timer);
   }, [outfit,direction,winter]);
@@ -473,12 +473,13 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     if (row) row.scrollLeft = picked ? Math.floor(picked.offsetLeft / row.clientWidth) * row.clientWidth : 0;
     readOutfitEnds();
   }, [choice.id]);
-  const outfitLocked = choice.id !== 'mechanical' && !canWearOutfit(choice.id, draftOutfits[choice.id], hud.ownedOutfits ?? [], christmas.active);
+  const outfitLocked = choice.id !== 'mechanical' && !canWearOutfit(choice.id, draftOutfits[choice.id], hud.ownedOutfits ?? [], christmas.active,hud.christmasDeluxeUnlocked);
+  const eventHint=vi?'Tham gia màn Giáng Sinh để mở khóa':'Play a Christmas event stage to unlock';
   const seasonalLocked = outfitLocked && choice.id === 'assassin' && draftOutfits.assassin === 'frost';
   const confirm = () => { if (!engine || outfitLocked) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
   const outfits = choice.id==='mechanical' ? OUTFITS.slice(0,1)
     : choice.id==='assassin' ? OUTFITS.slice(0,2).map(option=>option.id==='frost'?{...option,vi:'Giáng sinh',en:'Christmas'}:option)
-    : orderedCharacterOutfits(choice.id,hud.ownedOutfits??[]);
+    : orderedCharacterOutfits(choice.id,hud.ownedOutfits??[],hud.christmasDeluxeUnlocked);
   // The winter clearing with falling snow in the Christmas season, or while Crimson's Christmas outfit is
   // previewed; otherwise the forest clearing with falling leaves.
   const winterScene = christmas.active || (choice.id === 'assassin' && outfit === 'frost');
@@ -582,7 +583,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
             <div ref={outfitRow} className="hero-selection-outfits" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'} onScroll={readOutfitEnds}
               onWheel={event=>{const row=event.currentTarget;if(Math.abs(event.deltaY)>Math.abs(event.deltaX)&&row.scrollWidth>row.clientWidth){row.scrollBy({left:event.deltaY>0?row.clientWidth:-row.clientWidth,behavior:'smooth'});}}}>
               {outfits.map(option=>{
-                const locked=choice.id==='mechanical'?option.id!=='default':!canWearOutfit(choice.id,option.id,hud.ownedOutfits??[],christmas.active);
+                const locked=choice.id==='mechanical'?option.id!=='default':!canWearOutfit(choice.id,option.id,hud.ownedOutfits??[],christmas.active,hud.christmasDeluxeUnlocked);
                 // Locked outfits stay visible and can be clicked to preview on the stage; the confirm button then
                 // says how to unlock them (December for Crimson's Christmas outfit, the shop for the rest).
                 const seasonal=choice.id==='assassin'&&option.id==='frost'&&locked;
@@ -590,8 +591,8 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
                 const rarity=characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,option.id);
                 const name=vi?option.vi:option.en;
                 return <button type="button" key={choice.id+option.id} aria-pressed={outfit===option.id}
-                  aria-label={name+(rarity==='limited'?' · '+rarityName(rarity,vi):'')+(seasonal?(vi?' · Mở vào mùa Giáng sinh':' · Unlocks at Christmas'):locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
-                  className={previewable?'outfit-locked-preview':undefined} title={seasonal?(vi?'Xem thử được · Mở vào mùa Giáng sinh (tháng 12)':'Preview only · Unlocks in the Christmas season (December)'):previewable?(vi?'Xem thử được · Mua trong cửa hàng để mặc':'Preview only · Buy it in the shop to wear it'):undefined}
+                  aria-label={name+(rarity==='limited'?' · '+rarityName(rarity,vi):'')+(locked&&isDeluxe(option.id)?' · '+eventHint:seasonal?(vi?' · Mở vào mùa Giáng sinh':' · Unlocks at Christmas'):locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
+                  className={previewable?'outfit-locked-preview':undefined} title={locked&&isDeluxe(option.id)?eventHint:seasonal?(vi?'Xem thử được · Mở vào mùa Giáng sinh (tháng 12)':'Preview only · Unlocks in the Christmas season (December)'):previewable?(vi?'Xem thử được · Mua trong cửa hàng để mặc':'Preview only · Buy it in the shop to wear it'):undefined}
                   disabled={locked&&!previewable} style={option.id==='default'?undefined:{'--outfit-color':RARITY_COLORS[rarity]} as React.CSSProperties}
                   onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:option.id}));}}>
                   {/* The original look is the base, not a tier: no tag, no tier colour. */}{choice.id!=='mechanical'&&option.id!=='default'&&<em className="outfit-rarity-tag">{rarityName(rarity,vi)}</em>}<span>{portrait(choice.id,option.id)}</span><strong>{name}</strong>{previewable?<Lock size={14} aria-hidden="true"/>:outfit===option.id&&<Check size={15} aria-hidden="true"/>}
@@ -602,7 +603,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
         </div>
         <footer className="hero-selection-footer">
           <small>{choice.id===hud.characterClass?(vi?'Nhân vật hiện tại':'Current hero'):null}</small>
-          <button type="button" onClick={confirm} disabled={!engine||outfitLocked}>{outfitLocked?<><Lock size={16} aria-hidden="true"/>{seasonalLocked?(vi?'Mở vào tháng 12':'Unlocks in December'):(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
+          <button type="button" onClick={confirm} disabled={!engine||outfitLocked}>{outfitLocked?<><Lock size={16} aria-hidden="true"/>{isDeluxe(outfit)?eventHint:seasonalLocked?(vi?'Mở vào tháng 12':'Unlocks in December'):(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
         </footer>
       </section>
     </div>

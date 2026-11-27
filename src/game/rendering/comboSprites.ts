@@ -1,3 +1,4 @@
+import {drawChristmasAttack} from './christmasOutfits.ts';
 import {getOutfit} from '../logic/outfits.ts';
 import {outfitSheet} from './outfitSprites.ts';
 /**
@@ -123,6 +124,9 @@ export function drawComboHero(ctx: CanvasRenderingContext2D, game: GameEngine): 
   const pose = comboPose(game);
   if (!pose) return false;
   const left = game.comboAim.x < game.player.x;
+  const outfit=getOutfit(pose.hero);
+  if(outfit==='snowman'||outfit==='reindeer')
+    return drawChristmasAttack(ctx,outfit,pose.index,game.player.x,game.player.y+(outfit==='snowman'?10:7),outfit==='snowman'?58:55,left);
   const ref = pose.hero === 'mage' ? aerisFrame(pose.index) : null;
   if (ref) {
     ctx.save();
@@ -148,19 +152,21 @@ export function drawComboHero(ctx: CanvasRenderingContext2D, game: GameEngine): 
 /** Sword arcs, impact bursts, the nova ring, spell projectiles and damage numbers. */
 export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine, time: number) {
   ctx.save();
+  const reindeer=game.characterClass==='swordsman'&&getOutfit('swordsman')==='reindeer';
+  const snowman=game.characterClass==='mage'&&getOutfit('mage')==='snowman';
   for (const fx of game.comboFx) {
     const k = 1 - fx.life / fx.max;                     // 0 → 1 over the effect
     ctx.globalAlpha = Math.max(0, 1 - k);
     // Kael's swings use the crescent sheet (vfx.ts); the plain arc below is the spin and the loading fallback.
-    if (fx.kind === 'arc' && drawSlash(ctx, fx.x, fx.y, fx.angle, fx.radius, k, !!fx.flip,game.characterClass==='swordsman'?getOutfit('swordsman'):'default')) continue;
+    if (fx.kind === 'arc' && !reindeer && drawSlash(ctx, fx.x, fx.y, fx.angle, fx.radius, k, !!fx.flip,game.characterClass==='swordsman'?getOutfit('swordsman'):'default')) continue;
     if (fx.kind === 'arc' || fx.kind === 'spin') {
       const r = fx.radius * (0.85 + 0.15 * k);
       const from = fx.kind === 'spin' ? fx.angle - Math.PI * 2 * Math.min(1, k * 1.6) : fx.angle - 1.15;
       const to = fx.kind === 'spin' ? fx.angle : fx.angle + 1.15;
       ctx.lineCap = 'round';
-      ctx.strokeStyle = (fx.heavy ? '#fff3c4' : '#f4ffe6'); ctx.lineWidth = fx.heavy ? 7 : 5;
+      ctx.strokeStyle = reindeer?'#92e5ff':(fx.heavy ? '#fff3c4' : '#f4ffe6'); ctx.lineWidth = fx.heavy ? 7 : 5;
       ctx.beginPath(); ctx.ellipse(fx.x, fx.y, r, r * 0.62, 0, fx.flip ? to : from, fx.flip ? from : to, !!fx.flip); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,214,120,.55)'; ctx.lineWidth = 2;
+      ctx.strokeStyle = reindeer?'#ffe080':'rgba(255,214,120,.55)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(fx.x, fx.y, r - 6, (r - 6) * 0.62, 0, fx.flip ? to : from, fx.flip ? from : to, !!fx.flip); ctx.stroke();
     } else if (fx.kind === 'impact') {
       const r = fx.radius * (0.4 + k * 0.9);
@@ -173,7 +179,7 @@ export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine
         ctx.lineTo(fx.x + Math.cos(a + 0.12) * len * 0.35, fx.y + Math.sin(a + 0.12) * len * 0.35);
         ctx.fill();
       }
-      ctx.strokeStyle = '#ffd36b'; ctx.lineWidth = 3;
+      ctx.strokeStyle = snowman?'#83dfff':reindeer?'#bcefff':'#ffd36b'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, r * 0.8, 0, Math.PI * 2); ctx.stroke();
     } else if (fx.kind === 'nova') {
       const r = fx.radius * (0.25 + 0.75 * Math.sqrt(k));
@@ -206,12 +212,12 @@ export function drawComboEffects(ctx: CanvasRenderingContext2D, game: GameEngine
       drawAssassinDart(ctx,shot.x,shot.y,Math.atan2(shot.vy,shot.vx));
       continue;
     }
-    ctx.strokeStyle = 'rgba(178,110,255,.45)'; ctx.lineWidth = shot.radius * 1.2; ctx.lineCap = 'round';
+    ctx.strokeStyle = snowman?'rgba(108,213,255,.65)':'rgba(178,110,255,.45)'; ctx.lineWidth = shot.radius * 1.2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(shot.x, shot.y); ctx.lineTo(shot.x - ux * back, shot.y - uy * back); ctx.stroke();
-    if (orb) { drawArcaneOrb(ctx, orb, shot, time, game.reducedMotion); continue; }
-    ctx.fillStyle = 'rgba(160,90,255,.35)';
+    if (orb && !snowman) { drawArcaneOrb(ctx, orb, shot, time, game.reducedMotion); continue; }
+    ctx.fillStyle = snowman?'rgba(172,236,255,.6)':'rgba(160,90,255,.35)';
     ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius * 1.6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#c58dff';
+    ctx.fillStyle = snowman?'#74d7ff':'#c58dff';
     ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#fbf4ff';
     ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius * 0.45, 0, Math.PI * 2); ctx.fill();

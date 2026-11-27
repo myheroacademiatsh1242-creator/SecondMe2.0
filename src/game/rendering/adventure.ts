@@ -104,7 +104,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
       if (echo.characterClass === 'mage' && (echo.attackFlash ?? 0) > 0 && echo.attackTarget) {
         const t = 1 - (echo.attackFlash ?? 0) / .22;
         const dx = echo.attackTarget.x - echo.x, dy = echo.attackTarget.y - echo.y;
-        drawLightningOrb(ctx, echo.x + dx * t, echo.y - 12 + dy * t, Math.atan2(dy, dx), 5, time, orbColors(getWeapon('mage').id));
+        drawLightningOrb(ctx, echo.x + dx * t, echo.y - 12 + dy * t, Math.atan2(dy, dx), 5, time, orbColors(getOutfit('mage')==='snowman'?'staff-blizzard':getWeapon('mage').id));
       }
       ctx.strokeStyle=ECHO_COLORS[slot];ctx.lineWidth=game.echo===echo?3:1.5;ctx.beginPath();ctx.ellipse(echo.x,echo.y+12,17,7,0,0,Math.PI*2);ctx.stroke();
       ctx.fillStyle=ECHO_COLORS[slot];ctx.font='bold 12px "Second Me Pixel", monospace';ctx.textAlign='center';ctx.fillText(`E${slot+1}`,echo.x,echo.y-48);
@@ -259,7 +259,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
   for (const shot of game.magicShots) {
     const t = Math.min(1, shot.age / (shot.duration ?? .3));
     const x = shot.x + (shot.targetX - shot.x) * t, y = shot.y + (shot.targetY - shot.y) * t;
-    drawLightningOrb(ctx, x, y, Math.atan2(shot.targetY - shot.y, shot.targetX - shot.x), shot.skill ? 14 : 10, time, orbColors(getWeapon('mage').id));
+    drawLightningOrb(ctx, x, y, Math.atan2(shot.targetY - shot.y, shot.targetX - shot.x), shot.skill ? 14 : 10, time, orbColors(getOutfit('mage')==='snowman'?'staff-blizzard':getWeapon('mage').id));
   }
   if(game.skillDrop)drawSkillPickup(ctx,game.skillDrop,time,game.language==='vi',Math.hypot(game.player.x-game.skillDrop.x,game.player.y-game.skillDrop.y)<180,game.reducedMotion);
   if(game.combatFlash) {const f=game.combatFlash;ctx.save();ctx.globalAlpha=Math.min(1,f.time*2);ctx.strokeStyle=(f.kind==='fire'?'#ff8b4b':f.kind==='lightning'?'#d9f8ff':'#dfd29c');ctx.lineWidth=7;ctx.beginPath();ctx.arc(f.x,f.y,65*(1-f.time)+18,0,Math.PI*2);ctx.stroke();ctx.restore();}

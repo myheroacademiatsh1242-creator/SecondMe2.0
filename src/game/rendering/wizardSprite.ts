@@ -1,3 +1,5 @@
+import {getOutfit} from '../logic/outfits.ts';
+import {drawChristmasWalk} from './christmasOutfits.ts';
 import {outfitSheet} from './outfitSprites.ts';
 import type {OutfitId} from '../logic/outfits.ts';
 import type { Direction } from '../logic/types.ts';
@@ -56,6 +58,7 @@ export function wizardFrameOffsets(alpha:Uint8ClampedArray,width:number):number[
 }
 
 export function drawWizardSprite(ctx: CanvasRenderingContext2D, x: number, y: number, direction: Direction, moving: boolean, echo: boolean, time: number, outfit?:OutfitId): boolean {
+  if ((outfit??getOutfit('mage'))==='snowman') return drawChristmasWalk(ctx,'snowman',x,y,direction,moving,echo,time);
   const image = getWizardSheet();
   if (!image) return false;
   const row = direction === 'up' ? 0 : direction === 'down' ? 2 : 1;

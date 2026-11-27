@@ -1,3 +1,5 @@
+import {getOutfit} from '../logic/outfits.ts';
+import {drawChristmasWalk} from './christmasOutfits.ts';
 import {outfitSheet} from './outfitSprites.ts';
 import type {OutfitId} from '../logic/outfits.ts';
 import type { Direction } from '../logic/types.ts';
@@ -27,6 +29,7 @@ function spriteSheet(name: string): HTMLCanvasElement | undefined {
 }
 
 export function drawSoldierSprite(ctx: CanvasRenderingContext2D, x: number, y: number, direction: Direction, moving: boolean, echo: boolean, time: number, attacking = false, attackProgress = 0, outfit?:OutfitId) {
+  if ((outfit??getOutfit('swordsman'))==='reindeer') return drawChristmasWalk(ctx,'reindeer',x,y,direction,moving,echo,time);
   attacking = attacking && (direction === 'left' || direction === 'right');
   const image = spriteSheet(attacking ? 'Attack' : 'Walk');
   if (!image) return;
