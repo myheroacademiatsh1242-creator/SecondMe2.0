@@ -1,4 +1,4 @@
-import {drawChristmasAttack} from '../game/rendering/christmasOutfits.ts';
+import {drawChristmasAttack,drawChristmasPortrait} from '../game/rendering/christmasOutfits.ts';
 import {isDeluxe} from '../game/logic/outfits.ts';
 import {outfitSheet} from '../game/rendering/outfitSprites.ts';
 import {drawWizardSprite} from '../game/rendering/wizardSprite.ts';
@@ -159,6 +159,11 @@ export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=fals
       source.setTransform(4,0,0,4,0,0);
       source.imageSmoothingEnabled=false;
       const facing=combo?'down':direction;
+      if(hero!=='assassin'&&(outfit==='snowman'||outfit==='reindeer')){
+        // Drawn straight from the atlas at its final size; the scratch round trip below would resample it twice.
+        ctx.clearRect(0,0,SIZE,SIZE);
+        return drawChristmasPortrait(ctx,outfit,facing,SIZE/2,FLOOR,HERO_HEIGHT);
+      }
       const baseline=winter&&!isDeluxe(outfit)?66:55;
       if(hero==='mage')drawWizardSprite(source,35,baseline,facing,false,false,0,outfit);
       else if(hero==='swordsman')drawSoldierSprite(source,35,baseline,facing,false,false,0,false,0,outfit);
