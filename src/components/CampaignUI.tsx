@@ -489,10 +489,11 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     if (row) row.scrollLeft = picked ? Math.floor(picked.offsetLeft / row.clientWidth) * row.clientWidth : 0;
     readOutfitEnds();
   }, [choice.id]);
+  const heroLocked = choice.id === 'assassin' && !hud.devUnlocked;
   const outfitLocked = choice.id !== 'mechanical' && !canWearOutfit(choice.id, draftOutfits[choice.id], hud.ownedOutfits ?? [], christmas.active,hud.christmasDeluxeUnlocked);
   const eventHint=vi?'Tham gia màn Giáng Sinh để mở khóa':'Play a Christmas event stage to unlock';
   const seasonalLocked = outfitLocked && choice.id === 'assassin' && draftOutfits.assassin === 'frost';
-  const confirm = () => { if (!engine || outfitLocked) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
+  const confirm = () => { if (!engine || heroLocked || outfitLocked) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
   const outfits = choice.id==='mechanical' ? OUTFITS.slice(0,1)
     : choice.id==='assassin' ? OUTFITS.slice(0,2).map(option=>option.id==='frost'?{...option,vi:'Giáng sinh',en:'Christmas'}:option)
     : orderedCharacterOutfits(choice.id,hud.ownedOutfits??[],hud.christmasDeluxeUnlocked);
@@ -569,7 +570,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
               <BookOpen size={15} aria-hidden="true"/>
               {vi?'Kỹ năng & combo':'Skills & combo'}
             </button>
-            <button type="button" className="hero-selection-upgrade" onClick={()=>setUpgradeOpen(true)} disabled={!engine}>
+            <button type="button" className="hero-selection-upgrade" onClick={()=>setUpgradeOpen(true)} disabled={!engine || heroLocked}>
               <ChevronsUp size={16} aria-hidden="true"/>{vi?'Nâng cấp':'Upgrades'}
             </button>
           </div>}
@@ -619,7 +620,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
         </div>
         <footer className="hero-selection-footer">
           <small>{choice.id===hud.characterClass?(vi?'Nhân vật hiện tại':'Current hero'):null}</small>
-          <button type="button" onClick={confirm} disabled={!engine||outfitLocked}>{outfitLocked?<><Lock size={16} aria-hidden="true"/>{isDeluxe(outfit)?eventHint:seasonalLocked?(vi?'Mở vào tháng 12':'Unlocks in December'):(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
+          <button type="button" onClick={confirm} disabled={!engine || heroLocked || outfitLocked}>{heroLocked ? <><Lock size={16} aria-hidden="true"/>{vi ? 'Nhân vật tạm khóa' : 'Temporarily locked'}</> : outfitLocked?<><Lock size={16} aria-hidden="true"/>{isDeluxe(outfit)?eventHint:seasonalLocked?(vi?'Mở vào tháng 12':'Unlocks in December'):(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
         </footer>
       </section>
     </div>

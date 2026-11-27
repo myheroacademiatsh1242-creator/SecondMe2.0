@@ -570,7 +570,7 @@ export class GameEngine {
       this.showHints = value.showHints !== false;
       this.devUnlocked = value.devUnlocked === true;
       this.language = value.language === 'en' ? 'en' : 'vi';
-      this.characterClass = MECHANICAL_ENABLED && value.characterClass === 'mechanical' && this.campaign.mechanicalOwned ? 'mechanical' : value.characterClass === 'swordsman' ? 'swordsman' : value.characterClass === 'assassin' ? 'assassin' : 'mage';
+      this.characterClass = MECHANICAL_ENABLED && value.characterClass === 'mechanical' && this.campaign.mechanicalOwned ? 'mechanical' : value.characterClass === 'swordsman' ? 'swordsman' : value.characterClass === 'assassin' && this.devUnlocked ? 'assassin' : 'mage';
       this.player.speed = this.characterClass === 'assassin' ? 290 : 200;
       setCurrentLanguage(this.language);
       voice.lang = this.language;
@@ -897,7 +897,15 @@ export class GameEngine {
   }
   public setCharacterWeapon(hero:WeaponHero,id:WeaponId){if(!['characters','shop'].includes(this.screen))return false;const ok=equipWeapon(hero,id,this.campaign.ownedWeapons);if(ok)this.notifyHUD();return ok;}
   public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits,this.christmasSeasonOn,this.christmasDeluxeUnlocked))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
-  public selectClass(value: CharacterClass) { if (this.screen !== 'lobby' && this.screen !== 'characters') return; if(value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return; this.characterClass = value; this.player.speed = value === 'assassin' ? 290 : 200; this.saveSettings(); this.notifyHUD(); }
+  public selectClass(value: CharacterClass) {
+    if (this.screen !== 'lobby' && this.screen !== 'characters') return;
+    if (value === 'assassin' && !this.devUnlocked) return;
+    if (value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return;
+    this.characterClass = value;
+    this.player.speed = value === 'assassin' ? 290 : 200;
+    this.saveSettings();
+    this.notifyHUD();
+  }
   public get weapon(): 'staff' | 'sword' { return this.characterClass === 'mage' ? 'staff' : 'sword'; }
   private get heroStats() { return heroStats(this.characterClass, this.campaign.heroRanks); }
   private get personalSkillManaCost() { return skillManaCost(this.characterClass) - this.heroStats.skillManaDiscount; }
