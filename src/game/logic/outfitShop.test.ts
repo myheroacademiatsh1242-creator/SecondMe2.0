@@ -52,9 +52,9 @@ test('shop sorts outfits by rarity then ascending price regardless of ownership'
 
 test('character wardrobe shows wearable outfits before locked outfits in added order',()=>{
  const ids=(owned:Parameters<typeof orderedShopOutfits>[0])=>orderedCharacterOutfits('mage',owned).map(o=>o.id);
- assert.deepEqual(ids([]),['default','woodland','frost','ember','amethyst','rose','sand','turquoise','amethyst','rose','sand','turquoise','snowman']);
- assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost','amethyst','rose','sand','turquoise','amethyst','rose','sand','turquoise','snowman']);
- assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember','amethyst','rose','sand','turquoise','amethyst','rose','sand','turquoise','snowman']);
+ assert.deepEqual(ids([]),['default','woodland','frost','ember','amethyst','rose','sand','turquoise','snowman']);
+ assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost','amethyst','rose','sand','turquoise','snowman']);
+ assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember','amethyst','rose','sand','turquoise','snowman']);
 });
 
 test("Crimson's Christmas outfit is locked outside the Christmas season", () => {
