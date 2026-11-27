@@ -47,7 +47,7 @@ export function MenuWizard({ winter = false, reducedMotion = false }: { winter?:
       shadow.current?.setAttribute('opacity',p.inPortal?'0':'.48');
       if(snowman){
         const side=p.row===1;
-        cell.current?.setAttribute('viewBox', (side?(p.frame%6)*200:0)+' '+(side?400:0)+' 200 200');
+        cell.current?.setAttribute('viewBox', (side?(p.frame%4)*200:0)+' '+(side?400:0)+' 200 200');
       } else cell.current?.setAttribute('viewBox', `${p.frame * CELL} ${p.row * CELL} ${CELL} ${CELL}`);
       const crown = p.row === 2 ? 27 : [24, 24, 24, 24, 25, 25, 26, 25][p.frame];
       hat.current?.setAttribute('y', String((crown - ANCHOR.y) * SPRITE_K - 33));

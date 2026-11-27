@@ -18,6 +18,10 @@ export const CHRISTMAS_DELUXE = {
  swordsman:{id:'reindeer',vi:'Tuần lộc Giáng Sinh',en:'Christmas Reindeer',color:'#b579e8'},
  mage:{id:'snowman',vi:'Người tuyết may mắn',en:'Lucky Snowman',color:'#b579e8'},
 } as const;
+export const NOEL_SKINS = ['mage','swordsman','assassin'] as const;
+export const NOEL_SKIN_NAMES: Record<OutfitHero,string> = {
+ mage: CHRISTMAS_DELUXE.mage.vi, swordsman: CHRISTMAS_DELUXE.swordsman.vi, assassin: 'Crimson Veil Giáng sinh',
+};
 export function isDeluxe(id:unknown){return id==='reindeer'||id==='snowman';}
 export function supportsOutfit(hero:OutfitHero,id:OutfitId){
  if(hero==='assassin')return id==='default'||id==='frost';
@@ -86,14 +90,14 @@ export function orderedShopOutfits(_owned:readonly ShopOutfitId[]){
 /** Crimson's `frost` look is her Christmas outfit: wearable only while the Christmas season is on. */
 export function canWearOutfit(hero:OutfitHero,id:OutfitId,owned:readonly ShopOutfitId[],christmas=false,deluxeUnlocked=false){
  if(!supportsOutfit(hero,id))return false;
- if(isDeluxe(id))return deluxeUnlocked&&hero!=='assassin'&&CHRISTMAS_DELUXE[hero].id===id;
+ if(isDeluxe(id))return christmas&&deluxeUnlocked&&hero!=='assassin'&&CHRISTMAS_DELUXE[hero].id===id;
  if(!OUTFITS.some(o=>o.id===id))return false;
- if(hero==='assassin')return id==='default'||(id==='frost'&&christmas);
+ if(hero==='assassin')return id==='default'||(id==='frost'&&christmas&&deluxeUnlocked);
  if(id==='default'||id==='woodland')return true;
  return SHOP_OUTFITS.some(o=>o.hero===hero&&o.outfit===id&&owned.includes(o.id));
 }
-export function orderedCharacterOutfits(hero:OutfitHero,owned:readonly ShopOutfitId[],deluxeUnlocked=false){
+export function orderedCharacterOutfits(hero:OutfitHero,owned:readonly ShopOutfitId[],deluxeUnlocked=false,christmas=false){
  const choices=hero==='assassin'?[...OUTFITS]:[...OUTFITS.filter(o=>supportsOutfit(hero,o.id)),CHRISTMAS_DELUXE[hero]];
- const wearable=(option:typeof choices[number])=>canWearOutfit(hero,option.id,owned,false,deluxeUnlocked);
+ const wearable=(option:typeof choices[number])=>canWearOutfit(hero,option.id,owned,christmas,deluxeUnlocked);
  return [...choices.filter(wearable),...choices.filter(o=>!wearable(o))];
 }

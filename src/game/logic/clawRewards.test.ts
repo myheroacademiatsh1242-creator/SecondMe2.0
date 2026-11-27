@@ -32,7 +32,8 @@ test('owned outfits and full stock exchange safely without exceeding caps',()=>{
  const outfit=rollClawReward(3,SHOP_OUTFITS.map(o=>o.id),()=>.87);
  assert.deepEqual(outfit,{type:'crystals',quantity:10});
  const c=new Campaign();c.supplies.manaSmall=99;c.coins=0;
- assert.deepEqual(c.claimClawPrize(1,()=>0),{type:'coins',quantity:1});
+ const rolls=[.9,.6,0,0];
+ assert.deepEqual(c.claimClawPrize(3,()=>rolls.shift()!)?.catalogue,{type:'coins',quantity:1});
  assert.equal(c.coins,1);assert.equal(c.supplies.manaSmall,99);
  assert.equal(c.claimClawPrize(4),null);
  assert.throws(()=>rollClawReward(0,[],()=>1),RangeError);

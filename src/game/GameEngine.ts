@@ -98,7 +98,7 @@ export interface HUDState {
   missionBriefing?:boolean;
   trailAction?: TrailAction;
   outfits?:Record<OutfitHero,OutfitId>;
-  christmasDeluxeUnlocked?:boolean;
+  ownedNoelSkins?:OutfitHero[];
   ownedOutfits?:ShopOutfitId[];
   weapons?:Record<WeaponHero,WeaponId>;
   ownedWeapons?:WeaponId[];
@@ -550,7 +550,7 @@ export class GameEngine {
   constructor() {
     this.campaign.load();restoreOutfits();
     this.loadSettings();
-    for(const hero of ['mage','swordsman','assassin'] as const)if(!canWearOutfit(hero,getOutfits()[hero],this.campaign.ownedOutfits,this.christmasSeasonOn,this.christmasDeluxeUnlocked))equipOutfit(hero,'default');
+    this.validateEquippedOutfits();
     restoreWeapons();
     for(const hero of ['mage','swordsman','assassin'] as const)if(!canUseWeapon(hero,getWeapons()[hero],this.campaign.ownedWeapons))equipWeapon(hero,DEFAULT_WEAPON[hero],[]);
     setCurrentLanguage(this.language);
@@ -729,11 +729,18 @@ export class GameEngine {
     return this.devUnlocked ? this.seasonPreview : 'auto';
   }
 
+  private validateEquippedOutfits() {
+    for (const hero of ['mage', 'swordsman', 'assassin'] as const) {
+      if (!canWearOutfit(hero, getOutfits()[hero], this.campaign.ownedOutfits, this.christmasSeasonOn, this.devUnlocked || this.campaign.ownedNoelSkins.includes(hero))) {
+        equipOutfit(hero, 'default');
+      }
+    }
+  }
+
   public setDevSeasonPreview(value: SeasonPreview) {
     if (!this.devUnlocked) return;
     this.seasonPreview = value;
-    // Leaving the season takes off Crimson's Christmas outfit.
-    if (!canWearOutfit('assassin', getOutfits().assassin, this.campaign.ownedOutfits, this.christmasSeasonOn)) equipOutfit('assassin', 'default');
+    this.validateEquippedOutfits();
     this.notifyHUD();
   }
 
@@ -779,18 +786,10 @@ export class GameEngine {
   private huntTimers={candy:0,bell:2,whirl:3,orb:2,darts:2,attacks:0};
   private huntPickupSoundAt=0;
   public get isSnowHunt(){return this.currentLevelIdx===HUNT_IDX;}
-  public get christmasDeluxeUnlocked(){return this.devUnlocked||this.campaign.christmasDeluxeEarned;}
-  private rewardChristmasParticipation(){
-    if(this.devUnlocked||this.campaign.christmasDeluxeEarned)return;
-    this.campaign.christmasDeluxeEarned=true;
-    this.campaign.save();
-    this.showBanner(this.language==='vi'?'Đã nhận Tuần lộc Giáng Sinh và Người tuyết may mắn!':'Christmas Reindeer and Lucky Snowman unlocked!');
-    this.notifyHUD();
-  }
   public startSnowHunt(){
     if(!this.canPlayChristmasTrail||this.orientationBlocked||!['intro','lobby','shop'].includes(this.screen))return false;
     if(!this.isSnowHunt&&!this.isChristmasTrail)this.christmasReturn={index:this.currentLevelIdx,level:this.currentLevel};
-    this.enterLevel(HUNT_IDX,()=>this.rewardChristmasParticipation());
+    this.enterLevel(HUNT_IDX);
     return true;
   }
   /** Take a power card from a level-up offer. */
@@ -972,7 +971,7 @@ export class GameEngine {
   public startChristmasTrail(){
     if(!this.canPlayChristmasTrail||this.orientationBlocked||!['intro','lobby','shop'].includes(this.screen))return false;
     this.christmasReturn={index:this.currentLevelIdx,level:this.currentLevel};
-    this.enterLevel(CHRISTMAS_TRAIL_IDX,()=>this.rewardChristmasParticipation());
+    this.enterLevel(CHRISTMAS_TRAIL_IDX);
     return true;
   }
 
@@ -991,7 +990,7 @@ export class GameEngine {
     this.notifyHUD(); return true;
   }
   public setCharacterWeapon(hero:WeaponHero,id:WeaponId){if(!['characters','shop'].includes(this.screen))return false;const ok=equipWeapon(hero,id,this.campaign.ownedWeapons);if(ok)this.notifyHUD();return ok;}
-  public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits,this.christmasSeasonOn,this.christmasDeluxeUnlocked))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
+  public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits,this.christmasSeasonOn,this.devUnlocked||this.campaign.ownedNoelSkins.includes(hero)))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
   public selectClass(value: CharacterClass) {
     if (this.screen !== 'lobby' && this.screen !== 'characters') return;
     if (value === 'assassin' && !this.devUnlocked) return;
@@ -3581,7 +3580,7 @@ export class GameEngine {
         showHints: this.showHints,
         devUnlocked: this.devUnlocked,
         language: this.language,
-        characterClass: this.characterClass,outfits:getOutfits(),christmasDeluxeUnlocked:this.christmasDeluxeUnlocked,ownedOutfits:[...this.campaign.ownedOutfits],weapons:getWeapons(),ownedWeapons:[...this.campaign.ownedWeapons],
+        characterClass: this.characterClass,outfits:getOutfits(),ownedNoelSkins:[...this.campaign.ownedNoelSkins],ownedOutfits:[...this.campaign.ownedOutfits],weapons:getWeapons(),ownedWeapons:[...this.campaign.ownedWeapons],
         weapon: this.weapon,
         coins: this.campaign.coins,
         heroRanks: {...this.campaign.heroRanks},

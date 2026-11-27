@@ -1,8 +1,8 @@
-import {rollClawReward,type ClawReward} from './clawRewards.ts';
+import {clawRewardText,rollClawReward,type ClawReward} from './clawRewards.ts';
 import { GUARDIAN_HP } from './balance.ts';
 import { CHRISTMAS_COINS, christmasSeason } from './christmas.ts';
 import {updateDemonBoss,type DemonCombat} from './demonBoss.ts';
-import {SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
+import {NOEL_SKINS,NOEL_SKIN_NAMES,type OutfitHero,SHOP_OUTFITS,cleanOwnedOutfits,type ShopOutfitId} from './outfits.ts';
 import {cleanOwnedWeapons,type WeaponId} from './weapons.ts';
 import {chooseBossAttack,recordBossSwing,wantsBossSkill,type BossBehavior} from './bossBehavior.ts';
 import {ICE_BARRAGE} from './iceBarrage.ts';
@@ -27,6 +27,7 @@ export const MATERIALS = [
 export type CharacterClass = 'mage' | 'swordsman' | 'assassin' | 'mechanical';
 /** Noel tickets per claw machine play. */
 export const CLAW_COST = 1;
+export const CLAW_SKIN_CHANCE = 0.005;
 /** What the claw machine is told in dev mode: it shows ∞ and never runs out. */
 export const CLAW_DEV_TICKETS = 9999;
 
@@ -46,7 +47,7 @@ export class Campaign {
 
   heroRanks = cleanHeroRanks();
   heroUpgradeSpent = { mage: 0, swordsman: 0, assassin: 0 };
-  christmasDeluxeEarned=false;
+  ownedNoelSkins: OutfitHero[] = [];
   ownedOutfits:ShopOutfitId[]=[];
   ownedWeapons:WeaponId[]=[];
   completed: number[] = [];
@@ -89,7 +90,9 @@ export class Campaign {
           ? saved
           : typeof value.heroRanks?.[hero] === 'number' ? heroUpgradeCost(ranks.health) : maximum;
       }
-      this.christmasDeluxeEarned=value.christmasDeluxeEarned===true;
+      this.ownedNoelSkins = NOEL_SKINS.filter(hero =>
+        (Array.isArray(value.ownedNoelSkins) && value.ownedNoelSkins.includes(hero)) ||
+        (value.christmasDeluxeEarned === true && hero !== 'assassin'));
       this.ownedOutfits=cleanOwnedOutfits(value.ownedOutfits);
       this.ownedWeapons=cleanOwnedWeapons(value.ownedWeapons);
       this.supplies=cleanSupplies(value.supplies);
@@ -137,7 +140,7 @@ export class Campaign {
   save() {
     this.itemLoadout = this.cleanItemLoadout(this.itemLoadout);
     try { if (typeof localStorage !== 'undefined') localStorage.setItem('second-me-campaign-v3', JSON.stringify({
-      christmasDeluxeEarned:this.christmasDeluxeEarned,ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
+      ownedNoelSkins:this.ownedNoelSkins,ownedOutfits:this.ownedOutfits,ownedWeapons:this.ownedWeapons,devShopStockMigrated:this.devShopStockMigrated,
       christmasGiftYear:this.christmasGiftYear,
       supplies:this.supplies,itemLoadout:this.itemLoadout,chanceCharges:this.chanceCharges,aidUnlocked:this.aidUnlocked,heroClears:this.heroClears,
       heroRanks:this.heroRanks, heroUpgradeSpent:this.heroUpgradeSpent,
@@ -341,8 +344,7 @@ export class Campaign {
     return true;
   }
   spendClawPlay(){ if(this.noelTickets<CLAW_COST)return false; this.noelTickets-=CLAW_COST; this.save(); return true; }
-  /** Award only after the player collects a toy from the delivery tray. */
-  claimClawPrize(kind:number,random:()=>number=Math.random):ClawReward|null{
+  private grantCatalogueClawPrize(kind:number,random:()=>number=Math.random):ClawReward|null{
     const reward=rollClawReward(kind,this.ownedOutfits,random);
     if(!reward)return null;
     if(reward.type==='outfit')this.ownedOutfits.push(reward.id);
@@ -366,6 +368,43 @@ export class Campaign {
     }
     this.save();
     return reward;
+  }
+  claimClawPrize(kind:number, random:()=>number=Math.random) {
+    if (![0,1,2,3].includes(kind)) return null;
+    const roll = random();
+    const missing = NOEL_SKINS.filter(hero => !this.ownedNoelSkins.includes(hero));
+    if (roll < CLAW_SKIN_CHANCE && missing.length) {
+      const hero = missing[Math.floor(random()*missing.length)];
+      this.ownedNoelSkins.push(hero);
+      this.save();
+      return {label: 'Skin siêu hiếm · ' + NOEL_SKIN_NAMES[hero], skin: hero};
+    }
+    if (kind === 3) {
+      const catalogue = this.grantCatalogueClawPrize(kind,random);
+      return catalogue ? {catalogue,label:clawRewardText(catalogue,true)} : null;
+    }
+    if (roll < CLAW_SKIN_CHANCE + 0.75) {
+      const available = SHOP_ITEMS.filter(item => item.price > 0 && this.shopStock(item.id) < item.cap);
+      if (available.length) {
+        const item = available[Math.floor(random()*available.length)];
+        if (item.id === 'time') this.timeItems++;
+        else if (item.id === 'ring') this.limitRings++;
+        else this.supplies[item.id]++;
+        this.save();
+        return {label: '+1 ' + item.vi, item: item.id};
+      }
+    }
+    if (kind === 1) {
+      const rune = this.grantRune(random);
+      if (rune) {
+        this.save();
+        return {label: '+1 ' + ECHO_RUNES.find(entry => entry.id === rune)!.vi, rune};
+      }
+    }
+    const coins = kind === 0 ? 25 : 10;
+    this.coins = Math.min(99999999, this.coins + coins);
+    this.save();
+    return {label: '+' + coins + ' xu', coins};
   }
   reset() { this.itemLoadout=[];this.heroRanks=cleanHeroRanks();this.heroUpgradeSpent={mage:0,swordsman:0,assassin:0};this.supplies=emptySupplies();this.supplies.aid=this.aidUnlocked?1:0;this.chanceCharges=0;this.runeLoadout=[];this.pendingRuneChoices=[];this.echoRunes={};this.lastRuneDrop=null;this.completed = []; this.bossDefeated = false; this.coins = 0; this.timeItems = 0; this.chestKeys=0;this.whiteCrystals=0;this.mysticCrystals=0;this.lastChestRewards=[];this.limitRings = 0; this.bestStars = {}; this.save(); }
 

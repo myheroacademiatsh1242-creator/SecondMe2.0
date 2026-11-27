@@ -109,12 +109,11 @@ export function ChristmasPanelTrim({ still }: { still: boolean }) {
   </div>;
 }
 
-export function ChristmasEvent({ engine, hud, event, menuDialog, menuTeaser = false, devMenuPreview = false, onDismiss }: {
+export function ChristmasEvent({ engine, hud, event, menuDialog, menuTeaser = false, onDismiss }: {
   engine: GameEngine | null;
   hud: HUDState;
   event: ReturnType<typeof useChristmas>;
   menuTeaser?: boolean;
-  devMenuPreview?: boolean;
   onDismiss?: () => void;
   menuDialog?: RefObject<HTMLDialogElement | null>;
 }) {
@@ -133,15 +132,14 @@ export function ChristmasEvent({ engine, hud, event, menuDialog, menuTeaser = fa
   const [posterPassed, setPosterPassed] = useState(false);
   const showPoster = menuTeaser && !posterPassed;
   const continueFromPoster = () => {
-    if (event.active || devMenuPreview) {
-      if (!event.active) engine?.setDevSeasonPreview('christmas');
+    if (event.active) {
       setPosterPassed(true);
     } else {
       dialog.current?.close();
     }
   };
 
-  if (!event.active && !showPoster && !devMenuPreview) return null;
+  if (!event.active && !showPoster) return null;
   return <div className="christmas-entry">
     {!menuDialog && <button className="christmas-trigger" type="button" onClick={() => dialog.current?.showModal()}>
       <Gift size={18} aria-hidden="true"/>{vi ? 'Sự kiện Noel' : 'Christmas event'}

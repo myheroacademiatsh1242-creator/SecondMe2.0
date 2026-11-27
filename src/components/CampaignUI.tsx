@@ -146,8 +146,7 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
   if (!christmas.active || hud.reducedMotion) revealChristmas.current = false;
   const christmasDialog = useRef<HTMLDialogElement>(null);
   const startAfterEvent = useRef(false);
-  const devMenuPreview = hud.devUnlocked && engine?.devSeasonPreview !== 'none';
-  const hasEvent = christmas.active || christmas.teaser || devMenuPreview;
+  const showEventOnStart = christmas.active || christmas.teaser;
   const openMenuEvent = (fromStart: boolean) => {
     const dialog = christmasDialog.current;
     if (!dialog || dialog.open) return;
@@ -170,9 +169,9 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
   // At most one highlighted item: the one under the mouse (none once it leaves), or the one
   // moved to with the arrow keys. -1 = none; Enter then falls through to "start".
   const items = [
-    { label: vi ? 'BẮT ĐẦU' : 'START GAME', disabled: false, act: () => hasEvent ? openMenuEvent(true) : engine?.openLobby(true) },
+    { label: vi ? 'BẮT ĐẦU' : 'START GAME', disabled: false, act: () => showEventOnStart ? openMenuEvent(true) : engine?.openLobby(true) },
     { label: vi ? 'TIẾP TỤC' : 'CONTINUE', disabled: !hasProgress, act: () => engine?.continueGame() },
-    ...(hasEvent ? [{ label: vi ? 'SỰ KIỆN NOEL' : 'CHRISTMAS EVENT', disabled: false, act: () => openMenuEvent(false), slab: 3, seasonal: true }] : []),
+    ...(christmas.active ? [{ label: vi ? 'SỰ KIỆN NOEL' : 'CHRISTMAS EVENT', disabled: false, act: () => openMenuEvent(false), slab: 3, seasonal: true }] : []),
     { label: vi ? 'CÀI ĐẶT' : 'SETTINGS', disabled: false, act: () => setPanel('settings'), slab: 2 },
     { label: vi ? 'TÁC GIẢ' : 'CREDITS', disabled: false, act: () => setPanel('credits'), slab: 3 },
     { label: vi ? 'THOÁT' : 'QUIT', disabled: false, act: () => setPanel('quit'), slab: 4 },
@@ -248,7 +247,7 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
       <span aria-hidden="true">/</span>
       <button type="button" className={vi ? 'selected' : ''} aria-pressed={vi} onClick={() => engine?.setLanguage('vi')}>VI</button>
     </div>
-    <nav style={hasEvent && !christmas.active ? {gridTemplateRows:"repeat(6,minmax(0,1fr))"} : undefined} className="intro-menu" aria-label={vi ? 'Menu chính' : 'Main menu'}>
+    <nav className="intro-menu" aria-label={vi ? 'Menu chính' : 'Main menu'}>
       {items.map((item, i) => (
         // A stone slab (mainMenu.css): its face, carrying the label, rises when selected.
         <button key={item.label} type="button" className={`intro-menu-item${i === selected ? ' selected' : ''}${'seasonal' in item ? ' intro-noel-action' : ''}`} disabled={item.disabled}
@@ -258,7 +257,7 @@ export function Intro({ engine, hud, afterFilm = false }: { engine: GameEngine |
         </button>
       ))}
     </nav>
-    <ChristmasEvent engine={engine} hud={hud} event={christmas} menuDialog={christmasDialog} menuTeaser={christmas.teaser} devMenuPreview={devMenuPreview} onDismiss={dismissMenuEvent}/>
+    <ChristmasEvent engine={engine} hud={hud} event={christmas} menuDialog={christmasDialog} menuTeaser={christmas.teaser} onDismiss={dismissMenuEvent}/>
     </div>
     {panel === 'settings' && <SettingsPanel engine={engine} hud={hud} close={() => setPanel('none')}/>}
     {panel === 'credits' && <CreditsPanel vi={vi} close={() => setPanel('none')}/>}
@@ -490,16 +489,17 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     readOutfitEnds();
   }, [choice.id]);
   const heroLocked = choice.id === 'assassin' && !hud.devUnlocked;
-  const outfitLocked = choice.id !== 'mechanical' && !canWearOutfit(choice.id, draftOutfits[choice.id], hud.ownedOutfits ?? [], christmas.active,hud.christmasDeluxeUnlocked);
-  const eventHint=vi?'Tham gia màn Giáng Sinh để mở khóa':'Play a Christmas event stage to unlock';
+  const ownsNoelSkin = hud.devUnlocked || (hero !== null && hud.ownedNoelSkins?.includes(hero) === true);
+  const outfitLocked = choice.id !== 'mechanical' && !canWearOutfit(choice.id, draftOutfits[choice.id], hud.ownedOutfits ?? [], christmas.active,ownsNoelSkin);
+  const eventHint = christmas.active
+    ? (vi ? 'Gắp quà Noel để nhận skin siêu hiếm' : 'Win this ultra-rare skin at the Noel claw machine')
+    : (vi ? 'Mở khi sự kiện bắt đầu ngày 01/12' : 'Opens with the event on December 1');
   const seasonalLocked = outfitLocked && choice.id === 'assassin' && draftOutfits.assassin === 'frost';
   const confirm = () => { if (!engine || heroLocked || outfitLocked) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
   const outfits = choice.id==='mechanical' ? OUTFITS.slice(0,1)
     : choice.id==='assassin' ? OUTFITS.slice(0,2).map(option=>option.id==='frost'?{...option,vi:'Giáng sinh',en:'Christmas'}:option)
-    : orderedCharacterOutfits(choice.id,hud.ownedOutfits??[],hud.christmasDeluxeUnlocked);
-  // The winter clearing with falling snow in the Christmas season, or while Crimson's Christmas outfit is
-  // previewed; otherwise the forest clearing with falling leaves.
-  const winterScene = christmas.active || (choice.id === 'assassin' && outfit === 'frost');
+    : orderedCharacterOutfits(choice.id,hud.ownedOutfits??[],ownsNoelSkin,christmas.active);
+  const winterScene = christmas.active || (hero !== null && (isDeluxe(outfit) || (hero === 'assassin' && outfit === 'frost')));
   // Christmas skin only: left idle for a while, a cold gust blows past and the hero shivers and sneezes once.
   // Any mouse or key input restarts the wait; after a sneeze the next one needs another long idle spell.
   const christmasSkin = choice.id === 'assassin' && outfit === 'frost' && previewDirection === 'down';
@@ -600,19 +600,21 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
             <div ref={outfitRow} className="hero-selection-outfits" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'} onScroll={readOutfitEnds}
               onWheel={event=>{const row=event.currentTarget;if(Math.abs(event.deltaY)>Math.abs(event.deltaX)&&row.scrollWidth>row.clientWidth){row.scrollBy({left:event.deltaY>0?row.clientWidth:-row.clientWidth,behavior:'smooth'});}}}>
               {outfits.map(option=>{
-                const locked=choice.id==='mechanical'?option.id!=='default':!canWearOutfit(choice.id,option.id,hud.ownedOutfits??[],christmas.active,hud.christmasDeluxeUnlocked);
+                const locked=choice.id==='mechanical'?option.id!=='default':!canWearOutfit(choice.id,option.id,hud.ownedOutfits??[],christmas.active,ownsNoelSkin);
                 // Locked outfits stay visible and can be clicked to preview on the stage; the confirm button then
                 // says how to unlock them (December for Crimson's Christmas outfit, the shop for the rest).
                 const seasonal=choice.id==='assassin'&&option.id==='frost'&&locked;
                 const previewable=locked&&choice.id!=='mechanical';
                 const rarity=characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,option.id);
+                const holiday=isDeluxe(option.id)||(choice.id==='assassin'&&option.id==='frost');
+                const tierLabel=holiday?(vi?'Phiên bản Noel':'Christmas Edition'):rarityName(rarity,vi);
                 const name=vi?option.vi:option.en;
                 return <button type="button" key={choice.id+option.id} aria-pressed={outfit===option.id}
-                  aria-label={name+(option.id!=='default'?' · '+rarityName(rarity,vi):'')+(locked&&isDeluxe(option.id)?' · '+eventHint:seasonal?(vi?' · Mở vào mùa Giáng sinh':' · Unlocks at Christmas'):locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
-                  className={previewable?'outfit-locked-preview':undefined} title={locked&&isDeluxe(option.id)?eventHint:seasonal?(vi?'Xem thử được · Mở vào mùa Giáng sinh (tháng 12)':'Preview only · Unlocks in the Christmas season (December)'):previewable?(vi?'Xem thử được · Mua trong cửa hàng để mặc':'Preview only · Buy it in the shop to wear it'):undefined}
+                  aria-label={name+(option.id!=='default'?' · '+tierLabel:'')+(locked&&isDeluxe(option.id)?' · '+eventHint:seasonal?' · '+eventHint:locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
+                  className={previewable?'outfit-locked-preview':undefined} title={locked&&isDeluxe(option.id)?eventHint:seasonal?eventHint:previewable?(vi?'Xem thử được · Mua trong cửa hàng để mặc':'Preview only · Buy it in the shop to wear it'):undefined}
                   disabled={locked&&!previewable} style={option.id==='default'?undefined:{'--outfit-color':RARITY_COLORS[rarity]} as React.CSSProperties}
                   onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:option.id}));}}>
-                  {/* The original look is the base, not a tier: no tag, no tier colour. */}{choice.id!=='mechanical'&&option.id!=='default'&&<em className="outfit-rarity-tag">{rarityName(rarity,vi)}</em>}<span>{portrait(choice.id,option.id)}</span><strong>{name}</strong>{previewable?<Lock size={14} aria-hidden="true"/>:outfit===option.id&&<Check size={15} aria-hidden="true"/>}
+                  {/* The original look is the base, not a tier: no tag, no tier colour. */}{choice.id!=='mechanical'&&option.id!=='default'&&<em className="outfit-rarity-tag">{tierLabel}</em>}<span>{portrait(choice.id,option.id)}</span><strong>{name}</strong>{previewable?<Lock size={14} aria-hidden="true"/>:outfit===option.id&&<Check size={15} aria-hidden="true"/>}
                 </button>;
               })}
             </div>
@@ -620,7 +622,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
         </div>
         <footer className="hero-selection-footer">
           <small>{choice.id===hud.characterClass?(vi?'Nhân vật hiện tại':'Current hero'):null}</small>
-          <button type="button" onClick={confirm} disabled={!engine || heroLocked || outfitLocked}>{heroLocked ? <><Lock size={16} aria-hidden="true"/>{vi ? 'Nhân vật tạm khóa' : 'Temporarily locked'}</> : outfitLocked?<><Lock size={16} aria-hidden="true"/>{isDeluxe(outfit)?eventHint:seasonalLocked?(vi?'Mở vào tháng 12':'Unlocks in December'):(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
+          <button type="button" onClick={confirm} disabled={!engine || heroLocked || outfitLocked}>{heroLocked ? <><Lock size={16} aria-hidden="true"/>{vi ? 'Nhân vật tạm khóa' : 'Temporarily locked'}</> : outfitLocked?<><Lock size={16} aria-hidden="true"/>{isDeluxe(outfit)?eventHint:seasonalLocked?eventHint:(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
         </footer>
       </section>
     </div>

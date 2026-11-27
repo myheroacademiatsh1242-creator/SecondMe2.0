@@ -25,7 +25,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background:
 html,body{height:100%}body{background-attachment:fixed}
 main{z-index:1}
 .machine-view #machineHud{z-index:5}
-</style><aside id="machineHud"><span id="coinCount" aria-live="polite"></span><button id="replayMachine" hidden>Xếp lại quà</button><button id="closeMachine">Đóng ✕</button></aside><main><section><canvas width="384" height="208" aria-label="Máy gắp thú Noel"></canvas><svg id="cabinetType" aria-hidden="true" viewBox="0 0 384 280"><text id="marqueeType" fill="#ffe39b" font-size="12">CLAW KEEP · NOEL</text><g fill="#fff3d4" font-size="8.5"><g id="coinType"><text>NẠP</text></g><g id="grabType"><text>GẮP</text></g></g></svg></section><p id="msg" aria-live="polite"></p></main><script src="./prize-models.js"></script><script>
+#devEffects{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px}
+#devEffects select{font:inherit;background:#17282d;color:#fff1cc;padding:5px;border:1px solid #b08a4a}
+@media(max-width:700px){#devEffects{top:58px}}
+</style><aside id="machineHud"><span id="devEffects" hidden><select id="effectChoice" aria-label="Hiệu ứng skin Noel"><option value="all">Cả 3 skin</option><option value="mage">Aeris</option><option value="swordsman">Kael</option><option value="assassin">Crimson Veil</option></select> <button type="button" id="playEffects">Xem hiệu ứng</button></span><span id="coinCount" aria-live="polite"><img src="../assets/ui/noel/noel-ticket.png" alt="" width="30" style="vertical-align:middle;image-rendering:pixelated"> <span id="ticketBalance"></span></span><button id="replayMachine" hidden>Xếp lại quà</button><button id="closeMachine">Đóng ✕</button></aside><main><section><canvas width="384" height="208" aria-label="Máy gắp thú Noel"></canvas><svg id="cabinetType" aria-hidden="true" viewBox="0 0 384 280"><text id="marqueeType" fill="#ffe39b" font-size="12">CLAW KEEP · NOEL</text><g fill="#fff3d4" font-size="8.5"><g id="coinType"><text font-size="6">NẠP VÉ</text></g><g id="grabType"><text>GẮP</text></g></g></svg></section><p id="msg" aria-live="polite"></p></main><script src="./prize-models.js"></script><script>
 'use strict';
 const canvas=document.querySelector('canvas'),screenCtx=canvas.getContext('2d');let g=screenCtx;
 // Offscreen pixel buffer: the machine at 1 world unit per pixel, offset so nothing is clipped.
@@ -33,15 +36,43 @@ const BUF_X=24,BUF_Y=34,buffer=document.createElement('canvas');buffer.width=360
 const names=['Hộp Quà','Người Tuyết','Gậy Kẹo','Chim cánh cụt'],colors=['#ffcb62','#a9e3f5','#f28c98','#92caff'];
 let coins=0,cost=1,claw,grab,prizes,ended,t=0,last=0;
 let cameraPhase=0;
-let paid=false,coinTime=null;
+let paid=false,ticketTime=null;
 let depth=30,stick=null,pickupQueue=[],reward=null;
 const chute={x:25,z:16}, controls3D={stick:[65,81,-17],blue:[91,71,-17],red:[117,71,-17]};
-const guide='Bấm NẠP để dùng vé Noel cho 1 lượt. Sau đó kéo cần để ngắm và bấm GẮP.';
+const ticketArt=new Image();ticketArt.src='../assets/ui/noel/noel-ticket.png';
+const prizeArt=new Image();prizeArt.src='../assets/ui/noel/claw-prizes.png';
+const artCells=['mage','swordsman','assassin','manaSmall','manaLarge','healSmall','healLarge','revive','chances','time','ring','coins'];
+const pendingPrizes=new Map();let nextPickupId=0;
+function revealPrize(toy){
+ const pickupId=++nextPickupId;
+ pendingPrizes.set(pickupId,toy);
+ post({type:'claw:prize',kind:toy.k,pickupId});
+}
+function drawPrizeIcon(toy,x,y,size){
+ if(!toy?.prize)return false;
+ const {icon,glyph}=toy.prize;
+ if(icon==='rune'){
+   g.save();g.fillStyle='#453557';g.fillRect(x-size/2,y-size/2,size,size);
+   g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ffe296';
+   g.font='bold '+size+'px serif';g.fillText(glyph||'ᚠ',x,y);g.restore();return true
+ }
+ const index=artCells.indexOf(icon);
+ if(index<0||!prizeArt.naturalWidth)return false;
+ g.drawImage(prizeArt,index%6*64,Math.floor(index/6)*64,64,64,Math.round(x-size/2),Math.round(y-size/2),size,size);
+ return true
+}
+const guide='NẠP VÉ · 1 vé Noel/lượt. Kéo cần để ngắm, bấm GẮP rồi chạm quà ở cửa nhận. Có thể trúng vật phẩm shop hoặc 1 trong 3 skin Noel siêu hiếm.';
 const parentWin=window.parent!==window?window.parent:null,post=m=>parentWin&&parentWin.postMessage(m,location.origin);let waiting=false;
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parentWin)return;const m=e.data||{};
- if(m.type==='claw:reward'&&typeof m.text==='string'){if(reward){reward.text=m.text;reward.start=t;}ui('Đã nhận '+m.text);return;}
+ if(m.type==='claw:reward' && typeof m.label==='string'){
+   const toy=pendingPrizes.get(m.pickupId);if(!toy)return;
+   pendingPrizes.delete(m.pickupId);toy.prize=m;
+   if(reward?.toy===toy)ui('Đã nhận: '+m.label);
+   return
+ }
  if(m.type!=='claw:tickets')return;coins=m.tickets|0;cost=(m.cost|0)||cost;
- if(waiting){waiting=false;if(m.ok){coinTime=0;ui('Đang nạp vé…')}else ui('Không đủ vé Noel. Săn quái để kiếm thêm vé.')}});
+ $('devEffects').hidden=m.devPreview!==true;if(m.devPreview!==true)effectPreview=null;
+ if(waiting){waiting=false;if(m.ok){ticketTime=0;ui('Đang nạp vé…')}else ui('Không đủ vé Noel. Săn quái để kiếm thêm vé.')}else ui()});
 // Offset and velocity of the hanging head relative to the moving carriage.
 function swingAxis(){return {offset:0,speed:0,railSpeed:0}}
 let swingX,swingZ;
@@ -64,7 +95,7 @@ function buttonDepth(name){
  const rebound=(age-.12)/.2;
  return 2.6*Math.exp(-5*rebound)*Math.cos(rebound*Math.PI*2.5)*(1-ease(rebound))
 }
-function reset(){buttonPress={blue:-10,red:-10};swingX=swingAxis();swingZ=swingAxis();cameraPhase=0;paid=false;coinTime=null;claw=99;depth=31;stick=null;pickupQueue=[];reward=null;grab=null;prizes=[];
+function reset(){buttonPress={blue:-10,red:-10};swingX=swingAxis();swingZ=swingAxis();cameraPhase=0;paid=false;ticketTime=null;claw=99;depth=31;stick=null;pickupQueue=[];reward=null;grab=null;prizes=[];
 // Fill the bed in layers while keeping the topmost prizes legible from both views.
 for(let i=0;i<90;i++){
  const k=i%4;
@@ -99,18 +130,18 @@ function ui(message){
  document.body.classList.add('machine-view');
  sizeViewport();
  if(message!==undefined)$('msg').textContent=message;
- $('coinCount').textContent=(coins>=9999?'∞ vé (dev)':coins+' vé')+' · '+cost+' vé/lượt';
+ $('ticketBalance').textContent=(coins>=9999?'∞ vé (dev)':coins+' vé')+' · '+cost+' vé/lượt';
  const replay=$('replayMachine');
- replay.hidden=prizes.length>8||paid||coinTime!==null||!!grab||pickupQueue.length>0;
+ replay.hidden=prizes.length>8||paid||ticketTime!==null||!!grab||pickupQueue.length>0;
  $('closeMachine').onclick=$('closeMachine').onpointerdown=e=>{e.stopPropagation();post({type:'claw:close'})};
  replay.onclick=reset;
 }
 function clamp(v,a,b){return Math.max(a,Math.min(v,b))}
-function insertCoin(){
- if(ended||grab||paid||coinTime!==null)return;
+function insertTicket(){
+ if(ended||grab||paid||ticketTime!==null)return;
  if(waiting)return;
  if(coins<cost)return ui('Cần '+cost+' vé Noel cho 1 lượt. Săn quái để kiếm thêm vé.');
- if(!parentWin){coins-=cost;coinTime=0;return ui('Đang nạp vé…')}
+ if(!parentWin){coins-=cost;ticketTime=0;return ui('Đang nạp vé…')}
  waiting=true;post({type:'claw:spend'})
 }
 function aim(x,z=depth){if(paid&&!grab&&cameraPhase===1){claw=clamp(x,22,144);depth=clamp(z,10,52)}}
@@ -191,6 +222,7 @@ function toyInClaw(a){
 function rect(x,y,w,h,col){g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h)}
 function oval(x,y,rx,ry,col){g.fillStyle=col;g.beginPath();g.ellipse(Math.round(x),Math.round(y),rx,ry,0,0,7);g.fill()}
 function plush(x,y,toy,s=1,angle=0){
+ if(drawPrizeIcon(toy,x,y,Math.round(s*20)))return;
  const tile=prizeView(toy.model,angle,camera().turn);
  g.save();g.imageSmoothingEnabled=false;g.translate(Math.round(x),Math.round(y));g.scale(s,s);
  g.drawImage(tile,-tile.width/2,-tile.height/2);g.restore()
@@ -640,14 +672,16 @@ function machine(){
  }
  box(10,17,-5,31,3,5,gold);
  box(143,24,-2,14,29,3,bracketPalette);box(145,26,-3,10,25,2,steel);
- box(148,36,-4,3,12,2,['#132632','#193448','#748d96']);
+ box(144,40,-4,12,3,2,['#132632','#193448','#748d96']);
  const [ledX,ledY]=project(150,31,-4);
  rect(ledX-2,ledY,4,1,coins>=cost?'#9ee9ba':'#aa7659');
- if(coinTime!==null){
-   const progress=clamp(coinTime/.85,0,1),[sx,sy]=project(149,42,-5);
+ if(ticketTime!==null){
+   const progress=clamp(ticketTime/.85,0,1),[sx,sy]=project(149,42,-5);
    const x=sx+16*(1-progress),y=sy-19*(1-progress)-6*Math.sin(Math.PI*progress);
-   const rx=Math.max(.6,5*(1-progress)),ry=Math.max(1,6*(1-clamp((progress-.7)/.3,0,1)));
-   oval(x,y,rx+1,ry+1,'#99672c');oval(x,y,rx,ry,'#ffce55');rect(x,y-ry/2,1,Math.max(1,ry),'#fff2ad')
+   const width=14;
+   const height=Math.max(1,Math.round(8*(1-progress)));
+   if(ticketArt.naturalWidth)g.drawImage(ticketArt,Math.round(x-width/2),Math.round(y-height),width,height);
+
  }
  drawControlDeck();
  // Painted shooting star on the right side panel.
@@ -661,54 +695,261 @@ function machine(){
 }
 function collectToy(){
  const toy=pickupQueue.shift();if(!toy)return;
- reward={kind:toy.k,start:t,text:'Đang nhận thưởng…'};post({type:'claw:prize',kind:toy.k});
- ui('Đang nhận phần thưởng…')
+ reward={kind:toy.k,toy,start:t};
+ ui('Đã nhận: '+(toy.prize?.label||names[toy.k]))
+}
+const greetingSheet=new Image();greetingSheet.src='../assets/ui/noel/claw-skin-greetings.png';
+const quietReveal=window.matchMedia('(prefers-reduced-motion: reduce)');
+const giftOpensAt=.65,skinAppearsAt=1.22,skinRevealDuration=skinAppearsAt+4;
+const greetings={
+ mage:{stage:'#41205e',row:0,first:.95,second:1.95,tint:'#e6d0ff'},
+ swordsman:{stage:'#41205e',row:1,first:.35,second:1.05,tint:'#e6d0ff'},
+ assassin:{stage:'#805013',gold:true,row:2,first:.8,second:1.55,tint:'#ffe8a2'}
+};
+const previewLabels={mage:'Aeris · Người tuyết may mắn',swordsman:'Kael · Tuần lộc Giáng sinh',assassin:'Crimson Veil · Giáng sinh'};
+let effectPreview=null;
+$('playEffects').onclick=()=>{
+ if($('devEffects').hidden||grab||reward)return;
+ const choice=$('effectChoice').value;
+ effectPreview={start:t,icons:choice==='all'?Object.keys(previewLabels):[choice]};
+};
+function drawOpeningGift(age,cx,cy,size,greeting){
+ const jump=ease(age/giftOpensAt),open=.16*ease((age-giftOpensAt)/.35)+.84*ease((age-skinAppearsAt+.09)/.24);
+ const [originX,originY]=screenPoint([25,29,-2]);
+ const still=quietReveal.matches;
+ const charge=clamp((age-giftOpensAt)/(skinAppearsAt-giftOpensAt),0,1);
+ const shake=age<skinAppearsAt?Math.sin(age*63)*charge*(greeting.gold?4:2):0;
+ const x=still?cx:originX+(cx-originX)*jump+shake;
+ const y=still?cy:originY+(cy-originY)*jump-size*.32*Math.sin(Math.PI*jump);
+ const scale=size*(still ? .45 : .14+.24*jump+.29*open)/32;
+ g.save();g.translate(Math.round(x),Math.round(y));g.scale(scale,scale);
+ // Pixel-art box and ribbon. The lid moves independently to expose the lit interior.
+ rect(-15,-7,30,22,'#30152b');rect(-13,-5,26,18,'#b63b50');
+ rect(-12,-3,3,15,'#ed6870');rect(9,-4,3,17,'#87283d');
+ rect(-3,-5,6,18,'#e2a447');rect(-2,-5,2,18,'#ffe2a1');
+ if(open>0){
+   rect(-13,-7,26,4,'#823d50');rect(-11,-6,22,2,'#fff0bc');
+   for(let i=0;i<5;i++){const h=Math.round(open*(6+(i%3)*3));rect(-9+i*4,-7-h,2,h,'#ffe2a1')}
+ }
+ if(charge>0)rect(-13,-8,Math.round(26*charge),2,greeting.tint);
+ g.translate(Math.round((still?0:14)*open*open),-Math.round((still?4:15)*open));
+ if(!still)g.rotate(-.16*open);
+ rect(-17,-10,34,7,'#36162e');rect(-15,-9,30,4,'#e35664');
+ rect(-3,-10,6,6,'#ffcf76');
+ rect(-9,-15,7,3,'#ffd684');rect(-10,-13,3,4,'#f5b85d');
+ rect(3,-15,7,3,'#ffd684');rect(8,-13,3,4,'#f5b85d');
+ rect(-3,-13,6,4,'#ffdc90');g.restore();
+}
+function drawGreetingAccent(row,phase,age,cx,cy,size){
+ if(!phase)return;
+ const life=quietReveal.matches ? .6 : clamp(age*1.8,0,1);
+ for(let i=0;i<(row===0?5:row===1?7:3);i++){
+   const a=(i+1)*2.4;
+   const dx=row===2?size*(.13+i*.07):Math.cos(a)*size*(row===0?.17:.46)*life;
+   const dy=row===2?-size*(.23-i*.04):Math.sin(a)*size*(row===0?.13:.32)*life;
+   const x=cx+dx-(row===0?size*.19:0),y=cy+dy-(row===0?size*.04:0);
+   const ink=['#c6f7ff','#ffe088','#e9a0ae'][row];
+   rect(x-1,y,row===2?4:3,1,ink);
+   if(row!==2)rect(x,y-1,1,3,'#fff7d8');
+ }
+}
+function drawRarityBackdrop(age,cx,cy,greeting){
+ const w=canvas.width,h=canvas.height,gold=!!greeting.gold;
+ const clock=quietReveal.matches?skinAppearsAt+1:age;
+ const charge=ease((clock-giftOpensAt)/(skinAppearsAt-giftOpensAt));
+ const impact=Math.exp(-3*Math.abs(clock-skinAppearsAt));
+ const radius=Math.hypot(w,h);
+ const glow=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(w,h)*.68);
+ glow.addColorStop(0,gold?'#ffe594':'#db9aff');
+ glow.addColorStop(.30,gold?'#e5a027':'#9854bc');
+ glow.addColorStop(.72,greeting.stage);
+ glow.addColorStop(1,gold?'#291909':'#21112f');
+ g.fillStyle=glow;g.fillRect(0,0,w,h);
+ g.save();g.translate(cx,cy);
+ if(gold){
+   const count=22,spin=clock*.042;
+   g.fillStyle='rgba(255,222,119,'+(.14+charge*.12+impact*.25)+')';
+   for(let i=0;i<count;i++){
+     const a=i*2*Math.PI/count+spin, spread=.055+impact*.055;
+     g.beginPath();g.moveTo(0,0);g.lineTo(radius*Math.cos(a),radius*Math.sin(a));
+     g.lineTo(radius*Math.cos(a+spread),radius*Math.sin(a+spread));g.fill();
+   }
+   for(let i=0;i<2;i++){
+     const r=h*(.33+i*.055+impact*.06);
+     g.save();g.rotate(i?-spin:spin);g.setLineDash([r*.31,r*.07]);
+     g.lineWidth=i?1:3;g.strokeStyle=i?'#f4bd4a':'#fff0ac';
+     g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.stroke();g.restore();
+   }
+ }else{
+   for(const side of [-1,1])for(let i=0;i<7;i++){
+     const x=side*(w*.55-i*w*.045),y=h*.59;
+     const tipX=x-side*w*(.035+.035*(i%3)),tipY=y-h*(.34+(i*3%7)*.075)-charge*5;
+     const half=w*(.025+.01*(i%2));
+     g.fillStyle=i%2?'#67318a':'#542573';g.beginPath();g.moveTo(x-half,y);
+     g.lineTo(tipX,tipY);g.lineTo(x+half,y);g.fill();
+     g.fillStyle='rgba(219,154,255,'+(.32+impact*.35)+')';g.beginPath();
+     g.moveTo(tipX,tipY);g.lineTo(x,y);g.lineTo(x+half,y);g.fill();
+   }
+ }
+ g.restore();
+}
+function drawRarityBurst(age,cx,cy,size,greeting){
+ const gold=!!greeting.gold, ink=gold?'#ffcb4f':'#cc8cff';
+ const elapsed=age-skinAppearsAt;
+ if(quietReveal.matches){
+   for(let i=0;i<8;i++){
+     const a=i*Math.PI/4,x=cx+size*.55*Math.cos(a),y=cy+size*.47*Math.sin(a);
+     rect(x-2,y,5,1,ink);rect(x,y-2,1,5,greeting.tint);
+   }
+   return;
+ }
+ // Points converge on the lid before the burst, then fly past the emerging silhouette.
+ if(elapsed<0){
+   const pull=clamp((age-giftOpensAt)/(skinAppearsAt-giftOpensAt),0,1);
+   if(!pull)return;
+   for(let i=0;i<(gold?16:9);i++){
+     const a=i*2.4,r=size*(.13+.51*(1-pull));
+     rect(cx+Math.cos(a)*r,cy+Math.sin(a)*r,2,2,greeting.tint);
+   }
+   return;
+ }
+ const duration=gold?1.65:1.1;
+ if(elapsed>=duration)return;
+ const u=elapsed/duration;
+ g.save();g.globalAlpha*=1-u*u;
+ for(let wave=0;wave<(gold?3:1);wave++){
+   const v=(elapsed-wave*.13)/(.65+wave*.13);
+   if(v<=0||v>=1)continue;
+   g.save();g.globalAlpha*=1-v;g.strokeStyle=wave%2?ink:greeting.tint;
+   g.lineWidth=(gold?5:3)*(1-v)+1;
+   g.beginPath();g.arc(cx,cy,size*(.10+.82*(1-(1-v)**2)),0,Math.PI*2);g.stroke();g.restore();
+ }
+ for(let i=0;i<(gold?42:19);i++){
+   const angle=i*2.39996, speed=.47+(i%7)*.076;
+   const distance=size*(.09+speed*(1-(1-u)**3))*(gold?1.25:1);
+   const vx=Math.cos(angle),vy=Math.sin(angle);
+   const x=cx+vx*distance,y=cy+vy*distance+(gold?size*.24*u*u:0);
+   const len=(gold?13:6)*(1-u)+2;
+   g.beginPath();g.moveTo(Math.round(x-vx*len),Math.round(y-vy*len));g.lineTo(Math.round(x),Math.round(y));
+   g.lineWidth=i%3+1;g.strokeStyle=i%3?ink:greeting.tint;g.stroke();
+   if(gold&&i%5===0){rect(x-3,y,7,1,'#fff6c6');rect(x,y-3,1,7,'#fff6c6')}
+ }
+ g.restore();
+}
+function drawSpecialReveal(age,greeting,toy){
+ const still=quietReveal.matches;
+ const width=canvas.width,height=canvas.height;
+ let size=Math.round(greeting?Math.min(height*.67,width*.69,224):Math.min(height*.56,width*.50,128));
+ const cx=Math.round(width/2),cy=Math.round(height*.47);
+ let spriteY=cy, mouthY=null;
+ const tint=greeting?.tint||'#a6cfff';
+ if(greeting){
+   drawRarityBackdrop(age,cx,cy,greeting);
+   drawRarityBurst(age,cx,cy+size*.09,size,greeting);
+   const boxY=cy+size*.22;
+   const rise=clamp((age-skinAppearsAt)/.68,0,1);
+   if(rise<1){
+     g.save();g.globalAlpha*=1-ease((rise-.45)/.55);
+     drawOpeningGift(age,cx,boxY,size,greeting);g.restore();
+   }
+   if(age<skinAppearsAt)return;
+   age-=skinAppearsAt;
+   if(!still&&rise<1){
+     mouthY=boxY-size*.13;
+     const settled=ease(rise);
+     size=Math.round(size*(.18+.82*settled+.12*Math.sin(Math.PI*rise)));
+     spriteY=mouthY+(cy-mouthY)*settled-size*.11*Math.sin(Math.PI*rise);
+     mouthY+=(height-mouthY)*settled;
+   }
+ }else{
+ g.fillStyle='rgba(8,18,30,.82)';g.fillRect(0,0,width,height);
+ for(let i=0;i<12;i++){
+   const a=i*Math.PI/6+(still?0:age*.14);
+   const r=size*(.52+(i%3)*.06);
+   const px=cx+Math.cos(a)*r,py=cy+Math.sin(a)*r;
+   rect(px-2,py,5,1,tint);rect(px,py-2,1,5,tint);
+ }
+ }
+ g.save();
+ if(mouthY!==null){g.beginPath();g.rect(0,0,width,mouthY);g.clip()}
+ if(greeting&&greetingSheet.naturalWidth){
+   const pose=still?2:age<greeting.first?0:age<greeting.second?1:2;
+   drawGreetingAccent(greeting.row,pose,age-greeting.first,cx,cy,size);
+   g.imageSmoothingEnabled=false;
+   g.drawImage(greetingSheet,pose*128,greeting.row*128,128,128,Math.round(cx-size/2),Math.round(spriteY-size/2),size,size);
+ }else drawPrizeIcon(toy,cx,spriteY,Math.round(size*.72));
+ g.restore();
+ if(greeting&&age<.68)return;
+ g.font='16px ThuBong';g.textAlign='center';
+ const baseline=Math.min(height-6,cy+size/2+(greeting?23:16));
+ if(greeting){
+   const plaque=Math.min(width-12,Math.ceil(g.measureText(toy.prize.label).width)+18);
+   rect(cx-plaque/2,baseline-14,plaque,19,'#273549');
+   rect(cx-plaque/2+2,baseline-14,plaque-4,1,tint);
+ }
+ g.fillStyle=tint;g.fillText(toy.prize.label,cx,baseline,width-22);
 }
 function drawPickup(){
+ const showingSkin=!!effectPreview||!!greetings[reward?.toy.prize?.icon];
+ $('cabinetType').style.visibility=showingSkin?'hidden':'';
+
+ if(effectPreview){
+   const elapsed=t-effectPreview.start,icon=effectPreview.icons[Math.floor(elapsed/skinRevealDuration)];
+   if(icon){
+     g.save();drawSpecialReveal(elapsed%skinRevealDuration,greetings[icon],{prize:{icon,label:previewLabels[icon]}});g.restore();
+     return
+   }
+   effectPreview=null
+ }
  const [x,y]=screenPoint([25,29,-2]);
  if(pickupQueue.length&&!grab&&!reward){
    const h=Math.round(y-19+2*Math.sin(t*5));
    rect(x-3,h,7,2,'#624744');rect(x-2,h+2,5,2,'#ffd165');rect(x-1,h+4,3,2,'#ffd165')
  }
  if(!reward)return;
- const age=t-reward.start;if(age>=2.8){reward=null;return}
- g.save();g.globalAlpha=clamp((2.8-age)/.32,0,1);
+ const age=t-reward.start,prize=reward.toy.prize,greeting=greetings[prize?.icon];
+ const duration=greeting?skinRevealDuration:2.6;
+ if(age>=duration){reward=null;return}
+ if(greeting||prize?.special){
+   g.save();g.globalAlpha=clamp((duration-age)/.3,0,1);
+   drawSpecialReveal(age,greeting,reward.toy);g.restore();return
+ }
+ g.save();g.globalAlpha=clamp((2.6-age)/.32,0,1);
  for(let i=0;i<18;i++){
    const a=i*2.4,r=(13+i%4*4)*Math.min(age*4,1)+age*6;
    rect(x+Math.cos(a)*r,y-8+Math.sin(a)*r-15*age+9*age*age,i%3===0?3:2,2,['#fff4ac','#ffbd50',colors[reward.kind]][i%3])
  }
  const py=Math.round(y-22-12*Math.min(age*3,1));
- g.font='16px ThuBong';g.textAlign='center';const label=reward.text;
- const textWidth=g.measureText(label).width;
- if(textWidth>canvas.width-28)g.font=Math.max(8,Math.floor(16*(canvas.width-28)/textWidth))+'px ThuBong';
- const w=Math.min(canvas.width-8,Math.ceil(g.measureText(label).width)+12);
+ g.font='16px ThuBong';g.textAlign='center';const label=reward.toy.prize?.label||names[reward.kind],w=Math.min(canvas.width-6,Math.ceil(g.measureText(label).width)+12);
  const center=clamp(x,w/2+3,canvas.width-w/2-3);
+ drawPrizeIcon(reward.toy,clamp(center,24,canvas.width-24),py-36,40);
  rect(center-w/2,py-13,w,19,'#59394c');rect(center-w/2+1,py-12,w-2,1,'#ffc773');
- g.fillStyle='#fff2c9';g.fillText(label,center,py+1);g.restore()
+ g.fillStyle='#fff2c9';g.fillText(label,center,py+1,canvas.width-18);g.restore()
 }
 function step(dt){t+=dt;
  {const target=paid||grab?1:0;cameraPhase=clamp(cameraPhase+(target?dt/1.2:-dt/.9),0,1)}
 
- if(coinTime!==null){coinTime+=dt;if(coinTime>=.85){coinTime=null;paid=true;stick=null;ui('Đã nạp 1 lượt. Kéo cần để ngắm rồi bấm GẮP.')}} 
+ if(ticketTime!==null){ticketTime+=dt;if(ticketTime>=.85){ticketTime=null;paid=true;stick=null;ui('Đã nạp 1 lượt. Kéo cần để ngắm rồi bấm GẮP.')}}
  const oldX=claw,oldZ=depth;
  if(stick)aim(claw+stick.dx*58*dt,depth+stick.dz*38*dt);
  advanceSwing(swingX,claw-oldX,dt);advanceSwing(swingZ,depth-oldZ,dt)
  if(grab){grab.age+=dt;jostleNearbyToys(dt);let p=grab.target;if(p&&grab.age>=1.02&&grab.slip===null){
  const offset=Math.hypot((p.x-grab.x)/12,(p.z-grab.z)/10);
  grab.slip=Math.random()<.07+.18*offset;
+ if(!grab.slip){revealPrize(p);if(grab.extra)revealPrize(grab.extra)}
  }
  const slipped=grab.slip===true,extra=grab.extra;
  if(grab.age>=(p?(slipped?1.65:3.05):1.4)){if(p&&slipped){p.x=clamp(grab.x,49,148);p.z=grab.z;p.tilt+=.45;if(extra){extra.x=clamp(grab.x+5,48,148);extra.z=grab.z;extra.y=p.y}settlePile()}grab=null;
- if(p&&!slipped){claw=chute.x;depth=chute.z;prizes=prizes.filter(v=>v!==p&&v!==extra);settlePile();pickupQueue.push(p);if(extra)pickupQueue.push(extra);ui('Chạm vào '+names[p.k]+' ở cửa nhận.')}
+ if(p&&!slipped){claw=chute.x;depth=chute.z;prizes=prizes.filter(v=>v!==p&&v!==extra);settlePile();pickupQueue.push(p);if(extra)pickupQueue.push(extra);ui('Chạm để xem quà ở cửa nhận: '+(p.prize?.label||names[p.k]))}
  else ui(slipped?'Bé tuột khỏi móc rồi!':'Càng chưa chạm bé nào.');}}}
 canvas.onpointerdown=e=>{let r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;
  const near=(point,rx,ry)=>{let [px,py]=screenPoint(point),scale=camera().scale;return ((x-px)/(rx*scale))**2+((y-py)/(ry*scale))**2<=1};
- if(ended)return;
- if(!grab&&!stick&&pickupQueue.length&&near([25,29,-2],16,14)){collectToy();return}
+ if(effectPreview||ended||reward&&(greetings[reward.toy.prize?.icon]||reward.toy.prize?.special))return;
+ if(!grab&&!stick&&!reward&&pickupQueue.length&&near([25,29,-2],16,14)){collectToy();return}
  if(grab||stick||(cameraPhase>0&&cameraPhase<1)||(paid&&cameraPhase===0))return;
  if(near(joystickTip(),10,11)||near([controls3D.stick[0],69,controls3D.stick[2]],8,7)){stick={id:e.pointerId,x,y,dx:0,dz:0};try{canvas.setPointerCapture(e.pointerId)}catch{};return}
  if(near(controls3D.red,14,11)){buttonPress.red=t;drop();return}
- if(near(controls3D.blue,14,11)){buttonPress.blue=t;insertCoin();return}if(near([149,42,-4],9,14))insertCoin();};
+ if(near(controls3D.blue,14,11)){buttonPress.blue=t;insertTicket();return}if(near([149,42,-4],9,14))insertTicket();};
 canvas.onpointermove=e=>{if(stick?.id!==e.pointerId)return;let r=canvas.getBoundingClientRect();stick.dx=clamp(((e.clientX-r.left)*canvas.width/r.width-stick.x)/14,-1,1);stick.dz=clamp((stick.y-(e.clientY-r.top)*canvas.height/r.height)/12,-1,1)};
 canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=e=>{if(stick?.id===e.pointerId)stick=null};window.addEventListener('blur',()=>stick=null);
 function frame(now){let remaining=last?Math.min(.16,(now-last)/1000):0;last=now;

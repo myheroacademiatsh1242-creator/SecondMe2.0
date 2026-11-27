@@ -1,103 +1,150 @@
-"""Prepare Kael and Aeris's Noel atlases from the four original white-matte sheets.
-
-Usage: python prepare_noel_outfits.py KAEL_WALK KAEL_COMBAT AERIS_WALK AERIS_COMBAT
-Requires Pillow and NumPy. Cell sizes and feet anchors match christmasOutfits.ts.
+"""Pack the approved Noel preview and generated 4x3 motion sheets for one costume.
+Usage: python prepare_noel_outfits.py snowman|reindeer APPROVED WALK COMBAT
 """
 import argparse
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
+from PIL import Image, ImageDraw, ImageOps
 
-ASSETS = Path(__file__).resolve().parents[2] / "public/assets/christmas-outfits"
-INK = (12, 15, 23)
-CUTS = {
-    "reindeer": [
-        [0, 198, 401, 618, 815, 1012, 1200], [0, 200, 404, 601, 808, 1005, 1200],
-        [0, 205, 401, 598, 810, 1007, 1200], [0, 200, 402, 609, 811, 1041, 1200],
-    ],
-    "snowman": [
-        [0, 199, 400, 600, 798, 996, 1200], [0, 202, 400, 600, 802, 1004, 1200],
-        [0, 199, 402, 601, 821, 1007, 1200], [0, 201, 402, 602, 820, 1008, 1200],
-    ],
-}
+OUTPUT = Path(__file__).resolve().parents[2] / "public/assets/christmas-outfits"
 
 
-def pixel_frame(source, combat):
-    # One art pixel is two source pixels. Denoise the JPEG speckle before sampling.
-    small = source.filter(ImageFilter.MedianFilter(3)).resize(
-        (source.width // 2, source.height // 2), Image.Resampling.BOX)
-    rgb = np.asarray(small).astype(np.int16)
-    low, high = rgb.min(axis=2), rgb.max(axis=2)
-    matte = (low > 210) & (high - low < 32)
-    flood = Image.fromarray(np.uint8(matte) * 255).copy()
-    # All cells have clear corners. Flooding from the outside retains the whites of the coat.
-    ImageDraw.floodfill(flood, (0, 0), 128)
-    solid = np.asarray(flood) != 128
-    mask = Image.fromarray(np.uint8(solid) * 255).filter(ImageFilter.MedianFilter(3))
-    solid = np.array(mask) > 0
-    # Darken only the character silhouette. Detached icy bolts, glows and gold sparks
-    # retain their own hues. The knight's steel and Aeris's snow use their authored shading.
-    dark = solid & (high < 145)
-    near_ink = np.array(Image.fromarray(np.uint8(dark)*255).filter(ImageFilter.MaxFilter(5))) > 0
-    eroded = np.array(mask.filter(ImageFilter.MinFilter(3))) > 0
-    expanded = np.array(mask.filter(ImageFilter.MaxFilter(3))) > 0
-    edge = expanded & ~eroded
-    if combat:
-        edge &= near_ink
-        # A white matte around an airborne effect reads as a white box against dark scenery.
-        pale_rim = solid & ~eroded & ~near_ink & (low > 185) & (high-low < 24)
-        solid &= ~pale_rim
-    color = small.filter(ImageFilter.UnsharpMask(radius=1.2, percent=100, threshold=5))
-    color = ImageEnhance.Color(color).enhance(1.06)
-    pixels = np.array(color)
-    pixels[edge] = INK
-    pixels[~(solid | edge)] = 0
-    return Image.fromarray(np.dstack((pixels, np.uint8(solid | edge)*255)))
+def sections(image, count, axis):
+    """Find the transparent gutter nearest each nominal grid boundary."""
+    alpha = np.asarray(image.getchannel("A")) > 64
+    coverage = alpha.sum(axis=axis)
+    size = len(coverage)
+    cuts = [0]
+    for n in range(1, count):
+        nominal = round(n * size / count)
+        radius = round(size / count / 8)
+        candidates = range(nominal - radius, nominal + radius + 1)
+        cuts.append(min(candidates, key=lambda p: (coverage[p], abs(p - nominal))))
+    return cuts + [size]
 
 
-def finish(cells, columns):
-    w,h = cells[0].size
-    atlas = Image.new("RGBA", (columns*w, len(cells)//columns*h))
-    for i,frame in enumerate(cells):
-        atlas.paste(frame, (i%columns*w, i//columns*h))
-    # Share shades between poses so the scarf, hat and face stay stable through animation.
-    rgb = atlas.convert("RGB")
-    palette = rgb.quantize(colors=112, method=Image.Quantize.MEDIANCUT)
-    colored = rgb.quantize(palette=palette, dither=Image.Dither.NONE).convert("RGBA")
-    colored.putalpha(atlas.getchannel("A"))
-    return colored.resize((atlas.width*2, atlas.height*2), Image.Resampling.NEAREST)
+def cells(image):
+    rows = sections(image, 3, 1)
+    result = []
+    for top, bottom in zip(rows, rows[1:]):
+        strip = image.crop((0, top, image.width, bottom))
+        columns = sections(strip, 4, 0)
+        for left, right in zip(columns, columns[1:]):
+            result.append((strip.crop((left, 0, right, strip.height)), left, top))
+    return result
 
 
-def prepare(name, walk_path, combat_path):
-    walk = Image.open(walk_path).convert("RGB")
-    combat = Image.open(combat_path).convert("RGB")
-    if walk.size != (1600,800) or combat.size != (1200,896):
-        raise ValueError(f"Unexpected source dimensions for {name}")
-    walking = [pixel_frame(walk.crop((x,y,x+200,y+200)),False)
-               for y in range(0,800,200) for x in range(0,1600,200)]
-    finish(walking,8).save(ASSETS/f"{name}-walk.png", optimize=True)
-    rows = [0,216,450,674,896] if name=="snowman" else [0,215,450,675,896]
-    poses = []
-    for row, cuts in enumerate(CUTS[name]):
-        for col, (left,right) in enumerate(zip(cuts,cuts[1:])):
-            tile = combat.crop((left,rows[row],right,rows[row+1]))
-            # Determine the ground from visible paint before adding an outline.
-            values = np.asarray(tile).astype(np.int16)
-            paint = (values.min(2)<192) | (values.max(2)-values.min(2)>34)
-            feet = int(np.nonzero(paint)[0].max()+1)
-            if name=="snowman" and (row,col)==(2,4):
-                feet = 202  # airborne bolts have no character feet
-            cell = Image.new("RGB",(300,240),"white")
-            cell.paste(tile,(150-(100+col*200-left),220-feet))
-            poses.append(pixel_frame(cell,True))
-    finish(poses,6).save(ASSETS/f"{name}-combat.png", optimize=True)
+def place(cell, image, anchor, target, scale):
+    # Trim before scaling. Anchor both sheets on the hero's feet, independent of spell size.
+    box = image.getchannel("A").point(lambda a: 255 if a >= 80 else 0).getbbox()
+    if box is None:
+        raise ValueError("Empty pose")
+    cropped = image.crop(box)
+    cropped.putalpha(cropped.getchannel("A").point(lambda a: 255 if a >= 96 else 0))
+    size = tuple(max(1, round(v * scale)) for v in cropped.size)
+    sprite = cropped.resize(size, Image.Resampling.NEAREST)
+    xy = tuple(round(t - (a - b) * scale) for t, a, b in zip(target, anchor, box[:2]))
+    if xy[0] < 0 or xy[1] < 0 or xy[0]+size[0] > cell.width or xy[1]+size[1] > cell.height:
+        raise ValueError(f"Pose outside {cell.size}: {xy}, {size}")
+    cell.paste(sprite, xy)
+
+
+def preview_frames(path):
+    board = Image.open(path).convert("RGB")
+    rgb = np.asarray(board).astype(np.int16)
+    bg = np.median(rgb[:30], axis=(0,1))
+    mask = np.abs(rgb - bg).max(axis=2) > 18
+    board = board.convert("RGBA")
+    board.putalpha(Image.fromarray(np.uint8(mask)*255))
+    cuts = [round(i*board.width/3) for i in range(4)]
+    return [board.crop((a,0,b,board.height)) for a,b in zip(cuts,cuts[1:])]
+
+
+def black_fringe(frame, center, radii, repair_matte=False):
+    # Dark teal hair in the approved board partly matched its green background.
+    # Recover enclosed pixels inside the fringe, then retain its stepped shading in charcoal.
+    pixels = np.array(frame)
+    x, y = center
+    rx, ry = radii
+    yy, xx = np.ogrid[:frame.height, :frame.width]
+    fringe = ((xx-x)/rx)**2 + ((yy-y)/ry)**2 <= 1
+    rgb = pixels[:, :, :3].astype(np.int16)
+    cool = (rgb.max(axis=2) < 115) & (rgb[:, :, 0] <= rgb[:, :, 1]+5)
+    if repair_matte:
+        alpha = Image.fromarray(pixels[:, :, 3]).copy()
+        ImageDraw.floodfill(alpha, (0, 0), 128)
+        enclosed = np.asarray(alpha) != 128
+        pixels[fringe & cool & enclosed, 3] = 255
+    selected = fringe & cool & (pixels[:, :, 3] > 0)
+    gray = np.minimum(43, (rgb[:, :, 1] * 45 // 100))
+    pixels[selected, :3] = gray[selected, None]
+    return Image.fromarray(pixels)
+
+
+def pack(name, preview, walk, combat):
+    approved = preview_frames(preview)
+    walking = []
+    for image, _, _ in cells(Image.open(walk).convert("RGBA")):
+        box = image.getchannel("A").point(lambda a: 255 if a >= 80 else 0).getbbox()
+        anchor = ((box[0]+box[2])/2,box[3])
+        cell = Image.new("RGBA",(200,200))
+        place(cell,image,anchor,(100,186),160/(box[3]-box[1]))
+        if name == "snowman" and len(walking) < 8:
+            side = len(walking) >= 4
+            cell = black_fringe(cell, (116,87) if side else (101,88), (18,17) if side else (25,19))
+        walking.append(cell)
+    front = Image.new("RGBA",(200,200))
+    box = approved[0].getbbox()
+    place(front,approved[0],((box[0]+box[2])/2,box[3]),(100,186),160/(box[3]-box[1]))
+    if name == "snowman":
+        front = black_fringe(front, (100,91), (27,23), repair_matte=True)
+    left = [ImageOps.mirror(frame) for frame in walking[4:8]]
+    rows = [[front,walking[4],walking[8],left[0],*walking[:4]],
+            left,walking[4:8],walking[8:12]]
+    atlas = Image.new("RGBA",(1600,800))
+    for y,row in enumerate(rows):
+        for x,frame in enumerate(row):
+            atlas.paste(frame,(200*x,200*y))
+    atlas.save(OUTPUT/f"{name}-walk.png",optimize=True)
+
+    # Body centres and sole positions in a 400x300 layout; VFX can extend beyond the feet.
+    if name=="snowman":
+        xs = [48,145,239,343,50,146,244,345,50,146,244,345]
+        ys = [85]*4+[181]*4+[284,282,280,284]
+        reference_height=254
+        approved_anchors=[(1080-723,628),(1818-1447,578)]
+    else:
+        xs = [51,146,240,345,51,145,243,344,51,145,241,344]
+        ys = [85]*4+[182]*4+[283,283,282,283]
+        reference_height=247
+        approved_anchors=[(1052-723,630),(1764-1447,617)]
+    attacks=[]
+    for i,(image,left,top) in enumerate(cells(Image.open(combat).convert("RGBA"))):
+        frame=Image.new("RGBA",(360,270))
+        anchor=(xs[i]*1448/400-left,ys[i]*1086/300-top)
+        place(frame,image,anchor,(165,227),184/reference_height)
+        if name == "snowman":
+            centers = [(176,119),(177,120),(171,120),(172,122),(177,122),(181,123),
+                       (170,118),(178,119),(175,128),(174,116),(177,126),(184,117)]
+            frame = black_fringe(frame, centers[i], (27,20))
+        attacks.append(frame)
+    for image,anchor in zip(approved[1:],approved_anchors):
+        frame=Image.new("RGBA",(360,270))
+        place(frame,image,anchor,(165,227),184/(450 if name=="snowman" else 446))
+        if name == "snowman":
+            center = (167,114) if len(attacks) == 12 else (170,132)
+            frame = black_fringe(frame, center, (30,23), repair_matte=True)
+        attacks.append(frame)
+    atlas=Image.new("RGBA",(4*360,4*270))
+    for i,frame in enumerate(attacks):
+        atlas.paste(frame,(i%4*360,i//4*270))
+    atlas.save(OUTPUT/f"{name}-combat.png",optimize=True)
 
 
 if __name__ == "__main__":
-    args=argparse.ArgumentParser(description=__doc__)
-    for name in ["kael_walk","kael_combat","aeris_walk","aeris_combat"]:
-        args.add_argument(name,type=Path)
-    paths=args.parse_args()
-    prepare("reindeer",paths.kael_walk,paths.kael_combat)
-    prepare("snowman",paths.aeris_walk,paths.aeris_combat)
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("name",choices=["snowman","reindeer"])
+    for source in ("preview","walk","combat"):
+        parser.add_argument(source,type=Path)
+    pack(**vars(parser.parse_args()))

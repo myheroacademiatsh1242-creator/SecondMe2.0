@@ -15,13 +15,12 @@ function sheet(outfit: OutfitId, action: 'walk'|'combat') {
 }
 
 /*
- * The atlases (tools/assets/prepare_noel_outfits.py) are pixel art with every art pixel stored as a
- * 2 x 2 block. Shown at an art pixel or larger they are copied with nearest neighbour, which keeps
+ * The atlases (tools/assets/prepare_noel_outfits.py) are pixel art with native-resolution pixels. Shown at an art pixel or larger they are copied with nearest neighbour, which keeps
  * the pixels square and the outline sharp. Only when a cell is shown smaller than its art size is it
  * averaged down (with a hard edge put back), so pixels are never dropped at random. Each result is
  * cached at the exact device size it is drawn at.
  */
-const ART_PX = 2;
+const ART_PX = 1;
 const scaled = new Map<string, HTMLCanvasElement>();
 function scaledCell(img: HTMLImageElement, key: string, sx: number, sy: number, sw: number, sh: number,
   dw: number, dh: number) {
@@ -71,13 +70,14 @@ export function drawChristmasWalk(ctx:CanvasRenderingContext2D, outfit:OutfitId,
   direction:Direction, moving:boolean, echo:boolean, time:number) {
   const img=sheet(outfit,'walk');
   if (!img) return false;
-  const side=direction==='left'||direction==='right';
-  const step=Math.floor(time*10);
-  const row=moving&&side?(direction==='left'?1:2):0;
-  const col=row?step%6:({down:0,up:4,right:2,left:6} as const)[direction];
+  // Row 0 has four standing directions followed by four forward strides.
+  const step = Math.floor(time * 8) % 4;
+  const row = moving ? { down: 0, left: 1, right: 2, up: 3 }[direction] : 0;
+  const col = moving ? (direction === 'down' ? 4 + step : step)
+    : { down: 0, right: 1, up: 2, left: 3 }[direction];
   const height=outfit==='snowman'?58:55;
   const size=Math.round(height*200/160);
-  const feet=y+(outfit==='snowman'?10:7)-(moving&&!side?step%2:0);
+  const feet=y+(outfit==='snowman'?10:7);
   ctx.save();
   ctx.imageSmoothingEnabled=false;
   if(echo)ctx.globalAlpha*=0.65;
@@ -86,11 +86,11 @@ export function drawChristmasWalk(ctx:CanvasRenderingContext2D, outfit:OutfitId,
   return true;
 }
 
-// Original combo indices are also used by the character-select demonstration.
-// Each group selects the windup, contact and recovery poses from its corresponding asset row.
-const combatCells={
-  reindeer:[0,1,3,5,6,8,9,12,14,15,16,18,19,20,21,22,23],
-  snowman:[0,1,2,4,5,7,8,10,11,12,13,14,15,18,19,20,21,23],
+// Match each hero's four gameplay hits to windup, contact and recovery art.
+// Cells 12 and 13 are the approved orb/slash and dome/ground-impact key poses.
+const combatCells = {
+  reindeer: [0, 1,12,3, 4,1,5, 4,5,6,7, 8,9,1,13,10,11],
+  snowman:  [0, 0,1,12,2, 4,1,5,3, 4,5,6,7, 8,9,10,13,11],
 };
 export function drawChristmasAttack(ctx:CanvasRenderingContext2D,outfit:'reindeer'|'snowman',
   index:number,x:number,feet:number,height:number,left=false) {
@@ -102,8 +102,8 @@ export function drawChristmasAttack(ctx:CanvasRenderingContext2D,outfit:'reindee
   ctx.imageSmoothingEnabled=false;
   ctx.translate(Math.round(x),Math.round(feet));
   if(left)ctx.scale(-1,1);
-  drawCell(ctx,img,outfit+'-combat',(cell%6)*300,Math.floor(cell/6)*240,300,240,
-    Math.round(-150*scale),Math.round(-220*scale),Math.round(300*scale),Math.round(240*scale));
+  drawCell(ctx,img,outfit+'-combat',(cell%4)*360,Math.floor(cell/4)*270,360,270,
+    Math.round(-165*scale),Math.round(-227*scale),Math.round(360*scale),Math.round(270*scale));
   ctx.restore();
   return true;
 }
@@ -113,11 +113,11 @@ export function drawChristmasPortrait(ctx:CanvasRenderingContext2D,outfit:'reind
   direction:Direction,x:number,floor:number,height:number){
   const img=sheet(outfit,'walk');
   if(!img)return false;
-  const col=({down:0,up:4,right:2,left:6} as const)[direction];
-  // In the walk cells the body runs from about row 22 to the feet at row 187.
-  const size=Math.round(200*height/165);
+  const col=({down:0,up:2,right:1,left:3} as const)[direction];
+  // In the walk cells the body runs from row 26 to the feet at row 186.
+  const size=Math.round(200*height/160);
   ctx.save();
-  drawCell(ctx,img,outfit+'-walk',col*200,0,200,200,Math.round(x-size/2),Math.round(floor-187*size/200),size,size);
+  drawCell(ctx,img,outfit+'-walk',col*200,0,200,200,Math.round(x-size/2),Math.round(floor-186*size/200),size,size);
   ctx.restore();
   return true;
 }

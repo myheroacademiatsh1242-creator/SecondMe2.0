@@ -2,6 +2,8 @@ import {clawRewardText} from '../game/logic/clawRewards.ts';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { GameEngine } from '../game/GameEngine.ts';
+import { ECHO_RUNES } from '../game/logic/echoRunes.ts';
+import { SHOP_ITEMS } from '../game/logic/shopItems.ts';
 import { CLAW_COST } from '../game/logic/campaign.ts';
 import './ClawMachine.css';
 
@@ -19,18 +21,22 @@ export function ClawMachine({ engine, close, container }: { engine: GameEngine; 
   const frame = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
     const send = (ok?: boolean) => frame.current?.contentWindow?.postMessage(
-      { type: 'claw:tickets', tickets: engine.clawTickets, cost: CLAW_COST, ok }, location.origin);
+      { type: 'claw:tickets', tickets: engine.clawTickets, cost: CLAW_COST, devPreview: engine.devUnlocked, ok }, location.origin);
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
-      const m = e.data as { type?: string; kind?: number };
+      const m = e.data as { type?: string; kind?: number; pickupId?: number };
       if (m.type === 'claw:ready') { if (engine.enterClawMachine()) setWelcome(true); send(); }
       else if (m.type === 'claw:spend') send(engine.spendClawPlay());
-      else if (m.type === 'claw:prize' && typeof m.kind === 'number') { const prize=engine.claimClawPrize(m.kind);
-        if(prize){
-          const text=clawRewardText(prize,engine.language==='vi');
-          frame.current?.contentWindow?.postMessage({type:'claw:reward',text},location.origin);
-        }
-        send(); }
+      else if (m.type === 'claw:prize' && typeof m.kind === 'number' && Number.isSafeInteger(m.pickupId)) {
+        const prize = engine.claimClawPrize(m.kind);
+        if (prize) frame.current?.contentWindow?.postMessage({
+          type: 'claw:reward', pickupId: m.pickupId, label: prize.catalogue ? clawRewardText(prize.catalogue,engine.language==='vi') : prize.label,
+          special: !!prize.rune || SHOP_ITEMS.some(item => item.id === prize.item && item.rarity !== 'common'),
+          icon: prize.catalogue?.type==='item' ? prize.catalogue.id : prize.skin ?? prize.item ?? (prize.rune ? 'rune' : prize.catalogue?.type ?? 'coins'),
+          glyph: ECHO_RUNES.find(rune => rune.id === prize.rune)?.glyph,
+        }, location.origin);
+        send();
+      }
       else if (m.type === 'claw:close') close();
     };
     window.addEventListener('message', onMessage);

@@ -59,7 +59,8 @@ test('character wardrobe shows wearable outfits before locked outfits in added o
 
 test("Crimson's Christmas outfit is locked outside the Christmas season", () => {
  assert.equal(canWearOutfit('assassin','frost',[]),false);
- assert.equal(canWearOutfit('assassin','frost',[],true),true);
+ assert.equal(canWearOutfit('assassin','frost',[],true),false);
+ assert.equal(canWearOutfit('assassin','frost',[],true,true),true);
  assert.equal(canWearOutfit('assassin','default',[]),true);
 });
 
@@ -72,16 +73,23 @@ test('Christmas Deluxe unlocks both hero-specific outfits through participation 
  g.screen='characters';
  assert.equal(g.setCharacterOutfit('mage','snowman'),false);
  g.devUnlocked=true;
+ g.setDevSeasonPreview('none');
+ assert.equal(g.setCharacterOutfit('mage','snowman'),false);
+ assert.equal(g.setCharacterOutfit('swordsman','reindeer'),false);
+ g.setDevSeasonPreview('christmas');
  assert.equal(g.setCharacterOutfit('mage','snowman'),true);
  assert.equal(g.setCharacterOutfit('swordsman','reindeer'),true);
  assert.equal(g.setCharacterOutfit('mage','reindeer'),false);
- assert.equal(g.campaign.christmasDeluxeEarned,false);
+ assert.deepEqual(g.campaign.ownedNoelSkins,[]);
  g.devUnlocked=false;
- g.campaign.christmasDeluxeEarned=true;
+ g.campaign.ownedNoelSkins=['mage','swordsman'];
  g.campaign.save();
  const saved=new Campaign();saved.load();
- assert.equal(saved.christmasDeluxeEarned,true);
- assert.equal(g.setCharacterOutfit('swordsman','reindeer'),true);
+ assert.deepEqual(saved.ownedNoelSkins,['mage','swordsman']);
+ for(const [hero,id] of [['swordsman','reindeer'],['mage','snowman']] as const){
+  assert.equal(canWearOutfit(hero,id,[],false,saved.ownedNoelSkins.includes(hero)),false);
+  assert.equal(canWearOutfit(hero,id,[],true,saved.ownedNoelSkins.includes(hero)),true);
+ }
 });
 
 test('seven new colours are Common purchases, restricted to their hero',()=>{
