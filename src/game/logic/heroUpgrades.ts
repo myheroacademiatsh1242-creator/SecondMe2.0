@@ -6,7 +6,8 @@ export type HeroUpgradeStat = typeof HERO_UPGRADE_STATS[number];
 type StatRanks = Record<HeroUpgradeStat, number>;
 export type HeroRanks = Record<UpgradeHero, StatRanks>;
 
-export const HERO_UPGRADE_PRICES = [96, 180, 300, 360, 420, 490, 560, 640, 740, 860] as const;
+/** Half the first tuning: one stat to rank 10 costs 2,323 coins, about five 3-star clears of all 13 levels. */
+export const HERO_UPGRADE_PRICES = [48, 90, 150, 180, 210, 245, 280, 320, 370, 430] as const;
 export const HERO_MAX_RANK = HERO_UPGRADE_PRICES.length;
 export const HERO_RESET_FEE_PERCENT = 20;
 
@@ -30,7 +31,8 @@ const ATTACK_BONUS = {
   assassin: [0, 8, 16, 24, 38, 55, 70, 85, 105, 125, 150],
 };
 const ICE_MP_DISCOUNT = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12];
-const DAMAGE_REDUCTION = [0, 4, 8, 12, 15, 20, 23, 26, 30, 33, 38];
+/** Kael's damage reduction tops out at 30%: with +165 HP on top, more made him nearly unkillable. */
+const DAMAGE_REDUCTION = [0, 3, 6, 9, 12, 16, 19, 22, 25, 27, 30];
 
 export function isUpgradeHero(hero: string): hero is UpgradeHero {
   return hero === 'mage' || hero === 'swordsman' || hero === 'assassin';
@@ -66,8 +68,12 @@ export function heroStats(hero: keyof typeof HERO_MAX_HP, ranks: HeroRanks) {
     skillManaDiscount: hero === 'mage' ? ICE_MP_DISCOUNT[specialty] : 0,
     iceRadiusBonus: hero === 'mage' ? (specialty >= 10 ? 30 : specialty >= 5 ? 15 : 0) : 0,
     sanctuaryBonus: hero === 'swordsman' ? (specialty >= 10 ? 4 : specialty >= 5 ? 2 : 0) : 0,
-    assassinCritBonus: hero === 'assassin' ? specialty * .01 : 0,
+    // Crimson: +2% crit and 0.08 s off Crimson Phantom per rank; rank 5 makes picked-up darts restore 12 MP
+    // instead of 8; rank 10 adds a second dart to the combo finisher.
+    assassinCritBonus: hero === 'assassin' ? specialty * .02 : 0,
     assassinSkillCooldownDiscount: hero === 'assassin' ? specialty * .08 : 0,
+    assassinDartMana: hero === 'assassin' && specialty >= 5 ? 12 : 8,
+    assassinTwinFinisher: hero === 'assassin' && specialty >= 10,
     defeatsEarlyEnemies: attack === HERO_MAX_RANK,
   };
 }

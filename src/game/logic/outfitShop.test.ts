@@ -56,3 +56,9 @@ test('character wardrobe shows wearable outfits before locked outfits in added o
  assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost']);
  assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember']);
 });
+
+test("Crimson's Christmas outfit is locked outside the Christmas season", () => {
+ assert.equal(canWearOutfit('assassin','frost',[]),false);
+ assert.equal(canWearOutfit('assassin','frost',[],true),true);
+ assert.equal(canWearOutfit('assassin','default',[]),true);
+});

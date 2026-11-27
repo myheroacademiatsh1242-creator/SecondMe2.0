@@ -32,12 +32,16 @@ export function outfitPixel(r:number,g:number,b:number,hero:OutfitHero,id:Outfit
 
 export const SHOP_OUTFITS = [
  {id:'mage-frost',outfit:'frost',hero:'mage',price:60,cap:1,rarity:'common',vi:'Pháp sư Băng giá',en:'Mage Frostbound',color:'#8cdef1',detailVi:'Trang phục Băng giá dành cho Pháp sư.',detailEn:'Frostbound outfit for the Mage.'},
- {id:'mage-ember',outfit:'ember',hero:'mage',price:60,cap:1,rarity:'common',vi:'Pháp sư Than hồng',en:'Mage Ember',color:'#edaa7e',detailVi:'Trang phục Than hồng dành cho Pháp sư.',detailEn:'Ember outfit for the Mage.'},
  {id:'swordsman-frost',outfit:'frost',hero:'swordsman',price:60,cap:1,rarity:'common',vi:'Kiếm sĩ Băng giá',en:'Swordsman Frostbound',color:'#8cdef1',detailVi:'Trang phục Băng giá dành cho Kiếm sĩ.',detailEn:'Frostbound outfit for the Swordsman.'},
+ {id:'mage-ember',outfit:'ember',hero:'mage',price:60,cap:1,rarity:'common',vi:'Pháp sư Than hồng',en:'Mage Ember',color:'#edaa7e',detailVi:'Trang phục Than hồng dành cho Pháp sư.',detailEn:'Ember outfit for the Mage.'},
  {id:'swordsman-ember',outfit:'ember',hero:'swordsman',price:60,cap:1,rarity:'common',vi:'Kiếm sĩ Than hồng',en:'Swordsman Ember',color:'#edaa7e',detailVi:'Trang phục Than hồng dành cho Kiếm sĩ.',detailEn:'Ember outfit for the Swordsman.'},
 ] as const;
 export type ShopOutfitId=typeof SHOP_OUTFITS[number]['id'];
 export function characterOutfitRarity(hero:OutfitHero,outfit:OutfitId):Rarity {
+ if(hero==='assassin'&&outfit==='frost')return 'limited';   // Crimson's Christmas outfit, an event item
+ // Every regular outfit (Woodland, Frost, Ember) is Common (green); the original look has no tier.
+ if(outfit==='default')return 'common';
+ if(outfit==='woodland')return 'common';
  return SHOP_OUTFITS.find(product=>product.hero===hero&&product.outfit===outfit)?.rarity??'common';
 }
 export const cleanOwnedOutfits=(value:unknown):ShopOutfitId[]=>Array.isArray(value)?[...new Set(value.filter((id):id is ShopOutfitId=>SHOP_OUTFITS.some(o=>o.id===id)))]:[];
@@ -45,9 +49,10 @@ export const cleanOwnedOutfits=(value:unknown):ShopOutfitId[]=>Array.isArray(val
 export function orderedShopOutfits(_owned:readonly ShopOutfitId[]){
  return sortShopCatalogue(SHOP_OUTFITS);
 }
-export function canWearOutfit(hero:OutfitHero,id:OutfitId,owned:readonly ShopOutfitId[]){
+/** Crimson's `frost` look is her Christmas outfit: wearable only while the Christmas season is on. */
+export function canWearOutfit(hero:OutfitHero,id:OutfitId,owned:readonly ShopOutfitId[],christmas=false){
  if(!OUTFITS.some(o=>o.id===id))return false;
- if(hero==='assassin')return id==='default'||id==='frost';
+ if(hero==='assassin')return id==='default'||(id==='frost'&&christmas);
  if(id==='default'||id==='woodland')return true;
  return SHOP_OUTFITS.some(o=>o.hero===hero&&o.outfit===id&&owned.includes(o.id));
 }

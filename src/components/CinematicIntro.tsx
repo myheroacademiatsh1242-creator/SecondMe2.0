@@ -12,7 +12,8 @@ const LABEL = {
 } as const;
 const SKIP_KEYS = new Set(['Enter', 'Space', 'Escape']);
 const INTRO_WATCHED_KEY = 'secondme.introWatched.v1';
-function hasWatchedIntro() {
+/** True once the player has been through the film once (watched or skipped); later launches go straight to the menu. */
+export function hasWatchedIntro() {
   try { return localStorage.getItem(INTRO_WATCHED_KEY) === 'true'; }
   catch { return false; }
 }
@@ -22,7 +23,10 @@ function hasWatchedIntro() {
  * main menu (the `Intro` screen underneath). Enter / Space / Esc or the button skips it.
  */
 export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { lang: 'en' | 'vi'; reducedMotion: boolean; onDone: () => void; paused?:boolean }) {
-  const [canSkip] = useState(hasWatchedIntro);
+  // Anyone can skip, first play included; a first-time player gets the button a moment later so it does
+  // not flash up before the film has started.
+  const canSkip = true;
+  const [skipDelay] = useState(() => (hasWatchedIntro() ? 700 : 2000));
   const pausedRef=useRef(paused);pausedRef.current=paused;
   const canvas = useRef<HTMLCanvasElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -80,7 +84,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
 
     music.preload();
     if (!pausedRef.current&&!sounds.getMuted()) { tryAudio(0); if (!sounds.isAudioRunning()) setNeedsSound(true); }
-    const skipTimer = window.setTimeout(() => setShowSkip(true), 700);
+    const skipTimer = window.setTimeout(() => setShowSkip(true), skipDelay);
 
     const frame = () => {
       if(pausedRef.current){if(pausedAt===null){pausedAt=performance.now();stopScore?.();stopScore=null;stopVoice?.();stopVoice=null;}raf=requestAnimationFrame(frame);return;}
@@ -95,9 +99,7 @@ export function CinematicIntro({ lang, reducedMotion, onDone, paused=false }: { 
       box.style.opacity = String(1 - mix);
       box.style.pointerEvents = skipAt === null && t < INTRO.reveal ? 'auto' : 'none';
       if (mix >= 1) {
-        if (skipAt === null) {
-          try { localStorage.setItem(INTRO_WATCHED_KEY, 'true'); } catch { /* Storage can be unavailable. */ }
-        }
+        try { localStorage.setItem(INTRO_WATCHED_KEY, 'true'); } catch { /* Storage can be unavailable. */ }
         finish(); return;
       }
       raf = requestAnimationFrame(frame);

@@ -304,8 +304,8 @@ export const GUIDE: Section[] = [
       ] },
     ] },
     { id: 'upgrades', title: t('Nâng cấp nhân vật', 'Hero upgrades'), blocks: [
-      { t: 'p', text: t(`Ở màn chọn nhân vật, bấm "Nâng cấp" để tăng 3 chỉ số của Aeris hoặc Kael bằng xu, mỗi chỉ số tối đa cấp ${HERO_MAX_RANK}: máu tối đa, sát thương cộng thêm, và chỉ số riêng (Aeris: giảm MP dùng Gai băng; Kael: giảm sát thương nhận). Giá cấp 1 là ${HERO_UPGRADE_PRICES[0]} xu, cấp ${HERO_MAX_RANK} là ${HERO_UPGRADE_PRICES[HERO_MAX_RANK - 1]} xu. Có thể đặt lại, mất ${HERO_RESET_FEE_PERCENT}% số xu đã dùng.`,
-        `On the hero screen, "Upgrades" raises three stats of Aeris or Kael with coins, each up to rank ${HERO_MAX_RANK}: max health, bonus damage, and a specialty (Aeris: cheaper Ice Spikes; Kael: less damage taken). Rank 1 costs ${HERO_UPGRADE_PRICES[0]} coins, rank ${HERO_MAX_RANK} costs ${HERO_UPGRADE_PRICES[HERO_MAX_RANK - 1]}. You can reset for a ${HERO_RESET_FEE_PERCENT}% fee of the coins spent.`) },
+      { t: 'p', text: t(`Ở màn chọn nhân vật, bấm "Nâng cấp" để tăng 3 chỉ số của Aeris, Kael hoặc Crimson bằng xu, mỗi chỉ số tối đa cấp ${HERO_MAX_RANK}: máu tối đa, sát thương cộng thêm, và chỉ số riêng (Aeris: giảm MP dùng Gai băng; Kael: giảm sát thương nhận; Crimson: tăng chí mạng, cấp 5 nhặt phi tiêu hồi nhiều MP hơn, cấp 10 đòn cuối ném 2 phi tiêu). Giá cấp 1 là ${HERO_UPGRADE_PRICES[0]} xu, cấp ${HERO_MAX_RANK} là ${HERO_UPGRADE_PRICES[HERO_MAX_RANK - 1]} xu. Có thể đặt lại, mất ${HERO_RESET_FEE_PERCENT}% số xu đã dùng.`,
+        `On the hero screen, "Upgrades" raises three stats of Aeris, Kael or Crimson with coins, each up to rank ${HERO_MAX_RANK}: max health, bonus damage, and a specialty (Aeris: cheaper Ice Spikes; Kael: less damage taken; Crimson: more crits, richer dart pickups at rank 5, a two-dart finisher at rank 10). Rank 1 costs ${HERO_UPGRADE_PRICES[0]} coins, rank ${HERO_MAX_RANK} costs ${HERO_UPGRADE_PRICES[HERO_MAX_RANK - 1]}. You can reset for a ${HERO_RESET_FEE_PERCENT}% fee of the coins spent.`) },
     ] },
   ] },
 ];

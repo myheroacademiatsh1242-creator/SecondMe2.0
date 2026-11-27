@@ -79,9 +79,50 @@ function KaelPortrait({outfit,direction='down',winter=false}:PortraitProps={}) {
   }, [outfit,direction,winter]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Kael"/>;
 }
+/**
+ * Life for the winter clearing (hero select, assets/ui/noel/hero-selection-clearing-winter.png). Every spot is a
+ * percentage of the painting, which fills the scene: the string lights twinkle, both lanterns flicker, the moon
+ * breathes, mist drifts over the snow, gold motes float, glints sparkle on the ground, and a near layer of big
+ * flakes falls in front of the far snow.
+ */
+const WINTER_BULBS: [number, number][] = [[23.2, 18.1], [26.5, 18.3], [29.8, 14.3], [32.8, 14.6], [39.6, 11.2], [43.1, 11.9], [52.4, 10.3], [55.7, 10.9]];
+function WinterAmbience({ still = false }: { still?: boolean }) {
+  return <div className={`winter-ambience${still ? ' winter-ambience--still' : ''}`} aria-hidden="true">
+    <i className="winter-moon"/>
+    <i className="winter-lantern" style={{left: '19.9%', top: '29.5%', '--glow': '9cqw'} as React.CSSProperties}/>
+    <i className="winter-lantern" style={{left: '7.2%', top: '62.8%', '--glow': '7cqw', animationDelay: '-.7s'} as React.CSSProperties}/>
+    {WINTER_BULBS.map(([x, y], i) => <i key={`b${i}`} className="winter-bulb" style={{left: `${x}%`, top: `${y}%`,
+      '--bulb': ['#ffd76a', '#ff6b5e', '#8fe388'][i % 3], animationDelay: `-${i * .45}s`} as React.CSSProperties}/>)}
+    <i className="winter-mist"/><i className="winter-mist winter-mist--far"/>
+    {Array.from({ length: 9 }, (_, i) => <i key={`m${i}`} className="winter-mote" style={{left: `${18 + (i * 37) % 60}%`, top: `${30 + (i * 23) % 40}%`,
+      animationDelay: `-${i * 1.3}s`, animationDuration: `${6 + i % 4 * 1.5}s`} as React.CSSProperties}/>)}
+    {Array.from({ length: 12 }, (_, i) => <i key={`g${i}`} className="winter-glint" style={{left: `${8 + (i * 41) % 84}%`, top: `${76 + (i * 13) % 20}%`,
+      animationDelay: `-${i * .73}s`, animationDuration: `${2.6 + i % 5 * .5}s`} as React.CSSProperties}/>)}
+    {Array.from({ length: 8 }, (_, i) => <i key={`f${i}`} className="winter-flake" style={{left: `${(i * 61 + 9) % 95}%`,
+      '--drift': `${(i % 5 - 2) * 30}px`, animationDelay: `-${i * 1.6}s`, animationDuration: `${8 + i % 4 * 1.7}s`} as React.CSSProperties}/>)}
+  </div>;
+}
+/** Pixel leaves drifting down over the forest clearing (hero select). */
+function FallingLeaves({ still = false, count = 18 }: { still?: boolean; count?: number }) {
+  return <div className={`falling-leaves${still ? ' falling-leaves--still' : ''}`} aria-hidden="true">
+    {Array.from({ length: count }, (_, i) => <i key={i} style={{
+      '--x': `${(i * 53 + 7) % 97}%`,
+      '--y': `${(i * 31 + 9) % 90}%`,
+      '--size': `${12 + i % 3 * 4}px`,
+      '--drift': `${(i % 7 - 3) * 22}px`,
+      '--fall': `${9 + i % 6 * 1.3}s`,
+      '--delay': `-${i * 1.37}s`,
+      '--leaf': ['#9fd05a', '#c8e06a', '#f0c24a', '#e08a3c', '#7fbf4e'][i % 5],
+    } as React.CSSProperties}/>)}
+  </div>;
+}
 function CrimsonPortrait({outfit,direction='down',demo=false}:PortraitProps & {demo?:boolean}={}) {
   const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const draw=()=>{const ctx=ref.current?.getContext('2d');if(!ctx)return;ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,70,70);drawAssassinSprite(ctx,35,58,direction,false,0,false,outfit,1,demo?(['atk1a','atk1b','atk2a','atk2b','atk3a','atk3b'] as const)[Math.floor(performance.now()/260)%6]:undefined);};draw();const timer=window.setInterval(draw,90);return()=>window.clearInterval(timer);},[outfit,direction,demo]);
+  useEffect(()=>{const draw=()=>{const ctx=ref.current?.getContext('2d');if(!ctx)return;ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,70,70);ctx.save();
+    // The Christmas sprite (hat + scarf) fills its whole frame; shrink it about the feet so the figure is as tall
+    // as the original one and stands on the same line.
+    if(outfit==='frost'&&!demo){ctx.translate(35,61);ctx.scale(.86,.86);ctx.translate(-35,-65);}
+    drawAssassinSprite(ctx,35,58,direction,false,0,false,outfit,1,demo?(['atk1a','atk1b','atk2a','atk2b','atk3a','atk3b'] as const)[Math.floor(performance.now()/260)%6]:undefined);ctx.restore();};draw();const timer=window.setInterval(draw,90);return()=>window.clearInterval(timer);},[outfit,direction,demo]);
   return <canvas ref={ref} width={70} height={70} role="img" aria-label="Crimson Veil"/>;
 }
 function SelectedCharacterAvatar({hud,winter=false}:{hud:HUDState;winter?:boolean}) {
@@ -414,25 +455,77 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
     : choice.id === 'assassin'
     ? (vi ? 'Ném phi tiêu và thoát khỏi tầm đánh.' : 'Throws darts and quickly moves out of reach.')
     : (vi ? 'Chiến binh cơ giới dùng cưa máy. Kỹ năng Quá tải tăng tốc đánh trong 5 giây.' : 'A mechanical fighter wielding a chainblade. Overdrive boosts attack speed for five seconds.');
-  const confirm = () => { if (!engine) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
+  // Crimson's Christmas outfit can be previewed out of season, but not equipped.
+  // A locked outfit can be previewed but not equipped: Crimson's Christmas one waits for December,
+  // the others are bought in the shop.
+  const outfitRow = useRef<HTMLDivElement>(null);
+  // Which way the outfit row can still slide: the arrows light up only when there is more to see.
+  const [outfitEnds, setOutfitEnds] = useState({ prev: false, next: false });
+  const readOutfitEnds = () => {
+    const row = outfitRow.current;
+    if (!row) return;
+    const prev = row.scrollLeft > 2, next = row.scrollLeft + row.clientWidth < row.scrollWidth - 2;
+    setOutfitEnds(old => old.prev === prev && old.next === next ? old : { prev, next });
+  };
+  // Show the selected outfit when the hero changes (it may sit on the second page of the row).
+  useEffect(() => {
+    const row = outfitRow.current, picked = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (row) row.scrollLeft = picked ? Math.floor(picked.offsetLeft / row.clientWidth) * row.clientWidth : 0;
+    readOutfitEnds();
+  }, [choice.id]);
+  const outfitLocked = choice.id !== 'mechanical' && !canWearOutfit(choice.id, draftOutfits[choice.id], hud.ownedOutfits ?? [], christmas.active);
+  const seasonalLocked = outfitLocked && choice.id === 'assassin' && draftOutfits.assassin === 'frost';
+  const confirm = () => { if (!engine || outfitLocked) return; if(choice.id!=='mechanical'){engine.setCharacterOutfit(choice.id,outfit);}engine.selectClass(choice.id); engine.goToLobby(); };
   const outfits = choice.id==='mechanical' ? OUTFITS.slice(0,1)
     : choice.id==='assassin' ? OUTFITS.slice(0,2).map(option=>option.id==='frost'?{...option,vi:'Giáng sinh',en:'Christmas'}:option)
     : orderedCharacterOutfits(choice.id,hud.ownedOutfits??[]);
-  return <div className={`characters-screen overlay hero-selection-screen${christmas.active?' hero-selection-winter':''}`}>
-    {christmas.active&&<ChristmasSnow still={hud.reducedMotion}/>}
+  // The winter clearing with falling snow in the Christmas season, or while Crimson's Christmas outfit is
+  // previewed; otherwise the forest clearing with falling leaves.
+  const winterScene = christmas.active || (choice.id === 'assassin' && outfit === 'frost');
+  // Christmas skin only: left idle for a while, a cold gust blows past and the hero shivers and sneezes once.
+  // Any mouse or key input restarts the wait; after a sneeze the next one needs another long idle spell.
+  const christmasSkin = choice.id === 'assassin' && outfit === 'frost' && previewDirection === 'down';
+  const [chilly, setChilly] = useState(false);
+  useEffect(() => {
+    setChilly(false);
+    if (!christmasSkin || hud.reducedMotion) return;
+    let wait = 0, end = 0;
+    const arm = (delay: number) => {
+      window.clearTimeout(wait);
+      wait = window.setTimeout(() => {
+        setChilly(true);
+        end = window.setTimeout(() => setChilly(false), 2600);
+        arm(25000);
+      }, delay);
+    };
+    const reset = () => arm(8000);
+    reset();
+    const events = ['pointermove', 'pointerdown', 'keydown', 'wheel'] as const;
+    events.forEach(name => window.addEventListener(name, reset, { passive: true }));
+    return () => {
+      window.clearTimeout(wait); window.clearTimeout(end);
+      events.forEach(name => window.removeEventListener(name, reset));
+    };
+  }, [christmasSkin, hud.reducedMotion]);
+  return <div className={`characters-screen overlay hero-selection-screen${winterScene?' hero-selection-winter':''}`}>
+    {winterScene&&<ChristmasSnow still={hud.reducedMotion}/>}
     <div className="hero-selection-scene" role="dialog" aria-modal="true" aria-labelledby="hero-select-title">
+      {winterScene&&<WinterAmbience still={hud.reducedMotion}/>}
       <header className="hero-selection-header">
         <h1 id="hero-select-title">{vi?'Chọn nhân vật':'Choose your hero'}</h1>
         <button type="button" className="hero-selection-back" onClick={()=>engine?.goToLobby()}><ChevronLeft size={17} aria-hidden="true"/>{vi?'Về sảnh':'Back to camp'}</button>
       </header>
 
       <section className="hero-selection-preview" aria-label={vi?'Xem trước nhân vật':'Hero preview'}>
+        {!winterScene&&<FallingLeaves still={hud.reducedMotion}/>}
         <div className="hero-selection-caption" aria-live="polite">
           <span className="hero-selection-class">{vi?choice.roleVi:choice.roleEn}</span>
           <h2 className="hero-selection-name">{choice.name}</h2>
         </div>
-        <div className="hero-selection-figure">
-          {hero ? <HeroStagePreview key={hero} hero={hero} outfit={outfit} direction={previewDirection} combo={false} winter={christmas.active} reducedMotion={hud.reducedMotion}/> : <MechanicalPortrait/>}
+        {chilly&&<div className="winter-gust" aria-hidden="true">{Array.from({length:7},(_,i)=><i key={i} style={{'--row':`${18+i*9}%`,animationDelay:`${i*.07}s`} as React.CSSProperties}/>)}</div>}
+        {chilly&&<span className="sneeze-bubble" aria-hidden="true">{vi?'Hắt xì!':'Achoo!'}</span>}
+        <div className={`hero-selection-figure${chilly?' is-chilly':''}`}>
+          {hero ? <HeroStagePreview key={hero} hero={hero} outfit={outfit} direction={previewDirection} combo={false} winter={christmas.active} reducedMotion={hud.reducedMotion} sneeze={chilly}/> : <MechanicalPortrait/>}
         </div>
         <div className="hero-selection-arrows" role="group" aria-label={vi?'Đổi nhân vật':'Change hero'}>
           <button ref={previousHero} type="button" aria-label={vi?'Nhân vật trước':'Previous hero'} onClick={()=>browseHero(-1)}><ChevronLeft size={24} aria-hidden="true"/></button>
@@ -478,16 +571,30 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
             </div>
           </section>}
           <section className="hero-selection-wardrobe" aria-labelledby="hero-wardrobe-title">
-            <h3 id="hero-wardrobe-title">{vi?'Trang phục':'Outfits'}</h3>
-            <div className="hero-selection-outfits" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'}>
+            <div className="hero-selection-wardrobe-bar">
+              <h3 id="hero-wardrobe-title">{vi?'Trang phục':'Outfits'}</h3>
+              {outfits.length>2&&<span className="outfit-scroll">
+                <button type="button" disabled={!outfitEnds.prev} aria-label={vi?'Trang phục trước':'Previous outfits'} onClick={()=>outfitRow.current?.scrollBy({left:-outfitRow.current.clientWidth,behavior:'smooth'})}><ChevronLeft size={15} aria-hidden="true"/></button>
+                <button type="button" disabled={!outfitEnds.next} aria-label={vi?'Trang phục tiếp':'More outfits'} onClick={()=>outfitRow.current?.scrollBy({left:outfitRow.current.clientWidth,behavior:'smooth'})}><ChevronRight size={15} aria-hidden="true"/></button>
+              </span>}
+            </div>
+            {/* Two outfits at a time; slide (swipe, wheel or the arrows) to see the rest. */}
+            <div ref={outfitRow} className="hero-selection-outfits" role="group" aria-label={vi?'Chọn trang phục':'Choose outfit'} onScroll={readOutfitEnds}
+              onWheel={event=>{const row=event.currentTarget;if(Math.abs(event.deltaY)>Math.abs(event.deltaX)&&row.scrollWidth>row.clientWidth){row.scrollBy({left:event.deltaY>0?row.clientWidth:-row.clientWidth,behavior:'smooth'});}}}>
               {outfits.map(option=>{
-                const locked=choice.id==='mechanical'?option.id!=='default':!canWearOutfit(choice.id,option.id,hud.ownedOutfits??[]);
+                const locked=choice.id==='mechanical'?option.id!=='default':!canWearOutfit(choice.id,option.id,hud.ownedOutfits??[],christmas.active);
+                // Locked outfits stay visible and can be clicked to preview on the stage; the confirm button then
+                // says how to unlock them (December for Crimson's Christmas outfit, the shop for the rest).
+                const seasonal=choice.id==='assassin'&&option.id==='frost'&&locked;
+                const previewable=locked&&choice.id!=='mechanical';
+                const rarity=characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,option.id);
                 const name=vi?option.vi:option.en;
                 return <button type="button" key={choice.id+option.id} aria-pressed={outfit===option.id}
-                  aria-label={name+(locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
-                  disabled={locked} style={{'--outfit-color':RARITY_COLORS[characterOutfitRarity(choice.id==='mechanical'?'swordsman':choice.id,option.id)]} as React.CSSProperties}
+                  aria-label={name+(rarity==='limited'?' · '+rarityName(rarity,vi):'')+(seasonal?(vi?' · Mở vào mùa Giáng sinh':' · Unlocks at Christmas'):locked?(vi?' · Mua trong cửa hàng':' · Available in shop'):'')}
+                  className={previewable?'outfit-locked-preview':undefined} title={seasonal?(vi?'Xem thử được · Mở vào mùa Giáng sinh (tháng 12)':'Preview only · Unlocks in the Christmas season (December)'):previewable?(vi?'Xem thử được · Mua trong cửa hàng để mặc':'Preview only · Buy it in the shop to wear it'):undefined}
+                  disabled={locked&&!previewable} style={option.id==='default'?undefined:{'--outfit-color':RARITY_COLORS[rarity]} as React.CSSProperties}
                   onClick={()=>{if(choice.id!=='mechanical')setDraftOutfits(old=>({...old,[choice.id]:option.id}));}}>
-                  <span>{portrait(choice.id,option.id)}</span><strong>{name}</strong>{outfit===option.id&&<Check size={15} aria-hidden="true"/>}
+                  {/* The original look is the base, not a tier: no tag, no tier colour. */}{choice.id!=='mechanical'&&option.id!=='default'&&<em className="outfit-rarity-tag">{rarityName(rarity,vi)}</em>}<span>{portrait(choice.id,option.id)}</span><strong>{name}</strong>{previewable?<Lock size={14} aria-hidden="true"/>:outfit===option.id&&<Check size={15} aria-hidden="true"/>}
                 </button>;
               })}
             </div>
@@ -495,7 +602,7 @@ export function Characters({engine, hud}: {engine: GameEngine | null; hud: HUDSt
         </div>
         <footer className="hero-selection-footer">
           <small>{choice.id===hud.characterClass?(vi?'Nhân vật hiện tại':'Current hero'):null}</small>
-          <button type="button" onClick={confirm} disabled={!engine}>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></button>
+          <button type="button" onClick={confirm} disabled={!engine||outfitLocked}>{outfitLocked?<><Lock size={16} aria-hidden="true"/>{seasonalLocked?(vi?'Mở vào tháng 12':'Unlocks in December'):(vi?'Mua trong cửa hàng':'Buy in the shop')}</>:<>{vi?'Trang bị & chọn':'Equip & confirm'}<ArrowRight size={17} aria-hidden="true"/></>}</button>
         </footer>
       </section>
     </div>

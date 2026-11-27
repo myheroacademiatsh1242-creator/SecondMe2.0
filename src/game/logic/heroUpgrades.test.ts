@@ -9,7 +9,7 @@ import { sounds } from './sound.ts';
 
 test('replays award coins and upgrades charge each rank once per hero, including after reload', t => {
   const old = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-  const store = new Map([['second-me-campaign-v3', JSON.stringify({ coins: 92, completed: [1], heroRanks: { swordsman: 2 } })]]);
+  const store = new Map([['second-me-campaign-v3', JSON.stringify({ coins: 44, completed: [1], heroRanks: { swordsman: 2 } })]]);
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
     value: { getItem: (key: string) => store.get(key), setItem: (key: string, value: string) => store.set(key, value) },
@@ -24,29 +24,29 @@ test('replays award coins and upgrades charge each rank once per hero, including
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 0), true);
   assert.equal(campaign.coins, 0);
   assert.equal(campaign.completeLevel(1, 10).coins, 12);
-  campaign.coins += 500;
+  campaign.coins += 300;
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 0), false);
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 1), true);
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 2), true);
   assert.equal(campaign.buyHeroUpgrade('mage', 'health', 3), false);
   assert.equal(campaign.buyHeroUpgrade('mechanical', 'health', 0), false);
-  assert.equal(campaign.coins, 32);
+  assert.equal(campaign.coins, 72);
 
   const restored = new Campaign();
   restored.load();
   assert.deepEqual(restored.heroRanks, { mage: { health: 3, attack: 0, specialty: 0 }, swordsman: { health: 2, attack: 2, specialty: 2 }, assassin: { health: 0, attack: 0, specialty: 0 } });
-  assert.equal(restored.coins, 32);
+  assert.equal(restored.coins, 72);
   assert.deepEqual(restored.completed, [1]);
-  assert.deepEqual(restored.heroUpgradeSpent, { mage: 576, swordsman: 276, assassin: 0 });
-  assert.equal(restored.resetHeroUpgrades('swordsman', 275), false);
-  assert.equal(restored.resetHeroUpgrades('swordsman', 276), true);
-  assert.equal(restored.coins, 252);
-  assert.equal(restored.resetHeroUpgrades('swordsman', 276), false);
+  assert.deepEqual(restored.heroUpgradeSpent, { mage: 288, swordsman: 138, assassin: 0 });
+  assert.equal(restored.resetHeroUpgrades('swordsman', 137), false);
+  assert.equal(restored.resetHeroUpgrades('swordsman', 138), true);
+  assert.equal(restored.coins, 182);
+  assert.equal(restored.resetHeroUpgrades('swordsman', 138), false);
   assert.deepEqual(restored.heroRanks.swordsman, { health: 0, attack: 0, specialty: 0 });
   assert.equal(restored.heroRanks.mage.health, 3);
   const afterReset = new Campaign();
   afterReset.load();
-  assert.equal(afterReset.coins, 252);
+  assert.equal(afterReset.coins, 182);
   assert.equal(afterReset.heroUpgradeSpent.swordsman, 0);
   restored.reset();
   assert.deepEqual(restored.heroRanks, { mage: { health: 0, attack: 0, specialty: 0 }, swordsman: { health: 0, attack: 0, specialty: 0 }, assassin: { health: 0, attack: 0, specialty: 0 } });
@@ -62,14 +62,14 @@ test('upgrades affect hero health, attacks, skill MP and revival', t => {
   game.currentLevelIdx = 1;
   game.restartLevel();
   assert.equal(game.buyHeroUpgrade('mage', 'health', 0), false);
-  assert.equal(game.resetHeroUpgrades('mage', 96), false);
+  assert.equal(game.resetHeroUpgrades('mage', 48), false);
   game.goToLobby();
   assert.equal(game.buyHeroUpgrade('swordsman', 'health', 0), false);
   game.openCharacters();
   assert.equal(game.buyHeroUpgrade('swordsman', 'health', 0), true);
   assert.equal(game.characterClass, 'mage');
   assert.equal(game.buyHeroUpgrade('mage', 'health', 0), true);
-  assert.deepEqual(heroStats('mage', game.campaign.heroRanks), { maxHealth: 92, attackBonus: 0, damageReduction: 0, skillManaDiscount: 0, iceRadiusBonus: 0, sanctuaryBonus: 0, assassinCritBonus: 0, assassinSkillCooldownDiscount: 0, defeatsEarlyEnemies: false });
+  assert.deepEqual(heroStats('mage', game.campaign.heroRanks), { maxHealth: 92, attackBonus: 0, damageReduction: 0, skillManaDiscount: 0, iceRadiusBonus: 0, sanctuaryBonus: 0, assassinCritBonus: 0, assassinSkillCooldownDiscount: 0, assassinDartMana: 8, assassinTwinFinisher: false, defeatsEarlyEnemies: false });
   assert.equal(game.buyHeroUpgrade('mage', 'attack', 0), true);
   assert.equal(game.buyHeroUpgrade('mage', 'specialty', 0), true);
   game.restartLevel();
@@ -92,7 +92,7 @@ test('upgrades affect hero health, attacks, skill MP and revival', t => {
   const stats = heroStats('swordsman', game.campaign.heroRanks);
   assert.equal(game.health, 127);
   game['takeDamage'](25);
-  assert.equal(game.health, stats.maxHealth - 24);
+  assert.equal(game.health, stats.maxHealth - 25 * (1 - stats.damageReduction / 100));
   game.invulnerability = 0;
   game['takeDamage'](1000);
   assert.equal(game.health, stats.maxHealth);
@@ -100,9 +100,9 @@ test('upgrades affect hero health, attacks, skill MP and revival', t => {
   game['takeDamage'](1000);
   assert.equal(game.health, stats.maxHealth - 10);
   game.goToLobby();
-  assert.equal(game.resetHeroUpgrades('mage', 288), false);
-  assert.equal(game.resetHeroUpgrades('swordsman', 192), true);
-  assert.equal(game.campaign.coins, 153);
+  assert.equal(game.resetHeroUpgrades('mage', 143), false);
+  assert.equal(game.resetHeroUpgrades('swordsman', 96), true);
+  assert.equal(game.campaign.coins, 316);
   game.restartLevel();
   assert.equal(game.health, 115);
 });
@@ -182,4 +182,14 @@ test('defensive milestones modify the real skills and encounter scaling grows ev
     assert.ok(encounterBalance(level).damage > encounterBalance(level - 1).damage);
     assert.ok(campaign.completeLevel(level, 0).coins > campaign.completeLevel(level - 1, 0).coins);
   }
+});
+
+test("Crimson's specialty: 2% crit per rank, richer dart pickups at rank 5 and a twin finisher at rank 10", () => {
+  const at = (rank: number) => heroStats('assassin', cleanHeroRanks({ assassin: { specialty: rank } }));
+  assert.equal(at(3).assassinCritBonus, .06);
+  assert.equal(at(4).assassinDartMana, 8);
+  assert.equal(at(5).assassinDartMana, 12);
+  assert.equal(at(9).assassinTwinFinisher, false);
+  assert.equal(at(10).assassinTwinFinisher, true);
+  assert.equal(heroStats('swordsman', cleanHeroRanks({ swordsman: { specialty: 10 } })).damageReduction, 30);
 });

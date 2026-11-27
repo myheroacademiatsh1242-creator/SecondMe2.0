@@ -117,10 +117,17 @@ function visibleBounds(ctx: CanvasRenderingContext2D, width: number, height: num
 
 type PreviewHero = ComboHero | 'assassin';
 
-export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=false,winter=false}:{
+/** Crimson's Christmas-outfit sneeze (tools/assets/make_crimson_sneeze.py): cold, inhale, sneeze, sniffle. */
+const SNEEZE_STEPS = [0.9, 1.4, 1.85, 2.4] as const;
+
+export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=false,winter=false,sneeze=false}:{
   hero:PreviewHero;outfit?:OutfitId;direction:Direction;combo:boolean;reducedMotion?:boolean;winter?:boolean;
+  /** Play the sneeze once (Crimson in her Christmas outfit, facing the viewer). */
+  sneeze?:boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const sneezeAt = useRef<number|null>(null);
+  useEffect(() => { sneezeAt.current = sneeze ? performance.now() : null; }, [sneeze]);
   useEffect(() => {
     const ctx=canvas.current?.getContext('2d',{willReadFrequently:hero==='assassin'});
     const scratch=document.createElement('canvas');
@@ -132,7 +139,8 @@ export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=fals
     const steps=hero==='assassin'?null:SHEET_TIMELINES[hero];
     const image=new Image();
     if(combo&&atlas)image.src=`${import.meta.env.BASE_URL}assets/combat/${atlas.file}`;
-    const crimsonIdle=new Image(),crimsonCombo=new Image();
+    const crimsonIdle=new Image(),crimsonCombo=new Image(),crimsonSneeze=new Image();
+    if(hero==='assassin'&&outfit==='frost'&&!combo&&!reducedMotion)crimsonSneeze.src=`${import.meta.env.BASE_URL}assets/combat/crimson-winter-sneeze.png`;
     if(hero==='assassin'){
       crimsonIdle.src=`${import.meta.env.BASE_URL}assets/combat/crimson-stance-reference-matched.png`;
       if(combo&&!reducedMotion)crimsonCombo.src=`${import.meta.env.BASE_URL}assets/combat/crimson-combo-reference-matched.png`;
@@ -222,11 +230,15 @@ export function HeroStagePreview({hero,outfit,direction,combo,reducedMotion=fals
         let time=elapsed%CRIMSON_DURATION-IDLE_BEFORE;
         const attack=combo&&!reducedMotion&&time>=0?CRIMSON_SEQUENCE.find(step=>{time-=step.dur;return time<0;}):undefined;
         const column=attack?.column??CRIMSON_DIRECTIONS[combo?'down':direction];
-        const sheet=attack?crimsonCombo:crimsonIdle;
-        const key=`${attack?'attack':'stance'}-${column}`;
+        // The sneeze replaces the front stance while it plays (Christmas outfit only).
+        const since=sneezeAt.current===null?-1:(now-sneezeAt.current)/1000;
+        const sneezeStep=!attack&&row===1&&column===0&&since>=0?SNEEZE_STEPS.findIndex(end=>since<end):-1;
+        const sneezing=sneezeStep>=0&&crimsonSneeze.naturalWidth>0;
+        const sheet=sneezing?crimsonSneeze:attack?crimsonCombo:crimsonIdle;
+        const key=sneezing?`sneeze-${sneezeStep}`:`${attack?'attack':'stance'}-${column}`;
         if(previous!==key){
           const cell=attack?CRIMSON_COMBO_CELLS[row]:CRIMSON_STANCE_CELLS[row][column];
-          if(drawCrimsonCell(sheet,attack?6:4,column,row,cell))previous=key;
+          if(drawCrimsonCell(sheet,attack?6:4,sneezing?sneezeStep:column,row,cell))previous=key;
           else if(previous!==`fallback-${key}`&&paintPortrait(attack?.pose)){
             scarfFrame=undefined;
             previous=`fallback-${key}`;

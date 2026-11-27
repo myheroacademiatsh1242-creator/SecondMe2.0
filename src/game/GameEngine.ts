@@ -546,7 +546,7 @@ export class GameEngine {
 
   constructor() {
     this.campaign.load();restoreOutfits();
-    for(const hero of ['mage','swordsman','assassin'] as const)if(!canWearOutfit(hero,getOutfits()[hero],this.campaign.ownedOutfits))equipOutfit(hero,'default');
+    for(const hero of ['mage','swordsman','assassin'] as const)if(!canWearOutfit(hero,getOutfits()[hero],this.campaign.ownedOutfits,this.christmasSeasonOn))equipOutfit(hero,'default');
     restoreWeapons();
     for(const hero of ['mage','swordsman','assassin'] as const)if(!canUseWeapon(hero,getWeapons()[hero],this.campaign.ownedWeapons))equipWeapon(hero,DEFAULT_WEAPON[hero],[]);
     this.loadSettings();
@@ -717,6 +717,11 @@ export class GameEngine {
   private christmasMusicDate = false;
   private nextChristmasMusicCheck = 0;
 
+  /** The Christmas season is on: December in Vietnam, or the dev preview. */
+  public get christmasSeasonOn() {
+    return this.devSeasonPreview === 'christmas' || (this.devSeasonPreview === 'auto' && christmasSeason() !== null);
+  }
+
   public get devSeasonPreview(): SeasonPreview {
     return this.devUnlocked ? this.seasonPreview : 'auto';
   }
@@ -724,6 +729,8 @@ export class GameEngine {
   public setDevSeasonPreview(value: SeasonPreview) {
     if (!this.devUnlocked) return;
     this.seasonPreview = value;
+    // Leaving the season takes off Crimson's Christmas outfit.
+    if (!canWearOutfit('assassin', getOutfits().assassin, this.campaign.ownedOutfits, this.christmasSeasonOn)) equipOutfit('assassin', 'default');
     this.notifyHUD();
   }
 
@@ -880,7 +887,7 @@ export class GameEngine {
     this.notifyHUD(); return true;
   }
   public setCharacterWeapon(hero:WeaponHero,id:WeaponId){if(!['characters','shop'].includes(this.screen))return false;const ok=equipWeapon(hero,id,this.campaign.ownedWeapons);if(ok)this.notifyHUD();return ok;}
-  public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
+  public setCharacterOutfit(hero:OutfitHero,id:OutfitId){if(!['characters','shop'].includes(this.screen)||!canWearOutfit(hero,id,this.campaign.ownedOutfits,this.christmasSeasonOn))return false;const ok=equipOutfit(hero,id);if(ok)this.notifyHUD();return ok;}
   public selectClass(value: CharacterClass) { if (this.screen !== 'lobby' && this.screen !== 'characters') return; if(value === 'mechanical' && (!MECHANICAL_ENABLED || !this.campaign.mechanicalOwned)) return; this.characterClass = value; this.player.speed = value === 'assassin' ? 290 : 200; this.saveSettings(); this.notifyHUD(); }
   public get weapon(): 'staff' | 'sword' { return this.characterClass === 'mage' ? 'staff' : 'sword'; }
   private get heroStats() { return heroStats(this.characterClass, this.campaign.heroRanks); }
@@ -1726,7 +1733,8 @@ export class GameEngine {
       else this.comboFx.push({ kind: 'arc', x: px + ux * 18, y: py + uy * 18, angle, radius: sw.radius * 0.75, life: 0.3, max: 0.3, heavy: hit.heavy, flip: step === 1 });
       if (hit.heavy) { this.comboFx.push({ kind: 'impact', x: cx, y: cy, angle, radius: 46, life: 0.35, max: 0.35 }); sounds.playFinisher(); }
     } else if (hero === 'assassin') {
-      const count = step === 1 ? 3 : 1;
+      // Rank 10 specialty: the finisher throws two darts.
+      const count = step === 1 ? 3 : step === 2 && this.heroStats.assassinTwinFinisher ? 2 : 1;
       for (let i = 0; i < count; i++) {
         const off = (i - (count - 1) / 2) * .07;
         const a = angle + off;
@@ -1769,7 +1777,7 @@ export class GameEngine {
       dart.life-=dt;
       if(this.characterClass==='assassin' && Math.hypot(dart.x-this.player.x,dart.y-this.player.y)<19){
         dart.life=0;
-        this.mana.value=Math.min(this.mana.max,this.mana.value+8);
+        this.mana.value=Math.min(this.mana.max,this.mana.value+this.heroStats.assassinDartMana);
         this.skillCooldown=Math.max(0,this.skillCooldown-.4);
         this.notifyHUD();
       }

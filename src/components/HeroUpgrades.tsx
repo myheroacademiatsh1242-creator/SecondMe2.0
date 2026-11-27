@@ -34,7 +34,7 @@ export function HeroUpgrades({ engine, hud, hero, close }: { engine: GameEngine 
     specialty: mage
       ? (vi ? 'Cấp 5 / 10 · Bán kính Gai Băng tăng 15 / 30 px.' : 'Rank 5 / 10 · Ice Spike radius grows by 15 / 30 px.')
       : hero === 'assassin'
-      ? (vi ? 'Mỗi cấp thêm 1% tỉ lệ chí mạng và giảm 0,08 giây hồi Bóng Ma Đỏ.' : 'Each rank adds 1% crit chance and reduces Crimson Phantom cooldown by 0.08 sec.')
+      ? (vi ? 'Mỗi cấp +2% chí mạng, −0,08 giây hồi Bóng Ma Đỏ · Cấp 5: nhặt phi tiêu hồi 12 MP · Cấp 10: đòn cuối ném 2 phi tiêu.' : 'Each rank +2% crit, −0.08 sec Crimson Phantom cooldown · Rank 5: picked-up darts restore 12 MP · Rank 10: the finisher throws two darts.')
       : (vi ? 'Cấp 5 / 10 · Pháp trận kéo dài 7 / 9 giây.' : 'Rank 5 / 10 · Sanctuary lasts 7 / 9 seconds.'),
   };
 

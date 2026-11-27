@@ -314,6 +314,59 @@ function drawSantaBackdrop(){
 // Keep the room and its contact shadows in the cabinet's camera coordinates.
 const roomCanvas=document.createElement('canvas');
 let roomPhase=-1;
+// Painted walls (tools/assets/make_claw_room.py): the back wall (window side is the left wall) at 1 px per
+// world unit. Back image column c is x=-44+c, side image column c is z=68-c, row r is height 270-r.
+const roomBack=new Image(),roomSide=new Image();
+roomBack.onload=roomSide.onload=()=>{roomPhase=-1};
+roomBack.src='/assets/ui/noel/claw-room-back.png';roomSide.src='/assets/ui/noel/claw-room-side.png';
+const ROOM_TOP=270,BACK_X0=-44,SIDE_Z0=68;
+function projectExact(x,y,z){const {turn}=camera(),angle=1-turn;return [91+x+.57*angle*z,252+.105*angle*x-y-(.34+.12*turn)*z]}
+// Puts g into the coordinates of a wall image: (column, row) pixels land on that wall.
+function onWall(which){
+ const back=which==='back',w=back?roomBack.width:roomSide.width;
+ const at=(c,r)=>back?projectExact(BACK_X0+c,ROOM_TOP-r,68):projectExact(-44,ROOM_TOP-r,SIDE_Z0-c);
+ const [ox,oy]=at(0,0),[xx,xy]=at(w,0),[yx,yy]=at(0,ROOM_TOP);
+ g.transform((xx-ox)/w,(xy-oy)/w,(yx-ox)/ROOM_TOP,(yy-oy)/ROOM_TOP,ox,oy);
+}
+// What moves on the painted walls: snow past the window, candle flames, tree lights and the star.
+const TREE_LIGHTS=[];
+for(let k=0;k<5;k++)for(let x=-40+k*8+4;x<=40-k*8-4;x+=11){const y=40+k*32+Math.round(4*Math.sin((x+k*9)/6));TREE_LIGHTS.push([306+x,ROOM_TOP-y-1,TREE_LIGHTS.length])}
+function drawRoomLife(v){
+ if(!roomBack.naturalWidth||!roomSide.naturalWidth)return;
+ g.save();
+ g.setTransform(v.scale,0,0,v.scale,canvas.width/2-v.cx*v.scale,canvas.height/2-v.cy*v.scale);
+ g.imageSmoothingEnabled=false;
+ // left wall: snow falling past the window, candles on the sill
+ g.save();onWall('side');
+ g.beginPath();g.rect(40,40,110,118);g.clip();
+ for(let i=0;i<42;i++){
+  const speed=9+i%5*3,x=40+((i*29+Math.sin(t*.8+i)*4)%110+110)%110,y=40+((i*17+t*speed)%118);
+  g.fillStyle=i%3?'#eef5ff':'#c9daf2';g.fillRect(Math.round(x),Math.round(y),i%4?1:2,i%4?1:2);
+ }
+ g.restore();
+ g.save();onWall('side');
+ for(const cx of [52,134]){
+  const f=Math.sin(t*13+cx)*.5+Math.sin(t*7.3+cx*2)*.5;
+  g.fillStyle='rgba(255,196,96,.22)';g.fillRect(cx-5,134,14,16);
+  g.fillStyle='#ffb43c';g.fillRect(cx+1,143-Math.round(f),2,4+Math.round(f));
+  g.fillStyle='#fff2b0';g.fillRect(cx+1,146,2,2);
+ }
+ g.restore();
+ // back wall: tree lights twinkle in turns, the star pulses
+ g.save();onWall('back');
+ const colours=['#ff5a5a','#ffd45c','#6fd3ff','#8cff8a'];
+ for(const [c,r,i] of TREE_LIGHTS){
+  const on=Math.sin(t*2.6+i*1.7)>-.2;
+  g.fillStyle=on?colours[i%4]:'#3b2a20';g.fillRect(c,r,2,2);
+  if(on){g.fillStyle='rgba(255,240,190,.25)';g.fillRect(c-1,r-1,4,4)}
+ }
+ const pulse=1+Math.round((Math.sin(t*3)+1)*1.5);
+ g.fillStyle='rgba(255,230,120,.35)';g.fillRect(306-3-pulse,64-pulse,7+pulse*2,7+pulse*2);
+ g.fillStyle='#ffd84a';g.fillRect(303,67,7,1);g.fillRect(305,65,3,5);g.fillRect(306,63,1,9);
+ g.fillStyle='#fff6c0';g.fillRect(306,67,1,1);
+ g.restore();
+ g.restore();
+}
 function drawCabinetRoom(v){
  const width=canvas.width,height=canvas.height;
  if(roomPhase!==cameraPhase || roomCanvas.width!==width || roomCanvas.height!==height){
@@ -359,16 +412,24 @@ function drawCabinetRoom(v){
        prev=p;
      }
    }
-   festoon(wall,corner,far,10);festoon(side,back,-far,-10);
+   if(roomBack.naturalWidth&&roomSide.naturalWidth){
+     // The painted walls (with their own garlands) cover the plain ones.
+     g.save();onWall('back');g.drawImage(roomBack,0,0);g.restore();
+     g.save();onWall('side');g.drawImage(roomSide,0,0);g.restore();
+   }else{festoon(wall,corner,far,10);festoon(side,back,-far,-10);}
    panel([[0,0,3],[164,0,3],[180,0,back],[2,0,back]],'#38363b',null);
    panel([wall(3,0),wall(173,0),wall(173,208),wall(3,217)],'#334c50',null);
    g=screenCtx;
  }
  g.drawImage(roomCanvas,0,0);
+ drawRoomLife(v);
 }
 // Crimson rests her shoulder against the cabinet while the player approaches.
 const crimsonGuest=new Image();
 crimsonGuest.src='/assets/crimson/noel-claw-guest.png';
+// Idle frames (tools/assets/make_crimson_guest_frames.py): row 0 breathes with a swaying scarf, row 1 blinks.
+const guestFrames=new Image();
+guestFrames.src='/assets/crimson/noel-claw-guest-frames.png';
 function drawCrimsonGuest(v){
  if(!crimsonGuest.naturalWidth || cameraPhase>=.42)return;
  const narrow=canvas.width<265;
@@ -382,7 +443,17 @@ function drawCrimsonGuest(v){
  g.imageSmoothingEnabled=false;
  const height=narrow?115:151;
  const width=height*crimsonGuest.naturalWidth/crimsonGuest.naturalHeight;
- g.drawImage(crimsonGuest,-width*.54,-height,width,height);
+ if(guestFrames.naturalWidth){
+   const frame=Math.floor(t*6)%8,blink=(t%3.7)<.14||((t+1.1)%11)<.12;
+   g.drawImage(guestFrames,frame*256,blink?384:0,256,384,-width*.54,-height,width,height);
+   // a small puff of breath in the cold air, now and then
+   const puff=(t%4.2)/1.4;
+   if(puff<1){
+     const px=-width*.54+width*.47+puff*9,py=-height+height*.27-puff*6;
+     g.globalAlpha*=(1-puff)*.8;g.fillStyle='#eef6ff';
+     g.fillRect(Math.round(px),Math.round(py),2+Math.round(puff*3),2);g.fillRect(Math.round(px+2+puff*3),Math.round(py-2),2,2);
+   }
+ }else g.drawImage(crimsonGuest,-width*.54,-height,width,height);
  g.restore();
 }
 // Raised hardware and front-face inlays are anchored in cabinet coordinates.
