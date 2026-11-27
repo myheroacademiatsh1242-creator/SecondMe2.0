@@ -1,5 +1,5 @@
 import {drawChristmasAttack,preloadChristmasSprites} from './christmasOutfits.ts';
-import {getOutfit} from '../logic/outfits.ts';
+import {getOutfit,aerisCombatOutfit} from '../logic/outfits.ts';
 import {outfitSheet} from './outfitSprites.ts';
 /**
  * Kael's and Aeris's combo frames (public/assets/combat, cut by
@@ -40,7 +40,7 @@ function aerisSheet(){
   let img=aerisSheets.get(outfit);
   if(!img){
     img=new Image();
-    img.src=`${import.meta.env.BASE_URL}assets/combat/aeris-play-${outfit}.webp`;
+    img.src=`${import.meta.env.BASE_URL}assets/combat/aeris-play-${aerisCombatOutfit(outfit)}.webp`;
     aerisSheets.set(outfit,img);
   }
   return img.complete&&img.naturalWidth?img:null;
@@ -105,7 +105,7 @@ export function drawComboHero(ctx: CanvasRenderingContext2D, game: GameEngine): 
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(game.player.x), Math.round(game.player.y + FEET_Y));
     if (left) ctx.scale(-1, 1);
-    ctx.drawImage(ref,(pose.index%6)*128,Math.floor(pose.index/6)*96,128,96,-64,-82,128,96);
+    ctx.drawImage(aerisCombatOutfit(outfit)==='default'?outfitSheet(ref,'mage',outfit):ref,(pose.index%6)*128,Math.floor(pose.index/6)*96,128,96,-64,-82,128,96);
     ctx.restore();
     return true;
   }

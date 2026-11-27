@@ -52,9 +52,9 @@ test('shop sorts outfits by rarity then ascending price regardless of ownership'
 
 test('character wardrobe shows wearable outfits before locked outfits in added order',()=>{
  const ids=(owned:Parameters<typeof orderedShopOutfits>[0])=>orderedCharacterOutfits('mage',owned).map(o=>o.id);
- assert.deepEqual(ids([]),['default','woodland','frost','ember','snowman']);
- assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost','snowman']);
- assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember','snowman']);
+ assert.deepEqual(ids([]),['default','woodland','frost','ember','amethyst','rose','sand','turquoise','amethyst','rose','sand','turquoise','snowman']);
+ assert.deepEqual(ids(['mage-ember']),['default','woodland','ember','frost','amethyst','rose','sand','turquoise','amethyst','rose','sand','turquoise','snowman']);
+ assert.deepEqual(ids(['mage-ember','mage-frost']),['default','frost','woodland','ember','amethyst','rose','sand','turquoise','amethyst','rose','sand','turquoise','snowman']);
 });
 
 test("Crimson's Christmas outfit is locked outside the Christmas season", () => {
@@ -82,4 +82,38 @@ test('Christmas Deluxe unlocks both hero-specific outfits through participation 
  const saved=new Campaign();saved.load();
  assert.equal(saved.christmasDeluxeEarned,true);
  assert.equal(g.setCharacterOutfit('swordsman','reindeer'),true);
+});
+
+test('seven new colours are Common purchases, restricted to their hero',()=>{
+ const c=new Campaign();
+ c.coins=420;
+ const added=SHOP_OUTFITS.filter(o=>!['frost','ember'].includes(o.outfit));
+ assert.equal(added.filter(o=>o.hero==='mage').length,4);
+ assert.equal(added.filter(o=>o.hero==='swordsman').length,3);
+ for(const outfit of added){
+  assert.equal(outfit.rarity,'common');assert.equal(outfit.price,60);
+  assert.equal(canWearOutfit(outfit.hero,outfit.outfit,c.ownedOutfits),false);
+  assert.equal(c.buyOutfit(outfit.id),true);
+  assert.equal(c.buyOutfit(outfit.id),false);
+  assert.equal(canWearOutfit(outfit.hero,outfit.outfit,c.ownedOutfits),true);
+ }
+ assert.equal(c.coins,0);
+ assert.equal(canWearOutfit('mage','slate',c.ownedOutfits),false);
+ assert.equal(canWearOutfit('swordsman','rose',c.ownedOutfits),false);
+});
+
+test('seven new Common palettes require separate purchases for the correct hero',()=>{
+ const c=new Campaign();
+ const added=SHOP_OUTFITS.filter(p=>!['frost','ember'].includes(p.outfit));
+ assert.equal(added.filter(p=>p.hero==='mage').length,4);
+ assert.equal(added.filter(p=>p.hero==='swordsman').length,3);
+ c.coins=added.length*60;
+ for(const p of added){
+  assert.equal(p.price,60);assert.equal(p.rarity,'common');
+  assert.equal(canWearOutfit(p.hero,p.outfit,c.ownedOutfits),false);
+  assert.equal(c.buyOutfit(p.id),true);
+  assert.equal(canWearOutfit(p.hero,p.outfit,c.ownedOutfits),true);
+  assert.equal(c.buyOutfit(p.id),false);
+ }
+ assert.equal(c.coins,0);
 });

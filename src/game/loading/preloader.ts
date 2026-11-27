@@ -1,5 +1,5 @@
 import {encounters} from '../logic/enemies.ts';
-import {getOutfit} from '../logic/outfits.ts';
+import {getOutfit,aerisCombatOutfit} from '../logic/outfits.ts';
 /** Load only the images needed to reveal the lobby or the selected level. */
 import type { CharacterClass } from '../logic/campaign.ts';
 
@@ -140,7 +140,7 @@ export function levelUses(path: string, spec: LevelLoadSpec): boolean {
   if (folder === 'christmas-outfits') return (outfit==='snowman'||outfit==='reindeer') && rest.startsWith(outfit+'-');
   if (folder === 'aeris') return spec.character==='mage' && outfit!=='snowman' && rest==='walk-aligned.webp';
   if (folder === 'soldier') return spec.character==='swordsman' && outfit!=='reindeer' && rest.endsWith('.webp');
-  if (folder === 'combat') return spec.character==='mage' ? rest===`aeris-play-${outfit}.webp` : spec.character==='swordsman' && outfit!=='reindeer' && rest==='kael-combo.png';
+  if (folder === 'combat') return spec.character==='mage' ? rest===`aeris-play-${aerisCombatOutfit(outfit)}.webp` : spec.character==='swordsman' && outfit!=='reindeer' && rest==='kael-combo.png';
   if (folder === 'crimson') return spec.character==='assassin' && rest.startsWith('winter-')===(outfit==='frost');
   if (folder === HERO_FOLDER[spec.character]) return !rest.startsWith('Kael_');
   if (folder === 'enemies') return spec.levelId===6 ? rest.startsWith('frost-crystal') :
