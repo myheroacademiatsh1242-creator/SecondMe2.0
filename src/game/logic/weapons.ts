@@ -9,7 +9,7 @@ import {normalizeCatalogue,type Rarity} from './rarity.ts';
 export type WeaponHero='mage'|'swordsman'|'assassin';
 export type WeaponTrait='none'|'burn'|'slow'|'chain'|'ward';
 export interface Weapon{
- id:string;hero:WeaponHero;sample:number;vi:string;en:string;rarity:Rarity;trait:WeaponTrait;
+ manualRarity?:Rarity;id:string;hero:WeaponHero;sample:number;vi:string;en:string;rarity:Rarity;trait:WeaponTrait;
  /** Signature effect, a key of src/game/data/pixelfx.json. */
  fx:string;
 }

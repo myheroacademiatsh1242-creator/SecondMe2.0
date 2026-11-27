@@ -13,7 +13,7 @@ const ALIASES:Record<string,Rarity>={
  refined:'refined',tinhche:'refined',rare:'refined',hiem:'refined',uncommon:'refined',
  deluxe:'deluxe',thuonghang:'deluxe',limited:'deluxe',gioihan:'deluxe',epic:'deluxe',suthi:'deluxe',
  bespoke:'bespoke',docban:'bespoke',
- ultimate:'ultimate',toithuong:'ultimate',legendary:'ultimate',huyenthoai:'ultimate',
+ ultimate:'ultimate',toithuong:'ultimate',legendary:'deluxe',huyenthoai:'deluxe',
 };
 export function normalizeRarity(value:unknown):Rarity{
  if(typeof value!=='string')return 'common';
@@ -21,10 +21,31 @@ export function normalizeRarity(value:unknown):Rarity{
  const combined:Record<string,Rarity>={daitracommon:'common',tinhcherefined:'refined',thuonghangdeluxe:'deluxe',docbanbespoke:'bespoke',toithuongultimate:'ultimate'};
  return ALIASES[key]??combined[key]??'common';
 }
-/** Apply at catalogue ingestion so rendering, sorting and reward pools share canonical tiers. */
+export interface Acquisition {
+ coinPurchase?:boolean;
+ bulk?:boolean;
+ eventOnly?:boolean;
+ loginOnly?:boolean;
+ /** Explicit tier authored by the team. Acquisition caps still apply. */
+ manualRarity?:Rarity;
+}
+export function resolveRarity(value:unknown,source:Acquisition={}):Rarity{
+ const requested=source.manualRarity??normalizeRarity(value);
+ const rank=RARITY_ORDER.indexOf(requested);
+ if(source.coinPurchase||source.bulk)return RARITY_ORDER[Math.min(rank,1)];
+ if(source.eventOnly||source.loginOnly)return RARITY_ORDER[Math.max(1,Math.min(rank,2))];
+ return source.manualRarity??RARITY_ORDER[Math.min(rank,2)];
+}
+/** Normalize labels and apply acquisition policy once for all catalogue consumers. */
 type Canonical<T> = T extends {rarity:string} ? Omit<T,'rarity'>&{rarity:Rarity} : never;
-export function normalizeCatalogue<T extends {rarity:string}>(items:readonly T[]):Canonical<T>[]{
- return items.map(item=>({...item,rarity:normalizeRarity(item.rarity)})) as unknown as Canonical<T>[];
+export function normalizeCatalogue<T extends {rarity:string}>(items:readonly T[],source:Acquisition={}):Canonical<T>[]{
+ return items.map(item=>{
+  const metadata=item as T&Acquisition&{price?:number};
+  return {...item,rarity:resolveRarity(item.rarity,{
+   ...source,...metadata,
+   coinPurchase:source.coinPurchase||metadata.coinPurchase||(typeof metadata.price==='number'&&metadata.price>0),
+  })};
+ }) as unknown as Canonical<T>[];
 }
 export function sortShopCatalogue<T extends {rarity:string;price:number}>(items:readonly T[]):T[]{
  return [...items].sort((a,b)=>RARITY_ORDER.indexOf(normalizeRarity(a.rarity))-RARITY_ORDER.indexOf(normalizeRarity(b.rarity))||a.price-b.price);

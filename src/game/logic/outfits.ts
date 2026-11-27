@@ -1,4 +1,4 @@
-import {normalizeCatalogue,normalizeRarity} from './rarity.ts';
+import {normalizeCatalogue,resolveRarity} from './rarity.ts';
 import {sortShopCatalogue,type Rarity} from './rarity.ts';
 
 export type OutfitHero='mage'|'swordsman'|'assassin';
@@ -44,8 +44,8 @@ export const SHOP_OUTFITS = normalizeCatalogue([
 ] as const);
 export type ShopOutfitId=typeof SHOP_OUTFITS[number]['id'];
 export function characterOutfitRarity(hero:OutfitHero,outfit:OutfitId):Rarity {
- if(isDeluxe(outfit))return 'deluxe';
- if(hero==='assassin'&&outfit==='frost')return normalizeRarity('limited');   // Crimson's Christmas outfit, an event item
+ if(isDeluxe(outfit))return resolveRarity('deluxe',{eventOnly:true});
+ if(hero==='assassin'&&outfit==='frost')return resolveRarity('deluxe',{eventOnly:true});   // Crimson's Christmas outfit, an event item
  // Every regular outfit (Woodland, Frost, Ember) is Common (green); the original look has no tier.
  if(outfit==='default')return 'common';
  if(outfit==='woodland')return 'common';

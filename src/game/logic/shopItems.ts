@@ -10,7 +10,7 @@ export const SHOP_ITEMS = normalizeCatalogue([
  {id:'aid',vi:'Lời gọi chi viện',en:'Call for aid',price:0,cap:1,rarity:'bespoke',icon:'aid',detailVi:'Hoàn thành 6 màn bằng cả Aeris và Kael để mở. Gọi Echo của nhân vật còn lại, 15 HP, tự chiến đấu; không giữ rune. Một lần mỗi màn.',detailEn:'Unlock by clearing all 6 trials with both Aeris and Kael. Summon the other hero’s combat Echo with 15 HP; cannot hold runes. Once per level.'},
  {id:'time',vi:'Bình thời gian',en:'Time potion',price:TIME_ITEM_PRICE,cap:TIME_ITEM_CAP,rarity:'common',icon:'time',detailVi:'Thêm 2 giây cho chặng hiện tại. Nhấn R hoặc mở Kho đồ để dùng bình đã mang theo.',detailEn:'Add 2 seconds to the current leg. Press R or open Inventory to use a packed potion.'},
  {id:'ring',vi:'Nhẫn giới hạn Echo',en:'Echo limit ring',price:30,cap:99999,rarity:'common',icon:'ring',detailVi:'Tăng giới hạn từ 4 lên 6 Echo trong màn. Không cộng dồn.',detailEn:'Raise the Echo limit from 4 to 6 this level. Does not stack.'},
-] as const);
+] as const,{coinPurchase:true});
 export type ShopItemId=(typeof SHOP_ITEMS)[number]['id'];
 export type PackedItem = Readonly<{ id: ShopItemId; count: number }>;
 export const ITEM_LOADOUT_LIMIT = 3;
