@@ -1,8 +1,9 @@
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
-import { HUNT_CARD, HUNT_CARDS, SnowHunt, enemyHaste, enemyHp, enemyPower, waveReward, waveSeconds, xpToNext } from './snowHunt.ts';
+import { BIG_GEM, HUNT_COMBO_MP, HUNT_CARD, HUNT_CARDS, SnowHunt, enemyHaste, enemyHp, enemyPower, waveReward, waveSeconds, xpToNext } from './snowHunt.ts';
 import { GameEngine } from '../GameEngine.ts';
 import { HUNT_IDX } from './levels.ts';
+import { comboManaCost } from './mana.ts';
 
 function mockDocument(t: TestContext) {
   const doc = Object.getOwnPropertyDescriptor(globalThis, 'document');
@@ -40,14 +41,14 @@ test('kills drop XP always; tickets, coins, potions and shards by chance; elites
   assert.ok(run.pickups.some(p => p.kind === 'maxHp') && run.pickups.find(p => p.kind === 'ticket')!.value >= 20);
 });
 
-test('potions and wave clears heal a share of the maximum; a cleared wave offers 1 of 2 cards', () => {
+test('potions and wave clears heal a share of the maximum; a cleared wave offers 1 of 3 cards', () => {
   const run = new SnowHunt();
   run.pickups.push({ kind: 'hp', x: 0, y: 0, value: 1, age: 0 }, { kind: 'mp', x: 0, y: 0, value: 1, age: 0 }, { kind: 'maxHp', x: 0, y: 0, value: 10, age: 0 });
   run.collect([{ x: 0, y: 0, r: 5 }]);
   assert.deepEqual(run.takeEffects(), { heal: 0.2, mana: 0.4, maxHp: 10, maxMp: 0 });
   run.update(waveSeconds(1) + 0.01, 0, () => 0.5);
   assert.equal(run.offerKind, 'wave');
-  assert.equal(run.choices?.length, 2);
+  assert.equal(run.choices?.length, 3);
   assert.deepEqual(run.takeEffects(), { heal: 0.25, mana: 0.5, maxHp: 0, maxMp: 0 });
 });
 
@@ -156,7 +157,7 @@ test('in the hunt the hero attacks the nearest enemy in reach on its own', t => 
   assert.ok(internals.cursorTarget && Math.abs(internals.cursorTarget.x - (game.player.x + 80)) < 20, 'aimed at the enemy');
 });
 
-test('in the hunt basic attacks cost no MP, so auto-attack never drains it', t => {
+test('in the hunt auto-attack spends MP, yet the hero keeps attacking when it runs out', t => {
   mockDocument(t);
   const game = new GameEngine();
   game.screen = 'playing';
@@ -166,7 +167,11 @@ test('in the hunt basic attacks cost no MP, so auto-attack never drains it', t =
   const mp = game.mana.value;
   game.enemies.push({ id: 'hunt-test', kind: 'goblin', x: game.player.x + 80, y: game.player.y, homeX: 0, homeY: 0, hp: 9999, maxHp: 9999, mode: 'idle', timer: 99, targetX: 0, targetY: 0, facingLeft: false, hitFlash: 0, deathAge: 0, targetId: null, seesAll: true });
   for (let i = 0; i < 60; i++) internals.update(0.05);
-  assert.ok(game.mana.value >= mp);
+  assert.ok(game.mana.value < mp, 'combo hits after the opener cost MP');
+  const target = game.enemies.find(e => e.id === 'hunt-test')!;
+  const hp = target.hp;
+  for (let i = 0; i < 60; i++) { game.mana.value = 0; internals.update(0.05); }
+  assert.ok(target.hp < hp, 'with no MP the free opening hit still lands');
 });
 
 test('the claw machine spends Noel tickets per play and banks each prize', t => {
@@ -196,4 +201,119 @@ test('in dev mode the claw machine plays for free and shows unlimited tickets', 
   assert.ok(game.clawTickets >= 9999);
   game.devUnlocked = false;
   assert.equal(game.spendClawPlay(), false);
+});
+
+test('pickups in reach fly to the hero and count only when they arrive; a lucky kill drops a bigger gem', () => {
+  const run = new SnowHunt();
+  run.onKill(100, 0, 'normal', () => BIG_GEM / 2);
+  assert.equal(run.pickups.find(p => p.kind === 'xp')!.value, 3);
+  run.pickups = [{ kind: 'xp', x: 100, y: 0, value: 1, age: 0 }, { kind: 'xp', x: 600, y: 0, value: 1, age: 0 }];
+  // An Echo reaches the first gem; it flies to the hero rather than vanishing where the Echo stands.
+  assert.deepEqual(run.attract([{ x: 100, y: 0, r: 20 }], { x: 0, y: 12 }, 0.01), []);
+  assert.ok(run.pickups[0].homing && run.pickups[0].x < 100, 'it has started moving towards the hero');
+  assert.ok(!run.pickups[1].homing, 'out of reach stays put');
+  let arrived: ReturnType<SnowHunt['attract']> = [];
+  for (let i = 0; i < 60 && !arrived.length; i++) arrived = run.attract([], { x: 0, y: 12 }, 0.05);
+  assert.equal(arrived.length, 1);
+  assert.equal(run.xp, 1);
+  assert.equal(run.pickups.length, 1);
+});
+
+test('one reroll to start, one more per boss; each hero only sees its own cards', () => {
+  const run = new SnowHunt('mage');
+  run.choices = run.rollChoices(() => 0.3, 3);
+  assert.ok(run.reroll());
+  assert.equal(run.choices.length, 3);
+  assert.equal(run.reroll(), false, 'the one reroll is spent');
+  run.onKill(0, 0, 'boss');
+  assert.equal(run.rerolls, 1);
+  for (let i = 0; i < 40; i++) for (const id of run.rollChoices()) assert.ok(!HUNT_CARD[id].hero || HUNT_CARD[id].hero === 'mage', id);
+  assert.ok(run.available(HUNT_CARD.iceShard) && !run.available(HUNT_CARD.waveSlash) && !run.available(HUNT_CARD.dartRain));
+});
+
+test('an evolution appears only once its cards are levelled, then is always on offer, and strengthens its weapon', () => {
+  const run = new SnowHunt();
+  assert.ok(!run.available(HUNT_CARD.blizzardEdge));
+  run.stacks.blizzard = 1; run.stacks.sharp = 2;
+  assert.ok(!run.available(HUNT_CARD.blizzardEdge));
+  run.stacks.sharp = 3;
+  for (let i = 0; i < 10; i++) assert.ok(run.rollChoices().includes('blizzardEdge'));
+  const before = { every: run.blizzardEvery, damage: run.blizzardDamage };
+  run.choices = ['blizzardEdge', 'tough', 'echoPower'];
+  run.choose('blizzardEdge');
+  assert.ok(run.blizzardEvery < before.every && run.blizzardDamage > before.damage);
+  assert.ok(!run.rollChoices().includes('blizzardEdge'), 'taken once');
+});
+
+test('weapon cards grow each level: more snowballs, faster and more candy canes, bigger bells', () => {
+  const run = new SnowHunt();
+  assert.equal(run.snowballCount, 0);
+  run.stacks.snowballs = 2; assert.equal(run.snowballCount, 2);
+  run.stacks.snowballs = 3; run.stacks.snowGlobe = 1; assert.equal(run.snowballCount, 6);
+  run.stacks.candy = 1; const slow = run.candyEvery; run.stacks.candy = 3;
+  assert.ok(run.candyEvery < slow && run.candyCount === 2);
+  run.stacks.bells = 1; const small = run.bellRadius; run.stacks.bells = 3; assert.ok(run.bellRadius > small);
+});
+
+test('in the arena, weapon cards hit enemies and arriving XP pops up and flashes the bar', t => {
+  mockDocument(t);
+  const game = new GameEngine();
+  game.screen = 'playing';
+  game.currentLevelIdx = HUNT_IDX;
+  game.restartLevel();
+  const internals = game as unknown as { update(dt: number): void };
+  const run = game.hunt!;
+  run.stacks.snowballs = 3;
+  for (let i = 0; i < 80; i++) internals.update(0.05);
+  game.enemies = game.enemies.slice(0, 1);
+  const enemy = game.enemies[0];
+  enemy.x = game.player.x + run.snowballRing; enemy.y = game.player.y;
+  enemy.hp = enemy.maxHp = 9999;
+  for (let i = 0; i < 40; i++) internals.update(0.05);
+  assert.ok(enemy.hp < 9999, 'the circling snowballs struck the enemy');
+  const pulse = game.huntXpPulse;
+  run.pickups.push({ kind: 'xp', x: game.player.x + 30, y: game.player.y, value: 1, age: 0 });
+  for (let i = 0; i < 20; i++) internals.update(0.05);
+  assert.ok(game.huntXpPulse > pulse);
+});
+
+test('in the hunt, combo hits after the free opener cost half their MP; short of MP the combo starts over', t => {
+  mockDocument(t);
+  const game = new GameEngine();
+  game.screen = 'playing';
+  game.currentLevelIdx = HUNT_IDX;
+  game.restartLevel();
+  const internals = game as unknown as { startComboHit(step: number): void; mana: { value: number; max: number } };
+  const hero = game.characterClass as 'swordsman' | 'mage' | 'assassin';
+  const full = internals.mana.max;
+  internals.startComboHit(0);
+  assert.equal(internals.mana.value, full, 'the opening hit is free');
+  internals.startComboHit(1);
+  assert.equal(internals.mana.value, full - comboManaCost(hero, 1) * HUNT_COMBO_MP);
+  internals.mana.value = 0;
+  internals.startComboHit(2);
+  assert.equal(internals.mana.value, 0, 'nothing is spent when MP is short');
+  assert.equal(game.combo?.step ?? 0, 0, 'the combo is back at its free opener');
+});
+
+test('MP cards: Deep Mana raises max MP (and fills the new room), Mana Flow adds regeneration', t => {
+  mockDocument(t);
+  const game = new GameEngine();
+  game.screen = 'playing';
+  game.currentLevelIdx = HUNT_IDX;
+  game.restartLevel();
+  const internals = game as unknown as { update(dt: number): void };
+  const max = game.mana.max;
+  game.hunt!.choices = ['manaPool', 'sharp', 'echoPower'];
+  assert.ok(game.chooseHuntCard('manaPool'));
+  assert.equal(game.mana.max, max + 20);
+  assert.equal(game.mana.value, max + 20);
+  game.hunt!.choices = ['manaFlow', 'sharp', 'echoPower'];
+  assert.ok(game.chooseHuntCard('manaFlow'));
+  assert.equal(game.hunt!.manaRegen, 2);
+  game.enemies = [];
+  game.mana.value = 0;
+  (game.mana as unknown as { delay: number }).delay = 99;   // hold the usual regeneration back
+  internals.update(0.5);
+  assert.ok(game.mana.value >= 1 - 1e-9, 'Mana Flow refills even while the usual regeneration waits');
 });

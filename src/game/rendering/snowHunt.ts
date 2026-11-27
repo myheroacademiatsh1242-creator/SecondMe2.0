@@ -92,13 +92,21 @@ export function drawHuntArena(ctx: CanvasRenderingContext2D, game: GameEngine, t
     else if (d.kind === 'snowman') snowman(ctx, cx, base);
     else gifts(ctx, d.rect.x, d.rect.y);
   }
-  // Pickups bob a little.
+  // Pickups bob a little; flying ones (on their way to the hero) leave a short glowing trail instead.
   for (const p of game.hunt?.pickups ?? []) {
-    const bob = still ? 0 : Math.sin(time * 5 + p.x) * 2;
+    const bob = still || p.homing ? 0 : Math.sin(time * 5 + p.x) * 2;
+    if (p.homing && !still) {
+      const dx = game.player.x - p.x, dy = game.player.y - 12 - p.y, d = Math.hypot(dx, dy) || 1;
+      ctx.save(); ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = p.kind === 'xp' ? '#9be7ff' : p.kind === 'ticket' || p.kind === 'coin' ? '#ffd76a' : '#ffffff';
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx / d * 16, p.y - dy / d * 16); ctx.stroke();
+      ctx.restore();
+    }
     if (p.kind === 'xp') {
-      const big = p.value > 1;
-      ctx.fillStyle = big ? '#b48cff' : '#6ee7ff';
-      ctx.beginPath(); const r = big ? 9 : 6;
+      const big = p.value > 1, huge = p.value >= 8;
+      ctx.fillStyle = huge ? '#b48cff' : big ? '#5fffc0' : '#6ee7ff';
+      if (big) { ctx.save(); ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(p.x, p.y + bob, huge ? 15 : 12, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      ctx.beginPath(); const r = huge ? 10 : big ? 8 : 6;
       ctx.moveTo(p.x, p.y - r + bob); ctx.lineTo(p.x + r * .7, p.y + bob); ctx.lineTo(p.x, p.y + r + bob); ctx.lineTo(p.x - r * .7, p.y + bob); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#ffffffaa'; ctx.fillRect(p.x - 2, p.y - r / 2 + bob, 2, 3);
     } else if (p.kind === 'ticket') {
@@ -122,6 +130,60 @@ export function drawHuntArena(ctx: CanvasRenderingContext2D, game: GameEngine, t
       ctx.fillStyle = '#e0a83a'; ctx.beginPath(); ctx.arc(p.x, p.y + bob, 6, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ffe58a'; ctx.beginPath(); ctx.arc(p.x - 1, p.y - 1 + bob, 3.5, 0, Math.PI * 2); ctx.fill();
     }
+  }
+  ctx.restore();
+}
+
+/**
+ * Hunt weapons over the fighters: snowballs circling the hero, candy canes, blade waves, ice shards,
+ * darts and frost orbs in flight, and bells dropping (with the ring where they will burst).
+ */
+export function drawHuntWeapons(ctx: CanvasRenderingContext2D, game: GameEngine, time: number) {
+  const run = game.hunt;
+  if (!run) return;
+  ctx.save();
+  const balls = run.snowballCount, p = game.player;
+  for (let i = 0; i < balls; i++) {
+    const a = game.huntOrbitAngle + i * Math.PI * 2 / balls;
+    const x = p.x + Math.cos(a) * run.snowballRing, y = p.y - 14 + Math.sin(a) * run.snowballRing * 0.7, r = run.snowballSize;
+    ctx.fillStyle = '#00000026'; ctx.beginPath(); ctx.ellipse(x, y + r + 8, r, r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#9cc4e4'; ctx.beginPath(); ctx.arc(x, y, r + 1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f4fbff'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x - r / 2), Math.round(y - r / 2), 3, 3);
+    if (run.has('snowGlobe')) { ctx.strokeStyle = '#9be7ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  for (const s of game.huntShots) {
+    const a = Math.atan2(s.vy, s.vx);
+    ctx.save(); ctx.translate(Math.round(s.x), Math.round(s.y)); ctx.rotate(a);
+    if (s.kind === 'candy') {
+      ctx.rotate(time * 14);
+      for (let k = -2; k <= 2; k++) { ctx.fillStyle = k % 2 ? '#e2384a' : '#ffffff'; ctx.fillRect(k * 3 - 1, -2, 3, 4); }
+      ctx.fillStyle = '#e2384a'; ctx.fillRect(7, -6, 3, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(4, -7, 4, 3);
+    } else if (s.kind === 'slash') {
+      ctx.globalAlpha = Math.min(1, s.life * 2);
+      ctx.strokeStyle = '#bff3ff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(-10, 0, 22, -1.1, 1.1); ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(-10, 0, 22, -0.9, 0.9); ctx.stroke();
+    } else if (s.kind === 'shard') {
+      ctx.fillStyle = '#5aa0e6'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, -3); ctx.lineTo(-6, 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#e6f8ff'; ctx.fillRect(-4, -1, 9, 2);
+    } else if (s.kind === 'dart') {
+      ctx.fillStyle = '#c8ccd8'; ctx.fillRect(-6, -1, 12, 2); ctx.fillStyle = '#7a1f2a'; ctx.fillRect(-9, -2, 4, 4);
+    } else {
+      ctx.globalAlpha = 0.35; ctx.fillStyle = '#9be7ff'; ctx.beginPath(); ctx.arc(0, 0, s.radius + 8, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1; ctx.fillStyle = '#bfefff'; ctx.beginPath(); ctx.arc(0, 0, s.radius - 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-6, -6, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  for (const b of game.huntBells) {
+    const k = 1 - b.fuse / 0.6;
+    ctx.strokeStyle = '#ffd76a'; ctx.globalAlpha = 0.25 + 0.5 * k; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(b.x, b.y + 6, b.radius, b.radius * 0.4, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    const y = b.y - 90 * (1 - k) - 18;
+    px(ctx, b.x - 7, y - 6, 5, 4, '#e8b23a'); px(ctx, b.x - 4, y - 9, 3, 1, '#ffd76a');
+    px(ctx, b.x - 7, y + 6, 5, 1, '#b07a1c'); px(ctx, b.x - 2, y + 9, 1, 1, '#7a4a10');
+    px(ctx, b.x - 4, y - 3, 1, 2, '#fff3c2');
   }
   ctx.restore();
 }

@@ -55,7 +55,7 @@ import {
   checkExitReached,
 } from './logic/puzzle.ts';
 import { LEVELS, levelAt, TRAINING_IDX, TRAINING_LEVEL_ID, CHRISTMAS_TRAIL_IDX, HUNT_IDX } from './logic/levels.ts';
-import { SnowHunt, HUNT_CARD } from './logic/snowHunt.ts';
+import { SnowHunt, HUNT_CARD, HUNT_COMBO_MP, type HuntHero, type HuntPickup } from './logic/snowHunt.ts';
 import { TrainingStats } from './logic/training.ts';
 import { sounds } from './logic/sound.ts';
 import { GameRenderer } from './rendering/renderer.ts';
@@ -136,7 +136,7 @@ export interface HUDState {
   runeLoadout?:EchoRuneId[];
   activeEchoRunes?:EchoRuneId[];
   /** Snow Hunt run snapshot (logic/snowHunt.ts), while in its arena. */
-  hunt?:{wave:number;waveTime:number;waveBanner:number;level:number;xp:number;tickets:number;coins:number;kills:number;choices:string[]|null;offerKind:'level'|'wave';stacks:Record<string,number>;over:boolean};
+  hunt?:{wave:number;waveTime:number;waveBanner:number;level:number;xp:number;tickets:number;coins:number;kills:number;choices:string[]|null;offerKind:'level'|'wave';stacks:Record<string,number>;over:boolean;rerolls:number;xpPulse:number;hero:HuntHero};
   huntResult?:{wave:number;time:number;kills:number;level:number;tickets:number;coins:number};
   noelTickets?:number;
   spentRuneSlots?:number[];
@@ -444,7 +444,7 @@ export class GameEngine {
   public language: Language = 'vi';
   public characterClass: CharacterClass = 'mage';
   public lastRating: { stars: number; coins: number; commonCrystals?:number } | null = null;
-  public mana=new ManaPool(()=>maxMana(this.characterClass)+(this.hunt?this.huntBonusMp:0));
+  public mana=new ManaPool(()=>maxMana(this.characterClass)+(this.hunt?this.huntBonusMp+this.hunt.maxMpBonus:0));
   public skillCooldown = 0;
   public frostZones:FrostZone[]=[];
   public frostSlow=0;
@@ -508,7 +508,8 @@ export class GameEngine {
 
   // Rendering & audio
   private explorationFog = new ExplorationFog();
-  public get usesExplorationFog() { return !this.isTraining && !this.isPracticeGround; }
+  /** Fog and a hidden chest belong to exploring; the Snow Hunt arena is a survival fight where every gem and incoming enemy must be seen. */
+  public get usesExplorationFog() { return !this.isTraining && !this.isPracticeGround && !this.isSnowHunt; }
   private worldRenderer?:GameRenderer;
   public get renderer(){return this.worldRenderer ??= new GameRenderer();}
   /** Hit-stop, push-back and shake of landed combo hits (logic/hitFeel.ts). */
@@ -767,6 +768,16 @@ export class GameEngine {
   private huntLast={attack:0,skill:0,dodge:0};
   /** Max HP and MP raised this run by shards (reset with the run). */
   private huntBonusHp=0;private huntBonusMp=0;
+  /** Hunt weapons in flight (candy canes, blade waves, ice shards, darts, frost orbs) and bells about to burst. */
+  public huntShots:{x:number;y:number;vx:number;vy:number;life:number;damage:number;radius:number;kind:'candy'|'slash'|'shard'|'dart'|'orb';pierce:number;hit:Set<string>;chill:boolean}[]=[];
+  public huntBells:{x:number;y:number;fuse:number;damage:number;radius:number}[]=[];
+  /** Angle of the orbiting snowballs (rendering/snowHunt.ts draws them from it). */
+  public huntOrbitAngle=0;
+  /** Counts XP arrivals; the HUD flashes the XP bar whenever it changes. */
+  public huntXpPulse=0;
+  private huntOrbitHits=new Map<string,number>();
+  private huntTimers={candy:0,bell:2,whirl:3,orb:2,darts:2,attacks:0};
+  private huntPickupSoundAt=0;
   public get isSnowHunt(){return this.currentLevelIdx===HUNT_IDX;}
   public get christmasDeluxeUnlocked(){return this.devUnlocked||this.campaign.christmasDeluxeEarned;}
   private rewardChristmasParticipation(){
@@ -786,7 +797,9 @@ export class GameEngine {
   public chooseHuntCard(id:string){
     const card=this.hunt?.choose(id);
     if(!card)return false;
+    if(card.needs)this.addDamageText(this.player.x,this.player.y-80,0,true,this.language==='vi'?'TIẾN HOÁ!':'EVOLVED!','#d39bff');
     if(card.rune)this.activeEchoRunes.add(card.rune);
+    if(card.id==='manaPool')this.mana.value+=20;
     if(card.id==='tough'||card.id==='greed'){const before=this.maxHealth;this.maxHealth=this.huntMaxHealth();this.health=Math.max(1,Math.min(this.maxHealth,this.health+this.maxHealth-before));}
     this.runePulses.push({x:this.player.x,y:this.player.y,color:card.side==='echo'?'#9be7ff':'#ffd76a',life:.8,max:.8});
     sounds.playFeedback('rune');this.heldKeys.clear();this.notifyHUD();return true;
@@ -815,6 +828,8 @@ export class GameEngine {
     this.huntResult={wave:run.wave,time:run.time,kills:run.kills,level:run.level,tickets:run.tickets,coins:run.coins};
     this.heldKeys.clear();this.notifyHUD();
   }
+  /** Redraw the cards on offer, once per run (plus one per boss beaten). */
+  public rerollHuntCards(){ if(!this.hunt?.reroll())return false; sounds.playFeedback('swap'); this.notifyHUD(); return true; }
   public restartSnowHunt(){ if(this.isSnowHunt){this.restartLevel();this.notifyHUD();} }
   private huntMaxHealth(){ return Math.max(1,Math.round((this.heroStats.maxHealth+(this.hunt?.maxHpBonus??0)+this.huntBonusHp)*(this.hunt?.maxHpMul??1))); }
   /** Damage every living enemy within `radius` of a point and chill it (Blizzard, Snow Nova). */
@@ -825,6 +840,8 @@ export class GameEngine {
   /** One frame of the run: spawns, pickups, timed card effects, stat cards and clean-up. */
   private updateHunt(dt:number){
     const run=this.hunt!;
+    // An attack or a dodge started since the last frame (its cooldown jumped up).
+    const swung=this.attackCooldown>this.huntLast.attack,dodged=this.dodgeCooldown>this.huntLast.dodge;
     // Stat cards: move speed, and attack/skill/dash cooldowns scaled as soon as an action starts one.
     this.player.speed=(this.characterClass==='assassin'?290:200)*run.speedMul;
     const fury=run.has('fury')&&this.health<this.maxHealth*.3;
@@ -833,7 +850,9 @@ export class GameEngine {
     if(this.dodgeCooldown>this.huntLast.dodge)this.dodgeCooldown*=run.dodgeCooldownMul;
     this.huntLast={attack:this.attackCooldown,skill:this.skillCooldown,dodge:this.dodgeCooldown};
     if(run.regenFraction>0&&this.health>0)this.health=Math.min(this.maxHealth,this.health+run.regenFraction*this.maxHealth*dt);
-    if(run.has('blizzard')){run.blizzardTimer-=dt;if(run.blizzardTimer<=0){run.blizzardTimer=6;this.huntBurst(this.player.x,this.player.y,150,22);}}
+    if(run.manaRegen>0)this.mana.value=Math.min(this.mana.max,this.mana.value+run.manaRegen*dt);
+    if(run.has('blizzard')){run.blizzardTimer-=dt;if(run.blizzardTimer<=0){run.blizzardTimer=run.blizzardEvery;this.huntBurst(this.player.x,this.player.y,run.blizzardRadius,run.blizzardDamage*run.damageMul);}}
+    this.updateHuntWeapons(dt,run,swung,dodged);
     if(run.has('echoCharge')){run.echoChargeTimer-=dt;if(run.echoChargeTimer<=0){run.echoChargeTimer=run.echoChargeEvery;this.echoCharges=Math.min(this.echoLimit-(this.echoFreeSummon?1:0),this.echoCharges+1);}}
     // Waves: place new enemies on the edges, away from the hero, always hunting (seesAll).
     const spawns=run.update(dt,this.enemies.filter(e=>e.hp>0).length,Math.random,this.enemies.some(e=>e.hp>0&&e.id.startsWith('hunt-boss-')));
@@ -862,7 +881,10 @@ export class GameEngine {
       if(target){this.cursorTarget={x:target.x,y:target.y};this.attack({x:target.x,y:target.y});}
     }
     // Pickups: the hero, and every Echo on the field, gather gems, tickets and coins in reach.
-    run.collect([{x:this.player.x,y:this.player.y,r:run.pickupRadius},...this.echoes.map(e=>({x:e.x,y:e.y,r:run.echoPickupRadius}))]);
+    // They fly to the hero (even what an Echo reached), then count, with a popup, a tick and a bar flash.
+    const levelBefore=run.level;
+    const arrived=run.attract([{x:this.player.x,y:this.player.y,r:run.pickupRadius},...this.echoes.map(e=>({x:e.x,y:e.y,r:run.echoPickupRadius}))],this.player,dt);
+    if(arrived.length)this.huntPickupFeedback(arrived,levelBefore);
     // Potions, wave clears and shards: healing as a share of the maximum, raises as flat amounts.
     const fx=run.takeEffects();
     if(fx.maxHp){this.huntBonusHp+=fx.maxHp;const before=this.maxHealth;this.maxHealth=this.huntMaxHealth();this.health+=this.maxHealth-before;}
@@ -870,6 +892,78 @@ export class GameEngine {
     if(fx.heal&&this.health>0)this.health=Math.min(this.maxHealth,this.health+fx.heal*this.maxHealth);
     if(fx.mana)this.mana.value=Math.min(this.mana.max,this.mana.value+fx.mana*this.mana.max);
     if(run.choices)this.heldKeys.clear();
+  }
+  /** The living enemy nearest a point, within `max`. */
+  private nearestHuntEnemy(x:number,y:number,max=Infinity){
+    let best:Enemy|undefined,bd=max;
+    for(const e of this.enemies){if(e.hp<=0||e.kind==='dummy')continue;const d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;best=e;}}
+    return best;
+  }
+  private huntShoot(kind:GameEngine['huntShots'][number]['kind'],x:number,y:number,angle:number,speed:number,damage:number,o:{radius?:number;life?:number;pierce?:number;chill?:boolean}={}){
+    this.huntShots.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:o.life??1.4,damage,radius:o.radius??12,kind,pierce:o.pierce??2,hit:new Set(),chill:!!o.chill});
+  }
+  /** Weapon and hero cards: orbiting snowballs, candy canes, bells, blade waves, ice shards, darts, whirl, frost orb. */
+  private updateHuntWeapons(dt:number,run:SnowHunt,swung:boolean,dodged:boolean){
+    const p=this.player,mul=run.damageMul,T=this.huntTimers;
+    const aimAt=()=>{const t=this.nearestHuntEnemy(p.x,p.y);return t?Math.atan2(t.y-p.y,t.x-p.x):(p.direction==='left'?Math.PI:0);};
+    // Snowballs circle the hero; each enemy can be struck by them twice a second.
+    this.huntOrbitAngle+=dt*3.2;
+    for(const [id,t] of [...this.huntOrbitHits])if(t-dt<=0)this.huntOrbitHits.delete(id);else this.huntOrbitHits.set(id,t-dt);
+    const balls=run.snowballCount;
+    for(let i=0;i<balls;i++){
+      const a=this.huntOrbitAngle+i*Math.PI*2/balls,bx=p.x+Math.cos(a)*run.snowballRing,by=p.y-14+Math.sin(a)*run.snowballRing*.7;
+      for(const e of this.enemies){
+        if(e.hp<=0||e.kind==='dummy'||this.huntOrbitHits.has(e.id)||Math.hypot(e.x-bx,e.y-12-by)>run.snowballSize+18)continue;
+        this.huntOrbitHits.set(e.id,.5);
+        if(run.has('snowGlobe'))e.chillTime=Math.max(e.chillTime??0,1);
+        this.strike(e,run.snowballDamage*mul,false,{x:bx,y:by});
+      }
+    }
+    if(run.has('candy')){T.candy-=dt;if(T.candy<=0&&this.nearestHuntEnemy(p.x,p.y,520)){T.candy=run.candyEvery;const a=aimAt();for(let k=0;k<run.candyCount;k++)this.huntShoot('candy',p.x,p.y-16,a+(k-(run.candyCount-1)/2)*.22,420,run.candyDamage*mul,{pierce:2,life:1.3});}}
+    if(run.has('bells')){T.bell-=dt;if(T.bell<=0){const near=this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy'&&Math.hypot(e.x-p.x,e.y-p.y)<560);if(near.length){T.bell=4;for(let k=0;k<run.bellCount;k++){const e=near[Math.floor(Math.random()*near.length)];this.huntBells.push({x:e.x+(k?(Math.random()-.5)*60:0),y:e.y,fuse:.6,damage:run.bellDamage*mul,radius:run.bellRadius});}}}}
+    for(const b of this.huntBells){b.fuse-=dt;if(b.fuse<=0){this.huntBurst(b.x,b.y,b.radius,b.damage,'#ffd76a');sounds.playFeedback('mark');}}
+    this.huntBells=this.huntBells.filter(b=>b.fuse>0);
+    if(swung){
+      T.attacks++;
+      const aim=Math.atan2((this.cursorTarget?.y??p.y)-p.y,(this.cursorTarget?.x??p.x+1)-p.x);
+      if(run.has('waveSlash')&&T.attacks%(run.stack('waveSlash')>=2?2:3)===0)this.huntShoot('slash',p.x,p.y-16,aim,460,30*mul,{radius:22,pierce:6,life:.9});
+      if(run.has('iceShard'))for(const s of run.stack('iceShard')>=2?[-.42,-.21,.21,.42]:[-.26,.26])this.huntShoot('shard',p.x,p.y-20,aim+s,520,12*mul,{pierce:1,life:.9,chill:true});
+    }
+    if(run.has('whirl')){T.whirl-=dt;if(T.whirl<=0){T.whirl=5;this.huntBurst(p.x,p.y,115,30*mul,'#ffe9a8');}}
+    if(run.has('frostOrb')){T.orb-=dt;if(T.orb<=0&&this.nearestHuntEnemy(p.x,p.y,700)){T.orb=6;this.huntShoot('orb',p.x,p.y-20,aimAt(),150,26*mul,{radius:30,pierce:99,life:4,chill:true});}}
+    if(run.has('dartRain')){T.darts-=dt;if(T.darts<=0&&this.nearestHuntEnemy(p.x,p.y,560)){T.darts=4;const a=aimAt(),n=run.stack('dartRain')>=2?8:5;for(let k=0;k<n;k++)this.huntShoot('dart',p.x,p.y-16,a+(k-(n-1)/2)*.16,560,14*mul,{pierce:1,life:.9});}}
+    if(dodged&&run.has('shadowStep'))this.huntBurst(p.x,p.y,72,(12+8*run.stack('shadowStep'))*mul,'#c58dff');
+    for(const s of this.huntShots){
+      s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
+      for(const e of this.enemies){
+        if(s.pierce<0)break;
+        if(e.hp<=0||e.kind==='dummy'||s.hit.has(e.id)||Math.hypot(e.x-s.x,e.y-12-s.y)>s.radius+16)continue;
+        s.hit.add(e.id);s.pierce--;
+        if(s.chill)e.chillTime=Math.max(e.chillTime??0,1.2);
+        this.strike(e,s.damage,false,{x:s.x,y:s.y});
+      }
+    }
+    this.huntShots=this.huntShots.filter(s=>s.life>0&&s.pierce>=0&&s.x>-40&&s.x<1320&&s.y>-40&&s.y<760);
+  }
+  /** What reached the hero this frame: popups, a soft tick (at most every 70 ms), the XP bar flash, and a level-up burst. */
+  private huntPickupFeedback(arrived:HuntPickup[],levelBefore:number){
+    const vi=this.language==='vi',sum=(kind:string)=>arrived.filter(p=>p.kind===kind).reduce((n,p)=>n+p.value,0);
+    const xp=sum('xp'),tickets=sum('ticket'),coins=sum('coin'),x=this.player.x,y=this.player.y-58;
+    if(xp){this.addDamageText(x,y,0,false,`+${xp} XP`,'#7fe8ff');this.huntXpPulse++;}
+    if(tickets)this.addDamageText(x+28,y+10,0,false,vi?`+${tickets} vé`:`+${tickets} ticket${tickets>1?'s':''}`,'#ffd76a');
+    if(coins)this.addDamageText(x-28,y+10,0,false,vi?`+${coins} xu`:`+${coins} coin${coins>1?'s':''}`,'#ffe58a');
+    if(sum('hp'))this.addDamageText(x,y-16,0,false,vi?'+MÁU':'+HP','#ff8aa0');
+    if(sum('mp'))this.addDamageText(x,y-16,0,false,'+MANA','#8ac8ff');
+    if(sum('maxHp'))this.addDamageText(x,y-30,0,false,vi?'+MÁU TỐI ĐA':'+MAX HP','#ff8aa0');
+    if(sum('maxMp'))this.addDamageText(x,y-30,0,false,vi?'+MANA TỐI ĐA':'+MAX MANA','#8ac8ff');
+    const now=typeof performance==='undefined'?Date.now():performance.now();
+    if(now-this.huntPickupSoundAt>70){this.huntPickupSoundAt=now;sounds.playFeedback('pickup');}
+    if(this.hunt&&this.hunt.level>levelBefore){
+      this.runePulses.push({x:this.player.x,y:this.player.y,color:'#ffd76a',life:1,max:1},{x:this.player.x,y:this.player.y,color:'#fff3c2',life:.7,max:.7});
+      this.addDamageText(x,y-44,0,true,vi?'LÊN CẤP!':'LEVEL UP!','#ffd76a');
+      this.renderer.emitMagic('sparkle',this.player.x,this.player.y-20,60);
+      sounds.playFeedback('upgrade');
+    }
   }
   public get canPlayChristmasTrail(){
     return (this.campaign.bossDefeated||this.devUnlocked) && !this.campaign.pendingRuneChoices.length &&
@@ -1077,7 +1171,8 @@ export class GameEngine {
     this.bossIntroduction = !!this.boss;
     this.enemies=createEnemies(this.currentLevel);
     // Snow Hunt: an empty arena with no clock; the run spawns the waves (logic/snowHunt.ts).
-    this.hunt=this.isSnowHunt?new SnowHunt():null;this.huntResult=null;
+    this.hunt=this.isSnowHunt?new SnowHunt(this.characterClass as HuntHero):null;this.huntResult=null;
+    this.huntShots=[];this.huntBells=[];this.huntOrbitHits.clear();this.huntTimers={candy:0,bell:2,whirl:3,orb:2,darts:2,attacks:0};
     if(this.hunt){this.huntBonusHp=0;this.huntBonusMp=0;this.mana.reset();this.enemies=[];this.legTimeRemaining=null;this.maxHealth=this.huntMaxHealth();this.health=this.maxHealth;this.huntLast={attack:0,skill:0,dodge:0};}
     if(this.currentLevel.id===13)this.enemies.push(...createCaveSlimes());
     this.magicShots = [];
@@ -1698,14 +1793,27 @@ export class GameEngine {
   private startComboHit(step: number) {
     const hero = this.comboHero();
     if (!hero) return;
-    // Snow Hunt: basic attacks fire on their own and cost no MP; MP is for skills.
-    if(!this.hunt && hero==='assassin' && step===2 && this.mana.value<comboManaCost(hero,2)){
-      this.combo?.cancel();
-      const first=this.combo?.press();
-      if(first===0)this.startComboHit(0);
-      return;
+    // Snow Hunt: basic attacks fire on their own. The opening hit is free; each later combo hit costs
+    // HUNT_COMBO_MP of its usual MP, taken without pausing regen. Short of MP, the combo quietly starts
+    // over from the free hit, so the hero keeps swinging but loses the strong finishers until MP refills.
+    if(this.hunt){
+      const cost=comboManaCost(hero,step)*HUNT_COMBO_MP;
+      if(step>0&&this.mana.value+1e-6<cost){
+        this.combo?.cancel();
+        const first=this.combo?.press();
+        if(first===0)this.startComboHit(0);
+        return;
+      }
+      this.mana.value=Math.max(0,this.mana.value-cost);
+    }else{
+      if(hero==='assassin' && step===2 && this.mana.value<comboManaCost(hero,2)){
+        this.combo?.cancel();
+        const first=this.combo?.press();
+        if(first===0)this.startComboHit(0);
+        return;
+      }
+      if(!this.spendMana(comboManaCost(hero, step))){this.combo?.cancel();this.attackCooldown=0;return;}
     }
-    if(!this.hunt&&!this.spendMana(comboManaCost(hero, step))){this.combo?.cancel();this.attackCooldown=0;return;}
     const hit = COMBO_HITS[hero][step];
     if (hero === 'assassin') {
       this.attackFlash = hitDuration(hit);
@@ -3440,7 +3548,7 @@ export class GameEngine {
         completed: [...this.campaign.completed],
         lastReward: this.lastReward,
         newItems:this.newLoot.items,newRunes:this.newLoot.runes,
-        hunt:this.hunt?{wave:this.hunt.wave,waveTime:this.hunt.waveTime,waveBanner:this.hunt.waveBanner,level:this.hunt.level,xp:this.hunt.xp,tickets:this.hunt.tickets,coins:this.hunt.coins,kills:this.hunt.kills,choices:this.hunt.choices?[...this.hunt.choices]:null,offerKind:this.hunt.offerKind,stacks:{...this.hunt.stacks},over:this.hunt.state==='over'}:undefined,huntResult:this.huntResult??undefined,noelTickets:this.campaign.noelTickets,
+        hunt:this.hunt?{wave:this.hunt.wave,waveTime:this.hunt.waveTime,waveBanner:this.hunt.waveBanner,level:this.hunt.level,xp:this.hunt.xp,tickets:this.hunt.tickets,coins:this.hunt.coins,kills:this.hunt.kills,choices:this.hunt.choices?[...this.hunt.choices]:null,offerKind:this.hunt.offerKind,stacks:{...this.hunt.stacks},over:this.hunt.state==='over',rerolls:this.hunt.rerolls,xpPulse:this.huntXpPulse,hero:this.hunt.hero}:undefined,huntResult:this.huntResult??undefined,noelTickets:this.campaign.noelTickets,
         lastRuneReward:this.lastRuneReward,echoRunes:{...this.campaign.echoRunes},runeLoadout:[...this.campaign.runeLoadout],activeEchoRunes:[...this.activeEchoRunes],spentRuneSlots:[...this.spentRuneSlots],pendingRuneChoices:[...this.campaign.pendingRuneChoices],enemiesRemaining:this.enemies.filter(e=>e.hp>0&&e.kind!=='dummy').length,training:this.isTraining,
         health: this.health,maxHealth:this.maxHealth,supplies:{...this.campaign.supplies},chanceCharges:this.campaign.chanceCharges,aidUnlocked:this.campaign.aidUnlocked,usedSupplies:[...this.usedSupplies],
         itemLoadout: [...this.campaign.itemLoadout], carriedItems: [...this.carriedItems], preparingBattle: !!this.pendingBattleStart,

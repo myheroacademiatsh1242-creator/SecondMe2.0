@@ -232,11 +232,11 @@ class SoundEngine {
   public uiRevision = 0;
   public playStoneClick() { this.uiRevision++; this.stoneHit(0.22, 520, 0.16, 140, 50, 0.32); }
   /** Short, quiet action cues routed through the existing effects volume bus. */
-  public playFeedback(kind:'item'|'time'|'echoPause'|'swap'|'mark'|'purchase'|'upgrade'|'rune') {
+  public playFeedback(kind:'item'|'time'|'echoPause'|'swap'|'mark'|'purchase'|'upgrade'|'rune'|'pickup') {
     this.uiRevision++;
     if(this.isMuted)return;
-    const pitch={item:620,time:820,echoPause:320,swap:480,mark:960,purchase:740,upgrade:880,rune:680}[kind];
-    this.threatGrowl(pitch,1800,kind==='upgrade'?.3:.16,.065);
+    const pitch={item:620,time:820,echoPause:320,swap:480,mark:960,purchase:740,upgrade:880,rune:680,pickup:1240}[kind];
+    this.threatGrowl(pitch,1800,kind==='upgrade'?.3:kind==='pickup'?.08:.16,kind==='pickup'?.04:.065);
   }
 
   public playGuardianLanding() { this.stoneHit(.55, 460, .24, 125, 42, .45); }

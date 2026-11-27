@@ -12,6 +12,17 @@
 .snow-hunt-xp small{display:block;font-size:12px;color:#9be7ff;margin-bottom:3px}
 .snow-hunt-xp>i{display:block;height:10px;background:#0d1a12;border:2px solid #6f7a55}
 .snow-hunt-xp>i>i{display:block;height:100%;background:linear-gradient(90deg,#4aa8ff,#9be7ff);transition:width .15s linear}
+.snow-hunt-xp small span{float:right;color:var(--stone-text-dim)}
+/* The bar flashes each time XP arrives (the element is re-keyed so the animation restarts). */
+.snow-hunt-xp>i.pulse{animation:snow-hunt-xp-pulse .35s ease-out}
+@keyframes snow-hunt-xp-pulse{0%{box-shadow:0 0 0 0 #9be7ff;border-color:#e6f8ff}40%{box-shadow:0 0 12px 2px #9be7ffaa;border-color:#e6f8ff}100%{box-shadow:none}}
+
+/* Powers taken this run, under the bar. */
+.snow-hunt-owned{position:absolute;left:50%;top:calc(7% + 66px);transform:translateX(-50%);width:min(780px,72%);display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:0;padding:0;list-style:none;pointer-events:auto}
+.snow-hunt-owned li{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;font-size:11px;color:var(--rarity);background:#0d1a12d9;border:1px solid var(--rarity)}
+.snow-hunt-owned li.side-echo{background:#0b1a22d9}
+.snow-hunt-owned li.evolved{box-shadow:0 0 8px var(--rarity)}
+.snow-hunt-owned b{font-weight:400;color:#fff3c2}
 .snow-hunt-loot{display:flex;align-items:center;gap:10px;flex:none;flex-wrap:wrap;max-width:240px}
 .snow-hunt-loot span{display:inline-flex;align-items:center;gap:4px;font-size:17px;color:#ffd76a}
 .snow-hunt-loot span:nth-child(2){color:#ffe3a3}
@@ -35,6 +46,9 @@
 .snow-hunt-card strong{font-size:22px;font-weight:400;color:var(--rarity)}
 .snow-hunt-card p{margin:0;flex:1;font-size:15px;line-height:1.4}
 .snow-hunt-card small{font-size:12px;color:var(--rarity)}
+.snow-hunt-reroll{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#394f3c;border:2px solid #a8ac7b;color:#f2e5b6;font-size:14px}
+.snow-hunt-reroll:hover:not(:disabled){filter:brightness(1.15)}
+.snow-hunt-reroll:disabled{opacity:.45;cursor:default}
 
 /* Result panel. */
 .snow-hunt-result{position:absolute;inset:0;display:grid;place-items:center;background:#05100bd9;pointer-events:auto;animation:snow-hunt-fade .3s ease-out}
@@ -52,5 +66,5 @@
 .snow-hunt-result footer button.primary{background:#d8b45c;border-color:#fff1c2;color:#2a1a05}
 .snow-hunt-result footer button:hover{filter:brightness(1.15)}
 @keyframes snow-hunt-fade{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.snow-hunt-wave-banner,.snow-hunt-offer,.snow-hunt-result{animation:none}.snow-hunt-card{transition:none}}
+@media(prefers-reduced-motion:reduce){.snow-hunt-wave-banner,.snow-hunt-offer,.snow-hunt-result,.snow-hunt-xp>i.pulse{animation:none}.snow-hunt-card{transition:none}}
 @media(max-height:620px){.snow-hunt-card{width:190px;min-height:200px}.snow-hunt-card p{font-size:13px}.snow-hunt-wave-banner{font-size:40px}}

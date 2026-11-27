@@ -28,7 +28,7 @@ import { drawPfxShots } from './pixelfx.ts';
 import { WIND_BRIDGE } from '../logic/frostLevels.ts';
 import { ECHO_RUNES } from '../logic/echoRunes.ts';
 import { drawKeyPrompt } from './keyPrompt.ts';
-import { drawHuntArena, drawHuntSnow } from './snowHunt.ts';
+import { drawHuntArena, drawHuntSnow, drawHuntWeapons } from './snowHunt.ts';
 let chestSprites: HTMLImageElement[] | undefined;
 function drawHiddenChest(ctx: CanvasRenderingContext2D, chest: NonNullable<GameEngine['hiddenChest']>, time: number, reducedMotion: boolean) {
   chestSprites ??= ['closed','opening','open_loop'].map(state => {
@@ -121,7 +121,7 @@ export function renderAdventure(ctx: CanvasRenderingContext2D, game: GameEngine,
     ctx.restore();
   }
   drawKeyPrompt(ctx,game,time);
-  if(game.hunt)drawHuntSnow(ctx,time,game.reducedMotion);
+  if(game.hunt){drawHuntWeapons(ctx,game,time);drawHuntSnow(ctx,time,game.reducedMotion);}
   // With the hand-drawn art the trap floors were drawn under the characters by the renderer;
   // only falling boulders go on top here.
   const trapLayer = trapSpritesReady() ? 'overhead' : 'all';

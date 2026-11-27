@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Home, RotateCcw, Ticket, Coins, LogOut } from 'lucide-react';
+import { Home, RotateCcw, Ticket, Coins, LogOut, Shuffle } from 'lucide-react';
 import type { GameEngine, HUDState } from '../game/GameEngine.ts';
 import { HUNT_CARD, xpToNext, waveReward } from '../game/logic/snowHunt.ts';
 import './SnowHuntHUD.css';
@@ -22,6 +22,7 @@ export function SnowHuntHUD({ engine, hud }: { engine: GameEngine; hud: HUDState
   useEffect(() => {
     if (!choices) return;
     const key = (e: KeyboardEvent) => {
+      if (e.code === 'KeyR') { e.preventDefault(); e.stopImmediatePropagation(); engine.rerollHuntCards(); return; }
       const i = ['Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3'].indexOf(e.code) % 3;
       if (i >= 0 && choices[i]) { e.preventDefault(); e.stopImmediatePropagation(); engine.chooseHuntCard(choices[i]); }
     };
@@ -31,13 +32,14 @@ export function SnowHuntHUD({ engine, hud }: { engine: GameEngine; hud: HUDState
   if (!run) return null;
   const result = hud.huntResult;
   const need = xpToNext(run.level);
+  const owned = Object.entries(run.stacks).filter(([id, n]) => n > 0 && HUNT_CARD[id]);
   const next = waveReward(run.wave);
   return <div className="snow-hunt-layer">
     <header className="snow-hunt-bar stone-frame">
       <div className="snow-hunt-wave"><small>{vi ? 'ĐỢT' : 'WAVE'}</small><strong>{run.wave}</strong><span>{clock(run.waveTime)}</span></div>
       <div className="snow-hunt-xp" title={`${run.xp} / ${need} XP`}>
-        <small>{vi ? 'CẤP' : 'LEVEL'} {run.level}</small>
-        <i><i style={{ width: `${Math.min(100, run.xp / need * 100)}%` }}/></i>
+        <small>{vi ? 'CẤP' : 'LEVEL'} {run.level}<span>{run.xp} / {need} XP</span></small>
+        <i key={run.xpPulse} className={run.xpPulse ? 'pulse' : undefined}><i style={{ width: `${Math.min(100, run.xp / need * 100)}%` }}/></i>
       </div>
       <div className="snow-hunt-loot">
         <span title={vi ? 'Vé Noel' : 'Noel tickets'}><Ticket size={16} aria-hidden="true"/>{run.tickets}</span>
@@ -47,6 +49,14 @@ export function SnowHuntHUD({ engine, hud }: { engine: GameEngine; hud: HUDState
       {!run.over && <button type="button" className="snow-hunt-retreat" onClick={() => engine.endSnowHunt()}
         title={vi ? 'Kết thúc lượt và giữ toàn bộ vé, xu đã nhặt' : 'End the run and keep everything collected'}><LogOut size={15} aria-hidden="true"/>{vi ? 'Rút lui' : 'Retreat'}</button>}
     </header>
+
+    {owned.length > 0 && <ul className="snow-hunt-owned" aria-label={vi ? 'Sức mạnh đang có' : 'Powers this run'}>
+      {owned.map(([id, level]) => {
+        const card = HUNT_CARD[id];
+        return <li key={id} className={`side-${card.side}${card.needs ? ' evolved' : ''}`} style={{ '--rarity': RARITY[card.rarity].color } as React.CSSProperties}
+          title={vi ? card.descVi : card.descEn}>{vi ? card.vi : card.en}{card.max > 1 && <b>{level}</b>}</li>;
+      })}
+    </ul>}
 
     {run.waveBanner > 0 && !run.over && <div className="snow-hunt-wave-banner" key={run.wave}>{vi ? `ĐỢT ${run.wave}` : `WAVE ${run.wave}`}</div>}
 
@@ -62,13 +72,16 @@ export function SnowHuntHUD({ engine, hud }: { engine: GameEngine; hud: HUDState
           return <button type="button" key={id} className={`snow-hunt-card stone-frame side-${card.side}`} style={{ '--rarity': rarity.color } as React.CSSProperties}
             onClick={() => engine.chooseHuntCard(id)}>
             <span className="snow-hunt-card-key">{i + 1}</span>
-            <span className="snow-hunt-card-side">{card.side === 'echo' ? 'ECHO' : (vi ? 'NHÂN VẬT' : 'HERO')}</span>
+            <span className="snow-hunt-card-side">{card.needs ? (vi ? 'TIẾN HOÁ' : 'EVOLUTION') : card.side === 'echo' ? 'ECHO' : card.hero ? (vi ? 'RIÊNG' : 'SIGNATURE') : (vi ? 'NHÂN VẬT' : 'HERO')}</span>
             <strong>{vi ? card.vi : card.en}</strong>
             <p>{vi ? card.descVi : card.descEn}</p>
             <small>{vi ? rarity.vi : rarity.en}{card.max > 1 ? ` · ${vi ? 'Cấp' : 'Lv'} ${owned + 1}/${card.max}` : ''}</small>
           </button>;
         })}
       </div>
+      <button type="button" className="snow-hunt-reroll" disabled={run.rerolls <= 0} onClick={() => engine.rerollHuntCards()}>
+        <Shuffle size={15} aria-hidden="true"/>{vi ? `Đổi thẻ (R) · còn ${run.rerolls}` : `Reroll (R) · ${run.rerolls} left`}
+      </button>
     </div>}
 
     {result && <div className="snow-hunt-result" role="dialog" aria-modal="true" aria-labelledby="snow-hunt-result-title">
