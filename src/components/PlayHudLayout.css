@@ -167,3 +167,5 @@
 /* Each action has one content column: key, icon and label share an exact center. */
 .adventure-app .game-stage[data-touch-controls=false] .combat-action{grid-template-columns:minmax(0,1fr)}
 .adventure-app .game-stage[data-touch-controls=false] .combat-action :is(kbd,.combat-action-icon,strong){grid-column:1;justify-self:center}
+.adventure-app .game-stage[data-touch-controls=false] .combat-action strong{font-size:13px!important}
+.adventure-app .game-stage[data-touch-controls=false] .combat-action kbd,.adventure-app .game-stage[data-touch-controls=false] .combat-mana-cost{font-size:11px!important}

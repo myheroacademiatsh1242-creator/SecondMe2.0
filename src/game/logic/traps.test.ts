@@ -61,7 +61,7 @@ test('an Echo completing a new checkpoint refills time only on its first activat
 test('pause freezes the checkpoint clock and boss arena has no checkpoint deadline',t=>{
   const { game, advance }=setup(t);
   advance(1); const remaining=game.legTimeRemaining;game.pauseGame();advance(8);
-  assert.equal(game.legTimeRemaining,remaining);game.resumeGame();advance(1);assert.ok(game.legTimeRemaining!<14.01);
+  assert.equal(game.legTimeRemaining,remaining);game.resumeGame();advance(1);assert.ok(Math.abs(game.legTimeRemaining! - (remaining! - 1)) < .01);
   game.currentLevelIdx=5;game.restartLevel();assert.equal(game.legTimeRemaining,null);
   game.enemies=[];   // the opening Frost Crystals would fight; only the clock matters here
   advance(puzzleBalance(2).legSeconds);assert.equal(game.screen,'playing');assert.equal(game.defeatReason,'damage');

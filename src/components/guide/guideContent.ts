@@ -96,6 +96,17 @@ const enemyRows = (['goblin', 'bear', 'skull', 'shaman', 'minotaur'] as const).m
 // ---------------------------------------------------------------- Sections A–G
 export const GUIDE: Section[] = [
   { id: 'start', letter: 'A', title: t('Bắt đầu chơi', 'Getting started'), pages: [
+    { id: 'interface', title: t('Lần đầu chơi: nhìn gì, bấm gì?', 'First steps: what to look for'), blocks: [
+      { t: 'p', text: t('Ở trại, chọn nhân vật rồi chọn màn 1 trên bản đồ. Đọc mục tiêu trước khi tiếp tục. Trong màn đầu, hãy tìm ấn sáng và để Echo đứng trên đó giúp bạn mở cổng.', 'At camp, choose a hero and select level 1 on the map. Read the objective before continuing. In the first level, find the glowing rune and leave an Echo on it to open the gate.') },
+      { t: 'figure', fig: { shot: 'hud-desktop', alt: t('Giao diện trong trận', 'The in-game HUD'), caption: t('Chạm ảnh để phóng to. Tìm đồng hồ, thanh máu và nút Gọi Echo trước khi đi tiếp.', 'Select the picture to zoom in. Find the timer, health bar and Summon Echo button before moving on.') } },
+      { t: 'list', items: [
+        t('Mục tiêu và đồng hồ: đi theo chỉ dẫn đến ấn kế tiếp để nạp lại thời gian chặng. Mở Tạm dừng để xem lại nhiệm vụ.', 'Objective and timer: follow the objective to the next rune to refill the leg timer. Open Pause to review the mission.'),
+        t('Ghi hình → đi tới ấn → Dừng ghi → Gọi Echo. Chờ bản sao đứng trên ấn rồi tự đi qua cổng.', 'Record → walk onto the rune → stop recording → summon an Echo. Wait for your copy to stand on the rune, then walk through the gate.'),
+        t('Thanh máu cho biết bạn còn chịu được bao nhiêu sát thương. Kỹ năng dùng năng lượng (MP). Số đếm trên nút cho biết còn bao lâu mới dùng lại được.', 'Health shows how much damage you can take. Skills use energy (MP). A countdown on a button shows when the skill will be ready again.'),
+        t('Ở trại, Shop bán đồ và Túi đồ cho phép chọn món mang theo. Trong trận, chạm ô vật phẩm để dùng món đã chuẩn bị.', 'At camp, visit the shop for supplies and choose what to carry in Inventory. During play, tap an item slot to use what you packed.'),
+        t('Trong sự kiện Noel, săn quái để kiếm vé. Ở máy gắp, nạp 1 vé, ngắm, bấm Gắp rồi chạm món rơi ở cửa nhận để lấy thưởng.', 'In the Noel event, hunt monsters to earn tickets. At the claw machine, insert one ticket, aim, grab, then tap the toy in the prize chute to collect it.'),
+      ] },
+    ] },
     { id: 'what', title: t('Second Me là game gì?', 'What is Second Me?'), blocks: [
       { t: 'p', text: t('Second Me là game giải đố + hành động nhìn từ trên xuống. Trên đường đi có cổng đá bị khóa; cổng chỉ mở khi có người đứng giữ trên các ấn (công tắc phát sáng). Bạn chỉ có một mình — nên bạn ghi lại đường đi của chính mình rồi gọi ra Echo, một bản sao tự đi lại đúng đường đó và đứng giữ ấn thay bạn.',
         'Second Me is a top-down puzzle-action game. Stone gates block the way and only open while someone stands on their runes (glowing switches). You are alone — so you record your own path and summon an Echo, a copy that walks the same path and holds the rune for you.') },

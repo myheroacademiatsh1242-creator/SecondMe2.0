@@ -125,3 +125,5 @@
 }
 @media (prefers-reduced-motion:reduce){.player-guide-side{transition:none}}
 .player-guide-nav .player-guide-cat button:disabled{opacity:.5;cursor:not-allowed;filter:saturate(.35)}
+.player-guide-main p,.player-guide-main li,.player-guide-main td{font-size:clamp(18px,2vw,21px);line-height:1.5}
+.player-guide-nav button,.guide-figure figcaption{font-size:17px}
